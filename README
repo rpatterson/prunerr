@@ -1,0 +1,37 @@
+README
+######
+
+.. contents::
+
+Introduction
+============
+
+vxl is a package containing a command-line tool and a python module. These
+should be used to communicate with either the bittorrent client Transmission or
+transmission-daemon.
+
+Getting started
+===============
+
+Requirements
+------------
+
+vxl requires:
+
+	* Transmission 1.22+
+	* simplejson >= 1.71
+
+Install
+-------
+
+vxl is installed by running setup.py
+
+.. parsed-literal::
+
+	python setup.py install
+
+The setup program will take care of the simplejson requirement. Please refer to
+the Transmission documenation on how to install Transmission.
+
+.. footer::
+	Copyright (c) 2008 Erik Svensson.

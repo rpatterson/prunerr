@@ -4,3 +4,4 @@ syntax: glob
 *.torrent
 syntax: regexp
 ^build/*
+.+\.egg-info/*

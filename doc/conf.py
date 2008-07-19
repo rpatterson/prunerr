@@ -37,7 +37,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General substitutions.
-project = 'V\xe4xel'
+project = 'Vxl'
 copyright = '2008, Erik Svensson'
 
 # The default replacements for |version| and |release|, also used in various
@@ -144,7 +144,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Växeldoc'
+htmlhelp_basename = 'Vxldoc'
 
 
 # Options for LaTeX output
@@ -159,7 +159,7 @@ htmlhelp_basename = 'Växeldoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Växel.tex', 'Växel Documentation', 'Erik Svensson', 'manual'),
+  ('index', 'Vxl.tex', 'Vxl Documentation', 'Erik Svensson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
-import socket
+import socket, datetime
 
 UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
 
@@ -14,10 +14,21 @@ def format_size(size):
         size /= 1024.0
     return (size, UNITS[i])
 
+def format_speed(size):
+    (size, unit) = format_size(size)
+    return (size, unit + '/s')
+
 def format_timedelta(delta):
     minutes, seconds = divmod(delta.seconds, 60)
     hours, minutes = divmod(minutes, 60)
     return '%d %02d:%02d:%02d' % (delta.days, hours, minutes, seconds)
+
+def format_timestamp(timestamp):
+    if timestamp > 0:
+        dt = datetime.datetime.fromtimestamp(timestamp)
+        return dt.isoformat(' ')
+    else:
+        return '-'
 
 class INetAddressError(Exception):
     pass

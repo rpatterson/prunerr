@@ -1,3 +1,5 @@
+.. header:: Vxl readme
+
 README
 ######
 
@@ -33,5 +35,4 @@ vxl is installed by running setup.py
 The setup program will take care of the simplejson requirement. Please refer to
 the Transmission documenation on how to install Transmission.
 
-.. footer::
-	Copyright (c) 2008 Erik Svensson.
+.. footer:: Copyright (c) 2008 Erik Svensson.

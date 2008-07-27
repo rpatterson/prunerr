@@ -13,10 +13,10 @@ import transmission
 from utils import inet_address, INetAddressError
 from constants import DEFAULT_PORT
 
-__author__ = u"Erik Svensson <erik.public@gmail.com>"
-__version__ = u"0.1"
+__author__    = u"Erik Svensson <erik.public@gmail.com>"
+__version__   = u"0.1"
 __copyright__ = u"Copyright (c) 2008 Erik Svensson"
-__license__ = u"MIT"
+__license__   = u"MIT"
 
 class Vxl(cmd.Cmd):
     def __init__(self):
@@ -32,7 +32,7 @@ class Vxl(cmd.Cmd):
             addr = u'localhost'
             port = DEFAULT_PORT
         self.address = (addr, port)
-        self.tc = transmission.TransmissionClient(addr, port, verbose=self.verbose)
+        self.tc = transmission.Transmission(addr, port, verbose=self.verbose)
         self.prompt = u'vxl %s:%d> ' % (self.address[0], self.address[1])
     
     def arg_tokenize(self, argstr):
@@ -157,15 +157,14 @@ class Vxl(cmd.Cmd):
             raise ValueError(u'No torrent id')
         result = self.tc.info(args)
         for id, torrent in result.iteritems():
-            print(torrent)
+            print(torrent.detail())
     
     def do_list(self, line):
         args = self.arg_tokenize(line)
-        result = self.tc.list(args)
+        result = self.tc.list()
         print(transmission.Torrent.brief_header())
         for id, torrent in result.iteritems():
             print(torrent.brief())
-    
     
     def do_files(self, line):
         args = self.arg_tokenize(line)

@@ -32,7 +32,7 @@ class Torrent(object):
     
     def update(self, other):
         """Update the torrent data from a Transmission arguments dictinary"""
-
+        
         fields = None
         if isinstance(other, dict):
             fields = other
@@ -41,7 +41,7 @@ class Torrent(object):
         else:
             raise ValueError('Cannot update with supplied data')
         self.fields.update(fields)
-
+    
     @classmethod
     def brief_header(self):
         s  = u' Id  Done   ETA           Status       Download    Upload      Ratio  Name'
@@ -169,22 +169,22 @@ class Torrent(object):
             return datetime.timedelta(seconds=eta)
         else:
             ValueError('eta not valid')
-
+    
     @property
     def date_active(self):
         """Get the attribute "activityDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['activityDate'])
-
+    
     @property
     def date_added(self):
         """Get the attribute "addedDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['addedDate'])
-
+    
     @property
     def date_started(self):
         """Get the attribute "startDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['startDate'])
-
+    
     @property
     def date_done(self):
         """Get the attribute "doneDate" as datetime.datetime."""
@@ -213,7 +213,7 @@ class Session(object):
     
     def update(self, other):
         """Update the torrent data from a Transmission arguments dictinary"""
-
+        
         fields = None
         if isinstance(other, dict):
             fields = other
@@ -247,7 +247,7 @@ class Transmission(object):
     
     def _request(self, method, arguments):
         """Send json-rpc request to Transmission using http POST"""
-
+        
         if not isinstance(method, (str, unicode)):
             raise ValueError('request takes method as string')
         if not isinstance(arguments, dict):
@@ -271,13 +271,13 @@ class Transmission(object):
             print('http request took %.3f s' % (elapsed))
         
         data = simplejson.loads(http_data)
-
+        
         if self.verbose:
             print(simplejson.dumps(data, indent=2))
         
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"' % data['result'])
-
+        
         if method == 'torrent-get':
             self._update_torrents(data['arguments']['torrents'])
         elif method == 'torrent-add':
@@ -286,7 +286,7 @@ class Transmission(object):
             self._update_session(data['arguments'])
         elif method == 'session-stats':
             self._update_session(data['arguments']['session-stats'])
-
+        
         self._http_connection.close()
         return data
     
@@ -341,14 +341,14 @@ class Transmission(object):
             elif isinstance(line, (int, long)):
                 ids.append(line)
         return ids
-
+    
     def _update_torrents(self, data):
         for fields in data:
             if fields['id'] in self.torrents:
                 self.torrents[fields['id']].update(fields)
             else:
                 self.torrents[fields['id']] = Torrent(fields)
-
+    
     def _update_session(self, data):
         self.session.update(data)
     
@@ -420,7 +420,7 @@ class Transmission(object):
     
     def list(self):
         """list torrent(s) with provided id(s)"""
-        fields = ['id', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
+        fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
         self._request('torrent-get', {'fields': fields})
         return self.torrents
 

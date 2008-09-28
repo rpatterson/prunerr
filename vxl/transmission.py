@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
-import time, datetime
+import os, time, datetime
 import re
-import socket, httplib
+import socket, httplib, urllib2, base64
 import simplejson
 from constants import *
 from utils import *
@@ -370,6 +370,30 @@ class Transmission(object):
             args['peer-limit'] = int(kwargs['peerLimit'])
         self._request('torrent-add', args)
     
+    def add_url(self, torrent_url, **kwargs):
+        """
+        Add torrent to transfers list. Takes a url to a .torrent file.
+        Additional arguments are:
+        
+            * `paused`, boolean, Whether to pause the transfer on add.
+            * `download_dir`, path, The directory where the downloaded contents will be saved in.
+            * `peer_limit`, number, Limits the number of peers for this transfer.
+        """
+        torrent_file = None
+        if os.path.exists(torrent_url):
+            torrent_file = open(torrent_url, 'r')
+        else:
+            try:
+                torrent_file = urllib2.urlopen(torrent_url)
+            except:
+                torrent_file = None
+        
+        if not torrent_file:
+            raise TransmissionError('File does not exist.')
+        
+        torrent_data = base64.b64encode(torrent_file.read())
+        self.add(torrent_data, **kwargs)
+    
     def remove(self, ids):
         """remove torrent(s) with provided id(s)"""
         self._request('torrent-remove', {'ids': self._format_ids(ids)})
@@ -420,7 +444,7 @@ class Transmission(object):
     
     def list(self):
         """list torrent(s) with provided id(s)"""
-        fields = ['id', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
+        fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
         self._request('torrent-get', {'fields': fields})
         return self.torrents
 
@@ -533,7 +557,3 @@ class Transmission(object):
     def session_stats(self):
         self._request('session-stats', {})
         return self.session
-
-if __name__ == '__main__':
-    tc = TransmissionClient('localhost', DEFAULT_PORT)
-    tc._request('torrent-get', {'fields': TR_RPC_TORRENT_ID | TR_RPC_TORRENT_ACTIVITY})

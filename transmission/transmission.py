@@ -278,14 +278,20 @@ class Transmission(object):
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"' % data['result'])
         
+        ids = []
+        if 'ids' in arguments:
+            ids = arguments['ids']
+        
         if method == 'torrent-get':
-            self._update_torrents(data['arguments']['torrents'])
+            self._update_torrents(data['arguments']['torrents'], ids)
         elif method == 'torrent-add':
-            self._update_torrents([data['arguments']['torrent-added']])
+            self._update_torrents([data['arguments']['torrent-added']], ids)
         elif method == 'session-get':
             self._update_session(data['arguments'])
         elif method == 'session-stats':
             self._update_session(data['arguments']['session-stats'])
+        elif method == 'torrent-remove':
+            self._update_torrents([], ids)
         
         self._http_connection.close()
         return data
@@ -342,7 +348,13 @@ class Transmission(object):
                 ids.append(line)
         return ids
     
-    def _update_torrents(self, data):
+    def _update_torrents(self, data, ids):
+        for id in ids:
+            if id in self.torrents:
+                del self.torrents[id]
+        else:
+            self.torrents = {}
+        
         for fields in data:
             if fields['id'] in self.torrents:
                 self.torrents[fields['id']].update(fields)
@@ -449,6 +461,7 @@ class Transmission(object):
         return self.torrents
 
     def change(self, ids, **kwargs):
+        """Change torrent parameters"""
         args = {}
         args['ids'] = self._format_ids(ids)
         if len(args['ids']) == 0:
@@ -500,10 +513,12 @@ class Transmission(object):
             self._request('torrent-set', args)
     
     def session_get(self):
+        """Get session parameters"""
         self._request('session-get', {})
         return self.session
     
     def session_set(self, **kwargs):
+        """Set session parameters"""
         args = {}
         
         try:
@@ -555,5 +570,6 @@ class Transmission(object):
             self._request('session-set', args)
     
     def session_stats(self):
+        """Get session statistics"""
         self._request('session-stats', {})
         return self.session

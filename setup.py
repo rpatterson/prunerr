@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(name='transmission',
       version='0.1',
-      description='Transmission control library including vxl cli.',
+      description='Transmission control module including vxl cli.',
       author='Erik Svensson',
       author_email='erik.public@gmail.com',
       url='http://coldstar.net',

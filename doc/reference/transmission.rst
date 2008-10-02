@@ -5,6 +5,6 @@ Transmission module
 .. autoclass:: Torrent
    :members:
    :undoc-members:
-.. autoclass:: TransmissionClient
+.. autoclass:: Transmission
    :members:
    :undoc-members:

@@ -1,14 +1,12 @@
-.. header:: Vxl readme
-
-README
-######
+Transmission Readme
+###################
 
 .. contents::
 
 Introduction
 ============
 
-vxl is a package containing a command-line tool and a python module. These
+transmission is a package containing a command-line tool and a python module. These
 should be used to communicate with either the bittorrent client Transmission or
 transmission-daemon.
 
@@ -18,7 +16,7 @@ Getting started
 Requirements
 ------------
 
-vxl requires:
+transmission requires:
 
 	* Transmission 1.22+
 	* simplejson >= 1.71

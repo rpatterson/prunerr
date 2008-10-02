@@ -1,5 +1,5 @@
 vxl module
 ###################
 
-.. automodule:: vxl.vxl
+.. automodule:: transmission.vxl
 .. autoclass:: Vxl

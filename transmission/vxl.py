@@ -119,7 +119,6 @@ class Vxl(cmd.Cmd):
         args = self.arg_tokenize(line)
         if len(args) == 0:
             raise ValueError(u'No torrent id')
-        print('Remove %r' % args)
         self.tc.remove(args)
     
     def complete_start(self, text, line, begidx, endidx):

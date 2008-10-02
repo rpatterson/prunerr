@@ -9,6 +9,11 @@ import simplejson
 from constants import *
 from utils import *
 
+__author__    = u"Erik Svensson <erik.public@gmail.com>"
+__version__   = u"0.1"
+__copyright__ = u"Copyright (c) 2008 Erik Svensson"
+__license__   = u"MIT"
+
 class TransmissionError(Exception):
     pass
 

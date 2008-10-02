@@ -1,7 +1,7 @@
 Transmission module
 ===================
 
-.. automodule:: vxl.transmission
+.. automodule:: transmission.transmission
 .. autoclass:: Torrent
    :members:
    :undoc-members:

@@ -9,8 +9,6 @@ This is the transmission module. This module helps using python to connect to a 
 
 .. _Transmission: http://www.transmissionbt.com/
 
-vxl is short for växel, the swedish word for gearbox.
-
 .. contents::
    :depth: 3
 

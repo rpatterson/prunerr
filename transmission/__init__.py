@@ -3,4 +3,4 @@
 # 2008-08, Erik Svensson <erik.public@gmail.com>
 
 from constants import *
-from transmission import Torrent, Session, Transmission, TransmissionError
+from transmission import TransmissionError, Torrent, Session, Client

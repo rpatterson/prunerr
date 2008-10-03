@@ -9,10 +9,10 @@ import simplejson
 from constants import *
 from utils import *
 
-__author__    = u"Erik Svensson <erik.public@gmail.com>"
-__version__   = u"0.1"
-__copyright__ = u"Copyright (c) 2008 Erik Svensson"
-__license__   = u"MIT"
+__author__    = u'Erik Svensson <erik.public@gmail.com>'
+__version__   = u'0.1'
+__copyright__ = u'Copyright (c) 2008 Erik Svensson'
+__license__   = u'MIT'
 
 class TransmissionError(Exception):
     pass
@@ -37,7 +37,6 @@ class Torrent(object):
     
     def update(self, other):
         """Update the torrent data from a Transmission arguments dictinary"""
-        
         fields = None
         if isinstance(other, dict):
             fields = other
@@ -47,100 +46,59 @@ class Torrent(object):
             raise ValueError('Cannot update with supplied data')
         self.fields.update(fields)
     
-    @classmethod
-    def brief_header(self):
-        s  = u' Id  Done   ETA           Status       Download    Upload      Ratio  Name'
-        return s
-    
-    def brief(self):
-        s = u'% 3d: ' % (self.id)
-        try:
-            s += u'%5.1f%%' % self.progress
-        except:
-            pass
-        try:
-            if self.fields['eta'] > 0:
-                s += u' %- 13s' % self.format_eta()
-            else:
-                s += u' -            '
-        except:
-            pass
-        try:
-            s += u' %- 12s' % self.status
-        except:
-            s += u' -status     '
-            pass
-        try:
-            s += u' %5.1f %- 5s' % format_speed(self.rateDownload)
-            s += u' %5.1f %- 5s' % format_speed(self.rateUpload)
-        except:
-            s += u' -rate     '
-            s += u' -rate     '
-            pass
-        try:
-            s += u' %6.2f' % self.ratio
-        except:    
-            s += u' -ratio'
-            pass
-        s += u' ' + self.name
-        return s
-    
-    def detail(self):
-        s = ''
-        s +=   '            id: ' + str(self.fields['id'])
-        s += '\n          name: ' + self.fields['name']
-        s += '\n          hash: ' + self.fields['hashString']
-        s += '\n'
-        try: # size
-            f = ''
-            f += '\n      progress: %.2f%%' % self.progress
-            f += '\n         total: %.2f %s' % format_size(self.totalSize)
-            f += '\n      reqested: %.2f %s' % format_size(self.sizeWhenDone)
-            f += '\n     remaining: %.2f %s' % format_size(self.leftUntilDone)
-            f += '\n      verified: %.2f %s' % format_size(self.haveValid)
-            f += '\n  not verified: %.2f %s' % format_size(self.haveUnchecked)
-            s += f + '\n'
-        except KeyError:
-            pass
-        try: # activity
-            f = ''
-            f += '\n        status: ' + str(self.status)
-            f += '\n      download: %.2f %s' % format_speed(self.rateDownload)
-            f += '\n        upload: %.2f %s' % format_speed(self.rateUpload)
-            f += '\n     available: %.2f %s' % format_size(self.desiredAvailable)
-            f += '\ndownload peers: ' + str(self.peersSendingToUs)
-            f += '\n  upload peers: ' + str(self.peersGettingFromUs)
-            s += f + '\n'
-        except KeyError:
-            pass
-        try: # history
-            f = ''
-            f += '\n         ratio: %.2f' % self.ratio
-            f += '\n    downloaded: %.2f %s' % format_size(self.downloadedEver)
-            f += '\n      uploaded: %.2f %s' % format_size(self.uploadedEver)
-            f += '\n        active: ' + format_timestamp(self.activityDate)
-            f += '\n         added: ' + format_timestamp(self.addedDate)
-            f += '\n       started: ' + format_timestamp(self.startDate)
-            f += '\n          done: ' + format_timestamp(self.doneDate)
-            s += f + '\n'
-        except KeyError:
-            pass
-        return s
-    
     def files(self):
-        s = ''
-        indicies = xrange(len(self.fields['files']))
-        files = self.fields['files']
-        prio = self.fields['priorities']
-        wanted = self.fields['wanted']
-        index = 1
-        for file in zip(indicies, files, prio, wanted):
-            (size, unit) = format_size(file[1]['length'])
-            selected = 'selected' if file[3] else 'not selected'
-            priority = PRIORITY[file[2]]
-            s += "% 3d: %- 7s %- 13s %5.1f %- 3s %s\n" % (file[0], priority, selected, size, unit, file[1]['name'])
-            index += 1
-        return s
+        """
+        .. _transmission-torrent-files:
+        
+        Get list of files for this torrent.
+
+        This function returns a dictionary with file information for each file.
+        The file information is has following fields:
+        
+        ::
+        
+            {
+                <file id>: {
+                    'name': <file name>,
+                    'size': <file size in bytes>,
+                    'completed': <bytes completed>,
+                    'priority': <priority ('high'|'normal'|'low')>,
+                    'selected': <selected for download>
+                }
+                
+                ...
+            }
+
+        Example:
+        ::
+        
+            {
+                0: {
+                    'priority': 'normal',
+                    'completed': 729186304,
+                    'selected': True,
+                    'name': 'ubuntu-8.10-beta-desktop-i386.iso',
+                    'size': 729186304
+                }
+            }
+        """
+        result = {}
+        if 'files' in self.fields:
+            indicies = xrange(len(self.fields['files']))
+            files = self.fields['files']
+            priorities = self.fields['priorities']
+            wanted = self.fields['wanted']
+            index = 1
+            for item in zip(indicies, files, priorities, wanted):
+                selected = True if item[3] else False
+                priority = PRIORITY[item[2]]
+                result[item[0]] = {
+                    'selected': selected,
+                    'priority': priority,
+                    'size': item[1]['length'],
+                    'name': item[1]['name'],
+                    'completed': item[1]['bytesCompleted']}
+        return result
     
     def __getattr__(self, name):
         try:
@@ -242,21 +200,30 @@ class Session(object):
             text += "% 32s: %s\n" % (k[-32:], v)
         return text
 
-class Transmission(object):
+class Client(object):
+    """
+    This is it. This class implements the Json-RPC protocol to communicate with Transmission.
+    """
+    
     def __init__(self, address='localhost', port=DEFAULT_PORT, verbose=False):
         self._http_connection = httplib.HTTPConnection(address, port)
         self._sequence = 0
         self.verbose = verbose
-        self.torrents = {}
         self.session = Session()
     
-    def _request(self, method, arguments):
+    def _request(self, method, arguments={}, ids=[], require_ids = False):
         """Send json-rpc request to Transmission using http POST"""
         
         if not isinstance(method, (str, unicode)):
             raise ValueError('request takes method as string')
         if not isinstance(arguments, dict):
             raise ValueError('request takes arguments as dict')
+        ids = self._format_ids(ids)
+        if len(ids) > 0:
+            arguments['ids'] = ids
+        elif require_ids:
+            raise ValueError('request require ids')
+        
         query = {'tag': self._sequence, 'method': method, 'arguments': arguments}
         self._sequence += 1
         start = time.time()
@@ -277,33 +244,34 @@ class Transmission(object):
         
         data = simplejson.loads(http_data)
         
+        self._http_connection.close()
+        
         if self.verbose:
             print(simplejson.dumps(data, indent=2))
         
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"' % data['result'])
         
-        ids = []
-        if 'ids' in arguments:
-            ids = arguments['ids']
-        
+        results = {}
         if method == 'torrent-get':
-            self._update_torrents(data['arguments']['torrents'], ids)
+            for item in data['arguments']['torrents']:
+                results[item['id']] = Torrent(item)
         elif method == 'torrent-add':
-            self._update_torrents([data['arguments']['torrent-added']], ids)
+            for item in data['arguments']['torrent-added']:
+                results[item['id']] = Torrent(item)
         elif method == 'session-get':
             self._update_session(data['arguments'])
         elif method == 'session-stats':
             self._update_session(data['arguments']['session-stats'])
-        elif method == 'torrent-remove':
-            self._update_torrents([], ids)
         
-        self._http_connection.close()
-        return data
+        if len(results) > 0:
+            return results
+        else:
+            return None
     
     def _format_ids(self, args):
         """Take things and make them valid torrent identifiers"""
-        re_range = re.compile('^(\d*):(\d*)$')
+        re_range = re.compile('^(\d+):(\d+)$')
         ids = []
         for line in args:
             if isinstance(line, (str, unicode)):
@@ -324,47 +292,21 @@ class Transmission(object):
                         except:
                             pass
                     if not addition:
-                        # handle index ranges i.e. 5:10, 5:, :10
+                        # handle index ranges i.e. 5:10
                         match = re_range.match(item)
                         if match:
-                            from_ok = True
-                            to_ok = True
-                            idx_from = min(self.torrents.iterkeys())
-                            idx_to = max(self.torrents.iterkeys())
                             try:
                                 idx_from = int(match.group(1))
-                            except:
-                                from_ok = False
-                            try:
                                 idx_to = int(match.group(2))
-                            except:
-                                to_ok = False
-                            if from_ok or to_ok:
                                 addition = range(idx_from, idx_to + 1)
-                    if not addition:
-                        # handle torrent names
-                        for id, torrent in self.torrents.iteritems():
-                            if torrent.name == item:
-                                addition = [torrent.id]
+                            except:
+                                pass
                     if not addition:
                         raise ValueError('Invalid torrent id, \"%s\"' % item)
                     ids.extend(addition)
             elif isinstance(line, (int, long)):
                 ids.append(line)
         return ids
-    
-    def _update_torrents(self, data, ids):
-        for id in ids:
-            if id in self.torrents:
-                del self.torrents[id]
-        else:
-            self.torrents = {}
-        
-        for fields in data:
-            if fields['id'] in self.torrents:
-                self.torrents[fields['id']].update(fields)
-            else:
-                self.torrents[fields['id']] = Torrent(fields)
     
     def _update_session(self, data):
         self.session.update(data)
@@ -385,7 +327,7 @@ class Transmission(object):
             args['download-dir'] = kwargs['downloadDir']
         if 'peer_limit' in kwargs:
             args['peer-limit'] = int(kwargs['peerLimit'])
-        self._request('torrent-add', args)
+        return self._request('torrent-add', args)
     
     def add_url(self, torrent_url, **kwargs):
         """
@@ -409,117 +351,212 @@ class Transmission(object):
             raise TransmissionError('File does not exist.')
         
         torrent_data = base64.b64encode(torrent_file.read())
-        self.add(torrent_data, **kwargs)
+        return self.add(torrent_data, **kwargs)
     
     def remove(self, ids):
         """remove torrent(s) with provided id(s)"""
-        self._request('torrent-remove', {'ids': self._format_ids(ids)})
+        self._request('torrent-remove', {}, ids, True)
     
     def start(self, ids):
         """start torrent(s) with provided id(s)"""
-        self._request('torrent-start', {'ids': self._format_ids(ids)})
+        self._request('torrent-start', {}, ids, True)
     
     def stop(self, ids):
         """stop torrent(s) with provided id(s)"""
-        self._request('torrent-stop', {'ids': self._format_ids(ids)})
+        self._request('torrent-stop', {}, ids, True)
     
     def verify(self, ids):
         """verify torrent(s) with provided id(s)"""
-        self._request('torrent-verify', {'ids': self._format_ids(ids)})
+        self._request('torrent-verify', {}, ids, True)
     
     def info(self, ids=[]):
         """Get detailed information for torrent(s) with provided id(s)."""
-        fields = FIELDS
-        args = {'fields': fields}
-        if len(ids) > 0:
-            args['ids'] = self._format_ids(ids)
-        self._request('torrent-get', args)
+        return self._request('torrent-get', {'fields': FIELDS}, ids)
+    
+    def get_files(self, ids=[]):
+        """
+        .. _transmission-client-get_files:
+        
+        Get list of files for provided torrent id(s).
+        This function returns a dictonary for each requested torrent id holding the information about the files.
+        See :ref:`Torrent.files() <transmission-torrent-files>`.
+        
+        ::
+        
+            {
+                <torrent id>: {
+                    <file id>: {
+                        'name': <file name>,
+                        'size': <file size in bytes>,
+                        'completed': <bytes completed>,
+                        'priority': <priority ('high'|'normal'|'low')>,
+                        'selected': <selected for download>
+                    }
+                    
+                    ...
+                }
+                
+                ...
+            }
+        
+        Example:
+        ::
+        
+            {
+                1: {
+                    0: {
+                        'name': 'ubuntu-8.10-beta-desktop-i386.iso',
+                        'size': 729186304,
+                        'completed': 729186304,
+                        'priority': 'normal',
+                        'selected': True
+                    }
+                }
+            }
+        """
+        fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
+        request_result = self._request('torrent-get', {'fields': fields}, ids)
         result = {}
-        if 'ids' not in args:
-            result = self.torrents
-        else:
-            for id, torrent in self.torrents.iteritems():
-                if id in args['ids']:
-                    result[id] = torrent
-                elif torrent.hashString in args['ids']:
-                    result[id] = torrent
+        for id, torrent in request_result.iteritems():
+            result[id] = torrent.files()
         return result
     
-    def files(self, ids):
-        """Get list of files for provided torrent id(s)."""
-        fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
-        args = {'fields': fields}
-        args['ids'] = self._format_ids(ids)
-        self._request('torrent-get', args)
-        result = {}
-        for id, torrent in self.torrents.iteritems():
-            if id in args['ids']:
-                result[id] = torrent
-            elif torrent.hashString in args['ids']:
-                result[id] = torrent
-        return result
+    def set_files(self, items):
+        """
+        .. _transmission-client-set_files:
+        
+        Set file properties. Takes a dictonary with similar contents as the result of :ref:`get_files() <transmission-client-get_files>`.
+        Also see :ref:`Torrent.files() <transmission-torrent-files>`.
+        
+        ::
+        
+            {
+                <torrent id>: {
+                    <file id>: {
+                        'priority': <priority ('high'|'normal'|'low')>,
+                        'selected': <selected for download>
+                    }
+                    
+                    ...
+                }
+                
+                ...
+            }
+        
+        Example:
+        ::
+        
+            items = {
+                1: {
+                    0: {
+                        'priority': 'normal',
+                        'selected': True,
+                    }
+                    1: {
+                        'priority': 'low',
+                        'selected': True,
+                    }
+                }
+                2: {
+                    0: {
+                        'priority': 'high',
+                        'selected': False,
+                    }
+                    1: {
+                        'priority': 'low',
+                        'selected': True,
+                    }
+                }
+            }
+            
+            client.set_files(items)
+        
+        """
+        if not isinstance(files, dict):
+            raise ValueError('Invalid file description')
+        for tid, files in items:
+            if not isinstance(items, dict):
+                continue
+            wanted = []
+            unwanted = []
+            priority_high = []
+            priority_normal = []
+            priority_low = []
+            for fid, file in files:
+                if not isinstance(file, dict):
+                    continue
+                if 'selected' in file and file['selected']:
+                    wanted.append(fid)
+                else:
+                    unwanted.append(fid)
+                if 'priority' in file:
+                    if file['priority'] == 'high':
+                        priority_high.append(fid)
+                    elif file['priority'] == 'normal':
+                        priority_normal.append(fid)
+                    elif file['priority'] == 'low':
+                        priority_low.append(fid)
+            self.change(tid, wanted, unwanted, priority_high, priority_normal, priority_low)
     
     def list(self):
         """list torrent(s) with provided id(s)"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
-        self._request('torrent-get', {'fields': fields})
-        return self.torrents
+        return self._request('torrent-get', {'fields': fields})
 
     def change(self, ids, **kwargs):
-        """Change torrent parameters"""
-        args = {}
-        args['ids'] = self._format_ids(ids)
-        if len(args['ids']) == 0:
-            raise ValueError()
+        """
+        Change torrent parameters. This is the list of parameters that.
+        """
+        
         try:
-            files = [int(file) for file in re.split('[ ,]+', kwargs['filesWanted'])]
+            files = [int(file) for file in re.split('[ ,]+', kwargs['files_wanted'])]
             args['files-wanted'] = files
         except KeyError:
             pass
         try:
-            files = [int(file) for file in re.split('[ ,]+', kwargs['filesUnwanted'])]
+            files = [int(file) for file in re.split('[ ,]+', kwargs['files_unwanted'])]
             args['files-unwanted'] = files
         except KeyError:
             pass
         try:
-            args['peer-limit'] = int(kwargs['peerLimit'])
+            args['peer-limit'] = int(kwargs['peer_limit'])
         except KeyError:
             pass
         try:
-            args['priority-high'] = list(kwargs['priorityHigh'])
+            args['priority-high'] = list(kwargs['priority_high'])
         except KeyError:
             pass
         try:
-            args['priority-normal'] = list(kwargs['priorityNormal'])
+            args['priority-normal'] = list(kwargs['priority_normal'])
         except KeyError:
             pass
         try:
-            args['priority-low'] = list(kwargs['priorityLow'])
+            args['priority-low'] = list(kwargs['priority_low'])
         except KeyError:
             pass
         try:
-            args['speed-limit-up'] = int(kwargs['speedLimitUp'])
+            args['speed-limit-up'] = int(kwargs['speed_limit_up'])
         except KeyError:
             pass
         try:
-            args['speed-limit-up-enabled'] = rpc_bool(kwargs['speedLimitUpEnabled'])
+            args['speed-limit-up-enabled'] = rpc_bool(kwargs['speed_limit_up_enabled'])
         except KeyError:
             pass
         try:
-            args['speed-limit-down'] = int(kwargs['speedLimitDown'])
+            args['speed-limit-down'] = int(kwargs['speed_limit_down'])
         except KeyError:
             pass
         try:
-            args['speed-limit-down-enabled'] = rpc_bool(kwargs['speedLimitDownEnabled'])
+            args['speed-limit-down-enabled'] = rpc_bool(kwargs['speed_limit_down_enable'])
         except KeyError:
             pass
         
         if len(args) > 1:
-            self._request('torrent-set', args)
+            self._request('torrent-set', args, ids, True)
     
     def session_get(self):
         """Get session parameters"""
-        self._request('session-get', {})
+        self._request('session-get')
         return self.session
     
     def session_set(self, **kwargs):
@@ -535,15 +572,15 @@ class Transmission(object):
         except KeyError:
             pass
         try:
-            args['download-dir'] = kwargs['downloadDir']
+            args['download-dir'] = kwargs['download_dir']
         except KeyError:
             pass
         try:
-            args['peer-limit'] = int(kwargs['peerLimit'])
+            args['peer-limit'] = int(kwargs['peer_limit'])
         except KeyError:
             pass
         try:
-            args['pex-allowed'] = rpc_bool(kwargs['pexAllowed'])
+            args['pex-allowed'] = rpc_bool(kwargs['pex_allowed'])
         except KeyError:
             pass
         try:
@@ -551,23 +588,23 @@ class Transmission(object):
         except KeyError:
             pass
         try:
-            args['port-forwarding-enabled'] = rpc_bool(kwargs['portForwardingEnabled'])
+            args['port-forwarding-enabled'] = rpc_bool(kwargs['port_forwarding_enabled'])
         except KeyError:
             pass
         try:
-            args['speed-limit-down'] = int(kwargs['speedLimitDown'])
+            args['speed-limit-down'] = int(kwargs['speed_limit_down'])
         except KeyError:
             pass
         try:
-            args['speed-limit-down-enabled'] = int(kwargs['speedLimitDownEnabled'])
+            args['speed-limit-down-enabled'] = int(kwargs['speed_limit_down_enabled'])
         except KeyError:
             pass
         try:
-            args['speed-limit-up'] = int(kwargs['speedLimitUp'])
+            args['speed-limit-up'] = int(kwargs['speed_limit_up'])
         except KeyError:
             pass
         try:
-            args['speed-limit-up-enabled'] = int(kwargs['speedLimitUpEnabled'])
+            args['speed-limit-up-enabled'] = int(kwargs['speed_limit_up_enabled'])
         except KeyError:
             pass
         
@@ -576,5 +613,5 @@ class Transmission(object):
     
     def session_stats(self):
         """Get session statistics"""
-        self._request('session-stats', {})
+        self._request('session-stats')
         return self.session

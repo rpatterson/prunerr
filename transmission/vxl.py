@@ -13,10 +13,10 @@ import transmission
 from utils import inet_address, INetAddressError
 from constants import DEFAULT_PORT
 
-__author__    = u"Erik Svensson <erik.public@gmail.com>"
-__version__   = u"0.1"
-__copyright__ = u"Copyright (c) 2008 Erik Svensson"
-__license__   = u"MIT"
+__author__    = u'Erik Svensson <erik.public@gmail.com>'
+__version__   = u'0.1'
+__copyright__ = u'Copyright (c) 2008 Erik Svensson'
+__license__   = u'MIT'
 
 class Vxl(cmd.Cmd):
     def __init__(self):

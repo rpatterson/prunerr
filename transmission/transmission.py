@@ -175,12 +175,12 @@ class Session(object):
             self.fields[key] = v
     
     def update(self, other):
-        """Update the torrent data from a Transmission arguments dictinary"""
+        """Update the session data from a Session arguments dictinary"""
         
         fields = None
         if isinstance(other, dict):
             fields = other
-        elif isinstance(other, Torrent):
+        elif isinstance(other, Session):
             fields = other.fields
         else:
             raise ValueError('Cannot update with supplied data')
@@ -202,7 +202,7 @@ class Session(object):
 
 class Client(object):
     """
-    This is it. This class implements the Json-RPC protocol to communicate with Transmission.
+    This is it. This class implements the json-RPC protocol to communicate with Transmission.
     """
     
     def __init__(self, address='localhost', port=DEFAULT_PORT, verbose=False):
@@ -263,49 +263,52 @@ class Client(object):
             self._update_session(data['arguments'])
         elif method == 'session-stats':
             self._update_session(data['arguments']['session-stats'])
-        
-        if len(results) > 0:
-            return results
         else:
             return None
+        
+        return results
     
     def _format_ids(self, args):
         """Take things and make them valid torrent identifiers"""
-        re_range = re.compile('^(\d+):(\d+)$')
         ids = []
-        for line in args:
-            if isinstance(line, (str, unicode)):
-                for item in re.split(u'[ ,]+', line):
-                    if len(item) == 0:
-                        continue
-                    addition = None
+        
+        if isinstance(args, (int, long)):
+            ids.append(args)
+        elif isinstance(args, (str, unicode)):
+            for item in re.split(u'[ ,]+', line):
+                if len(item) == 0:
+                    continue
+                addition = None
+                try:
+                    # handle index
+                    addition = [int(item)]
+                except ValueError:
+                    pass
+                if not addition:
+                    # handle hashes
                     try:
-                        # handle index
-                        addition = [int(item)]
-                    except ValueError:
+                        int(item, 16)
+                        addition = [item]
+                    except:
                         pass
-                    if not addition:
-                        # handle hashes
+                if not addition:
+                    # handle index ranges i.e. 5:10
+                    match = re.match(u'^(\d+):(\d+)$', item)
+                    if match:
                         try:
-                            int(item, 16)
-                            addition = [item]
+                            idx_from = int(match.group(1))
+                            idx_to = int(match.group(2))
+                            addition = range(idx_from, idx_to + 1)
                         except:
                             pass
-                    if not addition:
-                        # handle index ranges i.e. 5:10
-                        match = re_range.match(item)
-                        if match:
-                            try:
-                                idx_from = int(match.group(1))
-                                idx_to = int(match.group(2))
-                                addition = range(idx_from, idx_to + 1)
-                            except:
-                                pass
-                    if not addition:
-                        raise ValueError('Invalid torrent id, \"%s\"' % item)
-                    ids.extend(addition)
-            elif isinstance(line, (int, long)):
-                ids.append(line)
+                if not addition:
+                    raise ValueError(u'Invalid torrent id, \"%s\"' % item)
+                ids.extend(addition)
+        elif isinstance(args, (list)):
+            for item in args:
+                ids.extend(self._format_ids(item))
+        else:
+            raise ValueError(u'Invalid torrent id')
         return ids
     
     def _update_session(self, data):
@@ -554,12 +557,12 @@ class Client(object):
         if len(args) > 1:
             self._request('torrent-set', args, ids, True)
     
-    def session_get(self):
+    def get_session(self):
         """Get session parameters"""
         self._request('session-get')
         return self.session
     
-    def session_set(self, **kwargs):
+    def set_session(self, **kwargs):
         """Set session parameters"""
         args = {}
         

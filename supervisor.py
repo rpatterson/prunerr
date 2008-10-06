@@ -6,15 +6,16 @@ import sys, os, os.path, time, codecs, logging
 from optparse import OptionParser
 import yaml
 import transmission
+import procs
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.1'
 __copyright__ = u'Copyright (c) 2008 Erik Svensson'
 __license__   = u'MIT'
 
-DEFAULT_CONFIGURATION_DIR = '~/.config/obey.conf'
+DEFAULT_CONFIGURATION_DIR = '~/.config/supervisor.conf'
 
-class Obey(object):
+class Supervisor(object):
     def __init__(self, config):
         self.config = config
         self.tc = transmission.Client(port=self.config['transmission-port'])
@@ -58,8 +59,12 @@ class Obey(object):
 def load_config(path):
     config = {
         'transmission-port': transmission.DEFAULT_PORT,
+        'transmission-download-dir': '~/downloads/unfinished/',
+        'transmission-login': '',
+        'transmission-password': '',
+        'transmission-acl': '+127.0.0.1',
         'query-interval': 30.0,
-        'finished-dir': '~/finished/',
+        'finished-dir': '~/downloads/',
         'ratio-limit': 1.0,
         'ratio-action': 'stop',
         'log-dir': '/tmp'}
@@ -106,13 +111,13 @@ def ensure_path(base, path):
 def main():
     #enumerate actions
     actions = []
-    for attr in dir(Obey):
+    for attr in dir(Supervisor):
         if attr[:7] == 'action_':
             actions.append(attr[7:])
     actions_string = ', '.join([a for a in actions])
     
     # parse args
-    parser = OptionParser(version='Obey %s' % (__version__), usage='%prog [options]')
+    parser = OptionParser(version='Supervisor %s' % (__version__), usage='%prog [options]')
     parser.add_option('-c', '--config', type='string', dest='config', help='Configuration file.', metavar='<file>')
     parser.add_option('-p', '--port', type='int', dest='port', help='Transmission service port.', metavar="<port>")
     parser.add_option('-i', '--interval', type='float', dest='interval', help='Transmission query interval.', metavar="<interval>")
@@ -120,15 +125,16 @@ def main():
     parser.add_option('-a', '--action', type='string', dest='action', help='The action to take when seeding is done. Available actions: %s' % (actions_string), metavar="<action>")
     parser.add_option('-f', '--finished', type='string', dest='finished', help='Directory to move finished files to.', metavar="<dir>")
     parser.add_option('-l', '--logdir', type='string', dest='logdir', help='Directory to save logs in.', metavar="<dir>")
+    parser.add_option('-u', '--user', type='string', dest='username', help='Username used when connecting to transmission..', metavar="<user>")
+    parser.add_option('-v', '--password', type='string', dest='password', help='Password used when connecting to transmission..', metavar="<password>")
+    parser.add_option('-b', '--blocklist', type='bool', dest='blocklist', help='Enable transmission blocklists.', default=False)
     (opts, args) = parser.parse_args()
     
     (config_path, config) = load_config(opts.config)
-    
-    
-    
+
     if opts.logdir:
         config['log-dir'] = opts.logdir
-    log_path = os.path.join(os.path.expanduser(config['log-dir']), 'obey.log')
+    log_path = os.path.join(os.path.expanduser(config['log-dir']), 'supervisor.log')
     logging.basicConfig(level=logging.INFO, filename=log_path, format='%(asctime)s %(levelname)s %(message)s')
     
     if opts.port:
@@ -142,11 +148,22 @@ def main():
     if opts.finished:
         config['finished-dir'] = opts.finished
     
-    o = Obey(config)
+    transmission_pid = 0
+    for process in procs.process_list():
+        if process[1][-19:] == 'transmission-daemon':
+            transmission_pid = process[0]
+    if transmission_pid != 0:
+        print('transmission-daemon at %d' % (transmission_pid))
+    else:
+        print('No transmission-daemon?')
+        logging.warning('No transmission-daemon?')
+        sys.exit()
+    
+    s = Supervisor(config)
     try:
-        o.run()
+        s.run()
     except KeyboardInterrupt:
-        save_config(o.config, opts.config)
+        save_config(s.config, opts.config)
 
 if __name__ == '__main__':
     main()

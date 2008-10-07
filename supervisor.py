@@ -60,9 +60,10 @@ def load_config(path):
     config = {
         'transmission-port': transmission.DEFAULT_PORT,
         'transmission-download-dir': '~/downloads/unfinished/',
-        'transmission-login': '',
+        'transmission-user': '',
         'transmission-password': '',
         'transmission-acl': '+127.0.0.1',
+        'transmission-use-blocklist': False,
         'query-interval': 30.0,
         'finished-dir': '~/downloads/',
         'ratio-limit': 1.0,
@@ -127,11 +128,10 @@ def main():
     parser.add_option('-l', '--logdir', type='string', dest='logdir', help='Directory to save logs in.', metavar="<dir>")
     parser.add_option('-u', '--user', type='string', dest='username', help='Username used when connecting to transmission..', metavar="<user>")
     parser.add_option('-v', '--password', type='string', dest='password', help='Password used when connecting to transmission..', metavar="<password>")
-    parser.add_option('-b', '--blocklist', type='bool', dest='blocklist', help='Enable transmission blocklists.', default=False)
     (opts, args) = parser.parse_args()
     
     (config_path, config) = load_config(opts.config)
-
+    
     if opts.logdir:
         config['log-dir'] = opts.logdir
     log_path = os.path.join(os.path.expanduser(config['log-dir']), 'supervisor.log')
@@ -147,6 +147,10 @@ def main():
         config['ratio-action'] = opts.action
     if opts.finished:
         config['finished-dir'] = opts.finished
+    if opts.user:
+        config['transmission-user'] = opts.user
+    if opts.password:
+        config['transmission-password'] = opts.password
     
     transmission_pid = 0
     for process in procs.process_list():

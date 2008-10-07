@@ -2,6 +2,8 @@ syntax: glob
 *.pyc
 *.pyo
 *.torrent
+.DS_Store
 syntax: regexp
 ^build/*
 .+\.egg-info/*
+^doc/out/*

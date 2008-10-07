@@ -205,8 +205,12 @@ class Client(object):
     This is it. This class implements the json-RPC protocol to communicate with Transmission.
     """
     
-    def __init__(self, address='localhost', port=DEFAULT_PORT, verbose=False):
-        self._http_connection = httplib.HTTPConnection(address, port)
+    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, verbose=False):
+        self.url = 'http://' + address + ':' + str(port) + '/transmission/rpc'
+        if user and password:
+            auth_handler = urllib2.HTTPBasicAuthHandler()
+            auth_handler.add_password(realm='', uri=self.url, user=user, passwd=password)
+            urllib2.install_opener(urllib2.build_opener(auth_handler))
         self._sequence = 0
         self.verbose = verbose
         self.session = Session()
@@ -224,28 +228,35 @@ class Client(object):
         elif require_ids:
             raise ValueError('request require ids')
         
-        query = {'tag': self._sequence, 'method': method, 'arguments': arguments}
+        query = simplejson.dumps({'tag': self._sequence, 'method': method, 'arguments': arguments})
         self._sequence += 1
         start = time.time()
+        request = urllib2.Request(self.url, query)
+        
         if self.verbose:
-            print(simplejson.dumps(query, indent=2))
+            print(query)
+
         try:
-            self._http_connection.request('POST', '/transmission/rpc', simplejson.dumps(query))
-        except socket.error, e:
+            response = urllib2.urlopen(request)
+        except HTTPError, e:
+            raise TransmissionError('Server responded with %d: %s' % (e.code, e.reason))
+        except URLError, e:
             raise TransmissionError('Failed to connect to daemon: %s' % (e))
-        response = self._http_connection.getresponse()
-        if response.status != 200:
-            self._http_connection.close()
-            raise TransmissionError('Server responded with %d: \"%s\"' % (response.status, response.reason))
+        
         http_data = response.read()
         elapsed = time.time() - start
         if self.verbose:
             print('http request took %.3f s' % (elapsed))
         
-        data = simplejson.loads(http_data)
-        
-        self._http_connection.close()
-        
+        try:
+            data = simplejson.loads(http_data)
+        except ValueError, e:
+            print('Error: ' + str(e))
+            print('Request: \"%s\"' % (query))
+            print('HTTP status: %d' % (response.status))
+            print('HTTP data: \"%s\"' % (http_data))
+            raise
+                
         if self.verbose:
             print(simplejson.dumps(data, indent=2))
         

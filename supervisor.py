@@ -87,8 +87,8 @@ def save_config(config, path = None):
     path = os.path.expanduser(path)
     try:
         f = codecs.open(path, 'w', 'utf-8')
-    except IOError:
-        raise ValueError('Invalid path')
+    except IOError, e:
+        raise ValueError('Failed to open %s. %s.' % (path, e.strerror))
     else:
         yaml.dump(config, f, default_flow_style=False)
         f.close()
@@ -126,7 +126,7 @@ def main():
     parser.add_option('-a', '--action', type='string', dest='action', help='The action to take when seeding is done. Available actions: %s' % (actions_string), metavar="<action>")
     parser.add_option('-f', '--finished', type='string', dest='finished', help='Directory to move finished files to.', metavar="<dir>")
     parser.add_option('-l', '--logdir', type='string', dest='logdir', help='Directory to save logs in.', metavar="<dir>")
-    parser.add_option('-u', '--user', type='string', dest='username', help='Username used when connecting to transmission..', metavar="<user>")
+    parser.add_option('-u', '--user', type='string', dest='user', help='Username used when connecting to transmission..', metavar="<user>")
     parser.add_option('-v', '--password', type='string', dest='password', help='Password used when connecting to transmission..', metavar="<password>")
     (opts, args) = parser.parse_args()
     
@@ -156,11 +156,10 @@ def main():
     for process in procs.process_list():
         if process[1][-19:] == 'transmission-daemon':
             transmission_pid = process[0]
-    if transmission_pid != 0:
-        print('transmission-daemon at %d' % (transmission_pid))
-    else:
-        print('No transmission-daemon?')
-        logging.warning('No transmission-daemon?')
+    if transmission_pid == 0:
+        logging.warning('No transmission-daemon. Trying to start one.')
+        procs.execute('transmission-daemon')
+        time.sleep(0.1)
         sys.exit()
     
     s = Supervisor(config)

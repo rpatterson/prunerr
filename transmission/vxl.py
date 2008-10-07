@@ -10,7 +10,7 @@ except:
     pass
 import cmd
 import transmission
-from utils import inet_address, INetAddressError
+from utils import *
 from constants import DEFAULT_PORT
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
@@ -32,7 +32,7 @@ class Vxl(cmd.Cmd):
             addr = u'localhost'
             port = DEFAULT_PORT
         self.address = (addr, port)
-        self.tc = transmission.Transmission(addr, port, verbose=self.verbose)
+        self.tc = transmission.Client(addr, port, verbose=self.verbose)
         self.prompt = u'vxl %s:%d> ' % (self.address[0], self.address[1])
     
     def arg_tokenize(self, argstr):
@@ -157,20 +157,19 @@ class Vxl(cmd.Cmd):
             raise ValueError(u'No torrent id')
         result = self.tc.info(args)
         for id, torrent in result.iteritems():
-            print(torrent.detail())
+            print(self._torrent_detail(torrent))
     
     def do_list(self, line):
         args = self.arg_tokenize(line)
         result = self.tc.list()
-        print(transmission.Torrent.brief_header())
-        for id, torrent in result.iteritems():
-            print(torrent.brief())
+        self._list_torrents(result)
     
     def do_files(self, line):
         args = self.arg_tokenize(line)
-        result = self.tc.files(args)
-        for id, torrent in result.iteritems():
-            print(torrent.files())
+        result = self.tc.get_files(args)
+        for tid, files in result.iteritems():
+            for fid, file in files.iteritems():
+                print('%d: %s' % (fid, file['name']))
     
     def do_set(self, line):
         args = self.arg_tokenize(line)
@@ -219,6 +218,90 @@ class Vxl(cmd.Cmd):
         self.tc.verbose = True
         self.tc._request(method, args)
         self.tc.verbose = verbose
+    
+    def _list_torrents(self, torrents):
+        if len(torrents) > 0:
+            print(self._torrent_brief_header())
+            for tid, torrent in torrents.iteritems():
+                print(self._torrent_brief(torrent))
+    
+    def _torrent_brief_header(self):
+        return u' Id  Done   ETA           Status       Download    Upload      Ratio  Name'
+            
+    def _torrent_brief(self, torrent):
+        s = u'% 3d: ' % (torrent.id)
+        try:
+            s += u'%5.1f%%' % torrent.progress
+        except:
+            pass
+        try:
+            if torrent.fields['eta'] > 0:
+                s += u' %- 13s' % torrent.format_eta()
+            else:
+                s += u' -            '
+        except:
+            pass
+        try:
+            s += u' %- 12s' % torrent.status
+        except:
+            s += u' -status     '
+            pass
+        try:
+            s += u' %5.1f %- 5s' % format_speed(torrent.rateDownload)
+            s += u' %5.1f %- 5s' % format_speed(torrent.rateUpload)
+        except:
+            s += u' -rate     '
+            s += u' -rate     '
+            pass
+        try:
+            s += u' %6.2f' % torrent.ratio
+        except:    
+            s += u' -ratio'
+            pass
+        s += u' ' + torrent.name
+        return s
+    
+    def _torrent_detail(self, torrent):
+        s = ''
+        s +=   '            id: ' + str(torrent.fields['id'])
+        s += '\n          name: ' + torrent.fields['name']
+        s += '\n          hash: ' + torrent.fields['hashString']
+        s += '\n'
+        try: # size
+            f = ''
+            f += '\n      progress: %.2f%%' % torrent.progress
+            f += '\n         total: %.2f %s' % format_size(torrent.totalSize)
+            f += '\n      reqested: %.2f %s' % format_size(torrent.sizeWhenDone)
+            f += '\n     remaining: %.2f %s' % format_size(torrent.leftUntilDone)
+            f += '\n      verified: %.2f %s' % format_size(torrent.haveValid)
+            f += '\n  not verified: %.2f %s' % format_size(torrent.haveUnchecked)
+            s += f + '\n'
+        except KeyError:
+            pass
+        try: # activity
+            f = ''
+            f += '\n        status: ' + str(torrent.status)
+            f += '\n      download: %.2f %s' % format_speed(torrent.rateDownload)
+            f += '\n        upload: %.2f %s' % format_speed(torrent.rateUpload)
+            f += '\n     available: %.2f %s' % format_size(torrent.desiredAvailable)
+            f += '\ndownload peers: ' + str(torrent.peersSendingToUs)
+            f += '\n  upload peers: ' + str(torrent.peersGettingFromUs)
+            s += f + '\n'
+        except KeyError:
+            pass
+        try: # history
+            f = ''
+            f += '\n         ratio: %.2f' % torrent.ratio
+            f += '\n    downloaded: %.2f %s' % format_size(torrent.downloadedEver)
+            f += '\n      uploaded: %.2f %s' % format_size(torrent.uploadedEver)
+            f += '\n        active: ' + format_timestamp(torrent.activityDate)
+            f += '\n         added: ' + format_timestamp(torrent.addedDate)
+            f += '\n       started: ' + format_timestamp(torrent.startDate)
+            f += '\n          done: ' + format_timestamp(torrent.doneDate)
+            s += f + '\n'
+        except KeyError:
+            pass
+        return s
 
 def main(args=None):
     """Main entry point"""

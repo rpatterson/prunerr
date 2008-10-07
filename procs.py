@@ -3,7 +3,7 @@ import os, os.path, subprocess, re, signal
 def process_list():
     """List active processes the UNIX way. Tested with Ubuntu 8.04, FreeBSD 7.0 and Mac OS X 10.5."""
     procs = []
-    re_procs = re.compile('^\s+(\d+)\s+(\S+)\s*(.*)')
+    re_procs = re.compile('^\s*(\d+)\s+(\S+)\s*(.*)')
     out = execute('ps -A -o pid= -o command=')
     for line in out.splitlines():
         match = re_procs.match(line)
@@ -11,6 +11,8 @@ def process_list():
             fields = match.groups()
             # add process as a tuple of pid, command, arguments
             procs.append((int(fields[0]), fields[1], fields[2]))
+        else:
+            print('BAD: \"' + line + '\"')
     return procs
 
 def execute(command):

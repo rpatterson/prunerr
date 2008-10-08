@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 2008-10, Erik Svensson <erik.public@gmail.com>
+
 import os, os.path, subprocess, re, signal
 
 def execute(command):
@@ -16,8 +20,6 @@ def process_list():
     """
     List active processes the UNIX way. Returns a list of tuples with:
     (<process id>, <command>, <arguments>). <command> may include the path to the command.
-    
-    Tested with Ubuntu 8.04, FreeBSD 7.0 and Mac OS X 10.5.
     """
     procs = []
     re_procs = re.compile('^\s*(\d+)\s+(\S+)\s*(.*)')

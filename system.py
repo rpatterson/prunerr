@@ -3,7 +3,7 @@ import os, os.path, subprocess, re, signal
 def execute(command):
     """Execute a shell command"""
     try:
-        p = subprocess.Popen(command, shell=True, bufsize=-1, stdout=subprocess.PIPE, env = {'LC_ALL' : 'C'})
+        p = subprocess.Popen(command, shell=True, bufsize=-1, stdout=subprocess.PIPE)
         r = p.wait()
     except (OSError, ValueError):
         return None

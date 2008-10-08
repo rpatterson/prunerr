@@ -58,10 +58,15 @@ class Helical(cmd.Cmd):
         item = args[-1] if len(args) > 1 else ''
         return self._complete_torrent(item, endidx - begidx)
     
+    def help_quit(self):
+        print(u'Terminate.\n')
+        print(u'(quit|exit)\n')
+    
     def do_quit(self, line):
         sys.exit('')
     #Alias
     do_exit = do_quit
+    help_exit = help_quit
     do_EOF = do_quit
     
     def help_add(self):
@@ -114,6 +119,10 @@ class Helical(cmd.Cmd):
     def complete_remove(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
+    def help_remove(self):
+        print(u'Remove one or more torrents from the transfer list.\n')
+        print(u'remove <torrent id>(, <torrent id>)\n')
+    
     def do_remove(self, line):
         args = self.arg_tokenize(line)
         if len(args) == 0:
@@ -122,6 +131,10 @@ class Helical(cmd.Cmd):
     
     def complete_start(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
+    
+    def help_start(self):
+        print(u'Start one or more queued torrent transfers.\n')
+        print(u'start <torrent id>(, <torrent id>)\n')
     
     def do_start(self, line):
         args = self.arg_tokenize(line)
@@ -132,6 +145,10 @@ class Helical(cmd.Cmd):
     def complete_stop(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
+    def help_stop(self):
+        print(u'Stop one or more active torrent transfers.\n')
+        print(u'stop <torrent id>(, <torrent id>)\n')
+    
     def do_stop(self, line):
         args = self.arg_tokenize(line)
         if len(args) == 0:
@@ -140,6 +157,10 @@ class Helical(cmd.Cmd):
     
     def complete_verify(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
+    
+    def help_verify(self):
+        print(u'Verify one or more torrent transfers.\n')
+        print(u'verify <torrent id>(, <torrent id>)\n')
     
     def do_verify(self, line):
         args = self.arg_tokenize(line)
@@ -150,6 +171,10 @@ class Helical(cmd.Cmd):
     def complete_info(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
+    def help_info(self):
+        print(u'Get details for a torrent. If no torrent id is provided, all torrents are displayed.\n')
+        print(u'info (<torrent id>, <torrent id>)\n')
+    
     def do_info(self, line):
         args = self.arg_tokenize(line)
         if len(args) == 0:
@@ -158,10 +183,18 @@ class Helical(cmd.Cmd):
         for id, torrent in result.iteritems():
             print(self._torrent_detail(torrent))
     
+    def help_list(self):
+        print(u'List all torrent transfers.\n')
+        print(u'list\n')
+    
     def do_list(self, line):
         args = self.arg_tokenize(line)
         result = self.tc.list()
         self._list_torrents(result)
+    
+    def help_files(self):
+        print(u'Get the file list for one or more torrents\n')
+        print(u'files (<torrent id>, <torrent id>)\n')
     
     def do_files(self, line):
         args = self.arg_tokenize(line)
@@ -193,6 +226,10 @@ class Helical(cmd.Cmd):
     
     def complete_session(self, text, line, begidx, endidx):
         return self.word_complete(text, [u'get', u'set', u'stats'])
+    
+    def help_session(self):
+        print(u'Get session parameters or session statistics.\n')
+        print(u'session (get|stats)\n')
     
     def do_session(self, line):
         args = self.arg_tokenize(line)

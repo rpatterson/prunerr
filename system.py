@@ -31,7 +31,7 @@ def process_list():
             # add process as a tuple of pid, command, arguments
             procs.append((int(fields[0]), fields[1], fields[2]))
         else:
-            print('BAD: \"' + line + '\"')
+            raise ValueError('BAD: \"' + line + '\"')
     return procs
 
 def ensure_dir(base, path):

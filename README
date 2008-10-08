@@ -6,9 +6,8 @@ Transmission Readme
 Introduction
 ============
 
-transmission is a package containing a command-line tool and a python module. These
-should be used to communicate with either the bittorrent client Transmission or
-transmission-daemon.
+transmission is a python module implementing the json-rpc client protocol for
+the bittorent client Transmission. 
 
 Getting started
 ===============
@@ -18,13 +17,13 @@ Requirements
 
 transmission requires:
 
-	* Transmission 1.22+
+	* Transmission >= 1.3
 	* simplejson >= 1.71
 
 Install
 -------
 
-vxl is installed by running setup.py
+transmission is installed by running setup.py
 
 .. parsed-literal::
 
@@ -32,5 +31,10 @@ vxl is installed by running setup.py
 
 The setup program will take care of the simplejson requirement. Please refer to
 the Transmission documenation on how to install Transmission.
+
+Developer
+=========
+
+transmission is hosted by bitbucket at http://www.bitbucket.org/blueluna/transmission/.
 
 .. footer:: Copyright (c) 2008 Erik Svensson.

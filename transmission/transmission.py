@@ -3,7 +3,7 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import os, time, datetime
-import re
+import re, logging
 import socket, httplib, urllib2, base64
 import simplejson
 from constants import *
@@ -206,11 +206,14 @@ class Client(object):
     """
     
     def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, verbose=False):
-        self.url = 'http://' + address + ':' + str(port) + '/transmission/rpc'
+        base_url = 'http://' + address + ':' + str(port)
+        self.url = base_url + '/transmission/rpc'
         if user and password:
-            auth_handler = urllib2.HTTPBasicAuthHandler()
-            auth_handler.add_password(realm='', uri=self.url, user=user, passwd=password)
-            urllib2.install_opener(urllib2.build_opener(auth_handler))
+            password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            password_manager.add_password(realm=None, uri=self.url, user=user, passwd=password)
+            urllib2.install_opener(urllib2.build_opener(urllib2.HTTPDigestAuthHandler(password_manager)))
+        elif user or password:
+            logging.warning('Either user or password missing, not using authentication.')
         self._sequence = 0
         self.verbose = verbose
         self.session = Session()
@@ -229,36 +232,33 @@ class Client(object):
             raise ValueError('request require ids')
         
         query = simplejson.dumps({'tag': self._sequence, 'method': method, 'arguments': arguments})
+        if self.verbose:
+            logging.info(query)
         self._sequence += 1
         start = time.time()
         request = urllib2.Request(self.url, query)
-        
-        if self.verbose:
-            print(query)
-
         try:
             response = urllib2.urlopen(request)
-        except HTTPError, e:
-            raise TransmissionError('Server responded with %d: %s' % (e.code, e.reason))
-        except URLError, e:
-            raise TransmissionError('Failed to connect to daemon: %s' % (e))
-        
+        except urllib2.HTTPError, e:
+            raise TransmissionError('Server responded with: %s.' % (e))
+        except urllib2.URLError, e:
+            raise TransmissionError('Failed to connect to daemon: %s.' % (e))
         http_data = response.read()
         elapsed = time.time() - start
         if self.verbose:
-            print('http request took %.3f s' % (elapsed))
+            logging.info('http request took %.3f s' % (elapsed))
         
         try:
             data = simplejson.loads(http_data)
         except ValueError, e:
-            print('Error: ' + str(e))
-            print('Request: \"%s\"' % (query))
-            print('HTTP status: %d' % (response.status))
-            print('HTTP data: \"%s\"' % (http_data))
+            logging.debug('Error: ' + str(e))
+            logging.debug('Request: \"%s\"' % (query))
+            logging.debug('HTTP status: %d' % (response.status))
+            logging.debug('HTTP data: \"%s\"' % (http_data))
             raise
                 
         if self.verbose:
-            print(simplejson.dumps(data, indent=2))
+            logging.info(simplejson.dumps(data, indent=2))
         
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"' % data['result'])

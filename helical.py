@@ -10,28 +10,29 @@ except:
     pass
 import cmd
 import transmission
+from transmission.utils import *
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.1'
 __copyright__ = u'Copyright (c) 2008 Erik Svensson'
 __license__   = u'MIT'
 
-class Vxl(cmd.Cmd):
+class Helical(cmd.Cmd):
     def __init__(self):
         cmd.Cmd.__init__(self)
-        self.intro = u'Vxl %s' % (__version__)
+        self.intro = u'Helical %s' % (__version__)
         self.verbose = False
         self.set_daemon()
     
     def set_daemon(self, address=None):
         if address:
-            (addr, port) = transmission.inet_address(address, transmission.DEFAULT_PORT)
+            (addr, port) = inet_address(address, transmission.DEFAULT_PORT)
         else:
             addr = u'localhost'
             port = transmission.DEFAULT_PORT
         self.address = (addr, port)
         self.tc = transmission.Client(addr, port, verbose=self.verbose)
-        self.prompt = u'vxl %s:%d> ' % (self.address[0], self.address[1])
+        self.prompt = u'Helical %s:%d> ' % (self.address[0], self.address[1])
     
     def arg_tokenize(self, argstr):
         return [unicode(token, 'utf-8') for token in shlex.split(argstr.encode('utf-8'))] or ['']
@@ -166,8 +167,9 @@ class Vxl(cmd.Cmd):
         args = self.arg_tokenize(line)
         result = self.tc.get_files(args)
         for tid, files in result.iteritems():
+            print('torrent id: %d' % tid)
             for fid, file in files.iteritems():
-                print('%d: %s' % (fid, file['name']))
+                print('  %d: %s' % (fid, file['name']))
     
     def do_set(self, line):
         args = self.arg_tokenize(line)
@@ -195,12 +197,10 @@ class Vxl(cmd.Cmd):
     def do_session(self, line):
         args = self.arg_tokenize(line)
         if args[0] == u'get':
-            self.tc.session_get()
+            self.tc.get_session()
             print(self.tc.session)
         elif args[0] == u'stats':
-            result = self.tc.session_stats()
-            for k, v in result.iteritems():
-                print("% 32s : %s" % (k, v))
+            print(self.tc.session_stats())
         else:
             raise NotImplementedError(line)
     
@@ -245,8 +245,8 @@ class Vxl(cmd.Cmd):
             s += u' -status     '
             pass
         try:
-            s += u' %5.1f %- 5s' % transmission.format_speed(torrent.rateDownload)
-            s += u' %5.1f %- 5s' % transmission.format_speed(torrent.rateUpload)
+            s += u' %5.1f %- 5s' % format_speed(torrent.rateDownload)
+            s += u' %5.1f %- 5s' % format_speed(torrent.rateUpload)
         except:
             s += u' -rate     '
             s += u' -rate     '
@@ -268,20 +268,20 @@ class Vxl(cmd.Cmd):
         try: # size
             f = ''
             f += '\n      progress: %.2f%%' % torrent.progress
-            f += '\n         total: %.2f %s' % transmission.format_size(torrent.totalSize)
-            f += '\n      reqested: %.2f %s' % transmission.format_size(torrent.sizeWhenDone)
-            f += '\n     remaining: %.2f %s' % transmission.format_size(torrent.leftUntilDone)
-            f += '\n      verified: %.2f %s' % transmission.format_size(torrent.haveValid)
-            f += '\n  not verified: %.2f %s' % transmission.format_size(torrent.haveUnchecked)
+            f += '\n         total: %.2f %s' % format_size(torrent.totalSize)
+            f += '\n      reqested: %.2f %s' % format_size(torrent.sizeWhenDone)
+            f += '\n     remaining: %.2f %s' % format_size(torrent.leftUntilDone)
+            f += '\n      verified: %.2f %s' % format_size(torrent.haveValid)
+            f += '\n  not verified: %.2f %s' % format_size(torrent.haveUnchecked)
             s += f + '\n'
         except KeyError:
             pass
         try: # activity
             f = ''
             f += '\n        status: ' + str(torrent.status)
-            f += '\n      download: %.2f %s' % transmission.format_speed(torrent.rateDownload)
-            f += '\n        upload: %.2f %s' % transmission.format_speed(torrent.rateUpload)
-            f += '\n     available: %.2f %s' % transmission.format_size(torrent.desiredAvailable)
+            f += '\n      download: %.2f %s' % format_speed(torrent.rateDownload)
+            f += '\n        upload: %.2f %s' % format_speed(torrent.rateUpload)
+            f += '\n     available: %.2f %s' % format_size(torrent.desiredAvailable)
             f += '\ndownload peers: ' + str(torrent.peersSendingToUs)
             f += '\n  upload peers: ' + str(torrent.peersGettingFromUs)
             s += f + '\n'
@@ -290,12 +290,12 @@ class Vxl(cmd.Cmd):
         try: # history
             f = ''
             f += '\n         ratio: %.2f' % torrent.ratio
-            f += '\n    downloaded: %.2f %s' % transmission.format_size(torrent.downloadedEver)
-            f += '\n      uploaded: %.2f %s' % transmission.format_size(torrent.uploadedEver)
-            f += '\n        active: ' + transmission.format_timestamp(torrent.activityDate)
-            f += '\n         added: ' + transmission.format_timestamp(torrent.addedDate)
-            f += '\n       started: ' + transmission.format_timestamp(torrent.startDate)
-            f += '\n          done: ' + transmission.format_timestamp(torrent.doneDate)
+            f += '\n    downloaded: %.2f %s' % format_size(torrent.downloadedEver)
+            f += '\n      uploaded: %.2f %s' % format_size(torrent.uploadedEver)
+            f += '\n        active: ' + format_timestamp(torrent.activityDate)
+            f += '\n         added: ' + format_timestamp(torrent.addedDate)
+            f += '\n       started: ' + format_timestamp(torrent.startDate)
+            f += '\n          done: ' + format_timestamp(torrent.doneDate)
             s += f + '\n'
         except KeyError:
             pass
@@ -306,12 +306,12 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     
-    vxl = Vxl()
+    helical = Helical()
     
     # parse flags
     if len(args) > 0:
         if args[0] == u'-d':
-            vxl.verbose = True
+            helical.verbose = True
             args = args[1:]
         elif args[0] in [u'-h', u'--help', u'help']:
             arg = ''
@@ -319,12 +319,12 @@ def main(args=None):
                 arg = args[1]
             except:
                 pass
-            sys.exit(vxl.do_help(arg))
+            sys.exit(helical.do_help(arg))
     
     # parse daemon address
     if len(args) > 0:
         try:
-            vxl.set_daemon(args[0])
+            helical.set_daemon(args[0])
             args = args[1:]
         except:
             pass
@@ -336,18 +336,18 @@ def main(args=None):
         command = args[0]
         if len(args) > 0:
             command_args += u' '.join([u'"%s"' % arg for arg in args[1:]])
-        vxl.onecmd(command + command_args)
+        helical.onecmd(command + command_args)
     else:
         try:
-            vxl.tc.list()
+            helical.tc.list()
         except transmission.TransmissionError, e:
             print(e)
-            sys.exit(vxl.do_help(u''))
+            helical.exit(helical.do_help(u''))
         
         try:
-            vxl.cmdloop()
+            helical.cmdloop()
         except KeyboardInterrupt:
-            vxl.do_quit('')
+            helical.do_quit('')
 
 if __name__ == '__main__':
     sys.exit(main())

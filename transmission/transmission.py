@@ -286,7 +286,7 @@ class Client(object):
         if isinstance(args, (int, long)):
             ids.append(args)
         elif isinstance(args, (str, unicode)):
-            for item in re.split(u'[ ,]+', line):
+            for item in re.split(u'[ ,]+', args):
                 if len(item) == 0:
                     continue
                 addition = None

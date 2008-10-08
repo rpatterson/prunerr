@@ -20,4 +20,3 @@ print(feed.feed.subtitle)
 for entry in feed.entries:
     for k, v in entry.iteritems():
         print('% 16s: %s' % (k, v))
-

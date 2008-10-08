@@ -8,7 +8,7 @@ setup(
     description='Transmission control module.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',
-    url='http://coldstar.net/',
+    url='http://coldstar.net/transmission',
     license='MIT',
     keywords='transmission',
     packages=['transmission'],

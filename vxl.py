@@ -10,8 +10,6 @@ except:
     pass
 import cmd
 import transmission
-from utils import *
-from constants import DEFAULT_PORT
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.1'
@@ -27,10 +25,10 @@ class Vxl(cmd.Cmd):
     
     def set_daemon(self, address=None):
         if address:
-            (addr, port) = inet_address(address, DEFAULT_PORT)
+            (addr, port) = transmission.inet_address(address, transmission.DEFAULT_PORT)
         else:
             addr = u'localhost'
-            port = DEFAULT_PORT
+            port = transmission.DEFAULT_PORT
         self.address = (addr, port)
         self.tc = transmission.Client(addr, port, verbose=self.verbose)
         self.prompt = u'vxl %s:%d> ' % (self.address[0], self.address[1])
@@ -247,8 +245,8 @@ class Vxl(cmd.Cmd):
             s += u' -status     '
             pass
         try:
-            s += u' %5.1f %- 5s' % format_speed(torrent.rateDownload)
-            s += u' %5.1f %- 5s' % format_speed(torrent.rateUpload)
+            s += u' %5.1f %- 5s' % transmission.format_speed(torrent.rateDownload)
+            s += u' %5.1f %- 5s' % transmission.format_speed(torrent.rateUpload)
         except:
             s += u' -rate     '
             s += u' -rate     '
@@ -270,20 +268,20 @@ class Vxl(cmd.Cmd):
         try: # size
             f = ''
             f += '\n      progress: %.2f%%' % torrent.progress
-            f += '\n         total: %.2f %s' % format_size(torrent.totalSize)
-            f += '\n      reqested: %.2f %s' % format_size(torrent.sizeWhenDone)
-            f += '\n     remaining: %.2f %s' % format_size(torrent.leftUntilDone)
-            f += '\n      verified: %.2f %s' % format_size(torrent.haveValid)
-            f += '\n  not verified: %.2f %s' % format_size(torrent.haveUnchecked)
+            f += '\n         total: %.2f %s' % transmission.format_size(torrent.totalSize)
+            f += '\n      reqested: %.2f %s' % transmission.format_size(torrent.sizeWhenDone)
+            f += '\n     remaining: %.2f %s' % transmission.format_size(torrent.leftUntilDone)
+            f += '\n      verified: %.2f %s' % transmission.format_size(torrent.haveValid)
+            f += '\n  not verified: %.2f %s' % transmission.format_size(torrent.haveUnchecked)
             s += f + '\n'
         except KeyError:
             pass
         try: # activity
             f = ''
             f += '\n        status: ' + str(torrent.status)
-            f += '\n      download: %.2f %s' % format_speed(torrent.rateDownload)
-            f += '\n        upload: %.2f %s' % format_speed(torrent.rateUpload)
-            f += '\n     available: %.2f %s' % format_size(torrent.desiredAvailable)
+            f += '\n      download: %.2f %s' % transmission.format_speed(torrent.rateDownload)
+            f += '\n        upload: %.2f %s' % transmission.format_speed(torrent.rateUpload)
+            f += '\n     available: %.2f %s' % transmission.format_size(torrent.desiredAvailable)
             f += '\ndownload peers: ' + str(torrent.peersSendingToUs)
             f += '\n  upload peers: ' + str(torrent.peersGettingFromUs)
             s += f + '\n'
@@ -292,12 +290,12 @@ class Vxl(cmd.Cmd):
         try: # history
             f = ''
             f += '\n         ratio: %.2f' % torrent.ratio
-            f += '\n    downloaded: %.2f %s' % format_size(torrent.downloadedEver)
-            f += '\n      uploaded: %.2f %s' % format_size(torrent.uploadedEver)
-            f += '\n        active: ' + format_timestamp(torrent.activityDate)
-            f += '\n         added: ' + format_timestamp(torrent.addedDate)
-            f += '\n       started: ' + format_timestamp(torrent.startDate)
-            f += '\n          done: ' + format_timestamp(torrent.doneDate)
+            f += '\n    downloaded: %.2f %s' % transmission.format_size(torrent.downloadedEver)
+            f += '\n      uploaded: %.2f %s' % transmission.format_size(torrent.uploadedEver)
+            f += '\n        active: ' + transmission.format_timestamp(torrent.activityDate)
+            f += '\n         added: ' + transmission.format_timestamp(torrent.addedDate)
+            f += '\n       started: ' + transmission.format_timestamp(torrent.startDate)
+            f += '\n          done: ' + transmission.format_timestamp(torrent.doneDate)
             s += f + '\n'
         except KeyError:
             pass

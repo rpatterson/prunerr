@@ -268,8 +268,8 @@ class Client(object):
             for item in data['arguments']['torrents']:
                 results[item['id']] = Torrent(item)
         elif method == 'torrent-add':
-            for item in data['arguments']['torrent-added']:
-                results[item['id']] = Torrent(item)
+            item = data['arguments']['torrent-added']
+            results[item['id']] = Torrent(item)
         elif method == 'session-get':
             self._update_session(data['arguments'])
         elif method == 'session-stats':

@@ -23,6 +23,11 @@ class Helical(cmd.Cmd):
         self.intro = u'Helical %s' % (__version__)
         self.verbose = False
         self.set_daemon()
+        self.doc_leader = u'''
+Helical is a command line interface that communicates with Transmission
+bittorent client through json-rpc. To run helical in interactive mode
+start without a command.
+'''
     
     def set_daemon(self, address=None):
         if address:
@@ -59,8 +64,8 @@ class Helical(cmd.Cmd):
         return self._complete_torrent(item, endidx - begidx)
     
     def help_quit(self):
-        print(u'Terminate.\n')
-        print(u'(quit|exit)\n')
+        print(u'quit|exit\n')
+        print(u'Exit to shell.\n')
     
     def do_quit(self, line):
         sys.exit('')
@@ -70,8 +75,8 @@ class Helical(cmd.Cmd):
     do_EOF = do_quit
     
     def help_add(self):
+        print(u'add <torrent file or url> [<target dir> paused=(yes|no) peer-limit=#]\n')
         print(u'Add a torrent to the transfer list.\n')
-        print(u'add <torrent file or url> [<target dir> paused=yes|no peer-limit=#]\n')
 
     def do_add(self, line):
         args = self.arg_tokenize(line)
@@ -120,8 +125,8 @@ class Helical(cmd.Cmd):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
     def help_remove(self):
+        print(u'remove <torrent id> [,<torrent id>, ...]\n')
         print(u'Remove one or more torrents from the transfer list.\n')
-        print(u'remove <torrent id>(, <torrent id>)\n')
     
     def do_remove(self, line):
         args = self.arg_tokenize(line)
@@ -133,8 +138,8 @@ class Helical(cmd.Cmd):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
     def help_start(self):
+        print(u'start <torrent id> [,<torrent id>, ...]\n')
         print(u'Start one or more queued torrent transfers.\n')
-        print(u'start <torrent id>(, <torrent id>)\n')
     
     def do_start(self, line):
         args = self.arg_tokenize(line)
@@ -146,8 +151,8 @@ class Helical(cmd.Cmd):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
     def help_stop(self):
+        print(u'stop <torrent id> [,<torrent id>, ...]\n')
         print(u'Stop one or more active torrent transfers.\n')
-        print(u'stop <torrent id>(, <torrent id>)\n')
     
     def do_stop(self, line):
         args = self.arg_tokenize(line)
@@ -159,8 +164,8 @@ class Helical(cmd.Cmd):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
     def help_verify(self):
+        print(u'verify <torrent id> [,<torrent id>, ...]\n')
         print(u'Verify one or more torrent transfers.\n')
-        print(u'verify <torrent id>(, <torrent id>)\n')
     
     def do_verify(self, line):
         args = self.arg_tokenize(line)
@@ -172,8 +177,8 @@ class Helical(cmd.Cmd):
         return self._complete_torrent_command(text, line, begidx, endidx)
     
     def help_info(self):
+        print(u'info [<torrent id>, ...]\n')
         print(u'Get details for a torrent. If no torrent id is provided, all torrents are displayed.\n')
-        print(u'info (<torrent id>, <torrent id>)\n')
     
     def do_info(self, line):
         args = self.arg_tokenize(line)
@@ -184,8 +189,8 @@ class Helical(cmd.Cmd):
             print(self._torrent_detail(torrent))
     
     def help_list(self):
-        print(u'List all torrent transfers.\n')
         print(u'list\n')
+        print(u'List all torrent transfers.\n')
     
     def do_list(self, line):
         args = self.arg_tokenize(line)
@@ -193,8 +198,8 @@ class Helical(cmd.Cmd):
         self._list_torrents(result)
     
     def help_files(self):
+        print(u'files [<torrent id>, ...]\n')
         print(u'Get the file list for one or more torrents\n')
-        print(u'files (<torrent id>, <torrent id>)\n')
     
     def do_files(self, line):
         args = self.arg_tokenize(line)
@@ -228,18 +233,16 @@ class Helical(cmd.Cmd):
         return self.word_complete(text, [u'get', u'set', u'stats'])
     
     def help_session(self):
-        print(u'Get session parameters or session statistics.\n')
         print(u'session (get|stats)\n')
+        print(u'Get session parameters or session statistics.\n')
     
     def do_session(self, line):
         args = self.arg_tokenize(line)
-        if args[0] == u'get':
+        if len(args[0]) == 0 or args[0] == u'get':
             self.tc.get_session()
             print(self.tc.session)
         elif args[0] == u'stats':
             print(self.tc.session_stats())
-        else:
-            raise NotImplementedError(line)
     
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')

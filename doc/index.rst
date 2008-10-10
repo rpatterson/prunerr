@@ -21,12 +21,32 @@ First download the package and extract the contents. Then install using setup.py
 
     $ python setup.py install
 
-This will install the transmission module and vxl cli.
+This will install the transmission module.
 
 Dependecies
 -----------
 
  * simplejson 1.7.1 or later
+
+Developers
+==========
+
+Transmission is hosted at bitbucket_ using mercurial_. To pull a working copy, run
+
+::
+
+   $ hg pull http://www.bitbucket.org/blueluna/transmission/
+
+Then install the module using
+
+::
+
+    $ python setup.py install
+
+Explore and have fun!
+
+.. _bitbucket: http://www.bitbucket.org/blueluna/transmission/
+.. _mercurial: http://www.selenic.com/mercurial
 
 Module reference
 ================

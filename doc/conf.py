@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Växel documentation build configuration file, created by
+# Vxl documentation build configuration file, created by
 # sphinx-quickstart on Tue Jul 15 14:28:42 2008.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -37,7 +37,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General substitutions.
-project = 'Vxl'
+project = 'Transmission'
 copyright = '2008, Erik Svensson'
 
 # The default replacements for |version| and |release|, also used in various
@@ -144,7 +144,7 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Vxldoc'
+htmlhelp_basename = 'trdoc'
 
 
 # Options for LaTeX output
@@ -159,7 +159,7 @@ htmlhelp_basename = 'Vxldoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('index', 'Vxl.tex', 'Vxl Documentation', 'Erik Svensson', 'manual'),
+  ('index', 'Transmission.tex', 'Transmission Documentation', 'Erik Svensson', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

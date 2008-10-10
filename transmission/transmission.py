@@ -166,6 +166,11 @@ class Torrent(object):
 class Session(object):
     """
     Session is a class holding the session data for a Transmission daemon.
+    
+    Access the session field can be done through attributes.
+    The attributes available are the same as the session arguments in the
+    Transmission RPC specification, but with underscore instead of hypen.
+    ``download-dir`` -> ``download_dir``.
     """
     
     def __init__(self, fields={}):
@@ -175,7 +180,7 @@ class Session(object):
             self.fields[key] = v
     
     def update(self, other):
-        """Update the session data from a Session arguments dictinary"""
+        """Update the session data from a session arguments dictinary"""
         
         fields = None
         if isinstance(other, dict):

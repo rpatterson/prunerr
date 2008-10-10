@@ -5,5 +5,7 @@ syntax: glob
 .DS_Store
 syntax: regexp
 ^build/*
+^dist/*
+^html/*
 .+\.egg-info/*
 ^doc/out/*

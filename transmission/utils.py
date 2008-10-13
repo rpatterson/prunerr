@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 

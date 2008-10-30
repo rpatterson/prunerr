@@ -626,7 +626,7 @@ class Client(object):
         except KeyError:
             pass
         
-        if len(args) > 1:
+        if len(args) > 0:
             self._request('session-set', args)
     
     def session_stats(self):

@@ -342,9 +342,9 @@ class Client(object):
         if 'paused' in kwargs:
             args['paused'] = rpc_bool(kwargs['paused'])
         if 'download_dir' in kwargs:
-            args['download-dir'] = kwargs['downloadDir']
+            args['download-dir'] = kwargs['download_dir']
         if 'peer_limit' in kwargs:
-            args['peer-limit'] = int(kwargs['peerLimit'])
+            args['peer-limit'] = int(kwargs['peer_limit'])
         return self._request('torrent-add', args)
     
     def add_url(self, torrent_url, **kwargs):

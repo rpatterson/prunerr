@@ -8,7 +8,7 @@ UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
 def format_size(size):
     s = float(size)
     i = 0
-    while size > 1024.0 and i < len(UNITS):
+    while size >= 1024.0 and i < len(UNITS):
         i += 1
         size /= 1024.0
     return (size, UNITS[i])
@@ -43,7 +43,10 @@ def inet_address(address, default_port, default_address='localhost'):
             port = default_port
     elif len(addr) == 2:
         port = int(addr[1])
-        addr = addr[0]
+        if len(addr[0]) == 0:
+            addr = default_address
+        else:
+            addr = addr[0]
     else:
         addr = default_address
         port = default_port

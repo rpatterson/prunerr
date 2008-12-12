@@ -76,16 +76,16 @@ class utils(unittest.TestCase):
     
     def testRPCBool(self):
         table = {
-            0: False,
-            1: True,
-            1000: True,
-            'true': True,
-            'Yes': True,
-            'truE': True,
-            'baka': False,
-            'false': False,
-            'no': False,
-            True: True,
+            0: 0,
+            1: 1,
+            1000: 1,
+            'true': 1,
+            'Yes': 1,
+            'truE': 1,
+            'baka': 0,
+            'false': 0,
+            'no': 0,
+            True: 1,
         }
         for value, expected in table.iteritems():
             self.assertEqual(tu.rpc_bool(value), expected)

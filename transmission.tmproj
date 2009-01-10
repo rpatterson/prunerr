@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>test/test.py</string>
+	<string>out.txt</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -11,6 +11,8 @@
 			<true/>
 			<key>name</key>
 			<string>py-transmission</string>
+			<key>regexFileFilter</key>
+			<string>!\.(DS_Store|pyc|pyo)$</string>
 			<key>regexFolderFilter</key>
 			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
 			<key>sourceDirectory</key>
@@ -21,24 +23,54 @@
 	<integer>200</integer>
 	<key>metaData</key>
 	<dict>
-		<key>test/test.py</key>
+		<key>out.txt</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>12</integer>
 				<key>line</key>
-				<integer>2</integer>
+				<integer>20</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
+		<key>tests/client.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>87</integer>
+				<key>line</key>
+				<integer>132</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>61</integer>
+		</dict>
+		<key>transmission/transmission.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>12</integer>
+				<key>line</key>
+				<integer>238</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>215</integer>
+		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>test/test.py</string>
+		<string>tests/client.py</string>
+		<string>transmission/transmission.py</string>
+		<string>out.txt</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<false/>
@@ -52,7 +84,14 @@
 			<true/>
 			<key>subItems</key>
 			<dict>
-				<key>test</key>
+				<key>tests</key>
+				<dict>
+					<key>isExpanded</key>
+					<true/>
+					<key>subItems</key>
+					<dict/>
+				</dict>
+				<key>transmission</key>
 				<dict>
 					<key>isExpanded</key>
 					<true/>
@@ -63,6 +102,6 @@
 		</dict>
 	</dict>
 	<key>windowFrame</key>
-	<string>{{75, 0}, {1148, 778}}</string>
+	<string>{{105, 0}, {1388, 1178}}</string>
 </dict>
 </plist>

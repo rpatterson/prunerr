@@ -1,20 +1,27 @@
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
-import os, time, datetime
+import sys, os, time, datetime
 import re, logging
 import socket, httplib, urllib2, base64
-import simplejson
+
+if sys.version_info[0] >= 2 and sys.version_info[1] >= 6:
+    import json
+else:
+    import simplejson as json
+
 from constants import *
 from utils import *
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
-__version__   = u'0.1'
+__version__   = u'0.2'
 __copyright__ = u'Copyright (c) 2008 Erik Svensson'
 __license__   = u'MIT'
 
 class TransmissionError(Exception):
-    pass
+    def __init__(self, message='', original=None):
+        Exception.__init__(self, message)
+        self.original = original
 
 class Torrent(object):
     """
@@ -50,7 +57,7 @@ class Torrent(object):
         .. _transmission-torrent-files:
         
         Get list of files for this torrent.
-
+        
         This function returns a dictionary with file information for each file.
         The file information is has following fields:
         
@@ -67,7 +74,7 @@ class Torrent(object):
                 
                 ...
             }
-
+        
         Example:
         ::
         
@@ -224,6 +231,20 @@ class Client(object):
         self._sequence = 0
         self.verbose = verbose
         self.session = Session()
+        self.out = open('out.txt', 'w')
+    
+    def _http_query(self, query):
+        self.out.write(query + '\n')
+        request = urllib2.Request(self.url, query)
+        try:
+            response = urllib2.urlopen(request)
+        except urllib2.HTTPError, e:
+            raise TransmissionError('Server responded with: %s.' % (e.reason), e)
+        except urllib2.URLError, e:
+            raise TransmissionError('Failed to connect to daemon.', e)
+        result = response.read()
+        self.out.write(result + '\n')
+        return result
     
     def _request(self, method, arguments={}, ids=[], require_ids = False):
         """Send json-rpc request to Transmission using http POST"""
@@ -238,34 +259,26 @@ class Client(object):
         elif require_ids:
             raise ValueError('request require ids')
         
-        query = simplejson.dumps({'tag': self._sequence, 'method': method, 'arguments': arguments})
+        query = json.dumps({'tag': self._sequence, 'method': method, 'arguments': arguments})
         if self.verbose:
             logging.info(query)
         self._sequence += 1
         start = time.time()
-        request = urllib2.Request(self.url, query)
-        try:
-            response = urllib2.urlopen(request)
-        except urllib2.HTTPError, e:
-            raise TransmissionError('Server responded with: %s.' % (e))
-        except urllib2.URLError, e:
-            raise TransmissionError('Failed to connect to daemon: %s.' % (e))
-        http_data = response.read()
+        http_data = self._http_query(query)
         elapsed = time.time() - start
         if self.verbose:
             logging.info('http request took %.3f s' % (elapsed))
         
         try:
-            data = simplejson.loads(http_data)
+            data = json.loads(http_data)
         except ValueError, e:
             logging.debug('Error: ' + str(e))
             logging.debug('Request: \"%s\"' % (query))
-            logging.debug('HTTP status: %d' % (response.status))
             logging.debug('HTTP data: \"%s\"' % (http_data))
             raise
                 
         if self.verbose:
-            logging.info(simplejson.dumps(data, indent=2))
+            logging.info(json.dumps(data, indent=2))
         
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"' % data['result'])
@@ -374,9 +387,9 @@ class Client(object):
         torrent_data = base64.b64encode(torrent_file.read())
         return self.add(torrent_data, **kwargs)
     
-    def remove(self, ids):
+    def remove(self, ids, delete_data=False):
         """remove torrent(s) with provided id(s)"""
-        self._request('torrent-remove', {}, ids, True)
+        self._request('torrent-remove', {'delete-local-data': rpc_bool(delete_data)}, ids, True)
     
     def start(self, ids):
         """start torrent(s) with provided id(s)"""
@@ -523,7 +536,7 @@ class Client(object):
         """list torrent(s) with provided id(s)"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
         return self._request('torrent-get', {'fields': fields})
-
+    
     def change(self, ids, **kwargs):
         """
         Change torrent parameters. This is the list of parameters that.

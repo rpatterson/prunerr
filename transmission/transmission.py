@@ -13,11 +13,6 @@ else:
 from constants import *
 from utils import *
 
-__author__    = u'Erik Svensson <erik.public@gmail.com>'
-__version__   = u'0.2'
-__copyright__ = u'Copyright (c) 2008 Erik Svensson'
-__license__   = u'MIT'
-
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):
         Exception.__init__(self, message)
@@ -388,7 +383,7 @@ class Client(object):
         return self.add(torrent_data, **kwargs)
     
     def remove(self, ids, delete_data=False):
-        """remove torrent(s) with provided id(s)"""
+        """remove torrent(s) with provided id(s). Local data is removed if delete_data is True, otherwise not."""
         self._request('torrent-remove', {'delete-local-data': rpc_bool(delete_data)}, ids, True)
     
     def start(self, ids):

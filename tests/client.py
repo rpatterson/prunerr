@@ -85,10 +85,10 @@ class client(unittest.TestCase):
         tc = Client()
         ids = ['0123456789abcdef', 2, 3]
         # test at query interface
-        expected = {'method': 'torrent-remove', 'arguments': {}, 'ids': ids, 'require_ids': True}
+        expected = {'method': 'torrent-remove', 'arguments': {'delete-local-data': 0}, 'ids': ids, 'require_ids': True}
         self.assertTransmissionRequest(expected, tc, tc.remove, ids)
         # test at http interface
-        expected = {'method': 'torrent-remove', 'arguments': {'ids': ids}}
+        expected = {'method': 'torrent-remove', 'arguments': {'ids': ids, 'delete-local-data': 0}}
         self.assertTransmissionQuery(expected, {}, tc, tc.remove, ids)
     
     def testStart(self):
@@ -111,7 +111,7 @@ class client(unittest.TestCase):
         expected = {'method': 'torrent-stop', 'arguments': {'ids': ids}}
         self.assertTransmissionQuery(expected, {}, tc, tc.stop, ids)
     
-    def testStop(self):
+    def testVerify(self):
         tc = Client()
         ids = ['0123456789abcdef', 2, 3]
         # test at query interface
@@ -126,7 +126,7 @@ class client(unittest.TestCase):
         fields = transmission.constants.FIELDS
         ids = [2, 3]
         # test at query interface
-        expected = {'method': 'torrent-get', 'arguments': {'fields': fields}, 'ids': ids, 'require_ids': True}
+        expected = {'method': 'torrent-get', 'arguments': {'fields': fields}, 'ids': ids, 'require_ids': False}
         self.assertTransmissionRequest(expected, tc, tc.info, ids)
         # test at http interface
         result = {}

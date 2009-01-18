@@ -15,13 +15,11 @@ This is the transmission module. This module helps using python to connect to a 
 Getting started
 ===============
 
-First download the package and extract the contents. Then install using setup.py.
+Transmission is available at `Python Package Index <http://pypi.python.org/pypi/transmission/>`_. To install the transmission python module use easy_install.
 
 ::
 
-    $ python setup.py install
-
-This will install the transmission module.
+    $ easy_install transmission
 
 Dependecies
 -----------

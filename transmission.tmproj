@@ -23,84 +23,39 @@
 	<integer>200</integer>
 	<key>metaData</key>
 	<dict>
-		<key>helical.py</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>3</integer>
-				<key>line</key>
-				<integer>29</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
 		<key>tests/client.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>40</integer>
+				<integer>25</integer>
 				<key>line</key>
-				<integer>95</integer>
+				<integer>74</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>4</integer>
-		</dict>
-		<key>tests/utils.py</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>41</integer>
-				<key>line</key>
-				<integer>28</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
-		</dict>
-		<key>transmission/constants.py</key>
-		<dict>
-			<key>caret</key>
-			<dict>
-				<key>column</key>
-				<integer>14</integer>
-				<key>line</key>
-				<integer>34</integer>
-			</dict>
-			<key>firstVisibleColumn</key>
-			<integer>0</integer>
-			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>45</integer>
 		</dict>
 		<key>transmission/transmission.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>26</integer>
+				<integer>12</integer>
 				<key>line</key>
-				<integer>42</integer>
+				<integer>491</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>569</integer>
+			<integer>458</integer>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>tests/client.py</string>
 		<string>transmission/transmission.py</string>
-		<string>helical.py</string>
-		<string>tests/utils.py</string>
-		<string>transmission/constants.py</string>
+		<string>tests/client.py</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<false/>
@@ -121,10 +76,17 @@
 					<key>subItems</key>
 					<dict/>
 				</dict>
+				<key>transmission</key>
+				<dict>
+					<key>isExpanded</key>
+					<true/>
+					<key>subItems</key>
+					<dict/>
+				</dict>
 			</dict>
 		</dict>
 	</dict>
 	<key>windowFrame</key>
-	<string>{{105, 0}, {1388, 1178}}</string>
+	<string>{{112, 0}, {1388, 1178}}</string>
 </dict>
 </plist>

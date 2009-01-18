@@ -8,7 +8,7 @@ setup(
     description='Python module that implements the Transmission bittorent client RPC protocol.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',
-    url='http://coldstar.net/transmission',
+    url='http://bitbucket.org/blueluna/transmission',
     keywords='transmission',
     packages=['transmission'],
     install_requires = ['simplejson>=1.7.1'],

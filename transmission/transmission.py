@@ -3,7 +3,7 @@
 
 import sys, os, time, datetime
 import re, logging
-import socket, httplib, urllib2, base64
+import httplib, urllib2, base64
 
 if sys.version_info[0] >= 2 and sys.version_info[1] >= 6:
     import json
@@ -49,39 +49,7 @@ class Torrent(object):
     
     def files(self):
         """
-        .. _transmission-torrent-files:
-        
-        Get list of files for this torrent.
-        
-        This function returns a dictionary with file information for each file.
-        The file information is has following fields:
-        
-        ::
-        
-            {
-                <file id>: {
-                    'name': <file name>,
-                    'size': <file size in bytes>,
-                    'completed': <bytes completed>,
-                    'priority': <priority ('high'|'normal'|'low')>,
-                    'selected': <selected for download>
-                }
-                
-                ...
-            }
-        
-        Example:
-        ::
-        
-            {
-                0: {
-                    'priority': 'normal',
-                    'completed': 729186304,
-                    'selected': True,
-                    'name': 'ubuntu-8.10-beta-desktop-i386.iso',
-                    'size': 729186304
-                }
-            }
+        Get list of files for this torrent. This function returns a dictionary with file information for each file.
         """
         result = {}
         if 'files' in self.fields:
@@ -226,10 +194,10 @@ class Client(object):
         self._sequence = 0
         self.verbose = verbose
         self.session = Session()
-        self.out = open('out.txt', 'w')
+        #self.out = open('out.txt', 'w')
     
     def _http_query(self, query):
-        self.out.write(query + '\n')
+        #self.out.write(query + '\n')
         request = urllib2.Request(self.url, query)
         try:
             response = urllib2.urlopen(request)
@@ -237,8 +205,10 @@ class Client(object):
             raise TransmissionError('Server responded with: %s.' % (e.reason), e)
         except urllib2.URLError, e:
             raise TransmissionError('Failed to connect to daemon.', e)
+        except httplib.BadStatusLine, e:
+            raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (e.args, self.url, query), e)
         result = response.read()
-        self.out.write(result + '\n')
+        #self.out.write(result + '\n')
         return result
     
     def _request(self, method, arguments={}, ids=[], require_ids = False):
@@ -404,44 +374,8 @@ class Client(object):
     
     def get_files(self, ids=[]):
         """
-        .. _transmission-client-get_files:
-        
         Get list of files for provided torrent id(s).
         This function returns a dictonary for each requested torrent id holding the information about the files.
-        See :ref:`Torrent.files() <transmission-torrent-files>`.
-        
-        ::
-        
-            {
-                <torrent id>: {
-                    <file id>: {
-                        'name': <file name>,
-                        'size': <file size in bytes>,
-                        'completed': <bytes completed>,
-                        'priority': <priority ('high'|'normal'|'low')>,
-                        'selected': <selected for download>
-                    }
-                    
-                    ...
-                }
-                
-                ...
-            }
-        
-        Example:
-        ::
-        
-            {
-                1: {
-                    0: {
-                        'name': 'ubuntu-8.10-beta-desktop-i386.iso',
-                        'size': 729186304,
-                        'completed': 729186304,
-                        'priority': 'normal',
-                        'selected': True
-                    }
-                }
-            }
         """
         fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
         request_result = self._request('torrent-get', {'fields': fields}, ids)
@@ -452,54 +386,7 @@ class Client(object):
     
     def set_files(self, items):
         """
-        .. _transmission-client-set_files:
-        
-        Set file properties. Takes a dictonary with similar contents as the result of :ref:`get_files() <transmission-client-get_files>`.
-        Also see :ref:`Torrent.files() <transmission-torrent-files>`.
-        
-        ::
-        
-            {
-                <torrent id>: {
-                    <file id>: {
-                        'priority': <priority ('high'|'normal'|'low')>,
-                        'selected': <selected for download>
-                    }
-                    
-                    ...
-                }
-                
-                ...
-            }
-        
-        Example:
-        ::
-        
-            items = {
-                1: {
-                    0: {
-                        'priority': 'normal',
-                        'selected': True,
-                    }
-                    1: {
-                        'priority': 'low',
-                        'selected': True,
-                    }
-                }
-                2: {
-                    0: {
-                        'priority': 'high',
-                        'selected': False,
-                    }
-                    1: {
-                        'priority': 'low',
-                        'selected': True,
-                    }
-                }
-            }
-            
-            client.set_files(items)
-        
+        Set file properties. Takes a dictonary with similar contents as the result of get_files.
         """
         if not isinstance(files, dict):
             raise ValueError('Invalid file description')
@@ -528,7 +415,7 @@ class Client(object):
             self.change(tid, wanted, unwanted, priority_high, priority_normal, priority_low)
     
     def list(self):
-        """list torrent(s) with provided id(s)"""
+        """list all torrents"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
         return self._request('torrent-get', {'fields': fields})
     

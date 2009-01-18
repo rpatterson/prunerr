@@ -194,21 +194,23 @@ class Client(object):
         self._sequence = 0
         self.verbose = verbose
         self.session = Session()
-        #self.out = open('out.txt', 'w')
     
     def _http_query(self, query):
-        #self.out.write(query + '\n')
         request = urllib2.Request(self.url, query)
-        try:
-            response = urllib2.urlopen(request)
-        except urllib2.HTTPError, e:
-            raise TransmissionError('Server responded with: %s.' % (e.reason), e)
-        except urllib2.URLError, e:
-            raise TransmissionError('Failed to connect to daemon.', e)
-        except httplib.BadStatusLine, e:
-            raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (e.args, self.url, query), e)
+        retry = 0
+        while True:
+            try:
+                response = urllib2.urlopen(request)
+                break
+            except urllib2.HTTPError, e:
+                raise TransmissionError('Server responded with: %s.' % (e.reason), e)
+            except urllib2.URLError, e:
+                raise TransmissionError('Failed to connect to daemon.', e)
+            except httplib.BadStatusLine, e:
+                retry = retry + 1
+                if (retry > 1):
+                    raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (e.args, self.url, query), e)
         result = response.read()
-        #self.out.write(result + '\n')
         return result
     
     def _request(self, method, arguments={}, ids=[], require_ids = False):

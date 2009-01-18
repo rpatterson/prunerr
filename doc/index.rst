@@ -5,7 +5,7 @@ Transmission
 Introduction
 ============
 
-This is the transmission module. This module helps using python to connect to a Transmission_ json-RPC service. transmission module is compatible with Transmission 1.3 and later.
+This is the transmission module. This module helps using python to connect to a Transmission_ JSON-RPC service. transmission module is compatible with Transmission 1.3 and later.
 
 .. _Transmission: http://www.transmissionbt.com/
 

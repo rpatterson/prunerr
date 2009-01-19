@@ -260,7 +260,11 @@ class Client(object):
         elif method == 'session-get':
             self._update_session(data['arguments'])
         elif method == 'session-stats':
-            self._update_session(data['arguments']['session-stats'])
+            # older versions of T has the return data in "session-stats"
+            if 'session-stats' in data['arguments']:
+                self._update_session(data['arguments']['session-stats'])
+            else:
+                self._update_session(data['arguments'])
         else:
             return None
         

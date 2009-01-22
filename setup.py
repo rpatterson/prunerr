@@ -3,18 +3,17 @@
 from setuptools import setup
 
 setup(
-    name='transmission',
-    version='0.2',
-    description='Python module that implements the Transmission bittorent client RPC protocol.',
+    name='transmissionrpc',
+    version='0.3',
+    description='Python module that implements the Transmission bittorent RPC protocol.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',
-    url='http://bitbucket.org/blueluna/transmission',
+    url='http://bitbucket.org/blueluna/transmissionrpc',
     keywords='transmission',
-    packages=['transmission'],
+    packages=['transmissionrpc'],
     install_requires = ['simplejson>=1.7.1'],
     zip_safe=True,
     classifiers = [
-        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Topic :: Communications :: File Sharing',

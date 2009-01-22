@@ -9,8 +9,8 @@ try:
 except:
     pass
 import cmd
-import transmission
-from transmission.utils import *
+import transmissionrpc
+from transmissionrpc.utils import *
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.1'
@@ -31,12 +31,12 @@ start without a command.
     
     def set_daemon(self, address=None):
         if address:
-            (addr, port) = inet_address(address, transmission.DEFAULT_PORT)
+            (addr, port) = inet_address(address, transmissionrpc.DEFAULT_PORT)
         else:
             addr = u'localhost'
-            port = transmission.DEFAULT_PORT
+            port = transmissionrpc.DEFAULT_PORT
         self.address = (addr, port)
-        self.tc = transmission.Client(addr, port, verbose=self.verbose)
+        self.tc = transmissionrpc.Client(addr, port, verbose=self.verbose)
         self.prompt = u'Helical %s:%d> ' % (self.address[0], self.address[1])
     
     def arg_tokenize(self, argstr):
@@ -118,7 +118,7 @@ start without a command.
         torrent_data = base64.b64encode(torrent_file.read())
         try:
             self.tc.add(torrent_data, **add_args)
-        except transmission.TransmissionError, e:
+        except transmissionrpc.TransmissionError, e:
             print(u'Failed to add torrent "%s"' % e)
     
     def complete_remove(self, text, line, begidx, endidx):
@@ -380,7 +380,7 @@ def main(args=None):
     else:
         try:
             helical.tc.list()
-        except transmission.TransmissionError, e:
+        except transmissionrpc.TransmissionError, e:
             print(e)
             helical.exit(helical.do_help(u''))
         

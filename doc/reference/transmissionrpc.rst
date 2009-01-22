@@ -1,11 +1,14 @@
-:mod:`transmission` --- Transmission bittorent API
-==================================================
+:mod:`transmissionrpc` --- Transmission bittorent API
+=====================================================
 
-.. module:: transmission
+.. module:: transmissionrpc
 .. moduleauthor:: Erik Svensson <erik.public@gmail.com>
 
 Please have the Transmission specification ready. It should be available
 `here <http://trac.transmissionbt.com/browser/trunk/doc/rpc-spec.txt>`_.
+
+.. contents::
+   :depth: 3
 
 Exceptions
 ----------
@@ -30,8 +33,8 @@ torrent information.
 Example:
 ::
 
-    >>> import transmission
-    >>> t = transmission.Torrent({'id': 1, 'comment': 'My torrent', 'addedDate': 1232281019})
+    >>> import transmissionrpc
+    >>> t = transmissionrpc.Torrent({'id': 1, 'comment': 'My torrent', 'addedDate': 1232281019})
     >>> t.comment
     'My torrent'
     >>> t.date_added
@@ -78,7 +81,7 @@ Example:
     verification.
 
 .. method:: Torrent.files()
-.. _transmission-torrent-files:
+.. _transmissionrpc-torrent-files:
 
     Get list of files for this torrent.
 
@@ -129,7 +132,7 @@ Example:
 Session object
 --------------
 
-Session is a class holding the session data for a Transmission daemon.
+Session is a class holding the session data for a Transmission session.
 
 Access the session field can be done through attributes.
 The attributes available are the same as the session arguments in the
@@ -153,7 +156,7 @@ Client object
 
 This is it. This class implements the JSON-RPC protocol to communicate with Transmission.
 
-.. _transmission-client-id-note:
+.. _transmissionrpc-client-id-note:
 .. note::
     Many functions in Client takes torrent id. A torrent id can either be id or
     hashString. When suppling multiple id's it is possible to use a list mixed
@@ -168,7 +171,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
       if password protection is used.
     * If *verbose* is `True` request data is logged using logging at info level.
 
-.. _transmission-client-add:
+.. _transmissionrpc-client-add:
 .. method:: Client.add(data, kwargs**)
 
     Add torrent to transfers list. Takes a base64 encoded .torrent file in
@@ -184,7 +187,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Add torrent to transfers list. Takes a file path or url to a .torrent file
     in *torrent_url*.
     
-    For information on addition argument see :ref:`Client.add <transmission-client-add>`.
+    For information on addition argument see :ref:`Client.add <transmissionrpc-client-add>`.
 
 .. method:: Client.remove(ids, delete_data=False)
 
@@ -208,7 +211,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Get information for the torrent(s) with the supplied id(s). If *ids* is
     empty, information for all torrents are fetched.
 
-.. _transmission-client-get_files:
+.. _transmissionrpc-client-get_files:
 .. method:: Client.get_files(ids=[])
 
     Get list of files for provided torrent id(s). If *ids* is empty,
@@ -248,11 +251,11 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
             }
         }
 
-.. _transmission-client-set_files:
+.. _transmissionrpc-client-set_files:
 .. method:: Client.set_files(items)
 
     Set file properties. Takes a dictonary with similar contents as the result
-    of :ref:`Client.get_files <transmission-client-get_files>`.
+    of :ref:`Client.get_files <transmissionrpc-client-get_files>`.
 
     ::
 

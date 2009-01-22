@@ -9,8 +9,8 @@ if sys.version_info[0] >= 2 and sys.version_info[1] >= 6:
 else:
     import simplejson as json
 
-import transmission.constants
-from transmission import TransmissionError, Client
+import transmissionrpc.constants
+from transmissionrpc import TransmissionError, Client
 
 class client(unittest.TestCase):
     def assertTransmissionRequest(self, expected, client, call, *args, **kwargs):
@@ -38,7 +38,7 @@ class client(unittest.TestCase):
     
     def testConstruction(self):
         tc = Client()
-        self.assertEqual(tc.url, 'http://localhost:%d/transmission/rpc' % (transmission.constants.DEFAULT_PORT))
+        self.assertEqual(tc.url, 'http://localhost:%d/transmission/rpc' % (transmissionrpc.constants.DEFAULT_PORT))
         self.assertEqual(tc.verbose, False)
         tc = Client('www.google.com', 6000)
         self.assertEqual(tc.url, 'http://www.google.com:6000/transmission/rpc')
@@ -123,7 +123,7 @@ class client(unittest.TestCase):
     
     def testInfo(self):
         tc = Client()
-        fields = transmission.constants.FIELDS
+        fields = transmissionrpc.constants.FIELDS
         ids = [2, 3]
         # test at query interface
         expected = {'method': 'torrent-get', 'arguments': {'fields': fields}, 'ids': ids, 'require_ids': False}

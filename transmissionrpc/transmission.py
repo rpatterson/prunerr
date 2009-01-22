@@ -239,9 +239,9 @@ class Client(object):
         try:
             data = json.loads(http_data)
         except ValueError, e:
-            logging.debug('Error: ' + str(e))
-            logging.debug('Request: \"%s\"' % (query))
-            logging.debug('HTTP data: \"%s\"' % (http_data))
+            logging.error('Error: ' + str(e))
+            logging.error('Request: \"%s\"' % (query))
+            logging.error('HTTP data: \"%s\"' % (http_data))
             raise
                 
         if self.verbose:

@@ -3,7 +3,7 @@
 
 import datetime
 import unittest
-import transmission.utils as tu
+import transmissionrpc.utils as tu
 
 class utils(unittest.TestCase):
     def testFormatSize(self):

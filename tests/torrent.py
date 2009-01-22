@@ -3,9 +3,9 @@
 
 import time, datetime
 import unittest
-import transmission
-import transmission.constants
-import transmission.utils
+import transmissionrpc
+import transmissionrpc.constants
+import transmissionrpc.utils
 
 class torrent(unittest.TestCase):
     def assertPropertyException(self, exception, object, property):
@@ -17,11 +17,11 @@ class torrent(unittest.TestCase):
             self.fail()
     
     def testConstruction(self):
-        self.failUnlessRaises(ValueError, transmission.Torrent, {})
-        torrent = transmission.Torrent({'id': 42})
+        self.failUnlessRaises(ValueError, transmissionrpc.Torrent, {})
+        torrent = transmissionrpc.Torrent({'id': 42})
     
     def testAttributes(self):
-        torrent = transmission.Torrent({'id': 42})
+        torrent = transmissionrpc.Torrent({'id': 42})
         self.assertTrue(hasattr(torrent, 'id'))
         self.assertEqual(torrent.id, 42)
         self.assertPropertyException(KeyError, torrent, 'status')
@@ -38,7 +38,7 @@ class torrent(unittest.TestCase):
         
         data = {
             'id': 1,
-            'status': transmission.constants.TR_STATUS_DOWNLOAD,
+            'status': transmissionrpc.constants.TR_STATUS_DOWNLOAD,
             'sizeWhenDone': 1000,
             'leftUntilDone': 500,
             'uploadedEver': 1000,
@@ -50,7 +50,7 @@ class torrent(unittest.TestCase):
             'doneDate': time.mktime((2008,12,11,10,0,15,0,0,-1)),
         }
         
-        torrent = transmission.Torrent(data)
+        torrent = transmissionrpc.Torrent(data)
         self.assertEqual(torrent.id, 1)
         self.assertEqual(torrent.leftUntilDone, 500)
         self.assertEqual(torrent.status, 'downloading')
@@ -62,7 +62,7 @@ class torrent(unittest.TestCase):
         self.assertEqual(torrent.date_started, datetime.datetime(2008,12,11,9,10,5))
         self.assertEqual(torrent.date_done, datetime.datetime(2008,12,11,10,0,15))
         
-        self.assertEqual(torrent.format_eta(), transmission.utils.format_timedelta(torrent.eta))
+        self.assertEqual(torrent.format_eta(), transmissionrpc.utils.format_timedelta(torrent.eta))
         
         torrent.fields['downloadedEver'] = 0
         self.assertEqual(torrent.ratio, 0)

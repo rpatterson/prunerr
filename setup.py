@@ -2,6 +2,12 @@
 
 from setuptools import setup
 
+required = []
+try:
+    import json
+except ImportError:
+    required = ['simplejson>=1.7.1']
+
 setup(
     name='transmissionrpc',
     version='0.3',
@@ -11,7 +17,8 @@ setup(
     url='http://bitbucket.org/blueluna/transmissionrpc',
     keywords='transmission',
     packages=['transmissionrpc'],
-    install_requires = ['simplejson>=1.7.1'],
+    install_requires = required,
+    test_suite = "tests",
     zip_safe=True,
     classifiers = [
         'Intended Audience :: Developers',

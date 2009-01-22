@@ -1,11 +1,13 @@
 
-Transmission
-############
+Transmission RPC
+################
 
 Introduction
 ============
 
-This is the transmission module. This module helps using python to connect to a Transmission_ JSON-RPC service. transmission module is compatible with Transmission 1.3 and later.
+This is the transmissionrpc. This module helps using Python to connect
+to a Transmission_ JSON-RPC service. transmissionrpc is compatible with
+Transmission 1.3 and later.
 
 .. _Transmission: http://www.transmissionbt.com/
 
@@ -15,25 +17,28 @@ This is the transmission module. This module helps using python to connect to a 
 Getting started
 ===============
 
-Transmission is available at `Python Package Index <http://pypi.python.org/pypi/transmission/>`_. To install the transmission python module use easy_install.
+Transmission is available at
+`Python Package Index <http://pypi.python.org/pypi/transmissionrpc/>`_. To install
+the transmissionrpc python module use easy_install.
 
 ::
 
-    $ easy_install transmission
+    $ easy_install transmissionrpc
 
 Dependecies
 -----------
 
- * simplejson 1.7.1 or later
+ * simplejson >= 1.7.1 or Python >= 2.6.
 
 Developers
 ==========
 
-Transmission is hosted at bitbucket_ using mercurial_. To pull a working copy, run
+Transmission is hosted at bitbucket_ using mercurial_. To pull a working copy,
+run
 
 ::
 
-   $ hg pull http://www.bitbucket.org/blueluna/transmission/
+   $ hg pull http://www.bitbucket.org/blueluna/transmissionrpc/
 
 Then install the module using
 
@@ -43,16 +48,16 @@ Then install the module using
 
 Explore and have fun!
 
-.. _bitbucket: http://www.bitbucket.org/blueluna/transmission/
+.. _bitbucket: http://www.bitbucket.org/blueluna/transmissionrpc/
 .. _mercurial: http://www.selenic.com/mercurial
 
 Module reference
-================
+----------------
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   reference/transmission
+   reference/transmissionrpc
 
 Indices and tables
 ==================

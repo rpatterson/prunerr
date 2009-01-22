@@ -5,9 +5,9 @@ import sys, os, time, datetime
 import re, logging
 import httplib, urllib2, base64
 
-if sys.version_info[0] >= 2 and sys.version_info[1] >= 6:
+try:
     import json
-else:
+except ImportError:
     import simplejson as json
 
 from constants import *

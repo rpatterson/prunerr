@@ -394,17 +394,17 @@ class Client(object):
         """
         Set file properties. Takes a dictonary with similar contents as the result of get_files.
         """
-        if not isinstance(files, dict):
+        if not isinstance(items, dict):
             raise ValueError('Invalid file description')
-        for tid, files in items:
-            if not isinstance(items, dict):
+        for tid, files in items.iteritems():
+            if not isinstance(files, dict):
                 continue
             wanted = []
             unwanted = []
             priority_high = []
             priority_normal = []
             priority_low = []
-            for fid, file in files:
+            for fid, file in files.iteritems():
                 if not isinstance(file, dict):
                     continue
                 if 'selected' in file and file['selected']:
@@ -418,7 +418,7 @@ class Client(object):
                         priority_normal.append(fid)
                     elif file['priority'] == 'low':
                         priority_low.append(fid)
-            self.change(tid, wanted, unwanted, priority_high, priority_normal, priority_low)
+            self.change([tid], files_wanted = wanted, files_unwanted = unwanted, priority_high = priority_high, priority_normal = priority_normal, priority_low = priority_low)
     
     def list(self):
         """list all torrents"""
@@ -432,12 +432,16 @@ class Client(object):
         args = {}
 
         try:
-            files = [int(file) for file in re.split('[ ,]+', kwargs['files_wanted'])]
+            files = kwargs['files_wanted']
+            if not isinstance(files, list):
+                files = [int(file) for file in re.split('[ ,]+', files)]
             args['files-wanted'] = files
         except KeyError:
             pass
         try:
-            files = [int(file) for file in re.split('[ ,]+', kwargs['files_unwanted'])]
+            files = kwargs['files_unwanted']
+            if not isinstance(files, list):
+                files = [int(file) for file in re.split('[ ,]+', files)]
             args['files-unwanted'] = files
         except KeyError:
             pass

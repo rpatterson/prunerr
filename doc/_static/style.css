@@ -1,0 +1,163 @@
+@font-face {
+    font-family: DejaVu Sans;
+    src: url('/dejavu/DejaVuSans.ttf');
+    font-style: normal;
+    font-weight: normal;
+}
+@font-face {
+    font-family: DejaVu Sans;
+    src: url('/dejavu/DejaVuSans-Bold.ttf');
+    font-style: normal;
+    font-weight: bold;
+}
+@font-face {
+    font-family: DejaVu Sans;
+    src: url('/dejavu/DejaVuSans-Oblique.ttf');
+    font-style: italic;
+    font-weight: normal;
+}
+@font-face {
+    font-family: DejaVu Sans;
+    src: url('/dejavu/DejaVuSans-BoldOblique.ttf');
+    font-style: italic;
+    font-weight: bold;
+}
+@font-face {
+    font-family: DejaVu Sans;
+    src: url('/dejavu/DejaVuSans-ExtraLight.ttf');
+    font-style: normal;
+    font-weight: 200;
+}
+
+html {
+    font-family: DejaVu Sans, Helvetica, sans-serif;
+    font-size: 12pt;
+    font-weight: normal;
+}
+
+body {
+    background-color: #eee;
+    color: #000;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 200;
+}
+
+a {
+    text-decoration: none;
+}
+
+h1 > a, h2 > a, h3 > a, h4 > a, h5 > a, h6 > a {
+    color: black;
+}
+
+ul {
+    list-style: none;
+    padding-left: 1em;
+}
+
+div.documentwrapper {
+    float: right;
+    width: 100%;
+}
+
+div.bodywrapper {
+    margin: 0 230px 0 0;
+}
+
+div.sphinxsidebarwrapper {
+    padding: 10px 5px 0 10px;
+}
+
+div.sphinxsidebar {
+    float: right;
+    width: 230px;
+    margin-right: -100%;
+    font-size: 90%;
+}
+
+div.related {
+    padding: 5px;
+}
+
+div.related h3 {
+    display: none;
+}
+
+div.related ul {
+    margin: 0;
+    padding: 0 0 0 0;
+}
+
+div.related li {
+    display: inline;
+}
+
+div.related li.right {
+    float: right;
+    margin-right: 5px;
+}
+
+div.body {
+    border: 1px solid #ddd;
+    border-left: none;
+    background-color: #fff;
+    color: #000;
+    padding: 20px;
+}
+
+a.headerlink {
+    margin-left: 3px;
+    padding: 0 4px 0 4px;
+    text-decoration: none;
+    visibility: hidden;
+}
+
+h1:hover > a.headerlink,
+h2:hover > a.headerlink,
+h3:hover > a.headerlink,
+h4:hover > a.headerlink,
+h5:hover > a.headerlink,
+h6:hover > a.headerlink,
+dt:hover > a.headerlink {
+    color: #999;
+    visibility: visible;
+    text-decoration: none;
+}
+
+pre {
+    font-size: 90%;
+    padding: 5px;
+    background-color: #fff8f5;
+    color: #333;
+    border: 1px solid #edc;
+    overflow: auto;
+}
+
+div.contents {
+    background-color: #f3f3f3;
+    padding: 10px;
+}
+
+div.footer {
+    font-size: 80%;
+    margin: 10px;
+    margin-top: 0px;
+}
+
+div.body ul {
+    list-style: disc;
+    padding-left: 3em;
+}
+
+div.body ul li {
+    margin-top: 7px;
+}
+
+div.contents ul {
+    list-style: none;
+    padding-left: 2em;
+}

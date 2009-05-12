@@ -188,7 +188,7 @@ class Client(object):
         if user and password:
             password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(realm=None, uri=self.url, user=user, passwd=password)
-            urllib2.install_opener(urllib2.build_opener(urllib2.HTTPDigestAuthHandler(password_manager)))
+            urllib2.install_opener(urllib2.build_opener(urllib2.HTTPBasicAuthHandler(password_manager)))
         elif user or password:
             logging.warning('Either user or password missing, not using authentication.')
         self._sequence = 0
@@ -203,7 +203,7 @@ class Client(object):
                 response = urllib2.urlopen(request)
                 break
             except urllib2.HTTPError, e:
-                raise TransmissionError('Server responded with: %s.' % (e.reason), e)
+                raise TransmissionError('Server responded with: %s.' % (e), e)
             except urllib2.URLError, e:
                 raise TransmissionError('Failed to connect to daemon.', e)
             except httplib.BadStatusLine, e:

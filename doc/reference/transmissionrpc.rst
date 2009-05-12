@@ -1,11 +1,13 @@
-:mod:`transmissionrpc` --- Transmission bittorent API
-=====================================================
+:mod:`transmissionrpc` --- Module reference
+===========================================
 
 .. module:: transmissionrpc
 .. moduleauthor:: Erik Svensson <erik.public@gmail.com>
 
-Please have the Transmission specification ready. It should be available
-`here <http://trac.transmissionbt.com/browser/trunk/doc/rpc-spec.txt>`_.
+This documentation will not describe all RPC fields in detail. Please refer to
+the `RPC specification`_ for more information on RPC data.
+
+.. _RPC specification: http://trac.transmissionbt.com/wiki/rpc
 
 .. contents::
    :depth: 3

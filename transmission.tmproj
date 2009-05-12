@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>README</string>
+	<string>transmissionrpc/transmission.py</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -15,17 +15,43 @@
 			<string>!\.(DS_Store|pyc|pyo)$</string>
 			<key>regexFolderFilter</key>
 			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
-			<key>selected</key>
-			<true/>
 			<key>sourceDirectory</key>
 			<string></string>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
-	<integer>200</integer>
+	<integer>201</integer>
 	<key>metaData</key>
 	<dict>
-		<key>README</key>
+		<key>doc/_static/style.css</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>1</integer>
+				<key>line</key>
+				<integer>42</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>doc/conf.py</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>25</integer>
+				<key>line</key>
+				<integer>82</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>25</integer>
+		</dict>
+		<key>setup.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
@@ -39,14 +65,14 @@
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>setup.py</key>
+		<key>transmissionrpc/transmission.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>25</integer>
+				<integer>22</integer>
 				<key>line</key>
-				<integer>14</integer>
+				<integer>137</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -56,8 +82,10 @@
 	</dict>
 	<key>openDocuments</key>
 	<array>
+		<string>transmissionrpc/transmission.py</string>
 		<string>setup.py</string>
-		<string>README</string>
+		<string>doc/conf.py</string>
+		<string>doc/_static/style.css</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<false/>
@@ -65,15 +93,23 @@
 	<true/>
 	<key>treeState</key>
 	<dict>
-		<key>py-transmission</key>
+		<key>transmissionrpc</key>
 		<dict>
 			<key>isExpanded</key>
 			<true/>
 			<key>subItems</key>
-			<dict/>
+			<dict>
+				<key>transmissionrpc</key>
+				<dict>
+					<key>isExpanded</key>
+					<true/>
+					<key>subItems</key>
+					<dict/>
+				</dict>
+			</dict>
 		</dict>
 	</dict>
 	<key>windowFrame</key>
-	<string>{{112, 0}, {1388, 1178}}</string>
+	<string>{{160, 0}, {1009, 778}}</string>
 </dict>
 </plist>

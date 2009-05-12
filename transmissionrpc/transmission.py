@@ -188,7 +188,11 @@ class Client(object):
         if user and password:
             password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(realm=None, uri=self.url, user=user, passwd=password)
-            urllib2.install_opener(urllib2.build_opener(urllib2.HTTPBasicAuthHandler(password_manager)))
+            opener = urllib2.build_opener(
+                urllib2.HTTPBasicAuthHandler(password_manager)
+                , urllib2.HTTPDigestAuthHandler(password_manager)
+                )
+            urllib2.install_opener(opener)
         elif user or password:
             logging.warning('Either user or password missing, not using authentication.')
         self._sequence = 0

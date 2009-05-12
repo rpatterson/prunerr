@@ -15,7 +15,7 @@ setup(
     author='Erik Svensson',
     author_email='erik.public@gmail.com',
     url='http://bitbucket.org/blueluna/transmissionrpc',
-    keywords='transmission',
+    keywords='transmission bittorent torrent',
     packages=['transmissionrpc'],
     install_requires = required,
     test_suite = "tests",

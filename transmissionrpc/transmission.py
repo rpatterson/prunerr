@@ -243,7 +243,7 @@ class Client(object):
             logging.error('Request: \"%s\"' % (query))
             logging.error('HTTP data: \"%s\"' % (http_data))
             raise
-                
+        
         if self.verbose:
             logging.info(json.dumps(data, indent=2))
         

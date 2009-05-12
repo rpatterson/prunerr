@@ -429,7 +429,8 @@ class Client(object):
         """
         Change torrent parameters. This is the list of parameters that.
         """
-        
+        args = {}
+
         try:
             files = [int(file) for file in re.split('[ ,]+', kwargs['files_wanted'])]
             args['files-wanted'] = files
@@ -469,7 +470,7 @@ class Client(object):
         except KeyError:
             pass
         try:
-            args['speed-limit-down-enabled'] = rpc_bool(kwargs['speed_limit_down_enable'])
+            args['speed-limit-down-enabled'] = rpc_bool(kwargs['speed_limit_down_enabled'])
         except KeyError:
             pass
         

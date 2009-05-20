@@ -198,16 +198,29 @@ class Client(object):
         self._sequence = 0
         self.verbose = verbose
         self.session = Session()
+        self.sessionid = 0
     
     def _http_query(self, query):
-        request = urllib2.Request(self.url, query)
+        headers = {'X-Transmission-Session-Id': self.sessionid}
+        request = urllib2.Request(self.url, query, headers)
         retry = 0
         while True:
             try:
                 response = urllib2.urlopen(request)
                 break
             except urllib2.HTTPError, e:
-                raise TransmissionError('Server responded with: %s.' % (e), e)
+                if e.code == 409:
+                    logging.info('Server responded with 409, trying to set session-id.')
+                    result = e.read()
+                    match = re.match('.*?X-Transmission-Session-Id: (.*)</code>.*?', result)
+                    if match:
+                        self.sessionid = match.group(1)
+                        logging.info('Found session id (%s), re-submitting query.' % (self.sessionid))
+                        headers = {'X-Transmission-Session-Id': self.sessionid}
+                        request = urllib2.Request(self.url, query, headers)
+                retry = retry + 1
+                if (retry > 1):
+                    raise TransmissionError('Server responded with: %s.' % (e), e)
             except urllib2.URLError, e:
                 raise TransmissionError('Failed to connect to daemon.', e)
             except httplib.BadStatusLine, e:

@@ -203,30 +203,28 @@ class Client(object):
     def _http_query(self, query):
         headers = {'X-Transmission-Session-Id': self.sessionid}
         request = urllib2.Request(self.url, query, headers)
-        retry = 0
+        request_count = 0
         while True:
             try:
                 response = urllib2.urlopen(request)
                 break
-            except urllib2.HTTPError, e:
-                if e.code == 409:
-                    logging.info('Server responded with 409, trying to set session-id.')
-                    result = e.read()
-                    match = re.match('.*?X-Transmission-Session-Id: (.*)</code>.*?', result)
-                    if match:
-                        self.sessionid = match.group(1)
-                        logging.info('Found session id (%s), re-submitting query.' % (self.sessionid))
-                        headers = {'X-Transmission-Session-Id': self.sessionid}
-                        request = urllib2.Request(self.url, query, headers)
-                retry = retry + 1
-                if (retry > 1):
-                    raise TransmissionError('Server responded with: %s.' % (e), e)
-            except urllib2.URLError, e:
-                raise TransmissionError('Failed to connect to daemon.', e)
-            except httplib.BadStatusLine, e:
-                retry = retry + 1
-                if (retry > 1):
-                    raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (e.args, self.url, query), e)
+            except urllib2.HTTPError, error:
+                if error.code == 409:
+                    if self.verbose:
+                        logging.info('Server responded with 409, trying to set session-id.')
+                    if request_count > 1:
+                        raise TransmissionError('Session ID negotiation failed with %s.' % (error), error)
+                    if error.read().find('invalid session-id') >= 0 and 'X-Transmission-Session-Id' in error.headers:
+                        self.sessionid = error.headers['X-Transmission-Session-Id']
+                        request.add_header('X-Transmission-Session-Id', self.sessionid)
+                    else:
+                        raise TransmissionError('Unknown conflict %s.' % (error), error)
+            except urllib2.URLError, error:
+                raise TransmissionError('Failed to connect to daemon.', error)
+            except httplib.BadStatusLine, error:
+                if (request_count > 1):
+                    raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (error.args, self.url, query), error)
+            request_count = request_count + 1
         result = response.read()
         return result
     

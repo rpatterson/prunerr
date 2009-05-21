@@ -1,30 +1,30 @@
 @font-face {
     font-family: DejaVu Sans;
-    src: url('/dejavu/DejaVuSans.ttf');
+    src: url('/fonts/dejavu/DejaVuSans.ttf');
     font-style: normal;
     font-weight: normal;
 }
 @font-face {
     font-family: DejaVu Sans;
-    src: url('/dejavu/DejaVuSans-Bold.ttf');
+    src: url('/fonts/dejavu/DejaVuSans-Bold.ttf');
     font-style: normal;
     font-weight: bold;
 }
 @font-face {
     font-family: DejaVu Sans;
-    src: url('/dejavu/DejaVuSans-Oblique.ttf');
+    src: url('/fonts/dejavu/DejaVuSans-Oblique.ttf');
     font-style: italic;
     font-weight: normal;
 }
 @font-face {
     font-family: DejaVu Sans;
-    src: url('/dejavu/DejaVuSans-BoldOblique.ttf');
+    src: url('/fonts/dejavu/DejaVuSans-BoldOblique.ttf');
     font-style: italic;
     font-weight: bold;
 }
 @font-face {
     font-family: DejaVu Sans;
-    src: url('/dejavu/DejaVuSans-ExtraLight.ttf');
+    src: url('/fonts/dejavu/DejaVuSans-ExtraLight.ttf');
     font-style: normal;
     font-weight: 200;
 }

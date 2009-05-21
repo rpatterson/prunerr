@@ -47,16 +47,21 @@ The source code
 
 Transmission is hosted at bitbucket_ using mercurial_. To pull a working copy,
 run
-
 ::
 
    $ hg pull http://www.bitbucket.org/blueluna/transmissionrpc/
 
 Then install the module using
-
 ::
 
     $ python setup.py install
+
+Or if you wish to poke around in transmissionrpc itself use
+::
+
+	$ python setup.py develop
+
+This will link this directory to the library as transmissionrpc.
 
 .. _bitbucket: http://www.bitbucket.org/blueluna/transmissionrpc/
 .. _mercurial: http://www.selenic.com/mercurial
@@ -75,7 +80,6 @@ around. Following will create a RPC client and list all torrents.
 
 List will return a dictionary of Torrent object indexed by their id. You might
 not have any torrents yet. This can be remedied by adding an torrent.
-
 ::
 
     >>> tc.add_url('http://releases.ubuntu.com/8.10/ubuntu-8.10-desktop-i386.iso.torrent')
@@ -86,7 +90,6 @@ not have any torrents yet. This can be remedied by adding an torrent.
 As you saw, the add_url and info calls also returns a dictionary with
 ``{<id>: <Torrent>, ...}``. More information about a torrent transfer can be
 found in the Torrent object.
-
 ::
 
     >>> torrent = tc.info(1)[1]

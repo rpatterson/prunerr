@@ -4,9 +4,9 @@
 import sys, os.path, base64
 import unittest
 
-if sys.version_info[0] >= 2 and sys.version_info[1] >= 6:
+try:
     import json
-else:
+except ImportError:
     import simplejson as json
 
 import transmissionrpc.constants
@@ -123,7 +123,7 @@ class client(unittest.TestCase):
     
     def testInfo(self):
         tc = Client()
-        fields = transmissionrpc.constants.FIELDS
+        fields = transmissionrpc.utils.get_arguments('torrent-get', 5)
         ids = [2, 3]
         # test at query interface
         expected = {'method': 'torrent-get', 'arguments': {'fields': fields}, 'ids': ids, 'require_ids': False}

@@ -2,6 +2,7 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import socket, datetime
+import constants
 
 UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
 
@@ -59,7 +60,72 @@ def inet_address(address, default_port, default_address='localhost'):
 def rpc_bool(arg):
     if isinstance(arg, (str, unicode)):
         try:
-            arg = bool(int(str))
+            arg = bool(int(arg))
         except:
             arg = arg.lower() in [u'true', u'yes']
     return 1 if bool(arg) else 0
+
+TR_TYPE_MAP = {
+    'number' : int,
+    'string' : str,
+    'double': float,
+    'boolean' : rpc_bool,
+    'array': list,
+    'object': dict
+}
+
+def make_python_name(name):
+    return name.replace('-', '_')
+
+def make_rpc_name(name):
+    return name.replace('_', '-')
+
+def argument_value_convert(method, argument, value, rpc_version):
+    if method in ('torrent-add', 'torrent-get', 'torrent-set'):
+        args = constants.torrent_args
+    elif method in ('session-get', 'session-set'):
+        args = constants.session_args
+    else:
+        return ValueError('Method not supported')
+    access_map = {'-set': 'w', '-get': 'r', '-add': 'a'}
+    access = access_map[method[-4:]]
+    if argument in args:
+        info = args[argument]
+        if info[3].find(access) < 0:
+            raise ValueError('Method does not have access to argument')
+        invalid_version = True
+        while invalid_version:
+            invalid_version = False
+            if info[1] < rpc_version:
+                invalid_version = True
+            if info[2] and info[2] <= rpc_version:
+                invalid_version = True
+            if invalid_version:
+                if len(info) < 5:
+                    raise ValueError('Argument does not exist in this version')
+                else:
+                    argument = info[4]
+                    info = args[argument]
+        return (argument, TR_TYPE_MAP[info[0]](value))
+
+def get_arguments(method, rpc_version):
+    if method in ('torrent-add', 'torrent-get', 'torrent-set'):
+        args = constants.torrent_args
+    elif method in ('session-get', 'session-set'):
+        args = constants.session_args
+    else:
+        return ValueError('Method not supported')
+    access_map = {'-set': 'w', '-get': 'r', '-add': 'a'}
+    access = access_map[method[-4:]]
+    accessible = []
+    for argument, info in args.iteritems():
+        valid_version = True
+        if info[1] < rpc_version:
+            invalid_version = False
+        if info[2] and info[2] <= rpc_version:
+            invalid_version = False
+        if valid_version and info[3].find(access) >= 0:
+            accessible.append(argument)
+    return accessible
+
+

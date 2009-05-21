@@ -182,7 +182,7 @@ class Client(object):
     This is it. This class implements the json-RPC protocol to communicate with Transmission.
     """
     
-    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, verbose=False):
+    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None):
         base_url = 'http://' + address + ':' + str(port)
         self.url = base_url + '/transmission/rpc'
         if user and password:
@@ -196,9 +196,45 @@ class Client(object):
         elif user or password:
             logging.warning('Either user or password missing, not using authentication.')
         self._sequence = 0
-        self.verbose = verbose
         self.session = Session()
         self.sessionid = 0
+        self.get_session()
+        self.torrent_get_arguments = get_arguments('torrent-get'
+                                                   , self._rpc_version)
+    
+    def _debug_request(self, request):
+        logging.debug(
+            json.dumps(
+                {
+                    'request': {
+                        'url': request.get_full_url(),
+                        'request-headers': dict(request.header_items()),
+                        'request-data': json.loads(request.data),
+                    }
+                },
+                indent=2
+            )
+        )
+    
+    def _debug_response(self, response, response_data):
+        try:
+            response_data = json.loads(response_data)
+        except:
+            pass
+        logging.debug(
+            json.dumps(
+                {
+                    'response': {
+                        'url': response.url,
+                        'code': response.code,
+                        'msg': response.msg,
+                        'headers': dict(response.headers),
+                        'data': response_data,
+                    }
+                },
+                indent=2
+            )
+        )
     
     def _http_query(self, query):
         headers = {'X-Transmission-Session-Id': self.sessionid}
@@ -206,15 +242,21 @@ class Client(object):
         request_count = 0
         while True:
             try:
-                response = urllib2.urlopen(request)
+                error = None
+                error_data = ""
+                self._debug_request(request)
+                if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
+                    response = urllib2.urlopen(request, timeout=10)
+                else:
+                    response = urllib2.urlopen(request)
                 break
             except urllib2.HTTPError, error:
                 if error.code == 409:
-                    if self.verbose:
-                        logging.info('Server responded with 409, trying to set session-id.')
+                    logging.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed with %s.' % (error), error)
-                    if error.read().find('invalid session-id') >= 0 and 'X-Transmission-Session-Id' in error.headers:
+                    error_data = error.read()
+                    if error_data.find('invalid session-id') >= 0 and 'X-Transmission-Session-Id' in error.headers:
                         self.sessionid = error.headers['X-Transmission-Session-Id']
                         request.add_header('X-Transmission-Session-Id', self.sessionid)
                     else:
@@ -224,8 +266,14 @@ class Client(object):
             except httplib.BadStatusLine, error:
                 if (request_count > 1):
                     raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (error.args, self.url, query), error)
+            finally:
+                if error:
+                    if not error_data:
+                        error_data = error.read()
+                    self._debug_response(error, error_data)
             request_count = request_count + 1
         result = response.read()
+        self._debug_response(response, result)
         return result
     
     def _request(self, method, arguments={}, ids=[], require_ids = False):
@@ -241,15 +289,14 @@ class Client(object):
         elif require_ids:
             raise ValueError('request require ids')
         
-        query = json.dumps({'tag': self._sequence, 'method': method, 'arguments': arguments})
-        if self.verbose:
-            logging.info(query)
+        query = json.dumps({'tag': self._sequence, 'method': method
+                            , 'arguments': arguments})
+        logging.info(query)
         self._sequence += 1
         start = time.time()
         http_data = self._http_query(query)
         elapsed = time.time() - start
-        if self.verbose:
-            logging.info('http request took %.3f s' % (elapsed))
+        logging.info('http request took %.3f s' % (elapsed))
         
         try:
             data = json.loads(http_data)
@@ -259,11 +306,11 @@ class Client(object):
             logging.error('HTTP data: \"%s\"' % (http_data))
             raise
         
-        if self.verbose:
-            logging.info(json.dumps(data, indent=2))
+        logging.info(json.dumps(data, indent=2))
         
         if data['result'] != 'success':
-            raise TransmissionError('Query failed with result \"%s\"' % data['result'])
+            raise TransmissionError('Query failed with result \"%s\"'
+                                    % data['result'])
         
         results = {}
         if method == 'torrent-get':
@@ -280,6 +327,8 @@ class Client(object):
                 self._update_session(data['arguments']['session-stats'])
             else:
                 self._update_session(data['arguments'])
+        elif method in ('port-test', 'blocklist-update'):
+            results = data['arguments']
         else:
             return None
         
@@ -331,22 +380,38 @@ class Client(object):
     def _update_session(self, data):
         self.session.update(data)
     
+    def _rpc_version(self):
+        if hasattr(self.session, 'rpc_version'):
+            return self.session.rpc_version
+        else:
+            return 3
+    
+    def _rpc_version_warning(self, version):
+        if self._rpc_version() < version:
+            logging.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self._rpc_version(), version))
+    
     def add(self, data, **kwargs):
         """
         Add torrent to transfers list. Takes a base64 encoded .torrent file in data.
         Additional arguments are:
         
             * `paused`, boolean, Whether to pause the transfer on add.
-            * `download_dir`, path, The directory where the downloaded contents will be saved in.
-            * `peer_limit`, number, Limits the number of peers for this transfer.
+            * `download_dir`, path, The directory where the downloaded
+              contents will be saved in.
+            * `peer_limit`, number, Limits the number of peers for this
+              transfer.
+            * `files_unwanted`, 
+            * `files_wanted`, 
+            * `priority_high`, 
+            * `priority_low`, 
+            * `priority_normal`, 
         """
         args = {'metainfo': data}
-        if 'paused' in kwargs:
-            args['paused'] = rpc_bool(kwargs['paused'])
-        if 'download_dir' in kwargs:
-            args['download-dir'] = kwargs['download_dir']
-        if 'peer_limit' in kwargs:
-            args['peer-limit'] = int(kwargs['peer_limit'])
+        for key, value in kwargs.iteritems():
+            argument = make_rpc_name(key)
+            (arg, val) = argument_value_convert('torrent-add',
+                                        argument, value, self._rpc_version())
+            args[arg] = val
         return self._request('torrent-add', args)
     
     def add_url(self, torrent_url, **kwargs):
@@ -355,8 +420,15 @@ class Client(object):
         Additional arguments are:
         
             * `paused`, boolean, Whether to pause the transfer on add.
-            * `download_dir`, path, The directory where the downloaded contents will be saved in.
-            * `peer_limit`, number, Limits the number of peers for this transfer.
+            * `download_dir`, path, The directory where the downloaded
+              contents will be saved in.
+            * `peer_limit`, number, Limits the number of peers for this
+              transfer.
+            * `files_unwanted`, 
+            * `files_wanted`, 
+            * `priority_high`, 
+            * `priority_low`, 
+            * `priority_normal`, 
         """
         torrent_file = None
         if os.path.exists(torrent_url):
@@ -374,8 +446,13 @@ class Client(object):
         return self.add(torrent_data, **kwargs)
     
     def remove(self, ids, delete_data=False):
-        """remove torrent(s) with provided id(s). Local data is removed if delete_data is True, otherwise not."""
-        self._request('torrent-remove', {'delete-local-data': rpc_bool(delete_data)}, ids, True)
+        """
+        remove torrent(s) with provided id(s). Local data is removed if
+        delete_data is True, otherwise not.
+        """
+        self._rpc_version_warning(3)
+        self._request('torrent-remove',
+                    {'delete-local-data':rpc_bool(delete_data)}, ids, True)
     
     def start(self, ids):
         """start torrent(s) with provided id(s)"""
@@ -389,14 +466,22 @@ class Client(object):
         """verify torrent(s) with provided id(s)"""
         self._request('torrent-verify', {}, ids, True)
     
-    def info(self, ids=[]):
+    def reannounce(self, ids):
+        """reannounce torrent(s) with provided id(s)"""
+        self._rpc_version_warning(5)
+        self._request('torrent-reannounce', {}, ids, True)
+    
+    def info(self, ids=[], arguments={}):
         """Get detailed information for torrent(s) with provided id(s)."""
-        return self._request('torrent-get', {'fields': FIELDS}, ids)
+        if not arguments:
+            arguments = self.torrent_get_arguments
+        return self._request('torrent-get', {'fields': arguments}, ids)
     
     def get_files(self, ids=[]):
         """
         Get list of files for provided torrent id(s).
-        This function returns a dictonary for each requested torrent id holding the information about the files.
+        This function returns a dictonary for each requested torrent id holding
+        the information about the files.
         """
         fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
         request_result = self._request('torrent-get', {'fields': fields}, ids)
@@ -407,7 +492,8 @@ class Client(object):
     
     def set_files(self, items):
         """
-        Set file properties. Takes a dictonary with similar contents as the result of get_files.
+        Set file properties. Takes a dictonary with similar contents as the
+        result of get_files.
         """
         if not isinstance(items, dict):
             raise ValueError('Invalid file description')
@@ -433,11 +519,17 @@ class Client(object):
                         priority_normal.append(fid)
                     elif file['priority'] == 'low':
                         priority_low.append(fid)
-            self.change([tid], files_wanted = wanted, files_unwanted = unwanted, priority_high = priority_high, priority_normal = priority_normal, priority_low = priority_low)
+            self.change([tid], files_wanted = wanted
+                        , files_unwanted = unwanted
+                        , priority_high = priority_high
+                        , priority_normal = priority_normal
+                        , priority_low = priority_low)
     
     def list(self):
         """list all torrents"""
-        fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone', 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver', 'downloadedEver']
+        fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone'
+            , 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver'
+            , 'downloadedEver']
         return self._request('torrent-get', {'fields': fields})
     
     def change(self, ids, **kwargs):
@@ -445,53 +537,11 @@ class Client(object):
         Change torrent parameters. This is the list of parameters that.
         """
         args = {}
-
-        try:
-            files = kwargs['files_wanted']
-            if not isinstance(files, list):
-                files = [int(file) for file in re.split('[ ,]+', files)]
-            args['files-wanted'] = files
-        except KeyError:
-            pass
-        try:
-            files = kwargs['files_unwanted']
-            if not isinstance(files, list):
-                files = [int(file) for file in re.split('[ ,]+', files)]
-            args['files-unwanted'] = files
-        except KeyError:
-            pass
-        try:
-            args['peer-limit'] = int(kwargs['peer_limit'])
-        except KeyError:
-            pass
-        try:
-            args['priority-high'] = list(kwargs['priority_high'])
-        except KeyError:
-            pass
-        try:
-            args['priority-normal'] = list(kwargs['priority_normal'])
-        except KeyError:
-            pass
-        try:
-            args['priority-low'] = list(kwargs['priority_low'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-up'] = int(kwargs['speed_limit_up'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-up-enabled'] = rpc_bool(kwargs['speed_limit_up_enabled'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-down'] = int(kwargs['speed_limit_down'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-down-enabled'] = rpc_bool(kwargs['speed_limit_down_enabled'])
-        except KeyError:
-            pass
+        for key, value in kwargs.iteritems():
+            argument = make_rpc_name(key)
+            (arg, val) = argument_value_convert('torrent-set'
+                                    , argument, value, self._rpc_version())
+            args[arg] = val
         
         if len(args) > 1:
             self._request('torrent-set', args, ids, True)
@@ -504,54 +554,39 @@ class Client(object):
     def set_session(self, **kwargs):
         """Set session parameters"""
         args = {}
-        
-        try:
-            encryption = str(kwargs['encryption'])
-            if encryption in ['required', 'preferred', 'tolerated']:
-                args['encryption'] = encryption
+        for key, value in kwargs.iteritems():
+            if key == 'encryption':
+                if value in ['required', 'preferred', 'tolerated']:
+                    args['encryption'] = value
+                else:
+                    raise ValueError('Invalid encryption value')
             else:
-                raise ValueError('Invalid encryption value')
-        except KeyError:
-            pass
-        try:
-            args['download-dir'] = kwargs['download_dir']
-        except KeyError:
-            pass
-        try:
-            args['peer-limit'] = int(kwargs['peer_limit'])
-        except KeyError:
-            pass
-        try:
-            args['pex-allowed'] = rpc_bool(kwargs['pex_allowed'])
-        except KeyError:
-            pass
-        try:
-            args['port'] = int(kwargs['port'])
-        except KeyError:
-            pass
-        try:
-            args['port-forwarding-enabled'] = rpc_bool(kwargs['port_forwarding_enabled'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-down'] = int(kwargs['speed_limit_down'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-down-enabled'] = int(kwargs['speed_limit_down_enabled'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-up'] = int(kwargs['speed_limit_up'])
-        except KeyError:
-            pass
-        try:
-            args['speed-limit-up-enabled'] = int(kwargs['speed_limit_up_enabled'])
-        except KeyError:
-            pass
+                argument = make_rpc_name(key)
+                (arg, val) = argument_value_convert('session-set'
+                                    , argument, value, self._rpc_version())
+                args[arg] = val
         
         if len(args) > 0:
             self._request('session-set', args)
+    
+    def blocklist_update(self):
+        """Update block list. Returns the size of the block list."""
+        self._rpc_version_warning(5)
+        result = self._request('blocklist-update')
+        if 'blocklist-size' in result:
+            return result['blocklist-size']
+        return None
+    
+    def port_test(self):
+        """
+        Tests to see if your incoming peer port is accessible from the
+        outside world.
+        """
+        self._rpc_version_warning(5)
+        result = self._request('port-test')
+        if 'port-is-open' in result:
+            return result['port-is-open']
+        return None
     
     def session_stats(self):
         """Get session statistics"""

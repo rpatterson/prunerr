@@ -3,7 +3,7 @@
 
 import sys, os, time, datetime
 import re, logging
-import httplib, urllib2, base64
+import httplib, urllib2, base64, socket
 
 try:
     import json
@@ -241,35 +241,33 @@ class Client(object):
         request = urllib2.Request(self.url, query, headers)
         request_count = 0
         while True:
+            error_data = ""
             try:
-                error = None
-                error_data = ""
                 self._debug_request(request)
                 if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
-                    response = urllib2.urlopen(request, timeout=10)
+                    response = urllib2.urlopen(request, timeout=60)
                 else:
+                    #socket.setdefaulttimeout(60)
                     response = urllib2.urlopen(request)
                 break
             except urllib2.HTTPError, error:
+                error_data = error.read()
                 if error.code == 409:
                     logging.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed with %s.' % (error), error)
-                    error_data = error.read()
                     if error_data.find('invalid session-id') >= 0 and 'X-Transmission-Session-Id' in error.headers:
                         self.sessionid = error.headers['X-Transmission-Session-Id']
                         request.add_header('X-Transmission-Session-Id', self.sessionid)
                     else:
                         raise TransmissionError('Unknown conflict %s.' % (error), error)
             except urllib2.URLError, error:
-                raise TransmissionError('Failed to connect to daemon.', error)
+                raise TransmissionError('Failed to connect to daemon %s.' % (error), error)
             except httplib.BadStatusLine, error:
                 if (request_count > 1):
                     raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (error.args, self.url, query), error)
             finally:
-                if error:
-                    if not error_data:
-                        error_data = error.read()
+                if error_data:
                     self._debug_response(error, error_data)
             request_count = request_count + 1
         result = response.read()

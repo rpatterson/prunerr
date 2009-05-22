@@ -27,18 +27,19 @@ class Torrent(object):
     All fetched torrent fields are accessable through this class using attributes.
     This class has a few convenience properties using the torrent data.
     """
-    
+
     def __init__(self, fields):
         if 'id' not in fields:
             raise ValueError('Torrent requires an id')
-        self.fields = fields
-    
+        self.fields = {}
+        self.update(fields)
+
     def __repr__(self):
         return '<Torrent %d \"%s\">' % (self.fields['id'], self.fields['name'])
-    
+
     def __str__(self):
         return 'torrent %s' % self.fields['name']
-    
+
     def update(self, other):
         """Update the torrent data from a Transmission arguments dictinary"""
         fields = None
@@ -48,8 +49,9 @@ class Torrent(object):
             fields = other.fields
         else:
             raise ValueError('Cannot update with supplied data')
-        self.fields.update(fields)
-    
+        for k, v in fields.iteritems():
+            self.fields[k.replace('-', '_')] = v
+
     def files(self):
         """
         Get list of files for this torrent. This function returns a dictionary with file information for each file.
@@ -71,18 +73,18 @@ class Torrent(object):
                     'name': item[1]['name'],
                     'completed': item[1]['bytesCompleted']}
         return result
-    
+
     def __getattr__(self, name):
         try:
             return self.fields[name]
         except KeyError, e:
             raise AttributeError('No attribute %s' % name)
-    
+
     @property
     def status(self):
         """Get the status as string."""
         return STATUS[self.fields['status']]
-    
+
     @property
     def progress(self):
         """Get the download progress in percent as float."""
@@ -90,7 +92,7 @@ class Torrent(object):
             return 100.0 * (self.fields['sizeWhenDone'] - self.fields['leftUntilDone']) / float(self.fields['sizeWhenDone'])
         except ZeroDivisionError:
             return 0.0
-    
+
     @property
     def ratio(self):
         """Get the upload/download ratio."""
@@ -98,7 +100,7 @@ class Torrent(object):
             return self.fields['uploadedEver'] / float(self.fields['downloadedEver'])
         except ZeroDivisionError:
             return 0.0
-    
+
     @property
     def eta(self):
         """Get the "eta" as datetime.timedelta."""
@@ -107,27 +109,27 @@ class Torrent(object):
             return datetime.timedelta(seconds=eta)
         else:
             ValueError('eta not valid')
-    
+
     @property
     def date_active(self):
         """Get the attribute "activityDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['activityDate'])
-    
+
     @property
     def date_added(self):
         """Get the attribute "addedDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['addedDate'])
-    
+
     @property
     def date_started(self):
         """Get the attribute "startDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['startDate'])
-    
+
     @property
     def date_done(self):
         """Get the attribute "doneDate" as datetime.datetime."""
         return datetime.datetime.fromtimestamp(self.fields['doneDate'])
-    
+
     def format_eta(self):
         """Returns the attribute "eta" formatted as a string."""
         eta = self.fields['eta']
@@ -141,22 +143,20 @@ class Torrent(object):
 class Session(object):
     """
     Session is a class holding the session data for a Transmission daemon.
-    
+
     Access the session field can be done through attributes.
     The attributes available are the same as the session arguments in the
     Transmission RPC specification, but with underscore instead of hypen.
     ``download-dir`` -> ``download_dir``.
     """
-    
+
     def __init__(self, fields={}):
         self.fields = {}
-        for k, v in fields.iteritems():
-            key = k.replace('-', '_')
-            self.fields[key] = v
-    
+        self.update(fields)
+
     def update(self, other):
         """Update the session data from a session arguments dictinary"""
-        
+
         fields = None
         if isinstance(other, dict):
             fields = other
@@ -164,16 +164,16 @@ class Session(object):
             fields = other.fields
         else:
             raise ValueError('Cannot update with supplied data')
-        
+
         for k, v in fields.iteritems():
             self.fields[k.replace('-', '_')] = v
-    
+
     def __getattr__(self, name):
         try:
             return self.fields[name]
         except KeyError, e:
             raise AttributeError('No attribute %s' % name)
-    
+
     def __str__(self):
         text = ''
         for k, v in self.fields.iteritems():
@@ -184,7 +184,7 @@ class Client(object):
     """
     This is it. This class implements the json-RPC protocol to communicate with Transmission.
     """
-    
+
     def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None):
         base_url = 'http://' + address + ':' + str(port)
         self.url = base_url + '/transmission/rpc'
@@ -204,7 +204,7 @@ class Client(object):
         self.get_session()
         self.torrent_get_arguments = get_arguments('torrent-get'
                                                    , self.rpc_version)
-    
+
     def _debug_request(self, request):
         logger.debug(
             json.dumps(
@@ -218,7 +218,7 @@ class Client(object):
                 indent=2
             )
         )
-    
+
     def _debug_response(self, response, response_data):
         try:
             response_data = json.loads(response_data)
@@ -238,7 +238,7 @@ class Client(object):
                 indent=2
             )
         )
-    
+
     def _http_query(self, query):
         headers = {'X-Transmission-Session-Id': self.sessionid}
         request = urllib2.Request(self.url, query, headers)
@@ -276,10 +276,10 @@ class Client(object):
         result = response.read()
         self._debug_response(response, result)
         return result
-    
+
     def _request(self, method, arguments={}, ids=[], require_ids = False):
         """Send json-rpc request to Transmission using http POST"""
-        
+
         if not isinstance(method, (str, unicode)):
             raise ValueError('request takes method as string')
         if not isinstance(arguments, dict):
@@ -289,7 +289,7 @@ class Client(object):
             arguments['ids'] = ids
         elif require_ids:
             raise ValueError('request require ids')
-        
+
         query = json.dumps({'tag': self._sequence, 'method': method
                             , 'arguments': arguments})
         logger.info(query)
@@ -298,7 +298,7 @@ class Client(object):
         http_data = self._http_query(query)
         elapsed = time.time() - start
         logger.info('http request took %.3f s' % (elapsed))
-        
+
         try:
             data = json.loads(http_data)
         except ValueError, e:
@@ -306,13 +306,13 @@ class Client(object):
             logger.error('Request: \"%s\"' % (query))
             logger.error('HTTP data: \"%s\"' % (http_data))
             raise
-        
+
         logger.info(json.dumps(data, indent=2))
-        
+
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"'
                                     % data['result'])
-        
+
         results = {}
         if method == 'torrent-get':
             for item in data['arguments']['torrents']:
@@ -332,13 +332,13 @@ class Client(object):
             results = data['arguments']
         else:
             return None
-        
+
         return results
-    
+
     def _format_ids(self, args):
         """Take things and make them valid torrent identifiers"""
         ids = []
-        
+
         if isinstance(args, (int, long)):
             ids.append(args)
         elif isinstance(args, (str, unicode)):
@@ -377,59 +377,60 @@ class Client(object):
         else:
             raise ValueError(u'Invalid torrent id')
         return ids
-    
+
     def _update_session(self, data):
         self.session.update(data)
-    
+
+    @property
     def rpc_version(self):
         if hasattr(self.session, 'rpc_version'):
             return self.session.rpc_version
         else:
             return 3
-    
+
     def _rpc_version_warning(self, version):
-        if self.rpc_version() < version:
-            logger.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self.rpc_version(), version))
-    
+        if self.rpc_version < version:
+            logger.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self.rpc_version, version))
+
     def add(self, data, **kwargs):
         """
         Add torrent to transfers list. Takes a base64 encoded .torrent file in data.
         Additional arguments are:
-        
+
             * `paused`, boolean, Whether to pause the transfer on add.
             * `download_dir`, path, The directory where the downloaded
               contents will be saved in.
             * `peer_limit`, number, Limits the number of peers for this
               transfer.
-            * `files_unwanted`, 
-            * `files_wanted`, 
-            * `priority_high`, 
-            * `priority_low`, 
-            * `priority_normal`, 
+            * `files_unwanted`,
+            * `files_wanted`,
+            * `priority_high`,
+            * `priority_low`,
+            * `priority_normal`,
         """
         args = {'metainfo': data}
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-add',
-                                        argument, value, self.rpc_version())
+                                        argument, value, self.rpc_version)
             args[arg] = val
         return self._request('torrent-add', args)
-    
+
     def add_url(self, torrent_url, **kwargs):
         """
         Add torrent to transfers list. Takes a url to a .torrent file.
         Additional arguments are:
-        
+
             * `paused`, boolean, Whether to pause the transfer on add.
             * `download_dir`, path, The directory where the downloaded
               contents will be saved in.
             * `peer_limit`, number, Limits the number of peers for this
               transfer.
-            * `files_unwanted`, 
-            * `files_wanted`, 
-            * `priority_high`, 
-            * `priority_low`, 
-            * `priority_normal`, 
+            * `files_unwanted`,
+            * `files_wanted`,
+            * `priority_high`,
+            * `priority_low`,
+            * `priority_normal`,
         """
         torrent_file = None
         if os.path.exists(torrent_url):
@@ -439,13 +440,13 @@ class Client(object):
                 torrent_file = urllib2.urlopen(torrent_url)
             except:
                 torrent_file = None
-        
+
         if not torrent_file:
             raise TransmissionError('File does not exist.')
-        
+
         torrent_data = base64.b64encode(torrent_file.read())
         return self.add(torrent_data, **kwargs)
-    
+
     def remove(self, ids, delete_data=False):
         """
         remove torrent(s) with provided id(s). Local data is removed if
@@ -454,30 +455,30 @@ class Client(object):
         self._rpc_version_warning(3)
         self._request('torrent-remove',
                     {'delete-local-data':rpc_bool(delete_data)}, ids, True)
-    
+
     def start(self, ids):
         """start torrent(s) with provided id(s)"""
         self._request('torrent-start', {}, ids, True)
-    
+
     def stop(self, ids):
         """stop torrent(s) with provided id(s)"""
         self._request('torrent-stop', {}, ids, True)
-    
+
     def verify(self, ids):
         """verify torrent(s) with provided id(s)"""
         self._request('torrent-verify', {}, ids, True)
-    
+
     def reannounce(self, ids):
         """reannounce torrent(s) with provided id(s)"""
         self._rpc_version_warning(5)
         self._request('torrent-reannounce', {}, ids, True)
-    
+
     def info(self, ids=[], arguments={}):
         """Get detailed information for torrent(s) with provided id(s)."""
         if not arguments:
             arguments = self.torrent_get_arguments
         return self._request('torrent-get', {'fields': arguments}, ids)
-    
+
     def get_files(self, ids=[]):
         """
         Get list of files for provided torrent id(s).
@@ -490,7 +491,7 @@ class Client(object):
         for id, torrent in request_result.iteritems():
             result[id] = torrent.files()
         return result
-    
+
     def set_files(self, items):
         """
         Set file properties. Takes a dictonary with similar contents as the
@@ -525,14 +526,14 @@ class Client(object):
                         , priority_high = priority_high
                         , priority_normal = priority_normal
                         , priority_low = priority_low)
-    
+
     def list(self):
         """list all torrents"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone'
             , 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver'
             , 'downloadedEver']
         return self._request('torrent-get', {'fields': fields})
-    
+
     def change(self, ids, **kwargs):
         """
         Change torrent parameters. This is the list of parameters that.
@@ -541,17 +542,19 @@ class Client(object):
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-set'
-                                    , argument, value, self.rpc_version())
+                                    , argument, value, self.rpc_version)
             args[arg] = val
-        
-        if len(args) > 1:
+
+        if len(args) > 0:
             self._request('torrent-set', args, ids, True)
-    
+        else:
+            ValueError("No arguments to set")
+
     def get_session(self):
         """Get session parameters"""
         self._request('session-get')
         return self.session
-    
+
     def set_session(self, **kwargs):
         """Set session parameters"""
         args = {}
@@ -560,11 +563,11 @@ class Client(object):
                 raise ValueError('Invalid encryption value')
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('session-set'
-                                , argument, value, self.rpc_version())
+                                , argument, value, self.rpc_version)
             args[arg] = val
         if len(args) > 0:
             self._request('session-set', args)
-    
+
     def blocklist_update(self):
         """Update block list. Returns the size of the block list."""
         self._rpc_version_warning(5)
@@ -572,7 +575,7 @@ class Client(object):
         if 'blocklist-size' in result:
             return result['blocklist-size']
         return None
-    
+
     def port_test(self):
         """
         Tests to see if your incoming peer port is accessible from the
@@ -583,7 +586,7 @@ class Client(object):
         if 'port-is-open' in result:
             return result['port-is-open']
         return None
-    
+
     def session_stats(self):
         """Get session statistics"""
         self._request('session-stats')

@@ -106,7 +106,7 @@ found in the Torrent object.
     ...
     ('comment', 'Ubuntu CD releases.ubuntu.com')
 
-The last call will list all known data provided by the Transmission.
+The last call will list all known data provided by Transmission.
 
 Well, we weren't that interested in Ubuntu so lets stop the transfer and the
 remove it.

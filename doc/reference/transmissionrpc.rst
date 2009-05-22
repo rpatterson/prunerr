@@ -171,7 +171,6 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
       or transmission-daemon.
     * *user* and *password* is the username and password for RPC access
       if password protection is used.
-    * If *verbose* is `True` request data is logged using logging at info level.
 
 .. _transmissionrpc-client-add:
 .. method:: Client.add(data, kwargs**)

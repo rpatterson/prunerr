@@ -31,7 +31,17 @@ PRIORITY = mirror_dict({
     'high'   : TR_PRI_HIGH
 })
 
-torrent_args = {
+TR_RATIOLIMIT_GLOBAL    = 0 # follow the global settings
+TR_RATIOLIMIT_SINGLE    = 1 # override the global settings, seeding until a certain ratio
+TR_RATIOLIMIT_UNLIMITED = 2 # override the global settings, seeding regardless of ratio
+
+RATIO_LIMIT = mirror_dict({
+    'global'    : TR_RATIOLIMIT_GLOBAL,
+    'single'    : TR_RATIOLIMIT_SINGLE,
+    'unlimeted' : TR_RATIOLIMIT_UNLIMITED
+})
+
+TORRENT_ARGS = {
     'activityDate':             ('number', 1, None, 'r'),
     'addedDate':                ('number', 1, None, 'r'),
     'announceResponse':         ('string', 1, None, 'r'),
@@ -47,16 +57,16 @@ torrent_args = {
     'downloadDir':              ('string', 4, None, 'r'),
     'downloadedEver':           ('number', 1, None, 'r'),
     'downloaders':              ('number', 3, None, 'r'),
-    'downloadLimit':            ('number', 1, None, 'rw'),
+    'downloadLimit':            ('number', 1, None, 'rw'), # this is incorrect for write
     'downloadLimited':          ('boolean', 5, None, 'rw'),
-    'downloadLimitMode':        ('number', 1, 5, 'rw'),
+    'downloadLimitMode':        ('number', 1, 5, 'r'),
     'error':                    ('number', 1, None, 'r'),
     'errorString':              ('number', 1, None, 'r'),
     'eta':                      ('number', 1, None, 'r'),
     'filename':                 ('string', 1, None, 'a'),
     'files':                    ('array', 1, None, 'r'),
-    'files-wanted':             ('array', 1, None, 'rwa'),
-    'files-unwanted':           ('array', 1, None, 'rwa'),
+    'files-wanted':             ('array', 1, None, 'wa'),
+    'files-unwanted':           ('array', 1, None, 'wa'),
     'fileStats':                ('array', 5, None, 'r'),
     'hashString':               ('string', 1, None, 'r'),
     'haveUnchecked':            ('number', 1, None, 'r'),
@@ -100,10 +110,10 @@ torrent_args = {
     'seedRatioLimit':           ('double', 5, None, 'rw'),
     'seedRatioMode':            ('number', 5, None, 'rw'),
     'sizeWhenDone':             ('number', 1, None, 'r'),
-    'speed-limit-down':         ('number', 1, 5, 'w', 'downloadLimit'),
-    'speed-limit-down-enabled': ('boolean', 1, 5, 'w', 'downloadLimited'),
-    'speed-limit-up':           ('number', 1, 5, 'w', 'uploadLimit'),
-    'speed-limit-up-enabled':   ('boolean', 1, 5, 'w', 'uploadLimited'),
+    'speed-limit-down':         ('number', 1, 5, 'w',),
+    'speed-limit-down-enabled': ('boolean', 1, 5, 'w',),
+    'speed-limit-up':           ('number', 1, 5, 'w',),
+    'speed-limit-up-enabled':   ('boolean', 1, 5, 'w',),
     'startDate':                ('number', 1, None, 'r'),
     'status':                   ('number', 1, None, 'r'),
     'swarmSpeed':               ('number', 1, None, 'r'),
@@ -112,8 +122,8 @@ torrent_args = {
     'totalSize':                ('number', 1, None, 'r'),
     'torrentFile':              ('string', 5, None, 'r'),
     'uploadedEver':             ('number', 1, None, 'r'),
-    'uploadLimit':              ('number', 1, None, 'rw'),
-    'uploadLimitMode':          ('number', 1, 5, 'rw'),
+    'uploadLimit':              ('number', 1, None, 'rw'), # this is incorrect for write
+    'uploadLimitMode':          ('number', 1, 5, 'r'),
     'uploadLimited':            ('boolean', 5, None, 'rw'),
     'uploadRatio':              ('double', 1, None, 'r'),
     'wanted':                   ('array', 1, None, 'r'),
@@ -124,7 +134,7 @@ torrent_args = {
 # Arguments for session-set
 # The set describes:
 #   (<type>, <rpc version introduced>, <rpc version removed>, <read/write>)
-session_args = {
+SESSION_ARGS = {
     "alt-speed-down":            ('number', 5, None, 'rw'),
     "alt-speed-enabled":         ('boolean', 5, None, 'rw'),
     "alt-speed-time-begin":      ('number', 5, None, 'rw'),

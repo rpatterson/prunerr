@@ -82,9 +82,9 @@ def make_rpc_name(name):
 
 def argument_value_convert(method, argument, value, rpc_version):
     if method in ('torrent-add', 'torrent-get', 'torrent-set'):
-        args = constants.torrent_args
+        args = constants.TORRENT_ARGS
     elif method in ('session-get', 'session-set'):
-        args = constants.session_args
+        args = constants.SESSION_ARGS
     else:
         return ValueError('Method "%s" not supported' % (method))
     access_map = {'-set': 'w', '-get': 'r', '-add': 'a'}
@@ -117,9 +117,9 @@ def argument_value_convert(method, argument, value, rpc_version):
 
 def get_arguments(method, rpc_version):
     if method in ('torrent-add', 'torrent-get', 'torrent-set'):
-        args = constants.torrent_args
+        args = constants.TORRENT_ARGS
     elif method in ('session-get', 'session-set'):
-        args = constants.session_args
+        args = constants.SESSION_ARGS
     else:
         return ValueError('Method "%s" not supported' % (method))
     access_map = {'-set': 'w', '-get': 'r', '-add': 'a'}

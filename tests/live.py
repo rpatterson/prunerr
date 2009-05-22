@@ -30,9 +30,10 @@ class liveTestCase(unittest.TestCase):
                 add_torrent = False
                 break
         if add_torrent:
-            self.torrent_id = self.client.add_url(torrent_url).values()[0]['id']
+            self.torrent_id = self.client.add_url(torrent_url).values()[0].id
 
     def tearDown(self):
+        self.client.remove(self.torrent_id, delete_data=True)
         del self.client
 
     def doSetSession(self, argument, value):

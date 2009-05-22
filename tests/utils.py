@@ -86,6 +86,7 @@ class utils(unittest.TestCase):
             'false': 0,
             'no': 0,
             True: 1,
+            False: 0,
         }
         for value, expected in table.iteritems():
             self.assertEqual(tu.rpc_bool(value), expected)
@@ -93,3 +94,6 @@ class utils(unittest.TestCase):
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(utils)
     return suite
+
+if __name__ == '__main__':
+    unittest.main()

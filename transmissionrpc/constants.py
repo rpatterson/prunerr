@@ -26,9 +26,9 @@ TR_PRI_NORMAL =  0
 TR_PRI_HIGH   =  1
 
 PRIORITY = mirror_dict({
-        'low'    : TR_PRI_LOW,
-        'normal' : TR_PRI_NORMAL,
-        'high'   : TR_PRI_HIGH
+    'low'    : TR_PRI_LOW,
+    'normal' : TR_PRI_NORMAL,
+    'high'   : TR_PRI_HIGH
 })
 
 torrent_args = {
@@ -43,7 +43,7 @@ torrent_args = {
     'dateCreated':              ('number', 1, None, 'r'),
     'desiredAvailable':         ('number', 1, None, 'r'),
     'doneDate':                 ('number', 1, None, 'r'),
-    'download-dir':             ('string', 0, None, 'a'),
+    'download-dir':             ('string', 1, None, 'a'),
     'downloadDir':              ('string', 4, None, 'r'),
     'downloadedEver':           ('number', 1, None, 'r'),
     'downloaders':              ('number', 3, None, 'r'),

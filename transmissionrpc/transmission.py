@@ -13,6 +13,9 @@ except ImportError:
 from constants import *
 from utils import *
 
+logger = logging.getLogger('transmissionrpc')
+logger.setLevel(logging.ERROR)
+
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):
         Exception.__init__(self, message)
@@ -194,16 +197,16 @@ class Client(object):
                 )
             urllib2.install_opener(opener)
         elif user or password:
-            logging.warning('Either user or password missing, not using authentication.')
+            logger.warning('Either user or password missing, not using authentication.')
         self._sequence = 0
         self.session = Session()
         self.sessionid = 0
         self.get_session()
         self.torrent_get_arguments = get_arguments('torrent-get'
-                                                   , self._rpc_version)
+                                                   , self.rpc_version)
     
     def _debug_request(self, request):
-        logging.debug(
+        logger.debug(
             json.dumps(
                 {
                     'request': {
@@ -221,7 +224,7 @@ class Client(object):
             response_data = json.loads(response_data)
         except:
             pass
-        logging.debug(
+        logger.debug(
             json.dumps(
                 {
                     'response': {
@@ -253,7 +256,7 @@ class Client(object):
             except urllib2.HTTPError, error:
                 error_data = error.read()
                 if error.code == 409:
-                    logging.info('Server responded with 409, trying to set session-id.')
+                    logger.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed with %s.' % (error), error)
                     if error_data.find('invalid session-id') >= 0 and 'X-Transmission-Session-Id' in error.headers:
@@ -289,22 +292,22 @@ class Client(object):
         
         query = json.dumps({'tag': self._sequence, 'method': method
                             , 'arguments': arguments})
-        logging.info(query)
+        logger.info(query)
         self._sequence += 1
         start = time.time()
         http_data = self._http_query(query)
         elapsed = time.time() - start
-        logging.info('http request took %.3f s' % (elapsed))
+        logger.info('http request took %.3f s' % (elapsed))
         
         try:
             data = json.loads(http_data)
         except ValueError, e:
-            logging.error('Error: ' + str(e))
-            logging.error('Request: \"%s\"' % (query))
-            logging.error('HTTP data: \"%s\"' % (http_data))
+            logger.error('Error: ' + str(e))
+            logger.error('Request: \"%s\"' % (query))
+            logger.error('HTTP data: \"%s\"' % (http_data))
             raise
         
-        logging.info(json.dumps(data, indent=2))
+        logger.info(json.dumps(data, indent=2))
         
         if data['result'] != 'success':
             raise TransmissionError('Query failed with result \"%s\"'
@@ -378,15 +381,15 @@ class Client(object):
     def _update_session(self, data):
         self.session.update(data)
     
-    def _rpc_version(self):
+    def rpc_version(self):
         if hasattr(self.session, 'rpc_version'):
             return self.session.rpc_version
         else:
             return 3
     
     def _rpc_version_warning(self, version):
-        if self._rpc_version() < version:
-            logging.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self._rpc_version(), version))
+        if self.rpc_version() < version:
+            logger.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self.rpc_version(), version))
     
     def add(self, data, **kwargs):
         """
@@ -408,7 +411,7 @@ class Client(object):
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-add',
-                                        argument, value, self._rpc_version())
+                                        argument, value, self.rpc_version())
             args[arg] = val
         return self._request('torrent-add', args)
     
@@ -538,7 +541,7 @@ class Client(object):
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-set'
-                                    , argument, value, self._rpc_version())
+                                    , argument, value, self.rpc_version())
             args[arg] = val
         
         if len(args) > 1:
@@ -553,17 +556,12 @@ class Client(object):
         """Set session parameters"""
         args = {}
         for key, value in kwargs.iteritems():
-            if key == 'encryption':
-                if value in ['required', 'preferred', 'tolerated']:
-                    args['encryption'] = value
-                else:
-                    raise ValueError('Invalid encryption value')
-            else:
-                argument = make_rpc_name(key)
-                (arg, val) = argument_value_convert('session-set'
-                                    , argument, value, self._rpc_version())
-                args[arg] = val
-        
+            if key == 'encryption' and value not in ['required', 'preferred', 'tolerated']:
+                raise ValueError('Invalid encryption value')
+            argument = make_rpc_name(key)
+            (arg, val) = argument_value_convert('session-set'
+                                , argument, value, self.rpc_version())
+            args[arg] = val
         if len(args) > 0:
             self._request('session-set', args)
     

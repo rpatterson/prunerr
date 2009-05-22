@@ -2,11 +2,11 @@
 # 2008-12, Erik Svensson <erik.public@gmail.com>
 
 import unittest
-import torrent, utils, client
+import utils
 
 def suite():
     suite = unittest.TestSuite()
     suite.addTest(utils.suite())
-    suite.addTest(torrent.suite())
-    suite.addTest(client.suite())
+    #suite.addTest(torrent.suite())
+    #suite.addTest(client.suite())
     return suite

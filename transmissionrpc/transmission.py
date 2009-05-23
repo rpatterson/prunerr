@@ -2,7 +2,7 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, time, datetime
-import re, logging
+import re
 import httplib, urllib2, base64, socket
 
 try:
@@ -12,9 +12,6 @@ except ImportError:
 
 from constants import *
 from utils import *
-
-logger = logging.getLogger('transmissionrpc')
-logger.setLevel(logging.ERROR)
 
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):

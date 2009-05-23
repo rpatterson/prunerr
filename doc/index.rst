@@ -28,7 +28,7 @@ Dependecies
 -----------
 
  * simplejson >= 1.7.1 or Python >= 2.6.
- 
+
 Report a problem
 ----------------
 

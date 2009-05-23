@@ -201,6 +201,7 @@ class Client(object):
         self._sequence = 0
         self.session = Session()
         self.sessionid = 0
+        self.protocol_version = None
         self.get_session()
         self.torrent_get_arguments = get_arguments('torrent-get'
                                                    , self.rpc_version)
@@ -247,10 +248,10 @@ class Client(object):
             error_data = ""
             try:
                 self._debug_request(request)
+                socket.setdefaulttimeout(10)
                 if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
                     response = urllib2.urlopen(request, timeout=60)
                 else:
-                    #socket.setdefaulttimeout(60)
                     response = urllib2.urlopen(request)
                 break
             except urllib2.HTTPError, error:
@@ -259,7 +260,7 @@ class Client(object):
                     logger.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed with %s.' % (error), error)
-                    if error_data.find('invalid session-id') >= 0 and 'X-Transmission-Session-Id' in error.headers:
+                    if 'X-Transmission-Session-Id' in error.headers:
                         self.sessionid = error.headers['X-Transmission-Session-Id']
                         request.add_header('X-Transmission-Session-Id', self.sessionid)
                     else:
@@ -317,6 +318,8 @@ class Client(object):
         if method == 'torrent-get':
             for item in data['arguments']['torrents']:
                 results[item['id']] = Torrent(item)
+                if self.protocol_version == 2 and 'peers' not in item:
+                    self.protocol_version = 1
         elif method == 'torrent-add':
             item = data['arguments']['torrent-added']
             results[item['id']] = Torrent(item)
@@ -383,10 +386,14 @@ class Client(object):
 
     @property
     def rpc_version(self):
-        if hasattr(self.session, 'rpc_version'):
-            return self.session.rpc_version
-        else:
-            return 3
+        if self.protocol_version == None:
+            if hasattr(self.session, 'rpc_version'):
+                self.protocol_version = self.session.rpc_version
+            elif hasattr(self.session, 'version'):
+                self.protocol_version = 3
+            else:
+                self.protocol_version = 2
+        return self.protocol_version
 
     def _rpc_version_warning(self, version):
         if self.rpc_version < version:

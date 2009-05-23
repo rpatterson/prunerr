@@ -82,19 +82,13 @@ def make_rpc_name(name):
 
 def argument_value_convert(method, argument, value, rpc_version):
     if method in ('torrent-add', 'torrent-get', 'torrent-set'):
-        args = constants.TORRENT_ARGS
+        args = constants.TORRENT_ARGS[method[-3:]]
     elif method in ('session-get', 'session-set'):
-        args = constants.SESSION_ARGS
+        args = constants.SESSION_ARGS[method[-3:]]
     else:
         return ValueError('Method "%s" not supported' % (method))
-    access_map = {'-set': 'w', '-get': 'r', '-add': 'a'}
-    access = access_map[method[-4:]]
     if argument in args:
         info = args[argument]
-        if info[3].find(access) < 0:
-            raise ValueError(
-                'Method "%s" does not have access to argument "%s".'
-                % (method, argument))
         invalid_version = True
         while invalid_version:
             invalid_version = False
@@ -103,12 +97,12 @@ def argument_value_convert(method, argument, value, rpc_version):
             if info[2] and info[2] <= rpc_version:
                 invalid_version = True
             if invalid_version:
-                if len(info) < 5:
+                if len(info) < 4:
                     raise ValueError(
                         'Method "%s" Argument "%s" does not exist in version %d.'
                         % (method, argument, rpc_version))
                 else:
-                    argument = info[4]
+                    argument = info[3]
                     info = args[argument]
         return (argument, TR_TYPE_MAP[info[0]](value))
     else:
@@ -117,13 +111,11 @@ def argument_value_convert(method, argument, value, rpc_version):
 
 def get_arguments(method, rpc_version):
     if method in ('torrent-add', 'torrent-get', 'torrent-set'):
-        args = constants.TORRENT_ARGS
+        args = constants.TORRENT_ARGS[method[-3:]]
     elif method in ('session-get', 'session-set'):
-        args = constants.SESSION_ARGS
+        args = constants.SESSION_ARGS[method[-3:]]
     else:
         return ValueError('Method "%s" not supported' % (method))
-    access_map = {'-set': 'w', '-get': 'r', '-add': 'a'}
-    access = access_map[method[-4:]]
     accessible = []
     for argument, info in args.iteritems():
         valid_version = True
@@ -131,7 +123,7 @@ def get_arguments(method, rpc_version):
             valid_version = False
         if info[2] and info[2] <= rpc_version:
             valid_version = False
-        if valid_version and info[3].find(access) >= 0:
+        if valid_version:
             accessible.append(argument)
     return accessible
 

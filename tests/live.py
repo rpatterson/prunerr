@@ -38,22 +38,24 @@ class liveTestCase(unittest.TestCase):
         self.client.remove(self.torrent_id, delete_data=True)
         del self.client
 
-    def doSetSession(self, argument, value, rvalfunc=None):
+    def doSetSession(self, argument, value, rvalfunc=None, rarg=None):
         if not rvalfunc:
             rvalfunc = lambda v: v
+        if not rarg:
+            rarg = argument
         original = copy.deepcopy(self.client.get_session())
         args = {argument: value}
         self.client.set_session(**args)
         session = self.client.get_session()
-        rval = rvalfunc(session.fields[argument])
-        self.assertEqual(rval, rval
+        rval = rvalfunc(session.fields[rarg])
+        self.assertEqual(value, rval
             , msg='Argument "%s": in: "%r" does not equal out:"%r"'
             % (argument, value, rval))
-        sval = rvalfunc(original.fields[argument])
+        sval = rvalfunc(original.fields[rarg])
         args = {argument: sval}
         self.client.set_session(**args)
         session = self.client.get_session()
-        rval = rvalfunc(session.fields[argument])
+        rval = rvalfunc(session.fields[rarg])
         self.assertEqual(rval, sval
             , msg='Argument "%s": original in: "%r" does not equal out:"%r"'
             % (argument, sval, rval))
@@ -94,6 +96,10 @@ class liveTestCase(unittest.TestCase):
             self.doSetSession('pex_allowed', True)
             self.doSetSession('port', 33033)
             self.doSetSession('peer_limit', 1000)
+            # test automatic argument replacer
+            self.doSetSession('peer_limit_global', 1000, rarg='peer_limit')
+            self.doSetSession('pex_enabled', True, rarg='pex_allowed')
+            self.doSetSession('peer_port', 33033, rarg='port')
             # TODO: should test a lot of failures
         if self.client.rpc_version > 4:
             self.doSetSession('alt_speed_down', 10)
@@ -117,10 +123,10 @@ class liveTestCase(unittest.TestCase):
             self.doSetSession('seedRatioLimit', 100)
             self.doSetSession('seedRatioLimited', False)
             self.doSetSession('seedRatioLimited', True)
-            # fail!
-            self.doFailSetSession('peer_limit', 1000)
-            self.doFailSetSession('pex_allowed', False)
-            self.doFailSetSession('port', 1000)
+            # test automatic argument replacer
+            self.doSetSession('peer_limit', 1000, rarg='peer_limit_global')
+            self.doSetSession('pex_allowed', True, rarg='pex_enabled')
+            self.doSetSession('port', 33033, rarg='peer_port')
 
     def testGetSession(self):
         o = self.client.get_session()

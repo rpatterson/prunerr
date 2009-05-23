@@ -5,7 +5,7 @@ Transmission RPC
 Introduction
 ============
 
-This is the transmissionrpc. This module helps using Python to connect
+This is **transmissionrpc**. This module helps using Python to connect
 to a Transmission_ JSON-RPC service. transmissionrpc is compatible with
 Transmission 1.3 and later.
 
@@ -28,7 +28,7 @@ Dependecies
 -----------
 
  * simplejson >= 1.7.1 or Python >= 2.6.
- 
+
 Report a problem
 ----------------
 
@@ -56,7 +56,7 @@ Then install the module using
 
     $ python setup.py install
 
-Or if you wish to poke around in transmissionrpc itself use
+Or if you wish to further develop transmissionrpc itself use
 ::
 
 	$ python setup.py develop
@@ -75,7 +75,7 @@ around. Following will create a RPC client and list all torrents.
 ::
 
     >>> import transmissionrpc
-    >>> tc = transmissionrpc.Client('localhost', port=9091, user=None, password=None)
+    >>> tc = transmissionrpc.Client('localhost', port=9091)
     >>> tc.list()
 
 List will return a dictionary of Torrent object indexed by their id. You might
@@ -125,7 +125,28 @@ supported.
     >>> tc.info('1:3')
     {2: <Torrent 2 "ubuntu-8.10-server-amd64.iso">, 3: <Torrent 3 "ubuntu-8.10-alternate-amd64.iso">}
 
-Continue to explore and have fun! For more in depth information read the module reference.
+Continue to explore and have fun! For more in depth information read the module
+reference.
+
+A note about debugging information
+----------------------------------
+
+If you ever need to see what's going on inside transmissionrpc, you can change
+the logging level of transmissionrpc. This is done with these easy steps
+::
+
+	>>> import logging
+	>>> logging.getLogger('transmissionrpc').setLevel(logging.DEBUG)
+
+Note that this will produce a whole lot of output! Other levels are (listed by
+severity)
+
+ * ``logging.ERROR``
+ * ``logging.WARNING``
+ * ``logging.INFO``
+ * ``logging.DEBUG``
+
+The default logging level of transmissionrpc is ``logging.ERROR``.
 
 Module reference
 ================

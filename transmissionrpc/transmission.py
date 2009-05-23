@@ -2,7 +2,7 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, time, datetime
-import re, logging
+import re
 import httplib, urllib2, base64, socket
 
 try:
@@ -13,13 +13,18 @@ except ImportError:
 from constants import *
 from utils import *
 
-logger = logging.getLogger('transmissionrpc')
-logger.setLevel(logging.ERROR)
-
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):
         Exception.__init__(self, message)
+        self.message = message
         self.original = original
+
+    def __str__(self):
+        if self.original:
+            original_name = type(self.original).__name__
+            return '%s Original exception: %s, "%s"' % (self.message, original_name, self.original.args)
+        else:
+            return self.args
 
 class Torrent(object):
     """
@@ -259,17 +264,17 @@ class Client(object):
                 if error.code == 409:
                     logger.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
-                        raise TransmissionError('Session ID negotiation failed with %s.' % (error), error)
+                        raise TransmissionError('Session ID negotiation failed.', error)
                     if 'X-Transmission-Session-Id' in error.headers:
                         self.sessionid = error.headers['X-Transmission-Session-Id']
                         request.add_header('X-Transmission-Session-Id', self.sessionid)
                     else:
-                        raise TransmissionError('Unknown conflict %s.' % (error), error)
+                        raise TransmissionError('Unknown conflict.', error)
             except urllib2.URLError, error:
-                raise TransmissionError('Failed to connect to daemon %s.' % (error), error)
+                raise TransmissionError('Failed to connect to daemon.', error)
             except httplib.BadStatusLine, error:
                 if (request_count > 1):
-                    raise TransmissionError('Server responded with: "%s" when requesting %s "%s".' % (error.args, self.url, query), error)
+                    raise TransmissionError('Failed to request %s "%s".' % (self.url, query), error)
             finally:
                 if error_data:
                     self._debug_response(error, error_data)

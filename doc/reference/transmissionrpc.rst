@@ -19,9 +19,9 @@ Exceptions
 
     This exception is raised when there has occured an error related to
     communication with Transmission. It is a subclass of :exc:`Exception`.
-    
+
     .. attribute:: original
-    
+
         The original exception.
 
 Torrent object
@@ -29,8 +29,9 @@ Torrent object
 
 Torrent is a class holding the information received from Transmission regarding
 a bittorrent transfer. All fetched torrent fields are accessible through this
-class using attributes. This class has a few convenience properties using the
-torrent information.
+class using attributes. The attributes use underscore instead of hyphen in the
+names though. This class has a few convenience properties using the torrent
+information.
 
 Example:
 ::
@@ -41,13 +42,13 @@ Example:
     'My torrent'
     >>> t.date_added
     datetime.datetime(2009, 1, 18, 13, 16, 59)
-    >>> 
+    >>>
 
 .. class:: Torrent(fields)
-    
+
     *fields* should be an dictionary build from the torrent information from an
     Transmission JSON-RPC result.
-    
+
 .. attribute:: Torrent.date_active
 
     Get the attribute *activityDate* as datetime.datetime.
@@ -63,7 +64,7 @@ Example:
 .. attribute:: Torrent.date_done
 
     Get the attribute *doneDate* as datetime.datetime.
-    
+
 .. attribute:: Torrent.eta
 
     The attribute *eta* as datetime.timedelta.
@@ -75,7 +76,7 @@ Example:
 .. attribute:: Torrent.ratio
 
     The upload/download ratio.
-    
+
 .. attribute:: Torrent.status
 
     Returns the torrent status. Is either one of 'check pending', 'checking',
@@ -99,10 +100,10 @@ Example:
                 'priority': <priority ('high'|'normal'|'low')>,
                 'selected': <selected for download>
             }
-        
+
             ...
         }
-    
+
     Example:
     ::
 
@@ -164,13 +165,15 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     hashString. When suppling multiple id's it is possible to use a list mixed
     with both id and hashString.
 
-.. class:: Client(address='localhost', port=9091, user=None, password=None, verbose=False)
+.. class:: Client(address='localhost', port=9091, user=None, password=None)
 
     * *address* and *port* should be the address and port to the Transmission
       "server", this can be either a Transmission client with rpc access enabled
       or transmission-daemon.
     * *user* and *password* is the username and password for RPC access
-      if password protection is used.
+      if athentication is used.
+    
+    The argument *verbose* was removed in 0.3, use logging levels instead.
 
 .. _transmissionrpc-client-add:
 .. method:: Client.add(data, kwargs**)
@@ -182,13 +185,22 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     * `download_dir`, The directory where the downloaded contents will be
       saved in.
     * `peer_limit`, Limits the number of peers for this transfer.
+    * `files_unwanted`, A list of file index not to download.
+    * `files_wanted`, A list of file index to download.
+    * `priority_high`, A list of file index with high priority.
+    * `priority_low`, A list of file index with low priority.
+    * `priority_normal`, A list of file index with normal priority.
+    
+    `files_unwanted`, `files_wanted`, `priority_high`, `priority_low`
+    , `priority_normal` are new in RPC protocol version 5.
 
 .. method:: Client.add_url(torrent_url, kwargs**)
 
     Add torrent to transfers list. Takes a file path or url to a .torrent file
     in *torrent_url*.
-    
-    For information on addition argument see :ref:`Client.add <transmissionrpc-client-add>`.
+
+    For information on additional argument see
+    :ref:`Client.add <transmissionrpc-client-add>`.
 
 .. method:: Client.remove(ids, delete_data=False)
 
@@ -210,7 +222,8 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 .. method:: Client.info(ids=[])
 
     Get information for the torrent(s) with the supplied id(s). If *ids* is
-    empty, information for all torrents are fetched.
+    empty, information for all torrents are fetched. See the RPC specification
+    for a full list of information fields.
 
 .. _transmissionrpc-client-get_files:
 .. method:: Client.get_files(ids=[])
@@ -218,9 +231,9 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Get list of files for provided torrent id(s). If *ids* is empty,
     information for all torrents are fetched. This function returns a dictonary
     for each requested torrent id holding the information about the files.
-    
+
     ::
-    
+
         {
             <torrent id>: {
                 <file id>: {
@@ -230,16 +243,16 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
                     'priority': <priority ('high'|'normal'|'low')>,
                     'selected': <selected for download>
                 }
-                
+
                 ...
             }
-            
+
             ...
         }
-    
+
     Example:
     ::
-    
+
         {
             1: {
                 0: {
@@ -302,25 +315,35 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 
 .. method:: Client.list()
 
-    list all torrents, fetching ``id``, ``hashString``, ``name``, ``sizeWhenDone``,
-    ``leftUntilDone``, ``eta``, ``status``, ``rateUpload``, ``rateDownload``,
-    ``uploadedEver``, ``downloadedEver`` for each torrent.
+    list all torrents, fetching ``id``, ``hashString``, ``name``
+    , ``sizeWhenDone``, ``leftUntilDone``, ``eta``, ``status``, ``rateUpload``
+    , ``rateDownload``, ``uploadedEver``, ``downloadedEver`` for each torrent.
 
 .. method:: Client.change(ids, kwargs**)
 
     Change torrent parameters for the torrent(s) with the supplied id's. The
     parameters are:
-    
+
     * ``files_wanted``, A list of file id's that should be downloaded.
     * ``files_unwanted``, A list of file id's that shouldn't be downloaded.
     * ``peer_limit``, The peer limit for the torrents.
     * ``priority_high``, A list of file id's that should have high priority.
     * ``priority_normal``, A list of file id's that should have normal priority.
     * ``priority_low``, A list of file id's that should have low priority.
-    * ``speed_limit_up``, Set the speed limit for upload in Kib/s.
-    * ``speed_limit_up_enable``, Enable upload speed limiter.
-    * ``speed_limit_down``, Set the speed limit for download in Kib/s.
-    * ``speed_limit_down_enable``, Enable download speed limiter.
+    * ``uploadLimit``, Set the speed limit for upload in Kib/s.
+    * ``uploadLimited``, Enable upload speed limiter.
+    * ``downloadLimit``, Set the speed limit for download in Kib/s.
+    * ``downloadLimited``, Enable download speed limiter.
+    
+    Following arguments where renamed in RPC protocol version 5.
+    
+    * ``speed_limit_up`` is now called ``uploadLimit`` 
+    * ``speed_limit_up_enable`` is now called ``uploadLimited``
+    * ``speed_limit_down`` is now called ``downloadLimit``
+    * ``speed_limit_down_enable`` is now called ``downloadLimited``
+    
+    .. NOTE::
+       transmissionrpc will try to automatically fix argument errors.
 
 .. method:: Client.get_session()
 
@@ -329,17 +352,38 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 .. method:: Client.set_session()
 
     Set session parameters. The parameters are:
-    
+
+    * ``alt_speed_down``, max global download speed (in K/s).
+    * ``alt_speed_enabled``, True means use the alt speeds.
+    * ``alt_speed_time_begin``, when to turn on alt speeds (units: minutes after midnight).
+    * ``alt_speed_time_day``, what day(s) to turn on alt speeds (look at tr_sched_day).
+    * ``alt_speed_time_enabled``, True means the scheduled on/off times are used.
+    * ``alt_speed_time_end``, when to turn off alt speeds (units: same).
+    * ``alt_speed_up``, max global upload speed (in K/s).
+    * ``blocklist_enabled``, Enabled block list.
     * ``encryption``, Level of encryption. Should be one of ``required``, ``preferred`` or ``tolerated``.
     * ``download_dir``, Default download dir.
-    * ``peer_limit``, Default download dir.
-    * ``pex_allowed``, Allow pex in public torrents.
-    * ``port``, Set the port number.
-    * ``port_forwarding_enabled``, 
+    * ``peer_limit_global``, Maximum number of peers.
+    * ``peer_limit_per_torrent``, Maximum number of peers per torrent.
+    * ``pex_enabled``, Allow pex in public torrents.
+    * ``peer_port``, Set the port number.
+    * ``peer-port-random-on-start``, Ranomize port peer port om launch.
+    * ``port_forwarding_enabled``, Enabled port forwarding.
+    * ``seedRatioLimit``, Limits how much to seed, where 1.0 is as much as you downloaded.
+    * ``seedRatioLimited``, Enables seed limiting.
     * ``speed_limit_down``, Set the global download speed limit in Kib/s.
     * ``speed_limit_down_enabled``, Enables the global download speed limiter.
     * ``speed_limit_up``, Set the global upload speed limit in Kib/s.
     * ``speed_limit_up_enabled``, Enables the global upload speed limiter.
+    
+    Following arguments where renamed in RPC protocol version 5.
+    
+    * ``peer_limit`` is now called ``peer_limit_global``
+    * ``pex_allowed`` is now called ``pex_enabled`` 
+    * ``port`` is now called ``peer_port``
+    
+    .. NOTE::
+       transmissionrpc will try to automatically fix argument errors.
 
 .. method:: Client.session_stats()
 

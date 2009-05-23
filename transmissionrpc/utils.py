@@ -3,6 +3,7 @@
 
 import socket, datetime
 import constants
+from constants import logger
 
 UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
 
@@ -92,18 +93,24 @@ def argument_value_convert(method, argument, value, rpc_version):
         invalid_version = True
         while invalid_version:
             invalid_version = False
+            replacement = None
             if rpc_version < info[1]:
                 invalid_version = True
+                replacement = info[3]
             if info[2] and info[2] <= rpc_version:
                 invalid_version = True
+                replacement = info[4]
             if invalid_version:
-                if len(info) < 4:
+                if replacement:
+                    logger.warning(
+                        'Replacing requested argument "%s" with "%s".'
+                        % (argument, replacement))
+                    argument = replacement
+                    info = args[argument]
+                else:
                     raise ValueError(
                         'Method "%s" Argument "%s" does not exist in version %d.'
                         % (method, argument, rpc_version))
-                else:
-                    argument = info[3]
-                    info = args[argument]
         return (argument, TR_TYPE_MAP[info[0]](value))
     else:
         raise ValueError('Argument "%s" does not exists for method "%s".',
@@ -126,5 +133,3 @@ def get_arguments(method, rpc_version):
         if valid_version:
             accessible.append(argument)
     return accessible
-
-

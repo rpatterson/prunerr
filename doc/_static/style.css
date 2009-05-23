@@ -43,7 +43,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-weight: 200;
+    font-weight: 400;
 }
 
 a {
@@ -161,3 +161,22 @@ div.contents ul {
     list-style: none;
     padding-left: 2em;
 }
+
+div.admonition {
+    margin: 0.5em;
+    border: 1px solid #999;
+}
+
+div.admonition p {
+    margin: 0.5em;
+}
+
+p.admonition-title {
+    font-weight: bold;
+}
+
+div.note {
+    background: #ff9;
+    border: 1px solid #990;
+}
+

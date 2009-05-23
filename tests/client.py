@@ -23,7 +23,7 @@ class client(unittest.TestCase):
         client._request = request
         call(*args, **kwargs)
         client._request = original_request
-    
+
     def assertTransmissionQuery(self, expected, result, client, call, *args, **kwargs):
         def query(q):
             data = json.loads(q)
@@ -35,7 +35,7 @@ class client(unittest.TestCase):
         client._http_query = query
         call(*args, **kwargs)
         client._http_query = original_method
-    
+
     def testConstruction(self):
         tc = Client()
         self.assertEqual(tc.url, 'http://localhost:%d/transmission/rpc' % (transmissionrpc.constants.DEFAULT_PORT))
@@ -55,7 +55,7 @@ class client(unittest.TestCase):
         tc = Client('127.0.0.1', 7000, password='secret')
         self.assertEqual(tc.url, 'http://127.0.0.1:7000/transmission/rpc')
         self.assertEqual(tc.verbose, False)
-    
+
     def testAdd(self):
         tc = Client()
         data = 'data'
@@ -71,7 +71,7 @@ class client(unittest.TestCase):
         self.assertTransmissionRequest(expected, tc, tc.add, data, paused=True, download_dir='/tmp', peer_limit=10)
         # test exception for non integer peer_limit
         self.failUnlessRaises(ValueError, tc.add, data, peer_limit='apa')
-    
+
     def testAddUrl(self):
         dirpath = os.path.dirname(os.path.abspath(__file__))
         tc = Client()
@@ -80,7 +80,7 @@ class client(unittest.TestCase):
         self.assertTransmissionRequest(expected, tc, tc.add_url, '%s/torrent.txt' % (dirpath), paused=True, download_dir='/tmp', peer_limit=10)
         self.failUnlessRaises(TransmissionError, tc.add_url, 'torrent.torrent')
         # TODO: Add test for real web url's?
-    
+
     def testRemove(self):
         tc = Client()
         ids = ['0123456789abcdef', 2, 3]
@@ -90,7 +90,7 @@ class client(unittest.TestCase):
         # test at http interface
         expected = {'method': 'torrent-remove', 'arguments': {'ids': ids, 'delete-local-data': 0}}
         self.assertTransmissionQuery(expected, {}, tc, tc.remove, ids)
-    
+
     def testStart(self):
         tc = Client()
         ids = ['0123456789abcdef', 2, 3]
@@ -100,7 +100,7 @@ class client(unittest.TestCase):
         # test at http interface
         expected = {'method': 'torrent-start', 'arguments': {'ids': ids}}
         self.assertTransmissionQuery(expected, {}, tc, tc.start, ids)
-    
+
     def testStop(self):
         tc = Client()
         ids = ['0123456789abcdef', 2, 3]
@@ -110,7 +110,7 @@ class client(unittest.TestCase):
         # test at http interface
         expected = {'method': 'torrent-stop', 'arguments': {'ids': ids}}
         self.assertTransmissionQuery(expected, {}, tc, tc.stop, ids)
-    
+
     def testVerify(self):
         tc = Client()
         ids = ['0123456789abcdef', 2, 3]
@@ -120,7 +120,7 @@ class client(unittest.TestCase):
         # test at http interface
         expected = {'method': 'torrent-verify', 'arguments': {'ids': ids}}
         self.assertTransmissionQuery(expected, {}, tc, tc.verify, ids)
-    
+
     def testInfo(self):
         tc = Client()
         fields = transmissionrpc.utils.get_arguments('torrent-get', 5)

@@ -19,9 +19,9 @@ Exceptions
 
     This exception is raised when there has occured an error related to
     communication with Transmission. It is a subclass of :exc:`Exception`.
-    
+
     .. attribute:: original
-    
+
         The original exception.
 
 Torrent object
@@ -41,13 +41,13 @@ Example:
     'My torrent'
     >>> t.date_added
     datetime.datetime(2009, 1, 18, 13, 16, 59)
-    >>> 
+    >>>
 
 .. class:: Torrent(fields)
-    
+
     *fields* should be an dictionary build from the torrent information from an
     Transmission JSON-RPC result.
-    
+
 .. attribute:: Torrent.date_active
 
     Get the attribute *activityDate* as datetime.datetime.
@@ -63,7 +63,7 @@ Example:
 .. attribute:: Torrent.date_done
 
     Get the attribute *doneDate* as datetime.datetime.
-    
+
 .. attribute:: Torrent.eta
 
     The attribute *eta* as datetime.timedelta.
@@ -75,7 +75,7 @@ Example:
 .. attribute:: Torrent.ratio
 
     The upload/download ratio.
-    
+
 .. attribute:: Torrent.status
 
     Returns the torrent status. Is either one of 'check pending', 'checking',
@@ -99,10 +99,10 @@ Example:
                 'priority': <priority ('high'|'normal'|'low')>,
                 'selected': <selected for download>
             }
-        
+
             ...
         }
-    
+
     Example:
     ::
 
@@ -187,7 +187,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 
     Add torrent to transfers list. Takes a file path or url to a .torrent file
     in *torrent_url*.
-    
+
     For information on addition argument see :ref:`Client.add <transmissionrpc-client-add>`.
 
 .. method:: Client.remove(ids, delete_data=False)
@@ -218,9 +218,9 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Get list of files for provided torrent id(s). If *ids* is empty,
     information for all torrents are fetched. This function returns a dictonary
     for each requested torrent id holding the information about the files.
-    
+
     ::
-    
+
         {
             <torrent id>: {
                 <file id>: {
@@ -230,16 +230,16 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
                     'priority': <priority ('high'|'normal'|'low')>,
                     'selected': <selected for download>
                 }
-                
+
                 ...
             }
-            
+
             ...
         }
-    
+
     Example:
     ::
-    
+
         {
             1: {
                 0: {
@@ -310,7 +310,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 
     Change torrent parameters for the torrent(s) with the supplied id's. The
     parameters are:
-    
+
     * ``files_wanted``, A list of file id's that should be downloaded.
     * ``files_unwanted``, A list of file id's that shouldn't be downloaded.
     * ``peer_limit``, The peer limit for the torrents.
@@ -329,13 +329,13 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 .. method:: Client.set_session()
 
     Set session parameters. The parameters are:
-    
+
     * ``encryption``, Level of encryption. Should be one of ``required``, ``preferred`` or ``tolerated``.
     * ``download_dir``, Default download dir.
     * ``peer_limit``, Default download dir.
     * ``pex_allowed``, Allow pex in public torrents.
     * ``port``, Set the port number.
-    * ``port_forwarding_enabled``, 
+    * ``port_forwarding_enabled``,
     * ``speed_limit_down``, Set the global download speed limit in Kib/s.
     * ``speed_limit_down_enabled``, Enables the global download speed limiter.
     * ``speed_limit_up``, Set the global upload speed limit in Kib/s.

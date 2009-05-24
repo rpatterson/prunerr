@@ -253,9 +253,9 @@ class Client(object):
             error_data = ""
             try:
                 self._debug_request(request)
-                socket.setdefaulttimeout(10)
+                socket.setdefaulttimeout(30) # 30 seconds
                 if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
-                    response = urllib2.urlopen(request, timeout=60)
+                    response = urllib2.urlopen(request, timeout=30)
                 else:
                     response = urllib2.urlopen(request)
                 break

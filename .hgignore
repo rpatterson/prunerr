@@ -2,7 +2,8 @@ syntax: glob
 *.pyc
 *.pyo
 *.torrent
-.DS_Store
+*.wpr
+*.tmproj
 syntax: regexp
 ^build/*
 ^dist/*

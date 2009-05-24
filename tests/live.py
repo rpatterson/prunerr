@@ -43,29 +43,32 @@ class liveTestCase(unittest.TestCase):
             rvalfunc = lambda v: v
         if not rarg:
             rarg = argument
-        original = copy.deepcopy(self.client.get_session())
+        original = copy.deepcopy(
+            rvalfunc(
+                self.client.get_session().fields[rarg]
+            )
+        )
         args = {argument: value}
         self.client.set_session(**args)
-        session = self.client.get_session()
-        rval = rvalfunc(session.fields[rarg])
+        rval = rvalfunc(self.client.get_session().fields[rarg])
         self.assertEqual(value, rval
             , msg='Argument "%s": in: "%r" does not equal out:"%r"'
             % (argument, value, rval))
-        sval = rvalfunc(original.fields[rarg])
-        args = {argument: sval}
+        args = {argument: original}
         self.client.set_session(**args)
-        session = self.client.get_session()
-        rval = rvalfunc(session.fields[rarg])
-        self.assertEqual(rval, sval
+        rval = rvalfunc(self.client.get_session().fields[rarg])
+        self.assertEqual(rval, original
             , msg='Argument "%s": original in: "%r" does not equal out:"%r"'
-            % (argument, sval, rval))
+            % (argument, original, rval))
 
     def doFailSetSession(self, argument, value):
         args = {argument: value}
         self.failUnlessRaises(ValueError, self.client.set_session, **args)
 
     def testSetSession(self):
-        #self.client.info()
+        # a torrent-get is needed to really find out if the rpc_version is 1 or 2
+        if self.client.rpc_version <= 2:
+            self.client.info(self.torrent_id)
         self.doSetSession('encryption', 'tolerated')
         self.doSetSession('encryption', 'preferred')
         self.doSetSession('encryption', 'required')
@@ -80,11 +83,9 @@ class liveTestCase(unittest.TestCase):
             # these versions of the protocol seems to return the value in
             # b/s instead of Kib/s
             def speedLimitValueFunction(value):
-                if value == 0:
-                    value = -2147483648
-                else:
-                    value = value / 1024
-                return value
+                res = int(value)
+                res = res / 1024
+                return res
             self.doSetSession('speed_limit_up', 10, rvalfunc=speedLimitValueFunction)
             self.doSetSession('speed_limit_down', 10, rvalfunc=speedLimitValueFunction)
         else:

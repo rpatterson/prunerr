@@ -24,6 +24,9 @@ install the transmissionrpc python module use easy_install.
 
     $ easy_install transmissionrpc
 
+.. NOTE::
+	You might need administrator privileges to install python modules.
+
 Dependecies
 -----------
 
@@ -62,6 +65,9 @@ Or if you wish to further develop transmissionrpc itself use
 	$ python setup.py develop
 
 This will link this directory to the library as transmissionrpc.
+
+.. NOTE::
+	You might need administrator privileges to install python modules.
 
 .. _bitbucket: http://www.bitbucket.org/blueluna/transmissionrpc/
 .. _mercurial: http://www.selenic.com/mercurial

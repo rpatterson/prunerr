@@ -52,14 +52,14 @@ class liveTestCase(unittest.TestCase):
         self.client.set_session(**args)
         rval = rvalfunc(self.client.get_session().fields[rarg])
         self.assertEqual(value, rval
-            , msg='Argument "%s": in: "%r" does not equal out:"%r"'
-            % (argument, value, rval))
+                         , msg='Argument "%s": in: "%r" does not equal out:"%r"'
+                         % (argument, value, rval))
         args = {argument: original}
         self.client.set_session(**args)
         rval = rvalfunc(self.client.get_session().fields[rarg])
         self.assertEqual(rval, original
-            , msg='Argument "%s": original in: "%r" does not equal out:"%r"'
-            % (argument, original, rval))
+                         , msg='Argument "%s": original in: "%r" does not equal out:"%r"'
+                         % (argument, original, rval))
 
     def doFailSetSession(self, argument, value):
         args = {argument: value}
@@ -128,6 +128,9 @@ class liveTestCase(unittest.TestCase):
             self.doSetSession('peer_limit', 1000, rarg='peer_limit_global')
             self.doSetSession('pex_allowed', True, rarg='pex_enabled')
             self.doSetSession('port', 33033, rarg='peer_port')
+        if self.client.rpc_version > 5:
+            self.doSetSession('dht_enabled', True)
+            self.doSetSession('dht_enabled', False)
 
     def testGetSession(self):
         o = self.client.get_session()
@@ -135,7 +138,7 @@ class liveTestCase(unittest.TestCase):
         for argument, value in o.fields.iteritems():
             argument = make_rpc_name(argument)
             self.assertTrue(argument in library_args
-                , msg='Response argument %s not found.' % (argument))
+                            , msg='Response argument %s not found.' % (argument))
             library_args.remove(argument)
         for argument in library_args:
             self.fail('%s not found in response' % argument)
@@ -151,7 +154,7 @@ class liveTestCase(unittest.TestCase):
         for argument, value in torrent.fields.iteritems():
             argument = make_rpc_name(argument)
             self.assertTrue(argument in library_args
-                , msg='Response argument %s not found.' % (argument))
+                            , msg='Response argument %s not found.' % (argument))
             library_args.remove(argument)
         for argument in library_args:
             self.fail('%s not found in response' % argument)
@@ -248,7 +251,21 @@ class liveTestCase(unittest.TestCase):
             self.assertRaises(TransmissionError, self.client.port_test)
         else:
             self.client.port_test()
-
+    
+    def testMove(self):
+        if self.client.rpc_version < 6:
+            self.assertRaises(TransmissionError, self.client.move
+                              , self.torrent_id, '/tmp')
+        else:
+            self.client.move(self.torrent_id, '/tmp')
+    
+    def testLocate(self):
+        if self.client.rpc_version < 6:
+            self.assertRaises(TransmissionError, self.client.locate
+                              , self.torrent_id, '/tmp')
+        else:
+            self.client.locate(self.torrent_id, '/tmp')
+    
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     #logging.getLogger('transmissionrpc').setLevel(logging.INFO)

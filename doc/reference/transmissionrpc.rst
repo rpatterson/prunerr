@@ -345,6 +345,14 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.
 
+.. method:: Client.locate(ids, location)
+    
+    Locate the torrent data at ``location``.
+
+.. method:: Client.move(ids, location)
+    
+    Move the torrent data to ``location``.
+
 .. method:: Client.get_session()
 
     Get the Session object for the client.
@@ -361,8 +369,9 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     * ``alt_speed_time_end``, when to turn off alt speeds (units: same).
     * ``alt_speed_up``, max global upload speed (in K/s).
     * ``blocklist_enabled``, Enabled block list.
-    * ``encryption``, Level of encryption. Should be one of ``required``, ``preferred`` or ``tolerated``.
     * ``download_dir``, Default download dir.
+    * ``dht_enabled``, Enable DHT.
+    * ``encryption``, Level of encryption. Should be one of ``required``, ``preferred`` or ``tolerated``.
     * ``peer_limit_global``, Maximum number of peers.
     * ``peer_limit_per_torrent``, Maximum number of peers per torrent.
     * ``pex_enabled``, Allow pex in public torrents.

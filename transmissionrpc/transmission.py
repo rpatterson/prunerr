@@ -561,7 +561,19 @@ class Client(object):
             self._request('torrent-set', args, ids, True)
         else:
             ValueError("No arguments to set")
-
+    
+    def move(self, ids, location):
+        """Move torrent data to the new location."""
+        self._rpc_version_warning(6)
+        args = {'location': location, 'move': True}
+        self._request('torrent-set-location', args, ids, True);
+    
+    def locate(self, ids, location):
+        """Locate torrent data at the location."""
+        self._rpc_version_warning(6)
+        args = {'location': location, 'move': False}
+        self._request('torrent-set-location', args, ids, True);
+    
     def get_session(self):
         """Get session parameters"""
         self._request('session-get')

@@ -245,7 +245,7 @@ class Client(object):
             )
         )
 
-    def _http_query(self, query):
+    def _http_query(self, query, timeout=DEFAULT_TIMEOUT):
         headers = {'X-Transmission-Session-Id': self.sessionid}
         request = urllib2.Request(self.url, query, headers)
         request_count = 0
@@ -253,9 +253,9 @@ class Client(object):
             error_data = ""
             try:
                 self._debug_request(request)
-                socket.setdefaulttimeout(30) # 30 seconds
+                socket.setdefaulttimeout(timeout) # 30 seconds
                 if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
-                    response = urllib2.urlopen(request, timeout=30)
+                    response = urllib2.urlopen(request, timeout=timeout)
                 else:
                     response = urllib2.urlopen(request)
                 break
@@ -283,7 +283,7 @@ class Client(object):
         self._debug_response(response, result)
         return result
 
-    def _request(self, method, arguments={}, ids=[], require_ids = False):
+    def _request(self, method, arguments={}, ids=[], require_ids=False, timeout=DEFAULT_TIMEOUT):
         """Send json-rpc request to Transmission using http POST"""
 
         if not isinstance(method, (str, unicode)):
@@ -301,7 +301,7 @@ class Client(object):
         logger.info(query)
         self._sequence += 1
         start = time.time()
-        http_data = self._http_query(query)
+        http_data = self._http_query(query, timeout)
         elapsed = time.time() - start
         logger.info('http request took %.3f s' % (elapsed))
 
@@ -404,11 +404,13 @@ class Client(object):
         if self.rpc_version < version:
             logger.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self.rpc_version, version))
 
-    def add(self, data, **kwargs):
+    def add(self, data, timeout=DEFAULT_TIMEOUT, **kwargs):
         """
         Add torrent to transfers list. Takes a base64 encoded .torrent file in data.
         Additional arguments are:
 
+            * `metainfo`, string, alternate way to pass base64 encoded torrent data
+            * `filename`, path or url, provide torrent data as a file path or URL.
             * `paused`, boolean, Whether to pause the transfer on add.
             * `download_dir`, path, The directory where the downloaded
               contents will be saved in.
@@ -420,13 +422,21 @@ class Client(object):
             * `priority_low`,
             * `priority_normal`,
         """
-        args = {'metainfo': data}
+        args = {}
+        if data:
+            args = {'metainfo': data}
+        if 'metainfo' in kwargs:
+            pass
+        if 'filename' in kwargs:
+            pass
+        else:
+            raise ValueError('No torrent data or torrent url.')
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-add',
                                         argument, value, self.rpc_version)
             args[arg] = val
-        return self._request('torrent-add', args)
+        return self._request('torrent-add', args, timeout=timeout)
 
     def add_url(self, torrent_url, **kwargs):
         """
@@ -459,52 +469,52 @@ class Client(object):
         torrent_data = base64.b64encode(torrent_file.read())
         return self.add(torrent_data, **kwargs)
 
-    def remove(self, ids, delete_data=False):
+    def remove(self, ids, delete_data=False, timeout=DEFAULT_TIMEOUT):
         """
         remove torrent(s) with provided id(s). Local data is removed if
         delete_data is True, otherwise not.
         """
         self._rpc_version_warning(3)
         self._request('torrent-remove',
-                    {'delete-local-data':rpc_bool(delete_data)}, ids, True)
+                    {'delete-local-data':rpc_bool(delete_data)}, ids, True, timeout=timeout)
 
-    def start(self, ids):
+    def start(self, ids, timeout=DEFAULT_TIMEOUT):
         """start torrent(s) with provided id(s)"""
-        self._request('torrent-start', {}, ids, True)
+        self._request('torrent-start', {}, ids, True, timeout=timeout)
 
-    def stop(self, ids):
+    def stop(self, ids, timeout=DEFAULT_TIMEOUT):
         """stop torrent(s) with provided id(s)"""
-        self._request('torrent-stop', {}, ids, True)
+        self._request('torrent-stop', {}, ids, True, timeout=timeout)
 
-    def verify(self, ids):
+    def verify(self, ids, timeout=DEFAULT_TIMEOUT):
         """verify torrent(s) with provided id(s)"""
-        self._request('torrent-verify', {}, ids, True)
+        self._request('torrent-verify', {}, ids, True, timeout=timeout)
 
-    def reannounce(self, ids):
+    def reannounce(self, ids, timeout=DEFAULT_TIMEOUT):
         """reannounce torrent(s) with provided id(s)"""
         self._rpc_version_warning(5)
-        self._request('torrent-reannounce', {}, ids, True)
+        self._request('torrent-reannounce', {}, ids, True, timeout=timeout)
 
-    def info(self, ids=[], arguments={}):
+    def info(self, ids=[], arguments={}, timeout=DEFAULT_TIMEOUT):
         """Get detailed information for torrent(s) with provided id(s)."""
         if not arguments:
             arguments = self.torrent_get_arguments
-        return self._request('torrent-get', {'fields': arguments}, ids)
+        return self._request('torrent-get', {'fields': arguments}, ids, timeout=timeout)
 
-    def get_files(self, ids=[]):
+    def get_files(self, ids=[], timeout=DEFAULT_TIMEOUT):
         """
         Get list of files for provided torrent id(s).
         This function returns a dictonary for each requested torrent id holding
         the information about the files.
         """
         fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
-        request_result = self._request('torrent-get', {'fields': fields}, ids)
+        request_result = self._request('torrent-get', {'fields': fields}, ids, timeout=timeout)
         result = {}
         for id, torrent in request_result.iteritems():
             result[id] = torrent.files()
         return result
 
-    def set_files(self, items):
+    def set_files(self, items, timeout=DEFAULT_TIMEOUT):
         """
         Set file properties. Takes a dictonary with similar contents as the
         result of get_files.
@@ -537,16 +547,16 @@ class Client(object):
                         , files_unwanted = unwanted
                         , priority_high = priority_high
                         , priority_normal = priority_normal
-                        , priority_low = priority_low)
+                        , priority_low = priority_low, timeout=timeout)
 
-    def list(self):
+    def list(self, timeout=DEFAULT_TIMEOUT):
         """list all torrents"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone'
             , 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver'
             , 'downloadedEver']
-        return self._request('torrent-get', {'fields': fields})
+        return self._request('torrent-get', {'fields': fields}, timeout=timeout)
 
-    def change(self, ids, **kwargs):
+    def change(self, ids, timeout=DEFAULT_TIMEOUT, **kwargs):
         """
         Change torrent parameters. This is the list of parameters that.
         """
@@ -558,28 +568,28 @@ class Client(object):
             args[arg] = val
 
         if len(args) > 0:
-            self._request('torrent-set', args, ids, True)
+            self._request('torrent-set', args, ids, True, timeout=timeout)
         else:
             ValueError("No arguments to set")
     
-    def move(self, ids, location):
+    def move(self, ids, location, timeout=DEFAULT_TIMEOUT):
         """Move torrent data to the new location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': True}
-        self._request('torrent-set-location', args, ids, True);
+        self._request('torrent-set-location', args, ids, True, timeout=timeout);
     
-    def locate(self, ids, location):
+    def locate(self, ids, location, timeout=DEFAULT_TIMEOUT):
         """Locate torrent data at the location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': False}
-        self._request('torrent-set-location', args, ids, True);
+        self._request('torrent-set-location', args, ids, True, timeout=timeout);
     
-    def get_session(self):
+    def get_session(self, timeout=DEFAULT_TIMEOUT):
         """Get session parameters"""
-        self._request('session-get')
+        self._request('session-get', timeout=timeout)
         return self.session
 
-    def set_session(self, **kwargs):
+    def set_session(self, timeout=DEFAULT_TIMEOUT, **kwargs):
         """Set session parameters"""
         args = {}
         for key, value in kwargs.iteritems():
@@ -590,28 +600,28 @@ class Client(object):
                                 , argument, value, self.rpc_version)
             args[arg] = val
         if len(args) > 0:
-            self._request('session-set', args)
+            self._request('session-set', args, timeout=timeout)
 
-    def blocklist_update(self):
+    def blocklist_update(self, timeout=DEFAULT_TIMEOUT):
         """Update block list. Returns the size of the block list."""
         self._rpc_version_warning(5)
-        result = self._request('blocklist-update')
+        result = self._request('blocklist-update', timeout=timeout)
         if 'blocklist-size' in result:
             return result['blocklist-size']
         return None
 
-    def port_test(self):
+    def port_test(self, timeout=DEFAULT_TIMEOUT):
         """
         Tests to see if your incoming peer port is accessible from the
         outside world.
         """
         self._rpc_version_warning(5)
-        result = self._request('port-test')
+        result = self._request('port-test', timeout=timeout)
         if 'port-is-open' in result:
             return result['port-is-open']
         return None
 
-    def session_stats(self):
+    def session_stats(self, timeout=DEFAULT_TIMEOUT):
         """Get session statistics"""
-        self._request('session-stats')
+        self._request('session-stats', timeout=timeout)
         return self.session

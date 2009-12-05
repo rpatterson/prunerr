@@ -12,6 +12,8 @@ def mirror_dict(d):
 
 DEFAULT_PORT = 9091
 
+DEFAULT_TIMEOUT = 30
+
 TR_STATUS_CHECK_WAIT   = (1<<0)
 TR_STATUS_CHECK        = (1<<1)
 TR_STATUS_DOWNLOAD     = (1<<2)

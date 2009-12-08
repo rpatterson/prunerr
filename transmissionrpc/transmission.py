@@ -2,7 +2,8 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, time, datetime
-import re
+import warnings
+import re, urlparse
 import httplib, urllib2, base64, socket
 
 try:
@@ -15,7 +16,7 @@ from utils import *
 
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):
-        Exception.__init__(self, message)
+        #Exception.__init__(self, message)
         self.message = message
         self.original = original
 
@@ -24,7 +25,7 @@ class TransmissionError(Exception):
             original_name = type(self.original).__name__
             return '%s Original exception: %s, "%s"' % (self.message, original_name, self.original.args)
         else:
-            return self.args
+            return self.message
 
 class Torrent(object):
     """
@@ -181,8 +182,8 @@ class Session(object):
 
     def __str__(self):
         text = ''
-        for k, v in self.fields.iteritems():
-            text += "% 32s: %s\n" % (k[-32:], v)
+        for k in sorted(self.fields.keys()):
+            text += "% 32s: %s\n" % (k[-32:], self.fields[k])
         return text
 
 class Client(object):
@@ -314,10 +315,11 @@ class Client(object):
             raise
 
         logger.info(json.dumps(data, indent=2))
-
-        if data['result'] != 'success':
-            raise TransmissionError('Query failed with result \"%s\"'
-                                    % data['result'])
+        if 'result' in data:
+            if data['result'] != 'success':
+                raise TransmissionError('Query failed with result \"%s\".' % (data['result']))
+        else:
+            raise TransmissionError('Query failed without result.')
 
         results = {}
         if method == 'torrent-get':
@@ -425,12 +427,8 @@ class Client(object):
         args = {}
         if data:
             args = {'metainfo': data}
-        if 'metainfo' in kwargs:
-            pass
-        if 'filename' in kwargs:
-            pass
-        else:
-            raise ValueError('No torrent data or torrent url.')
+        elif 'metainfo' not in kwargs and 'filename' not in kwargs:
+            raise ValueError('No torrent data or torrent uri.')
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-add',
@@ -465,10 +463,45 @@ class Client(object):
 
         if not torrent_file:
             raise TransmissionError('File does not exist.')
-
+        warnings.warn('add_url has been deprecated, please use add or add_uri instead.', DeprecationWarning)
         torrent_data = base64.b64encode(torrent_file.read())
         return self.add(torrent_data, **kwargs)
+    
+    def add_uri(self, uri, **kwargs):
+        """
+        Add torrent to transfers list. Takes a uri to a torrent, supporting
+        all uri's supported by Transmissions torrent-add 'filename'
+        argument. Additional arguments are:
 
+            * `paused`, boolean, Whether to pause the transfer on add.
+            * `download_dir`, path, The directory where the downloaded
+              contents will be saved in.
+            * `peer_limit`, number, Limits the number of peers for this
+              transfer.
+            * `files_unwanted`,
+            * `files_wanted`,
+            * `priority_high`,
+            * `priority_low`,
+            * `priority_normal`,
+        """
+        if uri == None:
+            raise ValueError('add_uri requires a URI.')
+        # there has been some problem with T's built in torrent fetcher,
+        # use a python one instead
+        parseduri = urlparse.urlparse(uri)
+        print(parseduri.scheme)
+        torrent_data = None
+        if parseduri.scheme in ['http', 'https', 'ftp', 'ftps']:
+            try:
+                torrent_file = urllib2.urlopen(uri)
+                torrent_data = base64.b64encode(torrent_file.read())
+            except Exception:
+                torrent_data = None
+        if torrent_data:
+            return self.add(torrent_data, **kwargs)
+        else:
+            return self.add(None, filename=uri, **kwargs)
+    
     def remove(self, ids, delete_data=False, timeout=DEFAULT_TIMEOUT):
         """
         remove torrent(s) with provided id(s). Local data is removed if

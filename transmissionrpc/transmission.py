@@ -489,14 +489,10 @@ class Client(object):
         # there has been some problem with T's built in torrent fetcher,
         # use a python one instead
         parseduri = urlparse.urlparse(uri)
-        print(parseduri.scheme)
         torrent_data = None
-        if parseduri.scheme in ['http', 'https', 'ftp', 'ftps']:
-            try:
-                torrent_file = urllib2.urlopen(uri)
-                torrent_data = base64.b64encode(torrent_file.read())
-            except Exception:
-                torrent_data = None
+        if parseduri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
+            torrent_file = urllib2.urlopen(uri)
+            torrent_data = base64.b64encode(torrent_file.read())
         if torrent_data:
             return self.add(torrent_data, **kwargs)
         else:

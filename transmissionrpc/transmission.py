@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# 2008-07, Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
+# Licensed under the MIT license.
 
 import sys, os, time, datetime
 import warnings

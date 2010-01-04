@@ -38,7 +38,7 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'Transmission RPC'
-copyright = '2009, Erik Svensson'
+copyright = '2008-2010, Erik Svensson'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.

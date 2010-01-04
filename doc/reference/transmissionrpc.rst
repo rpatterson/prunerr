@@ -30,7 +30,7 @@ Torrent object
 Torrent is a class holding the information received from Transmission regarding
 a bittorrent transfer. All fetched torrent fields are accessible through this
 class using attributes. The attributes use underscore instead of hyphen in the
-names though. This class has a few convenience properties using the torrent
+names though. This class has a few convenience attributes using the torrent
 information.
 
 Example:
@@ -181,12 +181,12 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Add torrent to transfers list. Takes a base64 encoded .torrent file in
     *data*. Additional arguments are:
 
-    * `paused`, Whether to pause or start the transfer on add.
     * `download_dir`, The directory where the downloaded contents will be
       saved in.
-    * `peer_limit`, Limits the number of peers for this transfer.
     * `files_unwanted`, A list of file index not to download.
     * `files_wanted`, A list of file index to download.
+    * `paused`, Whether to pause or start the transfer on add.
+    * `peer_limit`, Limits the number of peers for this transfer.
     * `priority_high`, A list of file index with high priority.
     * `priority_low`, A list of file index with low priority.
     * `priority_normal`, A list of file index with normal priority.
@@ -198,6 +198,15 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 
     Add torrent to transfers list. Takes a file path or url to a .torrent file
     in *torrent_url*.
+
+    For information on additional argument see
+    :ref:`Client.add <transmissionrpc-client-add>`.
+
+.. method:: Client.add_uri(uri, kwargs**)
+
+    Add torrent to transfers list. Takes a URI to a .torrent file
+    in *uri*. Support for file, http and ftp URI schemes are handled by python's
+    urllib2. Otherwise the URI is sent to Transmission as is.
 
     For information on additional argument see
     :ref:`Client.add <transmissionrpc-client-add>`.
@@ -324,16 +333,23 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Change torrent parameters for the torrent(s) with the supplied id's. The
     parameters are:
 
+    * ``bandwidthPriority``, Priority for this transfer.
+    * ``downloadLimit``, Set the speed limit for download in Kib/s.
+    * ``downloadLimited``, Enable download speed limiter.
     * ``files_wanted``, A list of file id's that should be downloaded.
     * ``files_unwanted``, A list of file id's that shouldn't be downloaded.
+    * ``honorsSessionLimits``, Enables or disables the transfer to honour the
+      upload limit set in the session.
+    * ``location``, Local download location.
     * ``peer_limit``, The peer limit for the torrents.
     * ``priority_high``, A list of file id's that should have high priority.
     * ``priority_normal``, A list of file id's that should have normal priority.
     * ``priority_low``, A list of file id's that should have low priority.
+    * ``seedRatioLimit``, Seeding ratio.
+    * ``seedRatioMode``, Which ratio to use. 0 = Use session limit, 1 = Use
+      transfer limit, 2 = Disable limit.
     * ``uploadLimit``, Set the speed limit for upload in Kib/s.
     * ``uploadLimited``, Enable upload speed limiter.
-    * ``downloadLimit``, Set the speed limit for download in Kib/s.
-    * ``downloadLimited``, Enable download speed limiter.
     
     Following arguments where renamed in RPC protocol version 5.
     

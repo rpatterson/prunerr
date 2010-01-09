@@ -32,7 +32,10 @@ class liveTestCase(unittest.TestCase):
                 add_torrent = False
                 break
         if add_torrent:
-            self.torrent_id = self.client.add_url(mf_torrent_url).values()[0].id
+            if self.client.rpc_version > 6:
+                self.torrent_id = self.client.add_uri(mf_torrent_url).values()[0].id
+            else:
+                self.torrent_id = self.client.add_url(mf_torrent_url).values()[0].id
 
     def tearDown(self):
         self.client.remove(self.torrent_id, delete_data=True)

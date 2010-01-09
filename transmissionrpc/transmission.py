@@ -272,8 +272,10 @@ class Client(object):
                         request.add_header('X-Transmission-Session-Id', self.sessionid)
                     else:
                         raise TransmissionError('Unknown conflict.', error)
+                else:
+                    raise TransmissionError('Request failed with %s.' % (str(error)), error)
             except urllib2.URLError, error:
-                raise TransmissionError('Failed to connect to daemon.', error)
+                raise TransmissionError('Request failed.', error)
             except httplib.BadStatusLine, error:
                 if (request_count > 1):
                     raise TransmissionError('Failed to request %s "%s".' % (self.url, query), error)

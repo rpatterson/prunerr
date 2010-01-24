@@ -15,6 +15,7 @@ torrent_url = 'http://releases.ubuntu.com/9.04/ubuntu-9.04-alternate-i386.iso.to
 torrent_hash = '031ebeb6faa215c387d8bc35198efc07df9433c5'
 mf_torrent_url = 'http://imgjam.com/torrents/album/26/36026/36026-ogg3.torrent/Sean%20Fournier%20-%20Oh%20My%20--%20Jamendo%20-%20OGG%20Vorbis%20q7%20-%202008.12.05%20%5Bwww.jamendo.com%5D.torrent'
 mf_torrent_hash = '711adbb146d153c81a0fd13d1df6b294ddb87dc6'
+ubuntu910_magnet = 'magnet:?xt=urn:btih:b65333c904f35428c09811a01032666f98abff67&dn=ubuntu-9.10-desktop-i386.iso&tr=http%3A%2F%2Ftracker.openbittorrent.com%2Fannounce'
 
 from transmissionrpc import TransmissionError, Client
 from transmissionrpc.utils import get_arguments, make_rpc_name, argument_value_convert
@@ -40,6 +41,12 @@ class liveTestCase(unittest.TestCase):
     def tearDown(self):
         self.client.remove(self.torrent_id, delete_data=True)
         del self.client
+
+    def testAddMagnet(self):
+        torrent = self.client.add_uri(ubuntu910_magnet).values()[0]
+        hstr = self.client.info(torrent.id).values()[0].hashString
+        self.assertEqual(torrent.hashString, hstr)
+        self.client.remove(torrent.id, delete_data=True)
 
     def doSetSession(self, argument, value, rvalfunc=None, rarg=None):
         if not rvalfunc:
@@ -134,6 +141,10 @@ class liveTestCase(unittest.TestCase):
         if self.client.rpc_version > 5:
             self.doSetSession('dht_enabled', True)
             self.doSetSession('dht_enabled', False)
+        if self.client.rpc_version > 6:
+            self.doSetSession('incomplete_dir', '/tmp')
+            self.doSetSession('incomplete_dir_enabled', True)
+            self.doSetSession('incomplete_dir_enabled', False)
 
     def testGetSession(self):
         o = self.client.get_session()
@@ -152,7 +163,6 @@ class liveTestCase(unittest.TestCase):
 
     def testGetTorrent(self):
         torrent = self.getTorrent()
-        print('Probably RPC protocol version %d' % (self.client.rpc_version))
         library_args = get_arguments('torrent-get', self.client.rpc_version)
         for argument, value in torrent.fields.iteritems():
             argument = make_rpc_name(argument)

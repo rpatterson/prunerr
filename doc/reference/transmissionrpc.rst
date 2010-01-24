@@ -181,18 +181,18 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Add torrent to transfers list. Takes a base64 encoded .torrent file in
     *data*. Additional arguments are:
 
-    * `download_dir`, The directory where the downloaded contents will be
-      saved in.
-    * `files_unwanted`, A list of file index not to download.
-    * `files_wanted`, A list of file index to download.
-    * `paused`, Whether to pause or start the transfer on add.
-    * `peer_limit`, Limits the number of peers for this transfer.
-    * `priority_high`, A list of file index with high priority.
-    * `priority_low`, A list of file index with low priority.
-    * `priority_normal`, A list of file index with normal priority.
-    
-    `files_unwanted`, `files_wanted`, `priority_high`, `priority_low`
-    , `priority_normal` are new in RPC protocol version 5.
+    =================== ==== =============================================================
+    Argument            RPC  Description                                                  
+    =================== ==== =============================================================
+    ``download_dir``    1 -  The directory where the downloaded contents will be saved in.
+    ``files_unwanted``  1 -  A list of file id's that shouldn't be downloaded.            
+    ``files_wanted``    1 -  A list of file id's that should be downloaded.               
+    ``paused``          1 -  If True, does not start the transfer when added.             
+    ``peer_limit``      1 -  Maximum number of peers allowed.                             
+    ``priority_high``   1 -  A list of file id's that should have high priority.          
+    ``priority_low``    1 -  A list of file id's that should have low priority.           
+    ``priority_normal`` 1 -  A list of file id's that should have normal priority.        
+    =================== ==== =============================================================
 
 .. method:: Client.add_url(torrent_url, kwargs**)
 
@@ -333,30 +333,29 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     Change torrent parameters for the torrent(s) with the supplied id's. The
     parameters are:
 
-    * ``bandwidthPriority``, Priority for this transfer.
-    * ``downloadLimit``, Set the speed limit for download in Kib/s.
-    * ``downloadLimited``, Enable download speed limiter.
-    * ``files_wanted``, A list of file id's that should be downloaded.
-    * ``files_unwanted``, A list of file id's that shouldn't be downloaded.
-    * ``honorsSessionLimits``, Enables or disables the transfer to honour the
-      upload limit set in the session.
-    * ``location``, Local download location.
-    * ``peer_limit``, The peer limit for the torrents.
-    * ``priority_high``, A list of file id's that should have high priority.
-    * ``priority_normal``, A list of file id's that should have normal priority.
-    * ``priority_low``, A list of file id's that should have low priority.
-    * ``seedRatioLimit``, Seeding ratio.
-    * ``seedRatioMode``, Which ratio to use. 0 = Use session limit, 1 = Use
-      transfer limit, 2 = Disable limit.
-    * ``uploadLimit``, Set the speed limit for upload in Kib/s.
-    * ``uploadLimited``, Enable upload speed limiter.
-    
-    Following arguments where renamed in RPC protocol version 5.
-    
-    * ``speed_limit_up`` is now called ``uploadLimit`` 
-    * ``speed_limit_up_enable`` is now called ``uploadLimited``
-    * ``speed_limit_down`` is now called ``downloadLimit``
-    * ``speed_limit_down_enable`` is now called ``downloadLimited``
+    ============================ ===== =============== =====================================================================================
+    Argument                     RPC   Replaced by     Description                                                                          
+    ============================ ===== =============== =====================================================================================
+    ``bandwidthPriority``        5 -                   Priority for this transfer.                                                          
+    ``downloadLimit``            5 -                   Set the speed limit for download in Kib/s.                                           
+    ``downloadLimited``          5 -                   Enable download speed limiter.                                                       
+    ``files_unwanted``           1 -                   A list of file id's that shouldn't be downloaded.                                    
+    ``files_wanted``             1 -                   A list of file id's that should be downloaded.                                       
+    ``honorsSessionLimits``      5 -                   Enables or disables the transfer to honour the upload limit set in the session.      
+    ``ids``                      1 -                   Local download location.                                                             
+    ``peer_limit``               1 -                   The peer limit for the torrents.                                                     
+    ``priority_high``            1 -                   A list of file id's that should have high priority.                                  
+    ``priority_low``             1 -                   A list of file id's that should have normal priority.                                
+    ``priority_normal``          1 -                   A list of file id's that should have low priority.                                   
+    ``seedRatioLimit``           5 -                   Seeding ratio.                                                                       
+    ``seedRatioMode``            5 -                   Which ratio to use. 0 = Use session limit, 1 = Use transfer limit, 2 = Disable limit.
+    ``speed_limit_down``         1 - 5 downloadLimit   Set the speed limit for download in Kib/s.                                           
+    ``speed_limit_down_enabled`` 1 - 5 downloadLimited Enable download speed limiter.                                                       
+    ``speed_limit_up``           1 - 5 uploadLimit     Set the speed limit for upload in Kib/s.                                             
+    ``speed_limit_up_enabled``   1 - 5 uploadLimited   Enable upload speed limiter.                                                         
+    ``uploadLimit``              5 -                   Set the speed limit for upload in Kib/s.                                             
+    ``uploadLimited``            5 -                   Enable upload speed limiter.                                                         
+    ============================ ===== =============== =====================================================================================
     
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.
@@ -377,35 +376,38 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
 
     Set session parameters. The parameters are:
 
-    * ``alt_speed_down``, max global download speed (in K/s).
-    * ``alt_speed_enabled``, True means use the alt speeds.
-    * ``alt_speed_time_begin``, when to turn on alt speeds (units: minutes after midnight).
-    * ``alt_speed_time_day``, what day(s) to turn on alt speeds (look at tr_sched_day).
-    * ``alt_speed_time_enabled``, True means the scheduled on/off times are used.
-    * ``alt_speed_time_end``, when to turn off alt speeds (units: same).
-    * ``alt_speed_up``, max global upload speed (in K/s).
-    * ``blocklist_enabled``, Enabled block list.
-    * ``download_dir``, Default download dir.
-    * ``dht_enabled``, Enable DHT.
-    * ``encryption``, Level of encryption. Should be one of ``required``, ``preferred`` or ``tolerated``.
-    * ``peer_limit_global``, Maximum number of peers.
-    * ``peer_limit_per_torrent``, Maximum number of peers per torrent.
-    * ``pex_enabled``, Allow pex in public torrents.
-    * ``peer_port``, Set the port number.
-    * ``peer-port-random-on-start``, Ranomize port peer port om launch.
-    * ``port_forwarding_enabled``, Enabled port forwarding.
-    * ``seedRatioLimit``, Limits how much to seed, where 1.0 is as much as you downloaded.
-    * ``seedRatioLimited``, Enables seed limiting.
-    * ``speed_limit_down``, Set the global download speed limit in Kib/s.
-    * ``speed_limit_down_enabled``, Enables the global download speed limiter.
-    * ``speed_limit_up``, Set the global upload speed limit in Kib/s.
-    * ``speed_limit_up_enabled``, Enables the global upload speed limiter.
-    
-    Following arguments where renamed in RPC protocol version 5.
-    
-    * ``peer_limit`` is now called ``peer_limit_global``
-    * ``pex_allowed`` is now called ``pex_enabled`` 
-    * ``port`` is now called ``peer_port``
+    ============================= ===== ================= ==========================================================================================================================
+    Argument                      RPC   Replaced by       Description                                                                                                               
+    ============================= ===== ================= ==========================================================================================================================
+    ``alt_speed_down``            5 -                     Alternate session download speed limit (in Kib/s).                                                                        
+    ``alt_speed_enabled``         5 -                     Enables alternate global download speed limiter.                                                                          
+    ``alt_speed_time_begin``      5 -                     Time when alternate speeds should be enabled. Minutes after midnight.                                                     
+    ``alt_speed_time_day``        5 -                     Enables alternate speeds scheduling these days.                                                                           
+    ``alt_speed_time_enabled``    5 -                     Enables alternate speeds scheduling.                                                                                      
+    ``alt_speed_time_end``        5 -                     Time when alternate speeds should be disabled. Minutes after midnight.                                                    
+    ``alt_speed_up``              5 -                     Alternate session upload speed limit (in Kib/s).                                                                          
+    ``blocklist_enabled``         5 -                     Enables the block list                                                                                                    
+    ``dht_enabled``               6 -                     Enables DHT.                                                                                                              
+    ``download_dir``              1 -                     Set the session download directory.                                                                                       
+    ``encryption``                1 -                     Set the session encryption mode, one of ``required``, ``preferred`` or ``tolerated``.                                     
+    ``incomplete_dir``            7 -                     The path to the directory of incomplete transfer data.                                                                    
+    ``incomplete_dir_enabled``    7 -                     Enables the incomplete transfer data directory. Otherwise data for incomplete transfers are stored in the download target.
+    ``peer_limit``                1 - 5 peer-limit-global Maximum number of peers                                                                                                   
+    ``peer_limit_global``         5 -                     Maximum number of peers                                                                                                   
+    ``peer_limit_per_torrent``    5 -                     Maximum number of peers per transfer                                                                                      
+    ``peer_port``                 5 -                     Peer port.                                                                                                                
+    ``peer_port_random_on_start`` 5 -                     Enables randomized peer port on start of Transmission.                                                                    
+    ``pex_allowed``               1 - 5 pex-enabled       Allowing PEX in public torrents.                                                                                          
+    ``pex_enabled``               5 -                     Allowing PEX in public torrents.                                                                                          
+    ``port``                      1 - 5 peer-port         Peer port.                                                                                                                
+    ``port_forwarding_enabled``   1 -                     Enables port forwarding.                                                                                                  
+    ``seedRatioLimit``            5 -                     Seed ratio limit. 1.0 means 1:1 download and upload ratio.                                                                
+    ``seedRatioLimited``          5 -                     Enables seed ration limit.                                                                                                
+    ``speed_limit_down``          1 -                     Download speed limit (in Kib/s).                                                                                          
+    ``speed_limit_down_enabled``  1 -                     Enables download speed limiting.                                                                                          
+    ``speed_limit_up``            1 -                     Upload speed limit (in Kib/s).                                                                                            
+    ``speed_limit_up_enabled``    1 -                     Enables upload speed limiting.                                                                                            
+    ============================= ===== ================= ==========================================================================================================================
     
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.

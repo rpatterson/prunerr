@@ -59,6 +59,24 @@ ul {
     padding-left: 1em;
 }
 
+table, th, td {
+    border: none;
+}
+
+table {
+    border-spacing: 10px 2px;
+}
+
+th {
+    border-bottom: solid 1px #aaa;
+    text-align: left;
+}
+
+td {
+    border-bottom: solid 1px #eee;
+    text-align: left;
+}
+
 div.documentwrapper {
     float: right;
     width: 100%;

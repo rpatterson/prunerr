@@ -3,7 +3,8 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, os.path, re, itertools
-import urllib2, base64, shlex
+import urllib2, urlparse, base64, shlex
+import logging
 from optparse import OptionParser
 try:
     import readline
@@ -31,7 +32,11 @@ start without a command.
 
     def connect(self, address=None, port=None, username=None, password=None):
         self.tc = transmissionrpc.Client(address, port, username, password)
-        self.prompt = u'Helical %s:%d> ' % (address, port)
+        urlo = urlparse.urlparse(self.tc.url)
+        if urlo.port:
+            self.prompt = u'Helical %s:%d> ' % (urlo.hostname, urlo.port)
+        else:
+            self.prompt = u'Helical %s> ' % (urlo.hostname)
 
     def arg_tokenize(self, argstr):
         return [unicode(token, 'utf-8') for token in shlex.split(argstr.encode('utf-8'))] or ['']
@@ -344,11 +349,19 @@ def main(args=None):
                     help='Athentication username.')
     parser.add_option('-p', '--password', dest='password',
                     help='Athentication password.')
+    parser.add_option('-d', '--debug', dest='debug',
+                    help='Enable debug messages.', action="store_true")
     (values, args) = parser.parse_args(args)
     commands = [cmd[3:] for cmd in itertools.ifilter(lambda c: c[:3] == 'do_', dir(Helical))]
     address = 'localhost'
     port = DEFAULT_PORT
     command = None
+    if values.debug:
+        logger = logging.getLogger('transmissionrpc')
+        logger.setLevel(logging.DEBUG)
+        loghandler = logging.StreamHandler()
+        loghandler.setLevel(logging.DEBUG)
+        logging.getLogger('transmissionrpc').addHandler(loghandler)
     for arg in args:
         if arg in commands:
             command = arg
@@ -356,7 +369,8 @@ def main(args=None):
         try:
             (address, port) = inet_address(arg, DEFAULT_PORT)
         except INetAddressError:
-            pass
+            address = arg
+            port = None
     helical = Helical()
     try:
         helical.connect(address, port, values.username, values.password)

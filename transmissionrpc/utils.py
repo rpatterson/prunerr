@@ -41,18 +41,20 @@ def inet_address(address, default_port, default_address='localhost'):
         try:
             port = int(addr[0])
             addr = default_address
-        except:
+        except ValueError:
             addr = addr[0]
             port = default_port
     elif len(addr) == 2:
-        port = int(addr[1])
+        try:
+            port = int(addr[1])
+        except ValueError:
+            raise INetAddressError('Invalid address "%s".' % address)
         if len(addr[0]) == 0:
             addr = default_address
         else:
             addr = addr[0]
     else:
-        addr = default_address
-        port = default_port
+        raise INetAddressError('Invalid address "%s".' % address)
     try:
         socket.getaddrinfo(addr, port, socket.AF_INET, socket.SOCK_STREAM)
     except socket.gaierror, e:

@@ -5,7 +5,7 @@
 import sys, os, time, datetime
 import warnings
 import re, urlparse
-import httplib, urllib2, base64, socket
+import httplib, urllib2, urlparse, base64, socket
 
 try:
     import json
@@ -193,8 +193,21 @@ class Client(object):
     """
 
     def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None):
-        base_url = 'http://' + address + ':' + str(port)
-        self.url = base_url + '/transmission/rpc'
+        urlo = urlparse.urlparse(address)
+        if urlo.scheme == '':
+            base_url = 'http://' + address + ':' + str(port)
+            self.url = base_url + '/transmission/rpc'
+        else:
+            if urlo.port:
+                self.url = urlo.scheme + '://' + urlo.hostname + ':' + str(urlo.port) + urlo.path
+            else:
+                self.url = urlo.scheme + '://' + urlo.hostname + urlo.path
+            logger.info('Using custom URL "' + self.url + '".')
+            if urlo.username and urlo.password:
+                user = urlo.username
+                password = urlo.password
+            elif urlo.username or urlo.password:
+                logger.warning('Either user or password missing, not using authentication.')
         if user and password:
             password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
             password_manager.add_password(realm=None, uri=self.url, user=user, passwd=password)

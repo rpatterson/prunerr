@@ -5,7 +5,7 @@
 import sys, os, time, datetime
 import warnings
 import re, urlparse
-import httplib, urllib2, urlparse, base64, socket
+import httplib, urllib2, urlparse, base64
 
 try:
     import json
@@ -268,10 +268,10 @@ class Client(object):
             error_data = ""
             try:
                 self._debug_request(request)
-                socket.setdefaulttimeout(timeout) # 30 seconds
                 if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
                     response = urllib2.urlopen(request, timeout=timeout)
                 else:
+                    logger.info('Socket timeout not supported, disabled.')
                     response = urllib2.urlopen(request)
                 break
             except urllib2.HTTPError, error:

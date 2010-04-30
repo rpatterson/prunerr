@@ -189,7 +189,21 @@ class Session(object):
 
 class Client(object):
     """
-    This is it. This class implements the json-RPC protocol to communicate with Transmission.
+    This is it. This class implements the JSON-RPC protocol to communicate with Transmission.
+
+    Torrent ids
+    -----------
+
+    Many functions in Client takes torrent id. A torrent id can either be id or
+    hashString. When suppling multiple id's it is possible to use a list mixed
+    with both id and hashString.
+
+    Timeouts
+    --------
+
+    Since most methods results in HTTP requests against Transmission, it is
+    possible to provide a argument called ``timeout``. Timeout is only effective
+    when using Python 2.6 or later and the default timeout is 30 seconds.
     """
 
     def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None):
@@ -536,7 +550,7 @@ class Client(object):
         self._request('torrent-verify', {}, ids, True, timeout=timeout)
 
     def reannounce(self, ids, timeout=DEFAULT_TIMEOUT):
-        """reannounce torrent(s) with provided id(s)"""
+        """Reannounce torrent(s) with provided id(s)"""
         self._rpc_version_warning(5)
         self._request('torrent-reannounce', {}, ids, True, timeout=timeout)
 

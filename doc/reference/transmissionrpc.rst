@@ -1,5 +1,5 @@
 :mod:`transmissionrpc` --- Module reference
-===========================================
+###########################################
 
 .. module:: transmissionrpc
 .. moduleauthor:: Erik Svensson <erik.public@gmail.com>
@@ -13,7 +13,7 @@ the `RPC specification`_ for more information on RPC data.
    :depth: 3
 
 Exceptions
-----------
+==========
 
 .. exception:: TransmissionError
 
@@ -25,7 +25,7 @@ Exceptions
         The original exception.
 
 Torrent object
---------------
+==============
 
 Torrent is a class holding the information received from Transmission regarding
 a bittorrent transfer. All fetched torrent fields are accessible through this
@@ -133,7 +133,7 @@ Example:
     Transmission JSON-RPC result.
 
 Session object
---------------
+==============
 
 Session is a class holding the session data for a Transmission session.
 
@@ -155,15 +155,23 @@ Transmission RPC specification, but with underscore instead of hyphen.
     Transmission JSON-RPC result.
 
 Client object
--------------
+=============
 
 This is it. This class implements the JSON-RPC protocol to communicate with Transmission.
 
-.. _transmissionrpc-client-id-note:
-.. note::
-    Many functions in Client takes torrent id. A torrent id can either be id or
-    hashString. When suppling multiple id's it is possible to use a list mixed
-    with both id and hashString.
+Torrent ids
+-----------
+
+Many functions in Client takes torrent id. A torrent id can either be id or
+hashString. When suppling multiple id's it is possible to use a list mixed
+with both id and hashString.
+
+Timeouts
+--------
+
+Since most methods results in HTTP requests against Transmission, it is
+possible to provide a argument called ``timeout``. Timeout is only effective
+when using Python 2.6 or later and the default timeout is 30 seconds.
 
 .. class:: Client(address='localhost', port=9091, user=None, password=None)
 
@@ -176,7 +184,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     The argument *verbose* was removed in 0.3, use logging levels instead.
 
 .. _transmissionrpc-client-add:
-.. method:: Client.add(data, kwargs**)
+.. method:: Client.add(data, timeout=DEFAULT_TIMEOUT, kwargs**)
 
     Add torrent to transfers list. Takes a base64 encoded .torrent file in
     *data*. Additional arguments are:
@@ -211,31 +219,35 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     For information on additional argument see
     :ref:`Client.add <transmissionrpc-client-add>`.
 
-.. method:: Client.remove(ids, delete_data=False)
+.. method:: Client.remove(ids, delete_data=False, timeout=DEFAULT_TIMEOUT)
 
     Remove the torrent(s) with the supplied id(s). Local data is removed if
     *delete_data* is True, otherwise not.
 
-.. method:: Client.start(ids)
+.. method:: Client.start(ids, timeout=DEFAULT_TIMEOUT)
 
     Start the torrent(s) with the supplied id(s).
 
-.. method:: Client.stop(ids)
+.. method:: Client.stop(ids, timeout=DEFAULT_TIMEOUT)
 
     Stop the torrent(s) with the supplied id(s).
 
-.. method:: Client.verify(ids)
+.. method:: Client.verify(ids, timeout=DEFAULT_TIMEOUT)
 
     Verify the torrent(s) with the supplied id(s).
+    
+.. method:: Client.reannounce(ids, timeout=DEFAULT_TIMEOUT):
+    
+    Reannounce torrent(s) with provided id(s)
 
-.. method:: Client.info(ids=[])
+.. method:: Client.info(ids=[], timeout=DEFAULT_TIMEOUT)
 
     Get information for the torrent(s) with the supplied id(s). If *ids* is
     empty, information for all torrents are fetched. See the RPC specification
     for a full list of information fields.
 
 .. _transmissionrpc-client-get_files:
-.. method:: Client.get_files(ids=[])
+.. method:: Client.get_files(ids=[], timeout=DEFAULT_TIMEOUT)
 
     Get list of files for provided torrent id(s). If *ids* is empty,
     information for all torrents are fetched. This function returns a dictonary
@@ -275,7 +287,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
         }
 
 .. _transmissionrpc-client-set_files:
-.. method:: Client.set_files(items)
+.. method:: Client.set_files(items, timeout=DEFAULT_TIMEOUT)
 
     Set file properties. Takes a dictonary with similar contents as the result
     of :ref:`Client.get_files <transmissionrpc-client-get_files>`.
@@ -322,13 +334,13 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
         }
         client.set_files(items)
 
-.. method:: Client.list()
+.. method:: Client.list(timeout=DEFAULT_TIMEOUT)
 
     list all torrents, fetching ``id``, ``hashString``, ``name``
     , ``sizeWhenDone``, ``leftUntilDone``, ``eta``, ``status``, ``rateUpload``
     , ``rateDownload``, ``uploadedEver``, ``downloadedEver`` for each torrent.
 
-.. method:: Client.change(ids, kwargs**)
+.. method:: Client.change(ids, timeout=DEFAULT_TIMEOUT, kwargs**)
 
     Change torrent parameters for the torrent(s) with the supplied id's. The
     parameters are:
@@ -360,19 +372,28 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.
 
-.. method:: Client.locate(ids, location)
+.. method:: Client.locate(ids, location, timeout=DEFAULT_TIMEOUT)
     
     Locate the torrent data at ``location``.
 
-.. method:: Client.move(ids, location)
+.. method:: Client.move(ids, location, timeout=DEFAULT_TIMEOUT)
     
     Move the torrent data to ``location``.
 
-.. method:: Client.get_session()
+.. method:: Client.blocklist_update(timeout=DEFAULT_TIMEOUT):
+    
+    Update block list. Returns the size of the block list.
+
+.. method:: Client.port_test(timeout=DEFAULT_TIMEOUT):
+    
+    Tests to see if your incoming peer port is accessible from the outside
+    world.
+
+.. method:: Client.get_session(timeout=DEFAULT_TIMEOUT)
 
     Get the Session object for the client.
 
-.. method:: Client.set_session()
+.. method:: Client.set_session(timeout=DEFAULT_TIMEOUT, **kwargs)
 
     Set session parameters. The parameters are:
 
@@ -412,7 +433,7 @@ This is it. This class implements the JSON-RPC protocol to communicate with Tran
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.
 
-.. method:: Client.session_stats()
+.. method:: Client.session_stats(timeout=DEFAULT_TIMEOUT)
 
     Returns statistics about the current session in a dictionary.
 

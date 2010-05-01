@@ -188,19 +188,22 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
 
     Add torrent to transfers list. Takes a base64 encoded .torrent file in
     *data*. Additional arguments are:
-
-    =================== ==== =============================================================
-    Argument            RPC  Description                                                  
-    =================== ==== =============================================================
-    ``download_dir``    1 -  The directory where the downloaded contents will be saved in.
-    ``files_unwanted``  1 -  A list of file id's that shouldn't be downloaded.            
-    ``files_wanted``    1 -  A list of file id's that should be downloaded.               
-    ``paused``          1 -  If True, does not start the transfer when added.             
-    ``peer_limit``      1 -  Maximum number of peers allowed.                             
-    ``priority_high``   1 -  A list of file id's that should have high priority.          
-    ``priority_low``    1 -  A list of file id's that should have low priority.           
-    ``priority_normal`` 1 -  A list of file id's that should have normal priority.        
-    =================== ==== =============================================================
+    
+    ===================== ==== =============================================================
+    Argument              RPC  Description                                                  
+    ===================== ==== =============================================================
+    ``bandwidthPriority`` 8 -  Priority for this transfer.                                  
+    ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
+    ``filename``          1 -  A filepath or URL to a torrent file or a magnet link.        
+    ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.            
+    ``files_wanted``      1 -  A list of file id's that should be downloaded.               
+    ``metainfo``          1 -  The content of a torrent file, base64 encoded.               
+    ``paused``            1 -  If True, does not start the transfer when added.             
+    ``peer_limit``        1 -  Maximum number of peers allowed.                             
+    ``priority_high``     1 -  A list of file id's that should have high priority.          
+    ``priority_low``      1 -  A list of file id's that should have low priority.           
+    ``priority_normal``   1 -  A list of file id's that should have normal priority.        
+    ===================== ==== =============================================================
 
 .. method:: Client.add_url(torrent_url, kwargs**)
 
@@ -422,6 +425,7 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
     ``pex_enabled``               5 -                     Allowing PEX in public torrents.                                                                                          
     ``port``                      1 - 5 peer-port         Peer port.                                                                                                                
     ``port_forwarding_enabled``   1 -                     Enables port forwarding.                                                                                                  
+    ``rename_partial_files``      8 -                     Appends ".part" to incomplete files                                                                                       
     ``seedRatioLimit``            5 -                     Seed ratio limit. 1.0 means 1:1 download and upload ratio.                                                                
     ``seedRatioLimited``          5 -                     Enables seed ration limit.                                                                                                
     ``speed_limit_down``          1 -                     Download speed limit (in Kib/s).                                                                                          

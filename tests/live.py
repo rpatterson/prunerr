@@ -8,7 +8,7 @@ except ImportError:
     import simplejson as json
 
 # this test suite requires transmission-daemon with following settings
-#  * Default address and port i.e. 0.0.0.0:9091
+#  * Default address and port i.e. 0.0.0.0:9095
 #  * User authentication with username admin and password admin
 
 torrent_url = 'http://releases.ubuntu.com/9.04/ubuntu-9.04-alternate-i386.iso.torrent'
@@ -23,7 +23,7 @@ import transmissionrpc.constants as const
 
 class liveTestCase(unittest.TestCase):
     def setUp(self):
-        self.client = Client(user='admin', password='admin')
+        self.client = Client(user='admin', password='admin', port=9095)
         torrents = self.client.list()
         add_torrent = True
         self.torrent_id = None
@@ -43,10 +43,48 @@ class liveTestCase(unittest.TestCase):
         del self.client
 
     def testAddMagnet(self):
-        torrent = self.client.add_uri(ubuntu910_magnet).values()[0]
-        hstr = self.client.info(torrent.id).values()[0].hashString
-        self.assertEqual(torrent.hashString, hstr)
-        self.client.remove(torrent.id, delete_data=True)
+        if self.client.rpc_version > 6:
+            torrent = self.client.add_uri(ubuntu910_magnet).values()[0]
+            hstr = self.client.info(torrent.id).values()[0].hashString
+            self.assertEqual(torrent.hashString, hstr)
+            self.client.remove(torrent.id, delete_data=True)
+    
+    def testAdd(self):
+        if self.client.rpc_version > 7:
+            torrent = self.client.add_uri(torrent_url, paused=True, peer_limit=10, bandwidthPriority=const.TR_PRI_HIGH).values()[0]
+            torrent_info = self.client.info(torrent.id).values()[0]
+            self.assertEqual(torrent_info.priority, 'high')
+            self.assertEqual(torrent_info.status, 'stopped')
+            self.assertEqual(torrent_info.peer_limit, 10)
+            self.client.remove(torrent.id, delete_data=True)
+            torrent = self.client.add_uri(torrent_url, paused=False, peer_limit=20, bandwidthPriority=const.TR_PRI_LOW).values()[0]
+            torrent_info = self.client.info(torrent.id).values()[0]
+            self.assertEqual(torrent_info.priority, 'low')
+            self.assertEqual(torrent_info.status, 'downloading')
+            self.assertEqual(torrent_info.peer_limit, 20)
+            self.client.remove(torrent.id, delete_data=True)
+        elif self.client.rpc_version > 4:
+            torrent = self.client.add_uri(torrent_url, paused=True, peer_limit=10).values()[0]
+            torrent_info = self.client.info(torrent.id).values()[0]
+            self.assertEqual(torrent_info.status, 'stopped')
+            self.assertEqual(torrent_info.peer_limit, 10)
+            self.client.remove(torrent.id, delete_data=True)
+            torrent = self.client.add_uri(torrent_url, paused=False, peer_limit=20).values()[0]
+            torrent_info = self.client.info(torrent.id).values()[0]
+            self.assertNotEqual(torrent_info.status, 'stopped')
+            self.assertEqual(torrent_info.peer_limit, 20)
+            self.client.remove(torrent.id, delete_data=True)
+            self.failUnlessRaises(ValueError, self.client.add_uri, torrent_url, bandwidthPriority=const.TR_PRI_LOW)
+        else:
+            torrent = self.client.add_uri(torrent_url, paused=True, peer_limit=10).values()[0]
+            torrent_info = self.client.info(torrent.id).values()[0]
+            self.assertEqual(torrent_info.status, 'stopped')
+            self.client.remove(torrent.id, delete_data=True)
+            torrent = self.client.add_uri(torrent_url, paused=False, peer_limit=20).values()[0]
+            torrent_info = self.client.info(torrent.id).values()[0]
+            self.assertEqual(torrent_info.status, 'downloading')
+            self.client.remove(torrent.id, delete_data=True)
+            self.failUnlessRaises(ValueError, self.client.add_uri, torrent_url, bandwidthPriority=const.TR_PRI_LOW)
 
     def doSetSession(self, argument, value, rvalfunc=None, rarg=None):
         if not rvalfunc:
@@ -145,6 +183,9 @@ class liveTestCase(unittest.TestCase):
             self.doSetSession('incomplete_dir', '/tmp')
             self.doSetSession('incomplete_dir_enabled', True)
             self.doSetSession('incomplete_dir_enabled', False)
+        if self.client.rpc_version > 7:
+            self.doSetSession('rename_partial_files', False)
+            self.doSetSession('rename_partial_files', True)
 
     def testGetSession(self):
         o = self.client.get_session()

@@ -3,7 +3,7 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, os.path, re, itertools
-import urllib2, urlparse, base64, shlex
+import socket, urllib2, urlparse, base64, shlex
 import logging
 from optparse import OptionParser
 try:
@@ -342,6 +342,8 @@ start without a command.
 
 def main(args=None):
     """Main entry point"""
+    if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:
+        socket.setdefaulttimeout(30)
     if args is None:
         args = sys.argv[1:]
     parser = OptionParser(usage='Usage: %prog [options] [[address]:[port]] [command]')

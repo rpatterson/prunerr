@@ -14,10 +14,10 @@ except ImportError:
 
 from constants import *
 from utils import *
+from httphandler import HTTPHandlerError, HTTPHandler
 
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):
-        #Exception.__init__(self, message)
         self.message = message
         self.original = original
 
@@ -192,6 +192,39 @@ class Session(object):
             text += "% 32s: %s\n" % (k[-32:], self.fields[k])
         return text
 
+class DefaultHTTPHandler(HTTPHandler):
+    def __init__(self):
+        pass
+    
+    def set_authentication(self, uri, login, password):    
+        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager.add_password(realm=None, uri=uri, user=login, passwd=password)
+        opener = urllib2.build_opener(
+            urllib2.HTTPBasicAuthHandler(password_manager)
+            , urllib2.HTTPDigestAuthHandler(password_manager)
+            )
+        urllib2.install_opener(opener)
+    
+    def request(self, url, query, headers, timeout):        
+        request = urllib2.Request(url, query, headers)
+        try:
+            if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
+                response = urllib2.urlopen(request, timeout=timeout)
+            else:
+                logger.info('Socket timeout not supported, disabled.')
+                response = urllib2.urlopen(request)
+        except urllib2.HTTPError, error:
+            data = error.read()
+            headers = dict(error.headers)
+            raise HTTPHandlerError(error.url, error.code, error.msg, headers, data)
+        except urllib2.URLError, error:
+            print(error)
+            raise HTTPHandlerError()
+        except urllib2.BadStatusLine, error:
+            print(error)
+            raise HTTPHandlerError()
+        return response.read()
+
 class Client(object):
     """
     This is it. This class implements the JSON-RPC protocol to communicate with Transmission.
@@ -211,7 +244,7 @@ class Client(object):
     when using Python 2.6 or later and the default timeout is 30 seconds.
     """
 
-    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None):
+    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, http_handler=None):
         urlo = urlparse.urlparse(address)
         if urlo.scheme == '':
             base_url = 'http://' + address + ':' + str(port)
@@ -227,52 +260,36 @@ class Client(object):
                 password = urlo.password
             elif urlo.username or urlo.password:
                 logger.warning('Either user or password missing, not using authentication.')
+        if http_handler:
+            self.http_handler = http_handler()
+        else:
+            self.http_handler = DefaultHTTPHandler()
         if user and password:
-            password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            password_manager.add_password(realm=None, uri=self.url, user=user, passwd=password)
-            opener = urllib2.build_opener(
-                urllib2.HTTPBasicAuthHandler(password_manager)
-                , urllib2.HTTPDigestAuthHandler(password_manager)
-                )
-            urllib2.install_opener(opener)
+            self.http_handler.set_authentication(self.url, user, password)
         elif user or password:
             logger.warning('Either user or password missing, not using authentication.')
         self._sequence = 0
         self.session = Session()
-        self.sessionid = 0
+        self.session_id = 0
         self.protocol_version = None
         self.get_session()
         self.torrent_get_arguments = get_arguments('torrent-get'
                                                    , self.rpc_version)
 
-    def _debug_request(self, request):
-        logger.debug(
-            json.dumps(
-                {
-                    'request': {
-                        'url': request.get_full_url(),
-                        'request-headers': dict(request.header_items()),
-                        'request-data': json.loads(request.data),
-                    }
-                },
-                indent=2
-            )
-        )
-
-    def _debug_response(self, response, response_data):
+    def _debug_httperror(self, error):
         try:
-            response_data = json.loads(response_data)
+            data = json.loads(error.data)
         except:
-            pass
+            data = error.data
         logger.debug(
             json.dumps(
                 {
                     'response': {
-                        'url': response.url,
-                        'code': response.code,
-                        'msg': response.msg,
-                        'headers': dict(response.headers),
-                        'data': response_data,
+                        'url': error.url,
+                        'code': error.code,
+                        'msg': error.msg,
+                        'headers': error.headers,
+                        'data': data,
                     }
                 },
                 indent=2
@@ -280,43 +297,26 @@ class Client(object):
         )
 
     def _http_query(self, query, timeout=DEFAULT_TIMEOUT):
-        headers = {'X-Transmission-Session-Id': self.sessionid}
-        request = urllib2.Request(self.url, query, headers)
+        headers = {'x-transmission-session-id': self.session_id}
         request_count = 0
         while True:
-            error_data = ""
             try:
-                self._debug_request(request)
-                if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
-                    response = urllib2.urlopen(request, timeout=timeout)
-                else:
-                    logger.info('Socket timeout not supported, disabled.')
-                    response = urllib2.urlopen(request)
+                result = self.http_handler.request(self.url, query, headers, timeout)
                 break
-            except urllib2.HTTPError, error:
-                error_data = error.read()
+            except HTTPHandlerError, error:
                 if error.code == 409:
                     logger.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed.', error)
-                    if 'X-Transmission-Session-Id' in error.headers:
-                        self.sessionid = error.headers['X-Transmission-Session-Id']
-                        request.add_header('X-Transmission-Session-Id', self.sessionid)
+                    if 'x-transmission-session-id' in error.headers:
+                        self.session_id = error.headers['x-transmission-session-id']
+                        headers = {'x-transmission-session-id': self.session_id}
                     else:
                         raise TransmissionError('Unknown conflict.', error)
                 else:
-                    raise TransmissionError('Request failed with %s.' % (str(error)), error)
-            except urllib2.URLError, error:
-                raise TransmissionError('Request failed.', error)
-            except httplib.BadStatusLine, error:
-                if (request_count > 1):
-                    raise TransmissionError('Failed to request %s "%s".' % (self.url, query), error)
-            finally:
-                if error_data:
-                    self._debug_response(error, error_data)
+                    raise TransmissionError('Request failed.', error)
+                self._debug_httperror(error)
             request_count = request_count + 1
-        result = response.read()
-        self._debug_response(response, result)
         return result
 
     def _request(self, method, arguments={}, ids=[], require_ids=False, timeout=DEFAULT_TIMEOUT):

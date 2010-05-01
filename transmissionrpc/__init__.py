@@ -3,7 +3,8 @@
 # Licensed under the MIT license.
 
 from constants import *
-from transmission import TransmissionError, Torrent, Session, Client
+from httphandler import HTTPHandlerError, HTTPHandler
+from transmission import TransmissionError, Torrent, Session, Client, DefaultHTTPHandler
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.5'

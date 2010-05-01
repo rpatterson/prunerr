@@ -146,6 +146,11 @@ class Torrent(object):
             return 'unknown'
         else:
             return format_timedelta(self.eta)
+    
+    @property
+    def priority(self):
+        """Get the priority as string."""
+        return PRIORITY[self.fields['bandwidthPriority']]
 
 class Session(object):
     """
@@ -441,18 +446,21 @@ class Client(object):
         Add torrent to transfers list. Takes a base64 encoded .torrent file in data.
         Additional arguments are:
 
-            * `metainfo`, string, alternate way to pass base64 encoded torrent data
-            * `filename`, path or url, provide torrent data as a file path or URL.
-            * `paused`, boolean, Whether to pause the transfer on add.
-            * `download_dir`, path, The directory where the downloaded
-              contents will be saved in.
-            * `peer_limit`, number, Limits the number of peers for this
-              transfer.
-            * `files_unwanted`,
-            * `files_wanted`,
-            * `priority_high`,
-            * `priority_low`,
-            * `priority_normal`,
+        ===================== ==== =============================================================
+        Argument              RPC  Description                                                  
+        ===================== ==== =============================================================
+        ``bandwidthPriority`` 8 -  Priority for this transfer.                                  
+        ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
+        ``filename``          1 -  A filepath or URL to a torrent file or a magnet link.        
+        ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.            
+        ``files_wanted``      1 -  A list of file id's that should be downloaded.               
+        ``metainfo``          1 -  The content of a torrent file, base64 encoded.               
+        ``paused``            1 -  If True, does not start the transfer when added.             
+        ``peer_limit``        1 -  Maximum number of peers allowed.                             
+        ``priority_high``     1 -  A list of file id's that should have high priority.          
+        ``priority_low``      1 -  A list of file id's that should have low priority.           
+        ``priority_normal``   1 -  A list of file id's that should have normal priority.        
+        ===================== ==== =============================================================
         """
         args = {}
         if data:
@@ -471,16 +479,19 @@ class Client(object):
         Add torrent to transfers list. Takes a url to a .torrent file.
         Additional arguments are:
 
-            * `paused`, boolean, Whether to pause the transfer on add.
-            * `download_dir`, path, The directory where the downloaded
-              contents will be saved in.
-            * `peer_limit`, number, Limits the number of peers for this
-              transfer.
-            * `files_unwanted`,
-            * `files_wanted`,
-            * `priority_high`,
-            * `priority_low`,
-            * `priority_normal`,
+        ===================== ==== =============================================================
+        Argument              RPC  Description                                                  
+        ===================== ==== =============================================================
+        ``bandwidthPriority`` 8 -  Priority for this transfer.                                  
+        ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
+        ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.            
+        ``files_wanted``      1 -  A list of file id's that should be downloaded.               
+        ``paused``            1 -  If True, does not start the transfer when added.             
+        ``peer_limit``        1 -  Maximum number of peers allowed.                             
+        ``priority_high``     1 -  A list of file id's that should have high priority.          
+        ``priority_low``      1 -  A list of file id's that should have low priority.           
+        ``priority_normal``   1 -  A list of file id's that should have normal priority.        
+        ===================== ==== =============================================================
         """
         torrent_file = None
         if os.path.exists(torrent_url):
@@ -503,16 +514,19 @@ class Client(object):
         all uri's supported by Transmissions torrent-add 'filename'
         argument. Additional arguments are:
 
-            * `paused`, boolean, Whether to pause the transfer on add.
-            * `download_dir`, path, The directory where the downloaded
-              contents will be saved in.
-            * `peer_limit`, number, Limits the number of peers for this
-              transfer.
-            * `files_unwanted`,
-            * `files_wanted`,
-            * `priority_high`,
-            * `priority_low`,
-            * `priority_normal`,
+        ===================== ==== =============================================================
+        Argument              RPC  Description                                                  
+        ===================== ==== =============================================================
+        ``bandwidthPriority`` 8 -  Priority for this transfer.                                  
+        ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
+        ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.            
+        ``files_wanted``      1 -  A list of file id's that should be downloaded.               
+        ``paused``            1 -  If True, does not start the transfer when added.             
+        ``peer_limit``        1 -  Maximum number of peers allowed.                             
+        ``priority_high``     1 -  A list of file id's that should have high priority.          
+        ``priority_low``      1 -  A list of file id's that should have low priority.           
+        ``priority_normal``   1 -  A list of file id's that should have normal priority.        
+        ===================== ==== =============================================================
         """
         if uri == None:
             raise ValueError('add_uri requires a URI.')

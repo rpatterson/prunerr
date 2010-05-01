@@ -48,7 +48,7 @@ def runonce(app, settings_dir, downloads_dir):
         if os.path.exists(downloads_dir):
             shutil.rmtree(downloads_dir, True, rmerror)
             os.mkdir(downloads_dir)
-        args = '-f -u admin -v admin -g %s -w %s' % (settings_dir, downloads_dir)
+        args = '-f -u admin -v admin -g %s -w %s -p 9095' % (settings_dir, downloads_dir)
         command = app + ' ' + args
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # wait for the daemon to start
@@ -64,18 +64,10 @@ def runonce(app, settings_dir, downloads_dir):
                     print(item[1])
             else:
                 print('Test succeded.')
-            wait_pid = None
-            # apperantly you should kill children
-            for p in process_list():
-                if p[1] == process.pid:
-                    wait_pid = p[0]
-                    os.kill(p[0], signal.SIGTERM)
-                    break
-            if wait_pid:
-                process.wait()
-            else:
-                print('Process not found')
-                time.sleep(5)
+            wait_pid = None    
+            os.kill(process.pid, signal.SIGINT)
+            process.wait()
+            time.sleep(1)
         else:
             print(process.stderr.read())
 
@@ -84,11 +76,19 @@ def findthem(root):
     dirs = os.listdir(root)
     for dir in dirs:
         thedir = os.path.join(root, dir)
+        if not os.path.isdir(thedir):
+            continue
         version = 0
         try:
             version = float(dir)
         except ValueError:
             version = 0
+        if version == 0:
+            match = re.match('transmission-([0-9.]+)', dir)
+            if match:
+                version = float(match.group(1))
+            else:
+                version = 0
         if version > 1.3:
             app = os.path.join(thedir, 'daemon', 'transmission-daemon')
             if os.path.exists(app):
@@ -108,6 +108,8 @@ def main():
                 runonce(app, settings_dir, downloads_dir)
         else:
             runonce(app, settings_dir, downloads_dir)
+    else:
+        print('Valid path is required.')
     shutil.rmtree(settings_dir, True, rmerror)
     shutil.rmtree(downloads_dir, True, rmerror)
 

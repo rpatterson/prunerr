@@ -4,7 +4,7 @@
 
 import sys, os, subprocess, shutil, time, signal, re
 import unittest
-import tests.live
+import livetest
 
 def execute(command):
     """Execute a shell command"""
@@ -55,7 +55,7 @@ def runonce(app, settings_dir, downloads_dir):
         time.sleep(2)
         if not process.poll():
             result = unittest.TestResult()
-            unittest.defaultTestLoader.loadTestsFromModule(tests.live).run(result)
+            unittest.defaultTestLoader.loadTestsFromModule(livetest).run(result)
             if not result.wasSuccessful():
                 print('Test failed.')
                 for item in result.errors:

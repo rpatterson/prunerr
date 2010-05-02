@@ -6,7 +6,7 @@ class HTTPHandlerError(Exception):
     def __init__(self, httpurl=None, httpcode=None, httpmsg=None, httpheaders=None, httpdata=None):
         self.url = ''
         self.code = 600
-        self.msg = ''
+        self.message = ''
         self.headers = {}
         self.data = ''
         if isinstance(httpurl, (str, unicode)):
@@ -14,14 +14,20 @@ class HTTPHandlerError(Exception):
         if isinstance(httpcode, (int, long)):
             self.code = httpcode
         if isinstance(httpmsg, (str, unicode)):
-            self.msg = httpmsg
+            self.message = httpmsg
         if isinstance(httpheaders, (dict)):
             self.headers = httpheaders
         if isinstance(httpdata, (str, unicode)):
             self.data = httpdata
     
     def __repr__(self):
-        return '<HTTPHandlerError %d>' % (self.code)
+        return '<HTTPHandlerError %d, %s>' % (self.code, self.message)
+    
+    def __str__(self):
+        return '<HTTPHandlerError %d, %s>' % (self.code, self.message)
+
+    def __unicode__(self):
+        return u'<HTTPHandlerError %d, %s>' % (self.code, self.message)
 
 class HTTPHandler(object):
     """

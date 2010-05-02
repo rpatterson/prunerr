@@ -21,7 +21,7 @@ setup(
     keywords='transmission bittorent torrent',
     packages=['transmissionrpc'],
     install_requires = required,
-    test_suite = "tests",
+    test_suite = "test",
     zip_safe=True,
     classifiers = [
         'Intended Audience :: Developers',

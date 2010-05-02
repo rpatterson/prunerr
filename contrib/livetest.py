@@ -60,7 +60,7 @@ class liveTestCase(unittest.TestCase):
             torrent = self.client.add_uri(torrent_url, paused=False, peer_limit=20, bandwidthPriority=const.TR_PRI_LOW).values()[0]
             torrent_info = self.client.info(torrent.id).values()[0]
             self.assertEqual(torrent_info.priority, 'low')
-            self.assertEqual(torrent_info.status, 'downloading')
+            self.assertNotEqual(torrent_info.status, 'stopped')
             self.assertEqual(torrent_info.peer_limit, 20)
             self.client.remove(torrent.id, delete_data=True)
         elif self.client.rpc_version > 4:
@@ -82,7 +82,7 @@ class liveTestCase(unittest.TestCase):
             self.client.remove(torrent.id, delete_data=True)
             torrent = self.client.add_uri(torrent_url, paused=False, peer_limit=20).values()[0]
             torrent_info = self.client.info(torrent.id).values()[0]
-            self.assertEqual(torrent_info.status, 'downloading')
+            self.assertNotEqual(torrent_info.status, 'stopped')
             self.client.remove(torrent.id, delete_data=True)
             self.failUnlessRaises(ValueError, self.client.add_uri, torrent_url, bandwidthPriority=const.TR_PRI_LOW)
 

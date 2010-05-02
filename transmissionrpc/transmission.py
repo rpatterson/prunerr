@@ -24,7 +24,7 @@ class TransmissionError(Exception):
     def __str__(self):
         if self.original:
             original_name = type(self.original).__name__
-            return '%s Original exception: %s, "%s"' % (self.message, original_name, self.original.args)
+            return '%s Original exception: %s, "%s"' % (self.message, original_name, str(self.original))
         else:
             return self.message
 
@@ -219,10 +219,10 @@ class DefaultHTTPHandler(HTTPHandler):
             raise HTTPHandlerError(error.url, error.code, error.msg, headers, data)
         except urllib2.URLError, error:
             print(error)
-            raise HTTPHandlerError()
-        except urllib2.BadStatusLine, error:
+            raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.message))
+        except httplib.BadStatusLine, error:
             print(error)
-            raise HTTPHandlerError()
+            raise HTTPHandlerError(httpmsg='httplib.BadStatusLine: %s' % (error.message))
         return response.read()
 
 class Client(object):
@@ -260,10 +260,13 @@ class Client(object):
                 password = urlo.password
             elif urlo.username or urlo.password:
                 logger.warning('Either user or password missing, not using authentication.')
-        if http_handler:
-            self.http_handler = http_handler()
-        else:
+        if http_handler == None:
             self.http_handler = DefaultHTTPHandler()
+        else:
+            if hasattr(http_handler, 'set_authentication') and hasattr(http_handler, 'request'):
+                self.http_handler = http_handler
+            else:
+                raise ValueError('Invalid HTTP handler.')
         if user and password:
             self.http_handler.set_authentication(self.url, user, password)
         elif user or password:
@@ -287,7 +290,7 @@ class Client(object):
                     'response': {
                         'url': error.url,
                         'code': error.code,
-                        'msg': error.msg,
+                        'msg': error.message,
                         'headers': error.headers,
                         'data': data,
                     }

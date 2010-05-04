@@ -211,7 +211,6 @@ class DefaultHTTPHandler(HTTPHandler):
             if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
                 response = urllib2.urlopen(request, timeout=timeout)
             else:
-                logger.info('Socket timeout not supported, disabled.')
                 response = urllib2.urlopen(request)
         except urllib2.HTTPError, error:
             data = error.read()
@@ -337,7 +336,7 @@ class Client(object):
 
         query = json.dumps({'tag': self._sequence, 'method': method
                             , 'arguments': arguments})
-        logger.info(query)
+        logger.debug(query)
         self._sequence += 1
         start = time.time()
         http_data = self._http_query(query, timeout)
@@ -352,7 +351,7 @@ class Client(object):
             logger.error('HTTP data: \"%s\"' % (http_data))
             raise
 
-        logger.info(json.dumps(data, indent=2))
+        logger.debug(json.dumps(data, indent=2))
         if 'result' in data:
             if data['result'] != 'success':
                 raise TransmissionError('Query failed with result \"%s\".' % (data['result']))

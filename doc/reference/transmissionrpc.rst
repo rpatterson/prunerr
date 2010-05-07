@@ -169,22 +169,31 @@ with both id and hashString.
 Timeouts
 --------
 
-Since most methods results in HTTP requests against Transmission, it is
-possible to provide a argument called ``timeout``. Timeout is only effective
-when using Python 2.6 or later and the default timeout is 30 seconds.
+In Python 2.6 it is possible to supply a timeout to a HTTP request. This is
+accessible through transmissionrpc by either changing the timeout property of
+a Client object or supply the named argument ``timeout`` in most methods of
+Client. The default timeout is 30 seconds.
 
-.. class:: Client(address='localhost', port=9091, user=None, password=None)
+.. class:: Client(address='localhost', port=9091, user=None, password=None, timeout=None)
 
     * *address* and *port* should be the address and port to the Transmission
       "server", this can be either a Transmission client with rpc access enabled
       or transmission-daemon.
     * *user* and *password* is the username and password for RPC access
       if athentication is used.
+    * *timeout* is the HTTP request timeout in seconds.
     
     The argument *verbose* was removed in 0.3, use logging levels instead.
 
+.. attribute:: Client.timeout
+
+    The HTTP request timeout in seconds. Expects anything that can be converted to a float.
+    
+    .. NOTE::
+       Timeouts are only applicable in Python 2.6 or later.
+
 .. _transmissionrpc-client-add:
-.. method:: Client.add(data, timeout=DEFAULT_TIMEOUT, kwargs**)
+.. method:: Client.add(data, timeout=None, kwargs**)
 
     Add torrent to transfers list. Takes a base64 encoded .torrent file in
     *data*. Additional arguments are:
@@ -222,35 +231,35 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
     For information on additional argument see
     :ref:`Client.add <transmissionrpc-client-add>`.
 
-.. method:: Client.remove(ids, delete_data=False, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.remove(ids, delete_data=False, timeout=None)
 
     Remove the torrent(s) with the supplied id(s). Local data is removed if
     *delete_data* is True, otherwise not.
 
-.. method:: Client.start(ids, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.start(ids, timeout=None)
 
     Start the torrent(s) with the supplied id(s).
 
-.. method:: Client.stop(ids, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.stop(ids, timeout=None)
 
     Stop the torrent(s) with the supplied id(s).
 
-.. method:: Client.verify(ids, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.verify(ids, timeout=None)
 
     Verify the torrent(s) with the supplied id(s).
     
-.. method:: Client.reannounce(ids, timeout=DEFAULT_TIMEOUT):
+.. method:: Client.reannounce(ids, timeout=None):
     
     Reannounce torrent(s) with provided id(s)
 
-.. method:: Client.info(ids=[], timeout=DEFAULT_TIMEOUT)
+.. method:: Client.info(ids=[], timeout=None)
 
     Get information for the torrent(s) with the supplied id(s). If *ids* is
     empty, information for all torrents are fetched. See the RPC specification
     for a full list of information fields.
 
 .. _transmissionrpc-client-get_files:
-.. method:: Client.get_files(ids=[], timeout=DEFAULT_TIMEOUT)
+.. method:: Client.get_files(ids=[], timeout=None)
 
     Get list of files for provided torrent id(s). If *ids* is empty,
     information for all torrents are fetched. This function returns a dictonary
@@ -290,7 +299,7 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
         }
 
 .. _transmissionrpc-client-set_files:
-.. method:: Client.set_files(items, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.set_files(items, timeout=None)
 
     Set file properties. Takes a dictonary with similar contents as the result
     of :ref:`Client.get_files <transmissionrpc-client-get_files>`.
@@ -337,13 +346,13 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
         }
         client.set_files(items)
 
-.. method:: Client.list(timeout=DEFAULT_TIMEOUT)
+.. method:: Client.list(timeout=None)
 
     list all torrents, fetching ``id``, ``hashString``, ``name``
     , ``sizeWhenDone``, ``leftUntilDone``, ``eta``, ``status``, ``rateUpload``
     , ``rateDownload``, ``uploadedEver``, ``downloadedEver`` for each torrent.
 
-.. method:: Client.change(ids, timeout=DEFAULT_TIMEOUT, kwargs**)
+.. method:: Client.change(ids, timeout=None, kwargs**)
 
     Change torrent parameters for the torrent(s) with the supplied id's. The
     parameters are:
@@ -375,28 +384,28 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.
 
-.. method:: Client.locate(ids, location, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.locate(ids, location, timeout=None)
     
     Locate the torrent data at ``location``.
 
-.. method:: Client.move(ids, location, timeout=DEFAULT_TIMEOUT)
+.. method:: Client.move(ids, location, timeout=None)
     
     Move the torrent data to ``location``.
 
-.. method:: Client.blocklist_update(timeout=DEFAULT_TIMEOUT):
+.. method:: Client.blocklist_update(timeout=None):
     
     Update block list. Returns the size of the block list.
 
-.. method:: Client.port_test(timeout=DEFAULT_TIMEOUT):
+.. method:: Client.port_test(timeout=None):
     
     Tests to see if your incoming peer port is accessible from the outside
     world.
 
-.. method:: Client.get_session(timeout=DEFAULT_TIMEOUT)
+.. method:: Client.get_session(timeout=None)
 
     Get the Session object for the client.
 
-.. method:: Client.set_session(timeout=DEFAULT_TIMEOUT, **kwargs)
+.. method:: Client.set_session(timeout=None, **kwargs)
 
     Set session parameters. The parameters are:
 
@@ -437,7 +446,7 @@ when using Python 2.6 or later and the default timeout is 30 seconds.
     .. NOTE::
        transmissionrpc will try to automatically fix argument errors.
 
-.. method:: Client.session_stats(timeout=DEFAULT_TIMEOUT)
+.. method:: Client.session_stats(timeout=None)
 
     Returns statistics about the current session in a dictionary.
 

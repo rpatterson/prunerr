@@ -243,7 +243,11 @@ class Client(object):
     when using Python 2.6 or later and the default timeout is 30 seconds.
     """
 
-    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, http_handler=None):
+    def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, http_handler=None, timeout=None):
+        if isinstance(timeout, (int, long, float)):
+            self._query_timeout = float(timeout)
+        else:
+            self._query_timeout = DEFAULT_TIMEOUT
         urlo = urlparse.urlparse(address)
         if urlo.scheme == '':
             base_url = 'http://' + address + ':' + str(port)
@@ -278,6 +282,17 @@ class Client(object):
         self.torrent_get_arguments = get_arguments('torrent-get'
                                                    , self.rpc_version)
 
+    def get_timeout(self):
+        return self._query_timeout
+    
+    def set_timeout(self, value):
+        self._query_timeout = float(value)
+    
+    def del_timeout(self):
+        self._query_timeout = DEFAULT_TIMEOUT
+    
+    timeout = property(get_timeout, set_timeout, del_timeout, doc="Query timeout.")
+
     def _debug_httperror(self, error):
         try:
             data = json.loads(error.data)
@@ -298,9 +313,12 @@ class Client(object):
             )
         )
 
-    def _http_query(self, query, timeout=DEFAULT_TIMEOUT):
+    def _http_query(self, query, timeout=None):
         headers = {'x-transmission-session-id': self.session_id}
         request_count = 0
+        if timeout == None:
+            timeout = self._query_timeout
+        logger.debug('Using timeout %f s' % (timeout))
         while True:
             try:
                 result = self.http_handler.request(self.url, query, headers, timeout)
@@ -321,7 +339,7 @@ class Client(object):
             request_count = request_count + 1
         return result
 
-    def _request(self, method, arguments={}, ids=[], require_ids=False, timeout=DEFAULT_TIMEOUT):
+    def _request(self, method, arguments={}, ids=[], require_ids=False, timeout=None):
         """Send json-rpc request to Transmission using http POST"""
 
         if not isinstance(method, (str, unicode)):
@@ -443,7 +461,7 @@ class Client(object):
         if self.rpc_version < version:
             logger.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self.rpc_version, version))
 
-    def add(self, data, timeout=DEFAULT_TIMEOUT, **kwargs):
+    def add(self, data, timeout=None, **kwargs):
         """
         Add torrent to transfers list. Takes a base64 encoded .torrent file in data.
         Additional arguments are:
@@ -544,7 +562,7 @@ class Client(object):
         else:
             return self.add(None, filename=uri, **kwargs)
     
-    def remove(self, ids, delete_data=False, timeout=DEFAULT_TIMEOUT):
+    def remove(self, ids, delete_data=False, timeout=None):
         """
         remove torrent(s) with provided id(s). Local data is removed if
         delete_data is True, otherwise not.
@@ -553,30 +571,30 @@ class Client(object):
         self._request('torrent-remove',
                     {'delete-local-data':rpc_bool(delete_data)}, ids, True, timeout=timeout)
 
-    def start(self, ids, timeout=DEFAULT_TIMEOUT):
+    def start(self, ids, timeout=None):
         """start torrent(s) with provided id(s)"""
         self._request('torrent-start', {}, ids, True, timeout=timeout)
 
-    def stop(self, ids, timeout=DEFAULT_TIMEOUT):
+    def stop(self, ids, timeout=None):
         """stop torrent(s) with provided id(s)"""
         self._request('torrent-stop', {}, ids, True, timeout=timeout)
 
-    def verify(self, ids, timeout=DEFAULT_TIMEOUT):
+    def verify(self, ids, timeout=None):
         """verify torrent(s) with provided id(s)"""
         self._request('torrent-verify', {}, ids, True, timeout=timeout)
 
-    def reannounce(self, ids, timeout=DEFAULT_TIMEOUT):
+    def reannounce(self, ids, timeout=None):
         """Reannounce torrent(s) with provided id(s)"""
         self._rpc_version_warning(5)
         self._request('torrent-reannounce', {}, ids, True, timeout=timeout)
 
-    def info(self, ids=[], arguments={}, timeout=DEFAULT_TIMEOUT):
+    def info(self, ids=[], arguments={}, timeout=None):
         """Get detailed information for torrent(s) with provided id(s)."""
         if not arguments:
             arguments = self.torrent_get_arguments
         return self._request('torrent-get', {'fields': arguments}, ids, timeout=timeout)
 
-    def get_files(self, ids=[], timeout=DEFAULT_TIMEOUT):
+    def get_files(self, ids=[], timeout=None):
         """
         Get list of files for provided torrent id(s).
         This function returns a dictonary for each requested torrent id holding
@@ -589,7 +607,7 @@ class Client(object):
             result[id] = torrent.files()
         return result
 
-    def set_files(self, items, timeout=DEFAULT_TIMEOUT):
+    def set_files(self, items, timeout=None):
         """
         Set file properties. Takes a dictonary with similar contents as the
         result of get_files.
@@ -624,14 +642,14 @@ class Client(object):
                         , priority_normal = priority_normal
                         , priority_low = priority_low, timeout=timeout)
 
-    def list(self, timeout=DEFAULT_TIMEOUT):
+    def list(self, timeout=None):
         """list all torrents"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone'
             , 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver'
             , 'downloadedEver']
         return self._request('torrent-get', {'fields': fields}, timeout=timeout)
 
-    def change(self, ids, timeout=DEFAULT_TIMEOUT, **kwargs):
+    def change(self, ids, timeout=None, **kwargs):
         """
         Change torrent parameters. This is the list of parameters that.
         """
@@ -647,24 +665,24 @@ class Client(object):
         else:
             ValueError("No arguments to set")
     
-    def move(self, ids, location, timeout=DEFAULT_TIMEOUT):
+    def move(self, ids, location, timeout=None):
         """Move torrent data to the new location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': True}
         self._request('torrent-set-location', args, ids, True, timeout=timeout);
     
-    def locate(self, ids, location, timeout=DEFAULT_TIMEOUT):
+    def locate(self, ids, location, timeout=None):
         """Locate torrent data at the location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': False}
         self._request('torrent-set-location', args, ids, True, timeout=timeout);
     
-    def get_session(self, timeout=DEFAULT_TIMEOUT):
+    def get_session(self, timeout=None):
         """Get session parameters"""
         self._request('session-get', timeout=timeout)
         return self.session
 
-    def set_session(self, timeout=DEFAULT_TIMEOUT, **kwargs):
+    def set_session(self, timeout=None, **kwargs):
         """Set session parameters"""
         args = {}
         for key, value in kwargs.iteritems():
@@ -677,7 +695,7 @@ class Client(object):
         if len(args) > 0:
             self._request('session-set', args, timeout=timeout)
 
-    def blocklist_update(self, timeout=DEFAULT_TIMEOUT):
+    def blocklist_update(self, timeout=None):
         """Update block list. Returns the size of the block list."""
         self._rpc_version_warning(5)
         result = self._request('blocklist-update', timeout=timeout)
@@ -685,7 +703,7 @@ class Client(object):
             return result['blocklist-size']
         return None
 
-    def port_test(self, timeout=DEFAULT_TIMEOUT):
+    def port_test(self, timeout=None):
         """
         Tests to see if your incoming peer port is accessible from the
         outside world.
@@ -696,7 +714,7 @@ class Client(object):
             return result['port-is-open']
         return None
 
-    def session_stats(self, timeout=DEFAULT_TIMEOUT):
+    def session_stats(self, timeout=None):
         """Get session statistics"""
         self._request('session-stats', timeout=timeout)
         return self.session

@@ -78,7 +78,7 @@ def createClient(*args, **kwargs):
     kwargs['http_handler'] = TestHTTPHandler(test_name)
     return Client(*args, **kwargs)
 
-class client(unittest.TestCase):
+class ClientTest(unittest.TestCase):
 
     def testConstruction(self):
         tc = createClient(test_name='construction')
@@ -91,7 +91,29 @@ class client(unittest.TestCase):
         self.assertEqual(tc.url, 'http://127.0.0.1:7000/transmission/rpc')
         tc = createClient('127.0.0.1', 7000, password='secret', test_name='construction')
         self.assertEqual(tc.url, 'http://127.0.0.1:7000/transmission/rpc')
+        tc = createClient('127.0.0.1', 7000, password='secret', timeout=0.1, test_name='construction')
+        self.assertEqual(tc.url, 'http://127.0.0.1:7000/transmission/rpc')
+        self.assertEqual(tc.timeout, 0.1)
+        tc = createClient('127.0.0.1', 7000, password='secret', timeout=10, test_name='construction')
+        self.assertEqual(tc.timeout, 10.0)
+        tc = createClient('127.0.0.1', 7000, password='secret', timeout=10L, test_name='construction')
+        self.assertEqual(tc.timeout, 10.0)
 
+    def testTimeoutProperty(self):
+        tc = createClient('127.0.0.1', 12345, timeout=10L, test_name='construction')
+        self.assertEqual(tc.timeout, 10.0)
+        tc.timeout = 0.1
+        self.assertEqual(tc.timeout, 0.1)
+        tc.timeout = 100L
+        self.assertEqual(tc.timeout, 100.0)
+        tc.timeout = 100
+        self.assertEqual(tc.timeout, 100.0)
+        del tc.timeout
+        self.assertEqual(tc.timeout, transmissionrpc.constants.DEFAULT_TIMEOUT)
+        tc.timeout = '100.1'
+        self.assertEqual(tc.timeout, 100.1)
+        self.failUnlessRaises(ValueError, tc.set_timeout, '10 years')
+            
     def testAdd(self):
         tc = createClient(test_name='add')
         data = 'data'
@@ -195,5 +217,5 @@ class client(unittest.TestCase):
         self.assertEqual(t.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
 
 def suite():
-    suite = unittest.TestLoader().loadTestsFromTestCase(client)
+    suite = unittest.TestLoader().loadTestsFromTestCase(ClientTest)
     return suite

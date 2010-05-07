@@ -209,6 +209,7 @@ class DefaultHTTPHandler(HTTPHandler):
         request = urllib2.Request(url, query, headers)
         try:
             if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
+                logger.debug('Using timeout %f s' % (timeout))
                 response = urllib2.urlopen(request, timeout=timeout)
             else:
                 response = urllib2.urlopen(request)
@@ -318,8 +319,8 @@ class Client(object):
         request_count = 0
         if timeout == None:
             timeout = self._query_timeout
-        logger.debug('Using timeout %f s' % (timeout))
         while True:
+            logger.debug(json.dumps({'url': self.url, 'headers': headers, 'query': query, 'timeout': timeout}, indent=2))
             try:
                 result = self.http_handler.request(self.url, query, headers, timeout)
                 break
@@ -354,7 +355,6 @@ class Client(object):
 
         query = json.dumps({'tag': self._sequence, 'method': method
                             , 'arguments': arguments})
-        logger.debug(query)
         self._sequence += 1
         start = time.time()
         http_data = self._http_query(query, timeout)

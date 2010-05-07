@@ -2,7 +2,7 @@
 # Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import socket, datetime
+import socket, datetime, logging
 import constants
 from constants import logger
 
@@ -136,3 +136,14 @@ def get_arguments(method, rpc_version):
         if valid_version:
             accessible.append(argument)
     return accessible
+
+def add_stdout_logger(level='debug'):
+    levels = {'debug': logging.DEBUG, 'info': logging.INFO, 'warning': logging.WARNING, 'error': logging.ERROR}
+    
+    logger = logging.getLogger('transmissionrpc')
+    loghandler = logging.StreamHandler()
+    if level in levels.keys():
+        l = levels[level]
+        logger.setLevel(l)
+        loghandler.setLevel(l)
+    logger.addHandler(loghandler)

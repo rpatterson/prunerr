@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
+# Licensed under the MIT license.
 #
 # Vxl documentation build configuration file, created by
 # sphinx-quickstart on Tue Jul 15 14:28:42 2008.

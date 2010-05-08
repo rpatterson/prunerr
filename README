@@ -1,13 +1,13 @@
-Transmission RPC Readme
-#######################
-
-.. contents::
+TransmissionRPC Readme
+######################
 
 Introduction
 ============
 
 transmissionrpc is a python module implementing the json-rpc client protocol
 for the bittorent client Transmission. 
+
+transmissionrpc is licensed under the MIT license.
 
 Getting started
 ===============
@@ -17,17 +17,18 @@ Requirements
 
 transmissionrpc requires:
 
-	* Transmission >= 1.3
-	* simplejson >= 1.71 or Python >= 2.6
+ * Transmission >= 1.3
+ * Python >= 2.5
+ * simplejson >= 1.71 or Python >= 2.6
 
 Install
 -------
 
 transmissionrpc is installed by running setup.py
 
-.. parsed-literal::
+$ python setup.py install
 
-	python setup.py install
+NOTE: You might need administrator privileges to install python modules.
 
 The setup program will take care of the simplejson requirement. Please refer to
 the Transmission documenation on how to install Transmission.
@@ -37,4 +38,4 @@ Developer
 
 transmissionrpc is hosted by bitbucket at http://www.bitbucket.org/blueluna/transmissionrpc/.
 
-.. footer:: Copyright (c) 2008-2010 Erik Svensson.
+Copyright (c) 2008-2010 Erik Svensson.

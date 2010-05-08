@@ -2,9 +2,9 @@
 # Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-from constants import *
-from httphandler import HTTPHandlerError, HTTPHandler
-from transmission import TransmissionError, Torrent, Session, Client, DefaultHTTPHandler
+from transmissionrpc.constants import *
+from transmissionrpc.httphandler import HTTPHandlerError, HTTPHandler
+from transmissionrpc.transmission import TransmissionError, Torrent, Session, Client, DefaultHTTPHandler
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.5'

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # 2008-12, Erik Svensson <erik.public@gmail.com>
+# Licensed under the MIT license.
 
 import time, datetime
 import unittest

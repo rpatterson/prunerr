@@ -1,3 +1,7 @@
+..
+    Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
+    Licensed under the MIT license.
+
 :mod:`transmissionrpc` --- Module reference
 ###########################################
 

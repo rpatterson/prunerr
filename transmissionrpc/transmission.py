@@ -2,9 +2,8 @@
 # Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import sys, os, time, datetime
+import sys, os, re, time, datetime
 import warnings
-import re, urlparse
 import httplib, urllib2, urlparse, base64
 
 try:
@@ -12,12 +11,13 @@ try:
 except ImportError:
     import simplejson as json
 
-from constants import *
-from utils import *
-from httphandler import HTTPHandlerError, HTTPHandler
+from transmissionrpc.constants import DEFAULT_PORT, DEFAULT_TIMEOUT, STATUS, PRIORITY
+from transmissionrpc.utils import logger, format_timedelta, get_arguments, make_rpc_name, argument_value_convert, rpc_bool
+from transmissionrpc.httphandler import HTTPHandlerError, HTTPHandler
 
 class TransmissionError(Exception):
     def __init__(self, message='', original=None):
+        Exception.__init__(self)
         self.message = message
         self.original = original
 
@@ -69,7 +69,6 @@ class Torrent(object):
             files = self.fields['files']
             priorities = self.fields['priorities']
             wanted = self.fields['wanted']
-            index = 1
             for item in zip(indicies, files, priorities, wanted):
                 selected = True if item[3] else False
                 priority = PRIORITY[item[2]]
@@ -84,7 +83,7 @@ class Torrent(object):
     def __getattr__(self, name):
         try:
             return self.fields[name]
-        except KeyError, e:
+        except KeyError:
             raise AttributeError('No attribute %s' % name)
 
     @property
@@ -162,9 +161,10 @@ class Session(object):
     ``download-dir`` -> ``download_dir``.
     """
 
-    def __init__(self, fields={}):
+    def __init__(self, fields=None):
         self.fields = {}
-        self.update(fields)
+        if fields != None:
+            self.update(fields)
 
     def update(self, other):
         """Update the session data from a session arguments dictinary"""
@@ -183,7 +183,7 @@ class Session(object):
     def __getattr__(self, name):
         try:
             return self.fields[name]
-        except KeyError, e:
+        except KeyError:
             raise AttributeError('No attribute %s' % name)
 
     def __str__(self):
@@ -194,7 +194,7 @@ class Session(object):
 
 class DefaultHTTPHandler(HTTPHandler):
     def __init__(self):
-        pass
+        HTTPHandler.__init__(self)
     
     def set_authentication(self, uri, login, password):    
         password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
@@ -214,15 +214,14 @@ class DefaultHTTPHandler(HTTPHandler):
             else:
                 response = urllib2.urlopen(request)
         except urllib2.HTTPError, error:
-            data = error.read()
-            headers = dict(error.headers)
-            raise HTTPHandlerError(error.url, error.code, error.msg, headers, data)
+            raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.headers), error.read())
         except urllib2.URLError, error:
-            print(error)
-            raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.message))
+            if hasattr(error.reason, 'args') and isinstance(error.reason.args, tuple):
+                raise HTTPHandlerError(httpcode=error.reason.args[0], httpmsg=error.reason.args[1])
+            else:
+                raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.reason))
         except httplib.BadStatusLine, error:
-            print(error)
-            raise HTTPHandlerError(httpmsg='httplib.BadStatusLine: %s' % (error.message))
+            raise HTTPHandlerError(httpmsg='httplib.BadStatusLine: %s' % (error.line))
         return response.read()
 
 class Client(object):
@@ -297,7 +296,7 @@ class Client(object):
     def _debug_httperror(self, error):
         try:
             data = json.loads(error.data)
-        except:
+        except ValueError:
             data = error.data
         logger.debug(
             json.dumps(
@@ -421,7 +420,7 @@ class Client(object):
                     try:
                         int(item, 16)
                         addition = [item]
-                    except:
+                    except ValueError:
                         pass
                 if not addition:
                     # handle index ranges i.e. 5:10
@@ -431,7 +430,7 @@ class Client(object):
                             idx_from = int(match.group(1))
                             idx_to = int(match.group(2))
                             addition = range(idx_from, idx_to + 1)
-                        except:
+                        except ValueError:
                             pass
                 if not addition:
                     raise ValueError(u'Invalid torrent id, \"%s\"' % item)
@@ -519,8 +518,14 @@ class Client(object):
         else:
             try:
                 torrent_file = urllib2.urlopen(torrent_url)
-            except:
-                torrent_file = None
+            except urllib2.HTTPError:
+                pass
+            except urllib2.URLError:
+                pass
+            except httplib.BadStatusLine:
+                pass
+            except ValueError:
+                pass
 
         if not torrent_file:
             raise TransmissionError('File does not exist.')
@@ -603,8 +608,8 @@ class Client(object):
         fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
         request_result = self._request('torrent-get', {'fields': fields}, ids, timeout=timeout)
         result = {}
-        for id, torrent in request_result.iteritems():
-            result[id] = torrent.files()
+        for tid, torrent in request_result.iteritems():
+            result[tid] = torrent.files()
         return result
 
     def set_files(self, items, timeout=None):
@@ -622,19 +627,19 @@ class Client(object):
             priority_high = []
             priority_normal = []
             priority_low = []
-            for fid, file in files.iteritems():
-                if not isinstance(file, dict):
+            for fid, file_desc in files.iteritems():
+                if not isinstance(file_desc, dict):
                     continue
-                if 'selected' in file and file['selected']:
+                if 'selected' in file_desc and file_desc['selected']:
                     wanted.append(fid)
                 else:
                     unwanted.append(fid)
-                if 'priority' in file:
-                    if file['priority'] == 'high':
+                if 'priority' in file_desc:
+                    if file_desc['priority'] == 'high':
                         priority_high.append(fid)
-                    elif file['priority'] == 'normal':
+                    elif file_desc['priority'] == 'normal':
                         priority_normal.append(fid)
-                    elif file['priority'] == 'low':
+                    elif file_desc['priority'] == 'low':
                         priority_low.append(fid)
             self.change([tid], files_wanted = wanted
                         , files_unwanted = unwanted
@@ -669,13 +674,13 @@ class Client(object):
         """Move torrent data to the new location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': True}
-        self._request('torrent-set-location', args, ids, True, timeout=timeout);
+        self._request('torrent-set-location', args, ids, True, timeout=timeout)
     
     def locate(self, ids, location, timeout=None):
         """Locate torrent data at the location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': False}
-        self._request('torrent-set-location', args, ids, True, timeout=timeout);
+        self._request('torrent-set-location', args, ids, True, timeout=timeout)
     
     def get_session(self, timeout=None):
         """Get session parameters"""

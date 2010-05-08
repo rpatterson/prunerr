@@ -65,7 +65,8 @@ class TestHTTPHandler(HTTPHandler):
             self.test_index += 1
             if test_data['request'] != q:
                 raise Exception('Invalid request, %s != %s.' % (q, test_data['request']))
-            response = test_data['response']
+            if 'response' in test_data:
+                response = test_data['response']
         else:
             response['tag'] = int(q['tag'])
             response['result'] = 'success'

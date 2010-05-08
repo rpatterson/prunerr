@@ -3,13 +3,13 @@
 # Licensed under the MIT license.
 
 import socket, datetime, logging
-import constants
-from constants import logger
+import transmissionrpc.constants as constants
+from transmissionrpc.constants import logger
 
 UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
 
 def format_size(size):
-    s = float(size)
+    size = float(size)
     i = 0
     while size >= 1024.0 and i < len(UNITS):
         i += 1
@@ -57,7 +57,7 @@ def inet_address(address, default_port, default_address='localhost'):
         raise INetAddressError('Invalid address "%s".' % address)
     try:
         socket.getaddrinfo(addr, port, socket.AF_INET, socket.SOCK_STREAM)
-    except socket.gaierror, e:
+    except socket.gaierror:
         raise INetAddressError('Cannot look up address "%s".' % address)
     return (addr, port)
 
@@ -65,7 +65,7 @@ def rpc_bool(arg):
     if isinstance(arg, (str, unicode)):
         try:
             arg = bool(int(arg))
-        except:
+        except ValueError:
             arg = arg.lower() in [u'true', u'yes']
     return 1 if bool(arg) else 0
 
@@ -140,10 +140,10 @@ def get_arguments(method, rpc_version):
 def add_stdout_logger(level='debug'):
     levels = {'debug': logging.DEBUG, 'info': logging.INFO, 'warning': logging.WARNING, 'error': logging.ERROR}
     
-    logger = logging.getLogger('transmissionrpc')
+    trpc_logger = logging.getLogger('transmissionrpc')
     loghandler = logging.StreamHandler()
     if level in levels.keys():
         l = levels[level]
-        logger.setLevel(l)
+        trpc_logger.setLevel(l)
         loghandler.setLevel(l)
-    logger.addHandler(loghandler)
+    trpc_logger.addHandler(loghandler)

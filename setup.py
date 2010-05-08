@@ -14,7 +14,7 @@ except ImportError:
 setup(
     name='transmissionrpc',
     version='0.5',
-    description='Python module that implements the Transmission bittorent RPC protocol.',
+    description='Python module that implements the Transmission bittorent client RPC protocol.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',
     url='http://bitbucket.org/blueluna/transmissionrpc',

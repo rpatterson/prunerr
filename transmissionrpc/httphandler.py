@@ -4,6 +4,7 @@
 
 class HTTPHandlerError(Exception):
     def __init__(self, httpurl=None, httpcode=None, httpmsg=None, httpheaders=None, httpdata=None):
+        Exception.__init__(self)
         self.url = ''
         self.code = 600
         self.message = ''

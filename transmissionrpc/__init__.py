@@ -7,6 +7,6 @@ from transmissionrpc.httphandler import HTTPHandlerError, HTTPHandler
 from transmissionrpc.transmission import TransmissionError, Torrent, Session, Client, DefaultHTTPHandler
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
-__version__   = u'0.5'
+__version__   = u'0.6'
 __copyright__ = u'Copyright (c) 2008-2010 Erik Svensson'
 __license__   = u'MIT'

@@ -14,6 +14,34 @@ except ImportError:
 import transmissionrpc.constants
 from transmissionrpc import TransmissionError, Client, HTTPHandler
 
+def tree_differences(a, b):
+    return node_differences(a, b, '.')
+
+def node_differences(a, b, root):
+    errors = []
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k, v in a.iteritems():
+            node = root + '.' + k
+            if k not in b:
+                errors.append('Field %s missing from b at %s' % (k, node))
+            else:
+                errors.extend(node_differences(a[k], b[k], node))
+        for k, v in b.iteritems():
+            node = root + '.' + k
+            if k not in a:
+                errors.append('Field %s missing from a at %s' % (k, node))
+    elif isinstance(a, list) and isinstance(b, list):
+        for v in a:
+            if v not in b:
+                errors.append('Value %s missing from b at %s' % (v, root))
+        for v in b:
+            if v not in a:
+                errors.append('Value %s missing from a at %s' % (v, root))
+    else:
+        if a != b:
+            errors.append('Value %s != %s at %s' % (a, b, root))
+    return errors
+
 class TestHTTPHandler(HTTPHandler):
     def __init__(self, test_name=None):
         self.url = None
@@ -63,8 +91,10 @@ class TestHTTPHandler(HTTPHandler):
         if self.tests:
             test_data = self.tests[self.test_index]
             self.test_index += 1
-            if test_data['request'] != q:
-                raise Exception('Invalid request, %s != %s.' % (q, test_data['request']))
+            errors = tree_differences(test_data['request'], q)
+            if len(errors) > 0:
+                errors = '\n\t'.join(errors)
+                raise Exception('Invalid request\n%s\n%s\n. Errors: %s\n' % (json.dumps(q, indent=2), json.dumps(test_data['request'], indent=2), errors))
             if 'response' in test_data:
                 response = test_data['response']
         else:

@@ -214,9 +214,11 @@ class DefaultHTTPHandler(HTTPHandler):
             else:
                 response = urllib2.urlopen(request)
         except urllib2.HTTPError, error:
-            raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.headers), error.read())
+            raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.hdrs), error.read())
         except urllib2.URLError, error:
-            if hasattr(error.reason, 'args') and isinstance(error.reason.args, tuple):
+            # urllib2.URLError documentation is absymal!
+            # Try to get the tuple arguments of URLError
+            if hasattr(error.reason, 'args') and isinstance(error.reason.args, tuple) and len(error.reason.args) == 2:
                 raise HTTPHandlerError(httpcode=error.reason.args[0], httpmsg=error.reason.args[1])
             else:
                 raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.reason))

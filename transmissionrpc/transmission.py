@@ -319,7 +319,7 @@ class Client(object):
         )
 
     def _http_query(self, query, timeout=None):
-        headers = {'x-transmission-session-id': self.session_id}
+        headers = {'x-transmission-session-id': str(self.session_id)}
         request_count = 0
         if timeout == None:
             timeout = self._query_timeout
@@ -335,7 +335,7 @@ class Client(object):
                         raise TransmissionError('Session ID negotiation failed.', error)
                     if 'x-transmission-session-id' in error.headers:
                         self.session_id = error.headers['x-transmission-session-id']
-                        headers = {'x-transmission-session-id': self.session_id}
+                        headers = {'x-transmission-session-id': str(self.session_id)}
                     else:
                         raise TransmissionError('Unknown conflict.', error)
                 else:

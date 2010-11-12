@@ -13,7 +13,7 @@ except ImportError:
 
 setup(
     name='transmissionrpc',
-    version='0.6',
+    version='0.7',
     description='Python module that implements the Transmission bittorent client RPC protocol.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',

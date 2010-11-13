@@ -35,11 +35,12 @@ class Torrent(object):
     This class has a few convenience properties using the torrent data.
     """
 
-    def __init__(self, fields):
+    def __init__(self, client, fields):
         if 'id' not in fields:
             raise ValueError('Torrent requires an id')
         self.fields = {}
         self.update(fields)
+        self.client = client
 
     def __repr__(self):
         return '<Torrent %d \"%s\">' % (self.fields['id'], self.fields['name'])
@@ -337,10 +338,11 @@ class Client(object):
                         self.session_id = error.headers['x-transmission-session-id']
                         headers = {'x-transmission-session-id': str(self.session_id)}
                     else:
+                        self._debug_httperror(error)
                         raise TransmissionError('Unknown conflict.', error)
                 else:
+                    self._debug_httperror(error)
                     raise TransmissionError('Request failed.', error)
-                self._debug_httperror(error)
             request_count = request_count + 1
         return result
 
@@ -383,12 +385,12 @@ class Client(object):
         results = {}
         if method == 'torrent-get':
             for item in data['arguments']['torrents']:
-                results[item['id']] = Torrent(item)
+                results[item['id']] = Torrent(self, item)
                 if self.protocol_version == 2 and 'peers' not in item:
                     self.protocol_version = 1
         elif method == 'torrent-add':
             item = data['arguments']['torrent-added']
-            results[item['id']] = Torrent(item)
+            results[item['id']] = Torrent(self, item)
         elif method == 'session-get':
             self._update_session(data['arguments'])
         elif method == 'session-stats':

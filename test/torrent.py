@@ -18,12 +18,14 @@ class torrent(unittest.TestCase):
             self.fail()
     
     def testConstruction(self):
-        self.failUnlessRaises(ValueError, transmissionrpc.Torrent, {})
-        torrent = transmissionrpc.Torrent({'id': 42})
+        self.failUnlessRaises(ValueError, transmissionrpc.Torrent, None, {})
+        torrent = transmissionrpc.Torrent(None, {'id': 42})
     
     def testAttributes(self):
-        torrent = transmissionrpc.Torrent({'id': 42})
+        torrent = transmissionrpc.Torrent(None, {'id': 42})
+        self.assertTrue(hasattr(torrent, 'client'))
         self.assertTrue(hasattr(torrent, 'id'))
+        self.assertEqual(torrent.client, None)
         self.assertEqual(torrent.id, 42)
         self.assertPropertyException(KeyError, torrent, 'status')
         self.assertPropertyException(KeyError, torrent, 'progress')
@@ -51,7 +53,7 @@ class torrent(unittest.TestCase):
             'doneDate': time.mktime((2008,12,11,10,0,15,0,0,-1)),
         }
         
-        torrent = transmissionrpc.Torrent(data)
+        torrent = transmissionrpc.Torrent(None, data)
         self.assertEqual(torrent.id, 1)
         self.assertEqual(torrent.leftUntilDone, 500)
         self.assertEqual(torrent.status, 'downloading')

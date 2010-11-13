@@ -2,33 +2,9 @@
 # Copyright (c) 2010 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-class HTTPHandlerError(Exception):
-    def __init__(self, httpurl=None, httpcode=None, httpmsg=None, httpheaders=None, httpdata=None):
-        Exception.__init__(self)
-        self.url = ''
-        self.code = 600
-        self.message = ''
-        self.headers = {}
-        self.data = ''
-        if isinstance(httpurl, (str, unicode)):
-            self.url = httpurl
-        if isinstance(httpcode, (int, long)):
-            self.code = httpcode
-        if isinstance(httpmsg, (str, unicode)):
-            self.message = httpmsg
-        if isinstance(httpheaders, (dict)):
-            self.headers = httpheaders
-        if isinstance(httpdata, (str, unicode)):
-            self.data = httpdata
-    
-    def __repr__(self):
-        return '<HTTPHandlerError %d, %s>' % (self.code, self.message)
-    
-    def __str__(self):
-        return '<HTTPHandlerError %d, %s>' % (self.code, self.message)
+import httplib, urllib2
 
-    def __unicode__(self):
-        return u'<HTTPHandlerError %d, %s>' % (self.code, self.message)
+from transmissionrpc.error import HTTPHandlerError
 
 class HTTPHandler(object):
     """
@@ -55,3 +31,39 @@ class HTTPHandler(object):
          * timeout, requested request timeout in seconds.
         """
         raise NotImplementedError("Bad HTTPHandler, failed to implement request.")
+
+class DefaultHTTPHandler(HTTPHandler):
+    def __init__(self):
+        HTTPHandler.__init__(self)
+
+    def set_authentication(self, uri, login, password):
+        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager.add_password(realm=None, uri=uri, user=login, passwd=password)
+        opener = urllib2.build_opener(
+            urllib2.HTTPBasicAuthHandler(password_manager)
+            , urllib2.HTTPDigestAuthHandler(password_manager)
+            )
+        urllib2.install_opener(opener)
+
+    def request(self, url, query, headers, timeout):
+        request = urllib2.Request(url, query, headers)
+        try:
+            if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
+                response = urllib2.urlopen(request, timeout=timeout)
+            else:
+                response = urllib2.urlopen(request)
+        except urllib2.HTTPError, error:
+            if error.fp == None:
+                raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.hdrs))
+            else:
+                raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.hdrs), error.read())
+        except urllib2.URLError, error:
+            # urllib2.URLError documentation is absymal!
+            # Try to get the tuple arguments of URLError
+            if hasattr(error.reason, 'args') and isinstance(error.reason.args, tuple) and len(error.reason.args) == 2:
+                raise HTTPHandlerError(httpcode=error.reason.args[0], httpmsg=error.reason.args[1])
+            else:
+                raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.reason))
+        except httplib.BadStatusLine, error:
+            raise HTTPHandlerError(httpmsg='httplib.BadStatusLine: %s' % (error.line))
+        return response.read()

@@ -5,6 +5,7 @@
 from transmissionrpc.constants import *
 from transmissionrpc.httphandler import HTTPHandlerError, HTTPHandler
 from transmissionrpc.transmission import TransmissionError, Torrent, Session, Client, DefaultHTTPHandler
+from transmissionrpc.utils import add_stdout_logger
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
 __version__   = u'0.7'

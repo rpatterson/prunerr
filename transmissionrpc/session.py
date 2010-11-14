@@ -28,8 +28,8 @@ class Session(object):
         else:
             raise ValueError('Cannot update with supplied data')
 
-        for k, v in fields.iteritems():
-            self.fields[k.replace('-', '_')] = v
+        for key, value in fields.iteritems():
+            self.fields[key.replace('-', '_')] = value
 
     def __getattr__(self, name):
         try:
@@ -39,6 +39,6 @@ class Session(object):
 
     def __str__(self):
         text = ''
-        for k in sorted(self.fields.keys()):
-            text += "% 32s: %s\n" % (k[-32:], self.fields[k])
+        for key in sorted(self.fields.keys()):
+            text += "% 32s: %s\n" % (key[-32:], self.fields[key])
         return text

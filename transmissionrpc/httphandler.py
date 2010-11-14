@@ -2,7 +2,7 @@
 # Copyright (c) 2010 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import httplib, urllib2
+import sys, httplib, urllib2
 
 from transmissionrpc.error import HTTPHandlerError
 
@@ -33,6 +33,9 @@ class HTTPHandler(object):
         raise NotImplementedError("Bad HTTPHandler, failed to implement request.")
 
 class DefaultHTTPHandler(HTTPHandler):
+    """
+    The default HTTP handler provided with transmissionrpc.
+    """
     def __init__(self):
         HTTPHandler.__init__(self)
 

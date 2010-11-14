@@ -1,3 +1,9 @@
+Transmissionrpc 0.7
+-------------------
+
+Added support for Transmission RPC version 10 and 11.
+Fixed an issue with Python 2.7 urllib2 handling. Issue #24.
+
 Transmissionrpc 0.6
 -------------------
 

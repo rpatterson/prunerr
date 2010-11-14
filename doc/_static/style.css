@@ -95,6 +95,10 @@ div.related li.right {
 div.body {
     border: 1px solid #ddd;
     border-left: none;
+    -webkit-border-top-right-radius: 1em;
+    -moz-border-radius-topright: 1em;
+    -webkit-border-bottom-right-radius: 1em;
+    -moz-border-radius-bottomright: 1em;
     background-color: #fff;
     color: #000;
     padding: 20px;
@@ -121,16 +125,20 @@ dt:hover > a.headerlink {
 
 pre {
     font-size: 90%;
-    padding: 5px;
-    background-color: #fff8f5;
-    color: #333;
-    border: 1px solid #edc;
+    padding: 10px;
+    background-color: #f9f9f9;
+    color: black;
+    border: 1px solid #e2e2e2;
+    -webkit-border-radius: 0.3em;
+    -moz-border-radius: 0.3em;
     overflow: auto;
 }
 
 div.contents {
     background-color: #f3f3f3;
     padding: 10px;
+    -webkit-border-radius: 0.3em;
+    -moz-border-radius: 0.3em;
 }
 
 div.footer {
@@ -156,6 +164,8 @@ div.contents ul {
 div.admonition {
     margin: 0.5em;
     border: 1px solid #999;
+    -webkit-border-radius: 0.3em;
+    -moz-border-radius: 0.3em;
 }
 
 div.admonition p {
@@ -167,7 +177,7 @@ p.admonition-title {
 }
 
 div.note {
-    background: #ff9;
-    border: 1px solid #990;
+    background: #ffffd8;
+    border: 1px solid #dad503;
 }
 

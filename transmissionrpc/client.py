@@ -94,6 +94,7 @@ class Client(object):
         self._sequence = 0
         self.session = Session()
         self.session_id = 0
+        self.server_version = None
         self.protocol_version = None
         self.get_session()
         self.torrent_get_arguments = get_arguments('torrent-get'
@@ -265,12 +266,8 @@ class Client(object):
         """
         self.session.update(data)
 
-    @property
-    def rpc_version(self):
-        """
-        Get the Transmission RPC version. Trying to deduct if the server don't have a version value.
-        """
-        if self.protocol_version == None:
+    def _update_server_version(self):
+        if self.server_version == None:
             version_major = 1
             version_minor = 30
             version_changeset = 0
@@ -281,8 +278,16 @@ class Client(object):
                     version_major = int(match.group(1))
                     version_minor = int(match.group(2))
                     version_changeset = match.group(3)
+            self.server_version = (version_major, version_minor, version_changeset)
+
+    @property
+    def rpc_version(self):
+        """
+        Get the Transmission RPC version. Trying to deduct if the server don't have a version value.
+        """
+        if self.protocol_version == None:
             # Ugly fix for 2.12 reporting rpc-version 10, but having new arguments
-            if (version_major == 2 and version_minor == 12):
+            if (self.server_version and (self.server_version[0] == 2 and self.server_version[1] == 12)):
                 self.protocol_version = 11
             elif hasattr(self.session, 'rpc_version'):
                 self.protocol_version = self.session.rpc_version
@@ -550,6 +555,7 @@ class Client(object):
     def get_session(self, timeout=None):
         """Get session parameters"""
         self._request('session-get', timeout=timeout)
+        self._update_server_version()
         return self.session
 
     def set_session(self, timeout=None, **kwargs):

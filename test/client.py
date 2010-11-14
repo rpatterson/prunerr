@@ -144,7 +144,7 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(tc.timeout, transmissionrpc.constants.DEFAULT_TIMEOUT)
         tc.timeout = '100.1'
         self.assertEqual(tc.timeout, 100.1)
-        self.failUnlessRaises(ValueError, tc.set_timeout, '10 years')
+        self.failUnlessRaises(ValueError, tc._set_timeout, '10 years')
             
     def testAdd(self):
         tc = createClient(test_name='add')
@@ -176,24 +176,6 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(r.name, 'testtransfer4')
         
         self.failUnlessRaises(ValueError, tc.add, data, peer_limit='apa')
-
-    def testAddUrl(self):
-        data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-        tc = createClient(test_name='addurl')
-                
-        r = tc.add_url(os.path.join(data_path, 'torrent.txt'))[0]
-        self.assertEqual(r.id, 0)
-        self.assertEqual(r.hashString, 'A000')
-        self.assertEqual(r.name, 'testtransfer0')
-
-        r = tc.add_url(os.path.join(data_path, 'torrent.txt'), paused=True, download_dir='/tmp', peer_limit=200)[1]
-        self.assertEqual(r.id, 1)
-        self.assertEqual(r.hashString, 'A001')
-        self.assertEqual(r.name, 'testtransfer1')
-
-        self.failUnlessRaises(TransmissionError, tc.add_url, 'torrent.torrent')
-
-        # TODO: Add test for real web url's?
 
     def testAddUri(self):
         data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')

@@ -31,7 +31,9 @@ class Torrent(object):
         return Torrent(self.client, self.fields)
 
     def update(self, other):
-        """Update the torrent data from a Transmission arguments dictinary"""
+        """
+        Update the torrent data from a Transmission JSON-RPC arguments dictinary
+        """
         fields = None
         if isinstance(other, dict):
             fields = other
@@ -44,7 +46,23 @@ class Torrent(object):
 
     def files(self):
         """
-        Get list of files for this torrent. This function returns a dictionary with file information for each file.
+    	Get list of files for this torrent.
+
+    	This function returns a dictionary with file information for each file.
+    	The file information is has following fields:
+    	::
+
+    		{
+    			<file id>: {
+    				'name': <file name>,
+    				'size': <file size in bytes>,
+    				'completed': <bytes completed>,
+    				'priority': <priority ('high'|'normal'|'low')>,
+    				'selected': <selected for download>
+    			}
+
+    			...
+    		}
         """
         result = {}
         if 'files' in self.fields:
@@ -71,12 +89,16 @@ class Torrent(object):
 
     @property
     def status(self):
-        """Get the status as string."""
+        """
+        Returns the torrent status. Is either one of 'check pending', 'checking',
+    	'downloading', 'seeding' or 'stopped'. The first two is related to
+    	verification.
+    	"""
         return STATUS[self.fields['status']]
 
     @property
     def progress(self):
-        """Get the download progress in percent as float."""
+        """Get the download progress in percent."""
         try:
             return 100.0 * (self.fields['sizeWhenDone'] - self.fields['leftUntilDone']) / float(self.fields['sizeWhenDone'])
         except ZeroDivisionError:
@@ -120,7 +142,13 @@ class Torrent(object):
         return datetime.datetime.fromtimestamp(self.fields['doneDate'])
 
     def format_eta(self):
-        """Returns the attribute "eta" formatted as a string."""
+        """
+    	Returns the attribute *eta* formatted as a string.
+
+    	* If eta is -1 the result is 'not available'
+    	* If eta is -2 the result is 'unknown'
+    	* Otherwise eta is formatted as <days> <hours>:<minutes>:<seconds>.
+    	"""
         eta = self.fields['eta']
         if eta == -1:
             return 'not available'
@@ -131,5 +159,8 @@ class Torrent(object):
     
     @property
     def priority(self):
-        """Get the priority as string."""
+        """
+        Get the priority as string.
+        Can be one of 'low', 'normal', 'high'.
+        """
         return PRIORITY[self.fields['bandwidthPriority']]

@@ -21,7 +21,7 @@ Getting started
 
 Transmission is available at
 `Python Package Index <http://pypi.python.org/pypi/transmissionrpc/>`_. To
-install the transmissionrpc python module use easy_install.
+install the transmissionrpc python module use easy_install or pip.
 
 ::
 
@@ -30,10 +30,23 @@ install the transmissionrpc python module use easy_install.
 .. NOTE::
 	You might need administrator privileges to install python modules.
 
+You may also download the tarball from `Python Package Index <http://pypi.python.org/pypi/transmissionrpc/>`_. Untar and install.
+
+::
+
+    $ tar -xzf transmissionrpc-0.7.tar.gz
+    $ cd transmissionrpc-0.7
+    $ python setup.py install
+
 Dependecies
 -----------
 
+transmissionrpc has the following dependencies.
+
+ * Python >= 2.5.
  * simplejson >= 1.7.1 or Python >= 2.6.
+
+If Python 2.6 or later is detected the standard library json implementation will be used.
 
 Report a problem
 ----------------
@@ -45,17 +58,19 @@ bitbucket_. Please look through the `existing issues`_ before opening a
 .. _existing issues: http://bitbucket.org/blueluna/transmissionrpc/issues/
 .. _new issue: http://bitbucket.org/blueluna/transmissionrpc/issues/new/
 
-Getting dirty
-=============
+Installing from source
+======================
 
 The source code
 ---------------
 
-Transmission is hosted at bitbucket_ using mercurial_. To pull a working copy,
+Transmission is hosted at bitbucket_ using mercurial_. To get a working copy,
 run
 ::
 
-   $ hg pull http://www.bitbucket.org/blueluna/transmissionrpc/
+   $ hg clone http://www.bitbucket.org/blueluna/transmissionrpc/
+
+The source code will be fetched and stored the directory transmissionrpc.
 
 Then install the module using
 ::
@@ -68,9 +83,6 @@ Or if you wish to further develop transmissionrpc itself use
 	$ python setup.py develop
 
 This will link this directory to the library as transmissionrpc.
-
-.. NOTE::
-	You might need administrator privileges to install python modules.
 
 .. _bitbucket: http://www.bitbucket.org/blueluna/transmissionrpc/
 .. _mercurial: http://www.selenic.com/mercurial

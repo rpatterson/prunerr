@@ -4,12 +4,15 @@
 
 import logging
 
-logger = logging.getLogger('transmissionrpc')
-logger.setLevel(logging.ERROR)
+LOGGER = logging.getLogger('transmissionrpc')
+LOGGER.setLevel(logging.ERROR)
 
-def mirror_dict(d):
-    d.update(dict((v, k) for k, v in d.iteritems()))
-    return d
+def mirror_dict(source):
+    """
+    Creates a dictionary with all values as keys and all keys as values.
+    """
+    source.update(dict((value, key) for key, value in source.iteritems()))
+    return source
 
 DEFAULT_PORT = 9091
 
@@ -44,6 +47,16 @@ TR_RATIOLIMIT_SINGLE    = 1 # override the global settings, seeding until a cert
 TR_RATIOLIMIT_UNLIMITED = 2 # override the global settings, seeding regardless of ratio
 
 RATIO_LIMIT = mirror_dict({
+    'global'    : TR_RATIOLIMIT_GLOBAL,
+    'single'    : TR_RATIOLIMIT_SINGLE,
+    'unlimited' : TR_RATIOLIMIT_UNLIMITED
+})
+
+TR_IDLELIMIT_GLOBAL     = 0 # follow the global settings
+TR_IDLELIMIT_SINGLE     = 1 # override the global settings, seeding until a certain idle time
+TR_IDLELIMIT_UNLIMITED  = 2 # override the global settings, seeding regardless of activity
+
+IDLE_LIMIT = mirror_dict({
     'global'    : TR_RATIOLIMIT_GLOBAL,
     'single'    : TR_RATIOLIMIT_SINGLE,
     'unlimited' : TR_RATIOLIMIT_UNLIMITED
@@ -119,6 +132,8 @@ TORRENT_ARGS = {
         'scrapeResponse':               ('string', 1, 7, None, None, ''),
         'scrapeURL':                    ('string', 1, 7, None, None, ''),
         'seeders':                      ('number', 1, 7, None, None, ''),
+        'seedIdleLimit':                ('number', 10, None, None, None, ''),
+        'seedIdleMode':                 ('number', 10, None, None, None, ''),
         'seedRatioLimit':               ('double', 5, None, None, None, ''),
         'seedRatioMode':                ('number', 5, None, None, None, ''),
         'sizeWhenDone':                 ('number', 1, None, None, None, ''),
@@ -152,7 +167,7 @@ TORRENT_ARGS = {
         'priority-low':                 ('array', 1, None, None, None, "A list of file id's that should have normal priority."),
         'priority-normal':              ('array', 1, None, None, None, "A list of file id's that should have low priority."),
         'seedIdleLimit':                ('number', 10, None, None, None, 'Seed inactivity limit in minutes.'),
-        'seedIdleMode':                 ('number', 10, None, None, None, 'Seed inactivity mode. '),
+        'seedIdleMode':                 ('number', 10, None, None, None, 'Seed inactivity mode. 0 = Use session limit, 1 = Use transfer limit, 2 = Disable limit.'),
         'seedRatioLimit':               ('double', 5, None, None, None, 'Seeding ratio.'),
         'seedRatioMode':                ('number', 5, None, None, None, 'Which ratio to use. 0 = Use session limit, 1 = Use transfer limit, 2 = Disable limit.'),
         'speed-limit-down':             ('number', 1, 5, None, 'downloadLimit', 'Set the speed limit for download in Kib/s.'),

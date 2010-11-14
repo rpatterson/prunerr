@@ -3,6 +3,9 @@
 # Licensed under the MIT license.
 
 class TransmissionError(Exception):
+    """
+    General module error.
+    """
     def __init__(self, message='', original=None):
         Exception.__init__(self)
         self.message = message
@@ -16,6 +19,9 @@ class TransmissionError(Exception):
             return self.message
 
 class HTTPHandlerError(Exception):
+    """
+    HTTP handler error class. Somewhat handled in Client.
+    """
     def __init__(self, httpurl=None, httpcode=None, httpmsg=None, httpheaders=None, httpdata=None):
         Exception.__init__(self)
         self.url = ''

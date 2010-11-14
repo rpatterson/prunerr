@@ -26,6 +26,9 @@ class Torrent(object):
 
     def __str__(self):
         return 'torrent %s' % self.fields['name']
+    
+    def __copy__(self):
+        return Torrent(self.client, self.fields)
 
     def update(self, other):
         """Update the torrent data from a Transmission arguments dictinary"""
@@ -36,8 +39,8 @@ class Torrent(object):
             fields = other.fields
         else:
             raise ValueError('Cannot update with supplied data')
-        for k, v in fields.iteritems():
-            self.fields[k.replace('-', '_')] = v
+        for key, value in fields.iteritems():
+            self.fields[key.replace('-', '_')] = value
 
     def files(self):
         """

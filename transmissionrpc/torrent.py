@@ -2,7 +2,7 @@
 # Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import datetime
+import sys, datetime
 
 from transmissionrpc.constants import STATUS, PRIORITY
 from transmissionrpc.utils import format_timedelta
@@ -21,11 +21,35 @@ class Torrent(object):
         self.update(fields)
         self.client = client
 
+    def _getNameString(self, codec=None):
+        if codec == None:
+            codec = sys.getdefaultencoding()
+        name = None
+        # try to find name
+        if 'name' in self.fields:
+            name = self.fields['name']
+        # if name is unicode, try to decode
+        if isinstance(name, unicode):
+            try:
+                name = name.encode(codec)
+            except UnicodeError:
+                name = None
+        return name
+
     def __repr__(self):
-        return '<Torrent %d \"%s\">' % (self.fields['id'], self.fields['name'])
+        tid = self.fields['id']
+        name = self._getNameString()
+        if isinstance(name, str):
+            return '<Torrent %d \"%s\">' % (tid, name)
+        else:
+            return '<Torrent %d>' % (tid)
 
     def __str__(self):
-        return 'torrent %s' % self.fields['name']
+        name = self._getNameString()
+        if isinstance(name, str):
+            return 'Torrent \"%s\"' % (name)
+        else:
+            return 'Torrent'
     
     def __copy__(self):
         return Torrent(self.client, self.fields)

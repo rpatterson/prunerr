@@ -72,6 +72,12 @@ class torrent(unittest.TestCase):
         torrent.fields['sizeWhenDone'] = 0
         self.assertEqual(torrent.progress, 0)
 
+    def testUnicode(self):
+        torrent = transmissionrpc.Torrent(None, {'id': 42, 'name': 'あみ'})
+        self.assertEqual(torrent.id, 42)
+        torrent
+        str(torrent)
+
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(torrent)
     return suite

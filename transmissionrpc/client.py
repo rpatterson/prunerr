@@ -505,7 +505,7 @@ class Client(object):
         ``files_unwanted``           1 -                   A list of file id's that shouldn't be downloaded.                                      
         ``files_wanted``             1 -                   A list of file id's that should be downloaded.                                         
         ``honorsSessionLimits``      5 -                   Enables or disables the transfer to honour the upload limit set in the session.        
-        ``ids``                      1 -                   Local download location.                                                               
+        ``location``                 1 -                   Local download location.                                                               
         ``peer_limit``               1 -                   The peer limit for the torrents.                                                       
         ``priority_high``            1 -                   A list of file id's that should have high priority.                                    
         ``priority_low``             1 -                   A list of file id's that should have normal priority.                                  

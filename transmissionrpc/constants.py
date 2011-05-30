@@ -161,7 +161,7 @@ TORRENT_ARGS = {
         'files-wanted':                 ('array', 1, None, None, None, "A list of file id's that should be downloaded."),
         'files-unwanted':               ('array', 1, None, None, None, "A list of file id's that shouldn't be downloaded."),
         'honorsSessionLimits':          ('boolean', 5, None, None, None, "Enables or disables the transfer to honour the upload limit set in the session."),
-        'ids':                          ('array', 1, None, None, None, 'Local download location.'),
+        'location':                     ('array', 1, None, None, None, 'Local download location.'),
         'peer-limit':                   ('number', 1, None, None, None, 'The peer limit for the torrents.'),
         'priority-high':                ('array', 1, None, None, None, "A list of file id's that should have high priority."),
         'priority-low':                 ('array', 1, None, None, None, "A list of file id's that should have normal priority."),

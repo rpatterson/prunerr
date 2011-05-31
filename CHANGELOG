@@ -1,3 +1,9 @@
+Transmissionrpc 0.8
+-------------------
+
+Fixed argument "location" falsely named "ids" for Client.change. Issue #31.
+Fixed Torrent.ratio to use response value uploadRatio. Issue #30.
+
 Transmissionrpc 0.7
 -------------------
 

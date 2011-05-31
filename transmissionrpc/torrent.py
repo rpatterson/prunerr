@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
 import sys, datetime
@@ -50,7 +50,7 @@ class Torrent(object):
             return 'Torrent \"%s\"' % (name)
         else:
             return 'Torrent'
-    
+
     def __copy__(self):
         return Torrent(self.client, self.fields)
 
@@ -70,23 +70,23 @@ class Torrent(object):
 
     def files(self):
         """
-    	Get list of files for this torrent.
+        Get list of files for this torrent.
 
-    	This function returns a dictionary with file information for each file.
-    	The file information is has following fields:
-    	::
+        This function returns a dictionary with file information for each file.
+        The file information is has following fields:
+        ::
 
-    		{
-    			<file id>: {
-    				'name': <file name>,
-    				'size': <file size in bytes>,
-    				'completed': <bytes completed>,
-    				'priority': <priority ('high'|'normal'|'low')>,
-    				'selected': <selected for download>
-    			}
+        {
+        <file id>: {
+        'name': <file name>,
+        'size': <file size in bytes>,
+        'completed': <bytes completed>,
+        'priority': <priority ('high'|'normal'|'low')>,
+        'selected': <selected for download>
+        }
 
-    			...
-    		}
+        ...
+        }
         """
         result = {}
         if 'files' in self.fields:
@@ -115,9 +115,9 @@ class Torrent(object):
     def status(self):
         """
         Returns the torrent status. Is either one of 'check pending', 'checking',
-    	'downloading', 'seeding' or 'stopped'. The first two is related to
-    	verification.
-    	"""
+        'downloading', 'seeding' or 'stopped'. The first two is related to
+        verification.
+        """
         return STATUS[self.fields['status']]
 
     @property
@@ -164,12 +164,12 @@ class Torrent(object):
 
     def format_eta(self):
         """
-    	Returns the attribute *eta* formatted as a string.
+        Returns the attribute *eta* formatted as a string.
 
-    	* If eta is -1 the result is 'not available'
-    	* If eta is -2 the result is 'unknown'
-    	* Otherwise eta is formatted as <days> <hours>:<minutes>:<seconds>.
-    	"""
+        * If eta is -1 the result is 'not available'
+        * If eta is -2 the result is 'unknown'
+        * Otherwise eta is formatted as <days> <hours>:<minutes>:<seconds>.
+        """
         eta = self.fields['eta']
         if eta == -1:
             return 'not available'
@@ -177,7 +177,7 @@ class Torrent(object):
             return 'unknown'
         else:
             return format_timedelta(self.eta)
-    
+
     @property
     def priority(self):
         """

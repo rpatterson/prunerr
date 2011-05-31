@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
 import socket, datetime, logging
@@ -175,7 +175,7 @@ def add_stdout_logger(level='debug'):
     Add a stdout target for the transmissionrpc logging.
     """
     levels = {'debug': logging.DEBUG, 'info': logging.INFO, 'warning': logging.WARNING, 'error': logging.ERROR}
-    
+
     trpc_logger = logging.getLogger('transmissionrpc')
     loghandler = logging.StreamHandler()
     if level in levels.keys():

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2010 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
 import sys, httplib, urllib2
@@ -14,17 +14,17 @@ class HTTPHandler(object):
         """
         Transmission use basic authentication in earlier versions and digest
         authentication in later versions.
-        
+
          * uri, the authentication realm URI.
          * login, the authentication login.
          * password, the authentication password.
         """
         raise NotImplementedError("Bad HTTPHandler, failed to implement set_authentication.")
-    
+
     def request(self, url, query, headers, timeout):
         """
         Implement a HTTP POST request here.
-        
+
          * url, The URL to request.
          * query, The query data to send. This is a JSON data string.
          * headers, a dictionary of headers to send.

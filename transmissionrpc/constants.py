@@ -119,7 +119,7 @@ TORRENT_ARGS = {
         'peersConnected':               ('number', 1, None, None, None, ''),
         'peersFrom':                    ('object', 1, None, None, None, ''),
         'peersGettingFromUs':           ('number', 1, None, None, None, ''),
-        'peersKnown':                   ('number', 1, None, None, None, ''),
+        'peersKnown':                   ('number', 1, 13, None, None, ''),
         'peersSendingToUs':             ('number', 1, None, None, None, ''),
         'percentDone':                  ('double', 5, None, None, None, ''),
         'pieces':                       ('string', 5, None, None, None, ''),
@@ -183,6 +183,7 @@ TORRENT_ARGS = {
     'add': {
         'bandwidthPriority':            ('number', 8, None, None, None, 'Priority for this transfer.'),
         'download-dir':                 ('string', 1, None, None, None, 'The directory where the downloaded contents will be saved in.'),
+        'cookies':                      ('string', 13, None, None, None, 'One or more HTTP cookie(s).'),
         'filename':                     ('string', 1, None, None, None, "A filepath or URL to a torrent file or a magnet link."),
         'files-wanted':                 ('array', 1, None, None, None, "A list of file id's that should be downloaded."),
         'files-unwanted':               ('array', 1, None, None, None, "A list of file id's that shouldn't be downloaded."),
@@ -212,6 +213,7 @@ SESSION_ARGS = {
         "config-dir":                   ('string', 8, None, None, None, ''),
         "dht-enabled":                  ('boolean', 6, None, None, None, ''),
         "download-dir":                 ('string', 1, None, None, None, ''),
+        "download-dir-free-space":      ('number', 12, None, None, None, ''),
         "encryption":                   ('string', 1, None, None, None, ''),
         "idle-seeding-limit":           ('number', 10, None, None, None, ''),
         "idle-seeding-limit-enabled":   ('boolean', 10, None, None, None, ''),
@@ -241,6 +243,7 @@ SESSION_ARGS = {
         "start-added-torrents":         ('boolean', 9, None, None, None, ''),
         "trash-original-torrent-files": ('boolean', 9, None, None, None, ''),
         'units':                        ('object', 10, None, None, None, ''),
+        'utp-enabled':                  ('boolean', 13, None, None, None, ''),
         "version":                      ('string', 3, None, None, None, ''),
     },
     'set': {

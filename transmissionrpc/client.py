@@ -286,8 +286,11 @@ class Client(object):
         Get the Transmission RPC version. Trying to deduct if the server don't have a version value.
         """
         if self.protocol_version == None:
+            # Ugly fix for 2.20 - 2.22 reporting rpc-version 11, but having new arguments
+            if (self.server_version and (self.server_version[0] == 2 and self.server_version[1] in [20, 21, 22])):
+                self.protocol_version = 12
             # Ugly fix for 2.12 reporting rpc-version 10, but having new arguments
-            if (self.server_version and (self.server_version[0] == 2 and self.server_version[1] == 12)):
+            elif (self.server_version and (self.server_version[0] == 2 and self.server_version[1] == 12)):
                 self.protocol_version = 11
             elif hasattr(self.session, 'rpc_version'):
                 self.protocol_version = self.session.rpc_version

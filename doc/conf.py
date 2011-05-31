@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2010 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 #
 # Vxl documentation build configuration file, created by
@@ -40,15 +40,15 @@ master_doc = 'index'
 
 # General substitutions.
 project = 'Transmission RPC'
-copyright = '2008-2010, Erik Svensson'
+copyright = '2008-2011, Erik Svensson'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '0.7'
+version = '0.8'
 # The full version, including alpha/beta/rc tags.
-release = '0.7'
+release = '0.8'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:

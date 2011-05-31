@@ -131,10 +131,7 @@ class Torrent(object):
     @property
     def ratio(self):
         """Get the upload/download ratio."""
-        try:
-            return self.fields['uploadedEver'] / float(self.fields['downloadedEver'])
-        except ZeroDivisionError:
-            return 0.0
+        return float(self.fields['uploadRatio'])
 
     @property
     def eta(self):

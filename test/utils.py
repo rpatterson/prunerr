@@ -55,11 +55,11 @@ class utils(unittest.TestCase):
     def testFormatTimestamp(self):
         table = {
             0: '-',
-            1: '1970-01-01 01:00:01',
-            1129135532: '2005-10-12 18:45:32',
+            1: '1970-01-01 00:00:01',
+            1129135532: '2005-10-12 16:45:32',
         }
         for timestamp, expected in table.iteritems():
-            self.assertEqual(tu.format_timestamp(timestamp), expected)
+            self.assertEqual(tu.format_timestamp(timestamp, utc=True), expected)
     
     def testInetAddress(self):
         table = {

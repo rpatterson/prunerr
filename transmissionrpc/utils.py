@@ -34,12 +34,15 @@ def format_timedelta(delta):
     hours, minutes = divmod(minutes, 60)
     return '%d %02d:%02d:%02d' % (delta.days, hours, minutes, seconds)
 
-def format_timestamp(timestamp):
+def format_timestamp(timestamp, utc=False):
     """
     Format unix timestamp into ISO date format.
     """
     if timestamp > 0:
-        dt_timestamp = datetime.datetime.fromtimestamp(timestamp)
+        if utc:
+            dt_timestamp = datetime.datetime.utcfromtimestamp(timestamp)
+        else:
+            dt_timestamp = datetime.datetime.fromtimestamp(timestamp)
         return dt_timestamp.isoformat(' ')
     else:
         return '-'

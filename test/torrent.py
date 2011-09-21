@@ -46,6 +46,7 @@ class torrent(unittest.TestCase):
             'leftUntilDone': 500,
             'uploadedEver': 1000,
             'downloadedEver': 2000,
+            'uploadRatio': 0.5,
             'eta': 3600,
             'activityDate': time.mktime((2008,12,11,11,15,30,0,0,-1)),
             'addedDate': time.mktime((2008,12,11,8,5,10,0,0,-1)),

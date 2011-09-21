@@ -68,8 +68,6 @@ class torrent(unittest.TestCase):
         
         self.assertEqual(torrent.format_eta(), transmissionrpc.utils.format_timedelta(torrent.eta))
         
-        torrent.fields['downloadedEver'] = 0
-        self.assertEqual(torrent.ratio, 0)
         torrent.fields['sizeWhenDone'] = 0
         self.assertEqual(torrent.progress, 0)
 

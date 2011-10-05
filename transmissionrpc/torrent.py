@@ -4,7 +4,7 @@
 
 import sys, datetime
 
-from transmissionrpc.constants import STATUS, PRIORITY
+from transmissionrpc.constants import PRIORITY
 from transmissionrpc.utils import format_timedelta
 
 class Torrent(object):
@@ -53,6 +53,35 @@ class Torrent(object):
 
     def __copy__(self):
         return Torrent(self.client, self.fields)
+    
+    def _status_old(self, code):
+        mapping = {
+            (1<<0): 'check pending',
+            (1<<1): 'checking',
+            (1<<2): 'downloading',
+            (1<<3): 'seeding',
+            (1<<4): 'stopped',
+        }
+        return mapping[code]
+    
+    def _status_new(self, code):
+        mapping = {
+            0: 'stopped',
+            1: 'check pending',
+            2: 'checking',
+            3: 'download pending',
+            4: 'downloading',
+            5: 'seed pending',
+            6: 'seeding',
+        }
+        return mapping[code]
+    
+    def _status(self):
+        code = self.fields['status']
+        if self.client.protocol_version >= 14:
+            return self._status_new(code)
+        else:
+            return self._status_old(code)
 
     def update(self, other):
         """
@@ -118,7 +147,7 @@ class Torrent(object):
         'downloading', 'seeding' or 'stopped'. The first two is related to
         verification.
         """
-        return STATUS[self.fields['status']]
+        return self._status()
 
     @property
     def progress(self):

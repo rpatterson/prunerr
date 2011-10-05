@@ -18,20 +18,6 @@ DEFAULT_PORT = 9091
 
 DEFAULT_TIMEOUT = 30.0
 
-TR_STATUS_CHECK_WAIT   = (1<<0)
-TR_STATUS_CHECK        = (1<<1)
-TR_STATUS_DOWNLOAD     = (1<<2)
-TR_STATUS_SEED         = (1<<3)
-TR_STATUS_STOPPED      = (1<<4)
-
-STATUS = mirror_dict({
-    'check pending' : TR_STATUS_CHECK_WAIT,
-    'checking'      : TR_STATUS_CHECK,
-    'downloading'   : TR_STATUS_DOWNLOAD,
-    'seeding'       : TR_STATUS_SEED,
-    'stopped'       : TR_STATUS_STOPPED,
-})
-
 TR_PRI_LOW    = -1
 TR_PRI_NORMAL =  0
 TR_PRI_HIGH   =  1
@@ -103,6 +89,7 @@ TORRENT_ARGS = {
         'id':                           ('number', 1, None, None, None, ''),
         'isFinished':                   ('boolean', 9, None, None, None, ''),
         'isPrivate':                    ('boolean', 1, None, None, None, ''),
+        'isStalled':                    ('boolean', 14, None, None, None, ''),
         'lastAnnounceTime':             ('number', 1, 7, None, None, ''),
         'lastScrapeTime':               ('number', 1, 7, None, None, ''),
         'leechers':                     ('number', 1, 7, None, None, ''),
@@ -126,6 +113,7 @@ TORRENT_ARGS = {
         'pieceCount':                   ('number', 1, None, None, None, ''),
         'pieceSize':                    ('number', 1, None, None, None, ''),
         'priorities':                   ('array', 1, None, None, None, ''),
+        'queuePosition':                ('number', 14, None, None, None, ''),
         'rateDownload':                 ('number', 1, None, None, None, ''),
         'rateUpload':                   ('number', 1, None, None, None, ''),
         'recheckProgress':              ('double', 1, None, None, None, ''),
@@ -166,6 +154,7 @@ TORRENT_ARGS = {
         'priority-high':                ('array', 1, None, None, None, "A list of file id's that should have high priority."),
         'priority-low':                 ('array', 1, None, None, None, "A list of file id's that should have normal priority."),
         'priority-normal':              ('array', 1, None, None, None, "A list of file id's that should have low priority."),
+        'queuePosition':                ('number', 14, None, None, None, 'Position of this torrent in its queue.'),
         'seedIdleLimit':                ('number', 10, None, None, None, 'Seed inactivity limit in minutes.'),
         'seedIdleMode':                 ('number', 10, None, None, None, 'Seed inactivity mode. 0 = Use session limit, 1 = Use transfer limit, 2 = Disable limit.'),
         'seedRatioLimit':               ('double', 5, None, None, None, 'Seeding ratio.'),
@@ -214,6 +203,8 @@ SESSION_ARGS = {
         "dht-enabled":                  ('boolean', 6, None, None, None, ''),
         "download-dir":                 ('string', 1, None, None, None, ''),
         "download-dir-free-space":      ('number', 12, None, None, None, ''),
+        "download-queue-size":          ('number', 14, None, None, None, ''),
+        "download-queue-enabled":       ('boolean', 14, None, None, None, ''),
         "encryption":                   ('string', 1, None, None, None, ''),
         "idle-seeding-limit":           ('number', 10, None, None, None, ''),
         "idle-seeding-limit-enabled":   ('boolean', 10, None, None, None, ''),
@@ -229,6 +220,8 @@ SESSION_ARGS = {
         "peer-port":                    ('number', 5, None, None, None, ''),
         "peer-port-random-on-start":    ('boolean', 5, None, None, None, ''),
         "port-forwarding-enabled":      ('boolean', 1, None, None, None, ''),
+        "queue-stalled-minutes":        ('number', 14, None, None, None, ''),
+        "queue-stalled-enabled":        ('boolean', 14, None, None, None, ''),
         "rename-partial-files":         ('boolean', 8, None, None, None, ''),
         "rpc-version":                  ('number', 4, None, None, None, ''),
         "rpc-version-minimum":          ('number', 4, None, None, None, ''),
@@ -236,6 +229,8 @@ SESSION_ARGS = {
         "script-torrent-done-filename": ('string', 9, None, None, None, ''),
         "seedRatioLimit":               ('double', 5, None, None, None, ''),
         "seedRatioLimited":             ('boolean', 5, None, None, None, ''),
+        "seed-queue-size":              ('number', 14, None, None, None, ''),
+        "seed-queue-enabled":           ('boolean', 14, None, None, None, ''),
         "speed-limit-down":             ('number', 1, None, None, None, ''),
         "speed-limit-down-enabled":     ('boolean', 1, None, None, None, ''),
         "speed-limit-up":               ('number', 1, None, None, None, ''),

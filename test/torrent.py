@@ -41,7 +41,7 @@ class torrent(unittest.TestCase):
         
         data = {
             'id': 1,
-            'status': transmissionrpc.constants.TR_STATUS_DOWNLOAD,
+            'status': 4,
             'sizeWhenDone': 1000,
             'leftUntilDone': 500,
             'uploadedEver': 1000,
@@ -74,7 +74,7 @@ class torrent(unittest.TestCase):
     def testUnicode(self):
         torrent = transmissionrpc.Torrent(None, {'id': 42, 'name': 'あみ'})
         self.assertEqual(torrent.id, 42)
-        torrent
+        repr(torrent)
         str(torrent)
 
 def suite():

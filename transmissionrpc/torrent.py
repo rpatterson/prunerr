@@ -53,6 +53,11 @@ class Torrent(object):
 
     def __copy__(self):
         return Torrent(self.client, self.fields)
+
+    def _rpc_version(self):
+        if self.client:
+            return self.client.rpc_version()
+        return 2
     
     def _status_old(self, code):
         mapping = {
@@ -78,7 +83,7 @@ class Torrent(object):
     
     def _status(self):
         code = self.fields['status']
-        if self.client.protocol_version >= 14:
+        if self._rpc_version() >= 14:
             return self._status_new(code)
         else:
             return self._status_old(code)
@@ -119,11 +124,11 @@ class Torrent(object):
         """
         result = {}
         if 'files' in self.fields:
-            indicies = xrange(len(self.fields['files']))
+            indices = xrange(len(self.fields['files']))
             files = self.fields['files']
             priorities = self.fields['priorities']
             wanted = self.fields['wanted']
-            for item in zip(indicies, files, priorities, wanted):
+            for item in zip(indices, files, priorities, wanted):
                 selected = True if item[3] else False
                 priority = PRIORITY[item[2]]
                 result[item[0]] = {

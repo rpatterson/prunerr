@@ -120,6 +120,20 @@ start without a command.
         except transmissionrpc.TransmissionError, e:
             print(u'Failed to add torrent "%s"' % e)
 
+    def do_magnet(self, line):
+        args = self.arg_tokenize(line)
+
+        if len(args) == 0:
+            print(u'Specify a torrent file or url')
+            return
+
+        torrent_url = args[0]
+        
+        try:
+            self.tc.add_uri(torrent_url)
+        except transmissionrpc.TransmissionError, e:
+            print(u'Failed to add torrent "%s"' % e)
+            
     def complete_remove(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
 

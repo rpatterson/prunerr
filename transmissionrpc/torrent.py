@@ -56,7 +56,7 @@ class Torrent(object):
 
     def _rpc_version(self):
         if self.client:
-            return self.client.rpc_version()
+            return self.client.rpc_version
         return 2
     
     def _status_old(self, code):

@@ -10,3 +10,5 @@ syntax: regexp
 ^html/*
 .+\.egg-info/*
 ^doc/out/*
+^\.idea/*
+^\hgmessage

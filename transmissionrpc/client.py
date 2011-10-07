@@ -45,7 +45,7 @@ def debug_httperror(error):
 Torrent ids
 
 Many functions in Client takes torrent id. A torrent id can either be id or
-hashString. When suppling multiple id's it is possible to use a list mixed
+hashString. When supplying multiple id's it is possible to use a list mixed
 with both id and hashString.
 
 Timeouts
@@ -317,7 +317,7 @@ class Client(object):
         ===================== ==== =============================================================
         ``bandwidthPriority`` 8 -  Priority for this transfer.
         ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
-        ``filename``          1 -  A filepath or URL to a torrent file or a magnet link.
+        ``filename``          1 -  A file path or URL to a torrent file or a magnet link.
         ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.
         ``files_wanted``      1 -  A list of file id's that should be downloaded.
         ``metainfo``          1 -  The content of a torrent file, base64 encoded.
@@ -439,7 +439,7 @@ class Client(object):
 
     def set_files(self, items, timeout=None):
         """
-        Set file properties. Takes a dictonary with similar contents as the result
+        Set file properties. Takes a dictionary with similar contents as the result
     	of `get_files`.
 
     	::
@@ -464,9 +464,9 @@ class Client(object):
                 continue
             wanted = []
             unwanted = []
-            priority_high = []
-            priority_normal = []
-            priority_low = []
+            high = []
+            normal = []
+            low = []
             for fid, file_desc in files.iteritems():
                 if not isinstance(file_desc, dict):
                     continue
@@ -476,16 +476,23 @@ class Client(object):
                     unwanted.append(fid)
                 if 'priority' in file_desc:
                     if file_desc['priority'] == 'high':
-                        priority_high.append(fid)
+                        high.append(fid)
                     elif file_desc['priority'] == 'normal':
-                        priority_normal.append(fid)
+                        normal.append(fid)
                     elif file_desc['priority'] == 'low':
-                        priority_low.append(fid)
-            self.change([tid], files_wanted = wanted
-                        , files_unwanted = unwanted
-                        , priority_high = priority_high
-                        , priority_normal = priority_normal
-                        , priority_low = priority_low, timeout=timeout)
+                        low.append(fid)
+            args = {
+                'timeout': timeout,
+                'files_wanted': wanted,
+                'files_unwanted': unwanted,
+            }
+            if len(high) > 0:
+                args['priority_high'] = high
+            if len(normal) > 0:
+                args['priority_normal'] = normal
+            if len(low) > 0:
+                args['priority_low'] = low
+            self.change([tid], **args)
 
     def list(self, timeout=None):
         """list all torrents"""

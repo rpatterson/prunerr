@@ -565,25 +565,25 @@ class Client(object):
         args = {'location': location, 'move': False}
         self._request('torrent-set-location', args, ids, True, timeout=timeout)
 
-    def queueTop(self, ids, timeout=None):
+    def queue_top(self, ids, timeout=None):
         """Move transfer to the top of the queue."""
         self._rpc_version_warning(14)
-        self._request('queue-move-top', ids, require_ids=True, timeout=timeout)
+        self._request('queue-move-top', ids=ids, require_ids=True, timeout=timeout)
 
-    def queueBottom(self, ids, timeout=None):
+    def queue_bottom(self, ids, timeout=None):
         """Move transfer to the bottom of the queue."""
         self._rpc_version_warning(14)
-        self._request('queue-move-bottom', ids, require_ids=True, timeout=timeout)
+        self._request('queue-move-bottom', ids=ids, require_ids=True, timeout=timeout)
         
-    def queueUp(self, ids, timeout=None):
+    def queue_up(self, ids, timeout=None):
         """Move transfer to the top of the queue."""
         self._rpc_version_warning(14)
-        self._request('queue-move-up', ids, require_ids=True, timeout=timeout)
+        self._request('queue-move-up', ids=ids, require_ids=True, timeout=timeout)
 
-    def queueDown(self, ids, timeout=None):
+    def queue_down(self, ids, timeout=None):
         """Move transfer to the bottom of the queue."""
         self._rpc_version_warning(14)
-        self._request('queue-move-down', ids, require_ids=True, timeout=timeout)
+        self._request('queue-move-down', ids=ids, require_ids=True, timeout=timeout)
 
     def get_session(self, timeout=None):
         """Get session parameters"""

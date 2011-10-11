@@ -102,7 +102,7 @@ Torrent ids
 -----------
 
 Many functions in Client takes torrent id. A torrent id can either be id or
-hashString. When suppling multiple id's it is possible to use a list mixed
+hashString. When supplying multiple id's it is possible to use a list mixed
 with both id and hashString.
 
 Timeouts

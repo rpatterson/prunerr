@@ -28,7 +28,7 @@ def format_speed(size):
 
 def format_timedelta(delta):
     """
-    Format datetime.timedelta into <days> <hours>:<mminutes>:<seconds>.
+    Format datetime.timedelta into <days> <hours>:<minutes>:<seconds>.
     """
     minutes, seconds = divmod(delta.seconds, 60)
     hours, minutes = divmod(minutes, 60)

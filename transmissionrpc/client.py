@@ -2,9 +2,8 @@
 # Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import os, re, time
-import warnings
-import httplib, urllib2, urlparse, base64
+import re, time
+import urllib2, urlparse, base64
 
 try:
     import json
@@ -80,7 +79,7 @@ class Client(object):
                 password = urlo.password
             elif urlo.username or urlo.password:
                 LOGGER.warning('Either user or password missing, not using authentication.')
-        if http_handler == None:
+        if http_handler is None:
             self.http_handler = DefaultHTTPHandler()
         else:
             if hasattr(http_handler, 'set_authentication') and hasattr(http_handler, 'request'):
@@ -125,8 +124,9 @@ class Client(object):
         Query Transmission through HTTP.
         """
         headers = {'x-transmission-session-id': str(self.session_id)}
+        result = {}
         request_count = 0
-        if timeout == None:
+        if timeout is None:
             timeout = self._query_timeout
         while True:
             LOGGER.debug(json.dumps({'url': self.url, 'headers': headers, 'query': query, 'timeout': timeout}, indent=2))
@@ -147,7 +147,7 @@ class Client(object):
                 else:
                     debug_httperror(error)
                     raise TransmissionError('Request failed.', error)
-            request_count = request_count + 1
+            request_count += 1
         return result
 
     def _request(self, method, arguments=None, ids=None, require_ids=False, timeout=None):
@@ -156,7 +156,7 @@ class Client(object):
         """
         if not isinstance(method, (str, unicode)):
             raise ValueError('request takes method as string')
-        if arguments == None:
+        if arguments is None:
             arguments = {}
         if not isinstance(arguments, dict):
             raise ValueError('request takes arguments as dict')
@@ -219,7 +219,7 @@ class Client(object):
         """
         ids = []
 
-        if args == None:
+        if args is None:
             pass
         elif isinstance(args, (int, long)):
             ids.append(args)
@@ -253,7 +253,7 @@ class Client(object):
                 if not addition:
                     raise ValueError(u'Invalid torrent id, \"%s\"' % item)
                 ids.extend(addition)
-        elif isinstance(args, (list)):
+        elif isinstance(args, list):
             for item in args:
                 ids.extend(self._format_ids(item))
         else:
@@ -267,14 +267,14 @@ class Client(object):
         self.session.update(data)
 
     def _update_server_version(self):
-        if self.server_version == None:
+        if self.server_version is None:
             version_major = 1
             version_minor = 30
             version_changeset = 0
             version_parser = re.compile('(\d).(\d+) \((\d+)\)')
             if hasattr(self.session, 'version'):
                 match = version_parser.match(self.session.version)
-                if (match):
+                if match:
                     version_major = int(match.group(1))
                     version_minor = int(match.group(2))
                     version_changeset = match.group(3)
@@ -285,12 +285,12 @@ class Client(object):
         """
         Get the Transmission RPC version. Trying to deduct if the server don't have a version value.
         """
-        if self.protocol_version == None:
+        if self.protocol_version is None:
             # Ugly fix for 2.20 - 2.22 reporting rpc-version 11, but having new arguments
-            if (self.server_version and (self.server_version[0] == 2 and self.server_version[1] in [20, 21, 22])):
+            if self.server_version and (self.server_version[0] == 2 and self.server_version[1] in [20, 21, 22]):
                 self.protocol_version = 12
             # Ugly fix for 2.12 reporting rpc-version 10, but having new arguments
-            elif (self.server_version and (self.server_version[0] == 2 and self.server_version[1] == 12)):
+            elif self.server_version and (self.server_version[0] == 2 and self.server_version[1] == 12):
                 self.protocol_version = 11
             elif hasattr(self.session, 'rpc_version'):
                 self.protocol_version = self.session.rpc_version
@@ -361,13 +361,13 @@ class Client(object):
         ``priority_normal``   1 -               A list of file id's that should have normal priority.
         ===================== ===== =========== =============================================================
         """
-        if uri == None:
+        if uri is None:
             raise ValueError('add_uri requires a URI.')
         # there has been some problem with T's built in torrent fetcher,
         # use a python one instead
-        parseduri = urlparse.urlparse(uri)
+        parsed_uri = urlparse.urlparse(uri)
         torrent_data = None
-        if parseduri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
+        if parsed_uri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
             torrent_file = urllib2.urlopen(uri)
             torrent_data = base64.b64encode(torrent_file.read())
         if torrent_data:
@@ -413,7 +413,7 @@ class Client(object):
     def get_files(self, ids=None, timeout=None):
         """
     	Get list of files for provided torrent id(s). If ids is empty,
-    	information for all torrents are fetched. This function returns a dictonary
+    	information for all torrents are fetched. This function returns a dictionary
     	for each requested torrent id holding the information about the files.
 
     	::

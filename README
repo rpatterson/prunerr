@@ -32,7 +32,7 @@ $ python setup.py install
 NOTE: You might need administrator privileges to install python modules.
 
 The setup program will take care of the simplejson requirement. Please refer to
-the Transmission documenation on how to install Transmission.
+the Transmission documentation on how to install Transmission.
 
 Developer
 =========

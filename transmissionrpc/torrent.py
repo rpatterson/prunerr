@@ -110,17 +110,16 @@ class Torrent(object):
         The file information is has following fields:
         ::
 
-        {
-        <file id>: {
-        'name': <file name>,
-        'size': <file size in bytes>,
-        'completed': <bytes completed>,
-        'priority': <priority ('high'|'normal'|'low')>,
-        'selected': <selected for download>
-        }
-
-        ...
-        }
+            {
+                <file id>: {
+                    'name': <file name>,
+                    'size': <file size in bytes>,
+                    'completed': <bytes completed>,
+                    'priority': <priority ('high'|'normal'|'low')>,
+                    'selected': <selected for download>
+                }
+                ...
+            }
         """
         result = {}
         if 'files' in self.fields:

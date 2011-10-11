@@ -312,21 +312,21 @@ class Client(object):
         Add torrent to transfers list. Takes a base64 encoded .torrent file in data.
         Additional arguments are:
 
-        ===================== ==== =============================================================
-        Argument              RPC  Description
-        ===================== ==== =============================================================
-        ``bandwidthPriority`` 8 -  Priority for this transfer.
-        ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
-        ``filename``          1 -  A file path or URL to a torrent file or a magnet link.
-        ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.
-        ``files_wanted``      1 -  A list of file id's that should be downloaded.
-        ``metainfo``          1 -  The content of a torrent file, base64 encoded.
-        ``paused``            1 -  If True, does not start the transfer when added.
-        ``peer_limit``        1 -  Maximum number of peers allowed.
-        ``priority_high``     1 -  A list of file id's that should have high priority.
-        ``priority_low``      1 -  A list of file id's that should have low priority.
-        ``priority_normal``   1 -  A list of file id's that should have normal priority.
-        ===================== ==== =============================================================
+        ===================== ===== =========== =============================================================
+        Argument              RPC   Replaced by Description
+        ===================== ===== =========== =============================================================
+        ``bandwidthPriority`` 8 -               Priority for this transfer.
+        ``cookies``           13 -              One or more HTTP cookie(s).
+        ``download_dir``      1 -               The directory where the downloaded contents will be saved in.
+        ``files_unwanted``    1 -               A list of file id's that shouldn't be downloaded.
+        ``files_wanted``      1 -               A list of file id's that should be downloaded.
+        ``paused``            1 -               If True, does not start the transfer when added.
+        ``peer_limit``        1 -               Maximum number of peers allowed.
+        ``priority_high``     1 -               A list of file id's that should have high priority.
+        ``priority_low``      1 -               A list of file id's that should have low priority.
+        ``priority_normal``   1 -               A list of file id's that should have normal priority.
+        ===================== ===== =========== =============================================================
+
         """
         args = {}
         if data:
@@ -346,19 +346,20 @@ class Client(object):
         all uri's supported by Transmissions torrent-add 'filename'
         argument. Additional arguments are:
 
-        ===================== ==== =============================================================
-        Argument              RPC  Description
-        ===================== ==== =============================================================
-        ``bandwidthPriority`` 8 -  Priority for this transfer.
-        ``download_dir``      1 -  The directory where the downloaded contents will be saved in.
-        ``files_unwanted``    1 -  A list of file id's that shouldn't be downloaded.
-        ``files_wanted``      1 -  A list of file id's that should be downloaded.
-        ``paused``            1 -  If True, does not start the transfer when added.
-        ``peer_limit``        1 -  Maximum number of peers allowed.
-        ``priority_high``     1 -  A list of file id's that should have high priority.
-        ``priority_low``      1 -  A list of file id's that should have low priority.
-        ``priority_normal``   1 -  A list of file id's that should have normal priority.
-        ===================== ==== =============================================================
+        ===================== ===== =========== =============================================================
+        Argument              RPC   Replaced by Description
+        ===================== ===== =========== =============================================================
+        ``bandwidthPriority`` 8 -               Priority for this transfer.
+        ``cookies``           13 -              One or more HTTP cookie(s).
+        ``download_dir``      1 -               The directory where the downloaded contents will be saved in.
+        ``files_unwanted``    1 -               A list of file id's that shouldn't be downloaded.
+        ``files_wanted``      1 -               A list of file id's that should be downloaded.
+        ``paused``            1 -               If True, does not start the transfer when added.
+        ``peer_limit``        1 -               Maximum number of peers allowed.
+        ``priority_high``     1 -               A list of file id's that should have high priority.
+        ``priority_low``      1 -               A list of file id's that should have low priority.
+        ``priority_normal``   1 -               A list of file id's that should have normal priority.
+        ===================== ===== =========== =============================================================
         """
         if uri == None:
             raise ValueError('add_uri requires a URI.')
@@ -523,6 +524,7 @@ class Client(object):
         ``priority_high``            1 -                   A list of file id's that should have high priority.
         ``priority_low``             1 -                   A list of file id's that should have normal priority.
         ``priority_normal``          1 -                   A list of file id's that should have low priority.
+        ``queuePosition``            14 -                  Position of this transfer in its queue.
         ``seedIdleLimit``            10 -                  Seed inactivity limit in minutes.
         ``seedIdleMode``             10 -                  Seed inactivity mode. 0 = Use session limit, 1 = Use transfer limit, 2 = Disable limit.
         ``seedRatioLimit``           5 -                   Seeding ratio.
@@ -576,12 +578,12 @@ class Client(object):
         self._request('queue-move-bottom', ids=ids, require_ids=True, timeout=timeout)
         
     def queue_up(self, ids, timeout=None):
-        """Move transfer to the top of the queue."""
+        """Move transfer up in the queue."""
         self._rpc_version_warning(14)
         self._request('queue-move-up', ids=ids, require_ids=True, timeout=timeout)
 
     def queue_down(self, ids, timeout=None):
-        """Move transfer to the bottom of the queue."""
+        """Move transfer down in the queue."""
         self._rpc_version_warning(14)
         self._request('queue-move-down', ids=ids, require_ids=True, timeout=timeout)
 
@@ -606,9 +608,12 @@ class Client(object):
         ``alt_speed_time_end``           5 -                     Time when alternate speeds should be disabled. Minutes after midnight.
         ``alt_speed_up``                 5 -                     Alternate session upload speed limit (in Kib/s).
         ``blocklist_enabled``            5 -                     Enables the block list
+        ``blocklist_url``                11 -                    Location of the block list. Updated with blocklist-update.
         ``cache_size_mb``                10 -                    The maximum size of the disk cache in MB
         ``dht_enabled``                  6 -                     Enables DHT.
         ``download_dir``                 1 -                     Set the session download directory.
+        ``download_queue_enabled``       14 -                    Enable parallel download restriction.
+        ``download_queue_size``          14 -                    Number of parallel downloads.
         ``encryption``                   1 -                     Set the session encryption mode, one of ``required``, ``preferred`` or ``tolerated``.
         ``idle_seeding_limit``           10 -                    The default seed inactivity limit in minutes.
         ``idle_seeding_limit_enabled``   10 -                    Enables the default seed inactivity limit
@@ -624,9 +629,13 @@ class Client(object):
         ``pex_enabled``                  5 -                     Allowing PEX in public torrents.
         ``port``                         1 - 5 peer-port         Peer port.
         ``port_forwarding_enabled``      1 -                     Enables port forwarding.
+        ``queue_stalled_enabled``        14 -                    Enable tracking of stalled transfers.
+        ``queue_stalled_minutes``        14 -                    Number of minutes of idle that marks a transfer as stalled.
         ``rename_partial_files``         8 -                     Appends ".part" to incomplete files
         ``script_torrent_done_enabled``  9 -                     Whether or not to call the "done" script.
         ``script_torrent_done_filename`` 9 -                     Filename of the script to run when the transfer is done.
+        ``seed_queue_enabled``           14 -                    Enable parallel upload restriction.
+        ``seed_queue_size``              14 -                    Number of parallel uploads.
         ``seedRatioLimit``               5 -                     Seed ratio limit. 1.0 means 1:1 download and upload ratio.
         ``seedRatioLimited``             5 -                     Enables seed ration limit.
         ``speed_limit_down``             1 -                     Download speed limit (in Kib/s).
@@ -635,6 +644,7 @@ class Client(object):
         ``speed_limit_up_enabled``       1 -                     Enables upload speed limiting.
         ``start_added_torrents``         9 -                     Added torrents will be started right away.
         ``trash_original_torrent_files`` 9 -                     The .torrent file of added torrents will be deleted.
+        ``utp_enabled``                  13 -                    Enables Micro Transport Protocol (UTP).
         ================================ ===== ================= ==========================================================================================================================
 
         .. NOTE::

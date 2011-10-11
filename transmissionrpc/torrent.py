@@ -9,8 +9,8 @@ from transmissionrpc.utils import format_timedelta
 
 class Torrent(object):
     """
-    Torrent is a class holding the data raceived from Transmission regarding a bittorrent transfer.
-    All fetched torrent fields are accessable through this class using attributes.
+    Torrent is a class holding the data received from Transmission regarding a bittorrent transfer.
+    All fetched torrent fields are accessible through this class using attributes.
     This class has a few convenience properties using the torrent data.
     """
 
@@ -22,7 +22,7 @@ class Torrent(object):
         self.client = client
 
     def _getNameString(self, codec=None):
-        if codec == None:
+        if codec is None:
             codec = sys.getdefaultencoding()
         name = None
         # try to find name
@@ -90,7 +90,7 @@ class Torrent(object):
 
     def update(self, other):
         """
-        Update the torrent data from a Transmission JSON-RPC arguments dictinary
+        Update the torrent data from a Transmission JSON-RPC arguments dictionary
         """
         fields = None
         if isinstance(other, dict):

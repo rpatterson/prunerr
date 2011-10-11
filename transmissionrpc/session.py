@@ -14,7 +14,7 @@ class Session(object):
 
     def __init__(self, fields=None):
         self.fields = {}
-        if fields is None:
+        if fields is not None:
             self.update(fields)
 
     def update(self, other):

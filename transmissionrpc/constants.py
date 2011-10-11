@@ -286,5 +286,6 @@ SESSION_ARGS = {
         "speed-limit-up-enabled":       ('boolean', 1, None, None, None, 'Enables upload speed limiting.'),
         "start-added-torrents":         ('boolean', 9, None, None, None, 'Added torrents will be started right away.'),
         "trash-original-torrent-files": ('boolean', 9, None, None, None, 'The .torrent file of added torrents will be deleted.'),
+        'utp-enabled':                  ('boolean', 13, None, None, None, 'Enables Micro Transport Protocol (UTP).'),
     },
 }

@@ -383,9 +383,12 @@ class Client(object):
         self._request('torrent-remove',
                     {'delete-local-data':rpc_bool(delete_data)}, ids, True, timeout=timeout)
 
-    def start(self, ids, timeout=None):
+    def start(self, ids, bypass_queue=False, timeout=None):
         """start torrent(s) with provided id(s)"""
-        self._request('torrent-start', {}, ids, True, timeout=timeout)
+        method = 'torrent-start'
+        if bypass_queue and self.rpc_version >= 14:
+            method = 'torrent-start-now'
+        self._request(method, {}, ids, True, timeout=timeout)
 
     def stop(self, ids, timeout=None):
         """stop torrent(s) with provided id(s)"""
@@ -561,6 +564,26 @@ class Client(object):
         self._rpc_version_warning(6)
         args = {'location': location, 'move': False}
         self._request('torrent-set-location', args, ids, True, timeout=timeout)
+
+    def queueTop(self, ids, timeout=None):
+        """Move transfer to the top of the queue."""
+        self._rpc_version_warning(14)
+        self._request('queue-move-top', ids, require_ids=True, timeout=timeout)
+
+    def queueBottom(self, ids, timeout=None):
+        """Move transfer to the bottom of the queue."""
+        self._rpc_version_warning(14)
+        self._request('queue-move-bottom', ids, require_ids=True, timeout=timeout)
+        
+    def queueUp(self, ids, timeout=None):
+        """Move transfer to the top of the queue."""
+        self._rpc_version_warning(14)
+        self._request('queue-move-up', ids, require_ids=True, timeout=timeout)
+
+    def queueDown(self, ids, timeout=None):
+        """Move transfer to the bottom of the queue."""
+        self._rpc_version_warning(14)
+        self._request('queue-move-down', ids, require_ids=True, timeout=timeout)
 
     def get_session(self, timeout=None):
         """Get session parameters"""

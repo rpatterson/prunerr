@@ -393,11 +393,12 @@ class Client(object):
 
     def start_all(self, bypass_queue=False, timeout=None):
         """start all torrents respecting the queue order"""
-        method = 'torrent-start'
-        if bypass_queue and self.rpc_version >= 14:
-            method = 'torrent-start-now'
         torrent_list = self.list().values()
-        torrent_list = sorted(torrent_list, key=operator.attrgetter('queuePosition'))
+        method = 'torrent-start'
+        if self.rpc_version >= 14:
+            if bypass_queue:
+                method = 'torrent-start-now'
+            torrent_list = sorted(torrent_list, key=operator.attrgetter('queuePosition'))
         ids = [x.id for x in torrent_list]
         self._request(method, {}, ids, True, timeout=timeout)
 

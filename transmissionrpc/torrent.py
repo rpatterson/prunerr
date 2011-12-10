@@ -218,3 +218,10 @@ class Torrent(object):
         Can be one of 'low', 'normal', 'high'.
         """
         return PRIORITY[self.fields['bandwidthPriority']]
+
+    @property
+    def queuePosition(self):
+        """
+        Get the queuePosition as an int.
+        """
+	return self.fields['queuePosition']

@@ -2,7 +2,7 @@
 # Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import re, time, operator
+import re, time, operator, warnings
 import urllib2, urlparse, base64
 
 try:
@@ -305,7 +305,8 @@ class Client(object):
         Add a warning to the log if the Transmission RPC version is lower then the provided version.
         """
         if self.rpc_version < version:
-            LOGGER.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.' % (self.rpc_version, version))
+            LOGGER.warning('Using feature not supported by server. RPC version for server %d, feature introduced in %d.'
+                % (self.rpc_version, version))
 
     def add(self, data, timeout=None, **kwargs):
         """
@@ -335,9 +336,9 @@ class Client(object):
             raise ValueError('No torrent data or torrent uri.')
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
-            (arg, val) = argument_value_convert('torrent-add',
-                                        argument, value, self.rpc_version)
+            (arg, val) = argument_value_convert('torrent-add', argument, value, self.rpc_version)
             args[arg] = val
+        warnings.warn('add has been deprecated, please use add_torrent instead.', DeprecationWarning)
         return self._request('torrent-add', args, timeout=timeout)
 
     def add_uri(self, uri, **kwargs):
@@ -370,6 +371,7 @@ class Client(object):
         if parsed_uri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
             torrent_file = urllib2.urlopen(uri)
             torrent_data = base64.b64encode(torrent_file.read())
+        warnings.warn('add_uri has been deprecated, please use add_torrent instead.', DeprecationWarning)
         if torrent_data:
             return self.add(torrent_data, **kwargs)
         else:
@@ -383,6 +385,7 @@ class Client(object):
         self._rpc_version_warning(3)
         self._request('torrent-remove',
                     {'delete-local-data':rpc_bool(delete_data)}, ids, True, timeout=timeout)
+    remove_torrent = remove
 
     def start(self, ids, bypass_queue=False, timeout=None):
         """start torrent(s) with provided id(s)"""
@@ -390,6 +393,7 @@ class Client(object):
         if bypass_queue and self.rpc_version >= 14:
             method = 'torrent-start-now'
         self._request(method, {}, ids, True, timeout=timeout)
+    start_torrent = start
 
     def start_all(self, bypass_queue=False, timeout=None):
         """start all torrents respecting the queue order"""
@@ -405,18 +409,85 @@ class Client(object):
     def stop(self, ids, timeout=None):
         """stop torrent(s) with provided id(s)"""
         self._request('torrent-stop', {}, ids, True, timeout=timeout)
+    stop_torrent = stop
 
     def verify(self, ids, timeout=None):
         """verify torrent(s) with provided id(s)"""
         self._request('torrent-verify', {}, ids, True, timeout=timeout)
+    verify_torrent = verify
 
     def reannounce(self, ids, timeout=None):
         """Reannounce torrent(s) with provided id(s)"""
         self._rpc_version_warning(5)
         self._request('torrent-reannounce', {}, ids, True, timeout=timeout)
+    reannounce_torrent = reannounce
+
+    def add_torrent(self, torrent, timeout=None, **kwargs):
+        """
+        Add torrent to transfers list. Takes a uri to a torrent, supporting
+        all uri's supported by Transmissions torrent-add 'filename'
+        argument. Additional arguments are:
+
+        ===================== ===== =========== =============================================================
+        Argument              RPC   Replaced by Description
+        ===================== ===== =========== =============================================================
+        ``bandwidthPriority`` 8 -               Priority for this transfer.
+        ``cookies``           13 -              One or more HTTP cookie(s).
+        ``download_dir``      1 -               The directory where the downloaded contents will be saved in.
+        ``files_unwanted``    1 -               A list of file id's that shouldn't be downloaded.
+        ``files_wanted``      1 -               A list of file id's that should be downloaded.
+        ``paused``            1 -               If True, does not start the transfer when added.
+        ``peer_limit``        1 -               Maximum number of peers allowed.
+        ``priority_high``     1 -               A list of file id's that should have high priority.
+        ``priority_low``      1 -               A list of file id's that should have low priority.
+        ``priority_normal``   1 -               A list of file id's that should have normal priority.
+        ===================== ===== =========== =============================================================
+        """
+        if torrent is None:
+            raise ValueError('add_torrent requires a data or URI.')
+        torrent_data = None
+        try:
+            # check if this is base64 data
+            base64.b64decode(torrent).decode('ascii')
+            torrent_data = torrent
+        except Exception:
+            torrent_data = None
+        if not torrent_data:
+            parsed_uri = urlparse.urlparse(torrent)
+            if parsed_uri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
+                # there has been some problem with T's built in torrent fetcher,
+                # use a python one instead
+                torrent_file = urllib2.urlopen(torrent)
+                torrent_data = torrent_file.read()
+                torrent_data = base64.b64encode(torrent_data)
+        args = {}
+        if torrent_data:
+            args = {'metainfo': torrent_data}
+        else:
+            args = {'filename': torrent}
+        for key, value in kwargs.iteritems():
+            argument = make_rpc_name(key)
+            (arg, val) = argument_value_convert('torrent-add', argument, value, self.rpc_version)
+            args[arg] = val
+        return self._request('torrent-add', args, timeout=timeout).values()[0]
+
+    def get_torrent(self, id, arguments=None, timeout=None):
+        """Get information for torrent with provided id."""
+        if not arguments:
+            arguments = self.torrent_get_arguments
+        if not isinstance(id, (int, long, str, unicode)):
+            raise ValueError("Invalid id")
+        return self._request('torrent-get', {'fields': arguments}, id, require_ids=True, timeout=timeout)[id]
+
+    def get_torrents(self, ids=None, arguments=None, timeout=None):
+        """Get information for torrents with provided ids."""
+        if not arguments:
+            arguments = self.torrent_get_arguments
+        return self._request('torrent-get', {'fields': arguments}, ids, timeout=timeout).values()
 
     def info(self, ids=None, arguments=None, timeout=None):
         """Get detailed information for torrent(s) with provided id(s)."""
+        warnings.warn('info has been deprecated, please use get_torrent or get_torrents instead.', DeprecationWarning)
         if not arguments:
             arguments = self.torrent_get_arguments
         return self._request('torrent-get', {'fields': arguments}, ids, timeout=timeout)
@@ -511,6 +582,7 @@ class Client(object):
 
     def list(self, timeout=None):
         """list all torrents"""
+        warnings.warn('list has been deprecated, please use get_torrent or get_torrents instead.', DeprecationWarning)
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone'
             , 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver'
             , 'downloadedEver', 'uploadRatio', 'queuePosition']
@@ -557,26 +629,28 @@ class Client(object):
         args = {}
         for key, value in kwargs.iteritems():
             argument = make_rpc_name(key)
-            (arg, val) = argument_value_convert('torrent-set'
-                                    , argument, value, self.rpc_version)
+            (arg, val) = argument_value_convert('torrent-set' , argument, value, self.rpc_version)
             args[arg] = val
 
         if len(args) > 0:
             self._request('torrent-set', args, ids, True, timeout=timeout)
         else:
             ValueError("No arguments to set")
+    change_torrent = change
 
     def move(self, ids, location, timeout=None):
         """Move torrent data to the new location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': True}
         self._request('torrent-set-location', args, ids, True, timeout=timeout)
+    move_torrent_data = move
 
     def locate(self, ids, location, timeout=None):
         """Locate torrent data at the location."""
         self._rpc_version_warning(6)
         args = {'location': location, 'move': False}
         self._request('torrent-set-location', args, ids, True, timeout=timeout)
+    locate_torrent_data = locate
 
     def queue_top(self, ids, timeout=None):
         """Move transfer to the top of the queue."""
@@ -666,8 +740,7 @@ class Client(object):
             if key == 'encryption' and value not in ['required', 'preferred', 'tolerated']:
                 raise ValueError('Invalid encryption value')
             argument = make_rpc_name(key)
-            (arg, val) = argument_value_convert('session-set'
-                                , argument, value, self.rpc_version)
+            (arg, val) = argument_value_convert('session-set' , argument, value, self.rpc_version)
             args[arg] = val
         if len(args) > 0:
             self._request('session-set', args, timeout=timeout)

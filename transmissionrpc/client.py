@@ -2,7 +2,7 @@
 # Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import re, time
+import re, time, operator
 import urllib2, urlparse, base64
 
 try:
@@ -391,6 +391,16 @@ class Client(object):
             method = 'torrent-start-now'
         self._request(method, {}, ids, True, timeout=timeout)
 
+    def start_all(self, bypass_queue=False, timeout=None):
+        """start all torrents respecting the queue order"""
+        method = 'torrent-start'
+        if bypass_queue and self.rpc_version >= 14:
+            method = 'torrent-start-now'
+        torrent_list = self.list().values()
+        torrent_list = sorted(torrent_list, key=operator.attrgetter('queuePosition'))
+        ids = [x.id for x in torrent_list]
+        self._request(method, {}, ids, True, timeout=timeout)
+
     def stop(self, ids, timeout=None):
         """stop torrent(s) with provided id(s)"""
         self._request('torrent-stop', {}, ids, True, timeout=timeout)
@@ -502,7 +512,7 @@ class Client(object):
         """list all torrents"""
         fields = ['id', 'hashString', 'name', 'sizeWhenDone', 'leftUntilDone'
             , 'eta', 'status', 'rateUpload', 'rateDownload', 'uploadedEver'
-            , 'downloadedEver', 'uploadRatio']
+            , 'downloadedEver', 'uploadRatio', 'queuePosition']
         return self._request('torrent-get', {'fields': fields}, timeout=timeout)
 
     def change(self, ids, timeout=None, **kwargs):

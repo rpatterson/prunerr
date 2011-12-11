@@ -23,9 +23,7 @@ class torrent(unittest.TestCase):
     
     def testAttributes(self):
         torrent = transmissionrpc.Torrent(None, {'id': 42})
-        self.assertTrue(hasattr(torrent, 'client'))
         self.assertTrue(hasattr(torrent, 'id'))
-        self.assertEqual(torrent.client, None)
         self.assertEqual(torrent.id, 42)
         self.assertPropertyException(KeyError, torrent, 'status')
         self.assertPropertyException(KeyError, torrent, 'progress')
@@ -67,9 +65,6 @@ class torrent(unittest.TestCase):
         self.assertEqual(torrent.date_done, datetime.datetime(2008,12,11,10,0,15))
         
         self.assertEqual(torrent.format_eta(), transmissionrpc.utils.format_timedelta(torrent.eta))
-        
-        torrent.fields['sizeWhenDone'] = 0
-        self.assertEqual(torrent.progress, 0)
 
     def testUnicode(self):
         torrent = transmissionrpc.Torrent(None, {'id': 42, 'name': 'あみ'})

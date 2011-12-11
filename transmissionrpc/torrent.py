@@ -3,12 +3,9 @@
 # Licensed under the MIT license.
 
 import sys, datetime
-from collections import namedtuple
 
 from transmissionrpc.constants import PRIORITY, RATIO_LIMIT, IDLE_LIMIT
-from transmissionrpc.utils import format_timedelta
-
-Field = namedtuple('Field', ['value', 'dirty'])
+from transmissionrpc.utils import Field, format_timedelta
 
 class Torrent(object):
     """
@@ -59,10 +56,51 @@ class Torrent(object):
     def __copy__(self):
         return Torrent(self._client, self._fields)
 
+    def __getattr__(self, name):
+        try:
+            return self._fields[name].value
+        except KeyError:
+            raise AttributeError('No attribute %s' % name)
+
     def _rpc_version(self):
         if self._client:
             return self._client.rpc_version
         return 2
+
+    def _dirty_fields(self):
+        """Enumerate changed fields"""
+        outgoing_keys = ['bandwidthPriority', 'downloadLimit', 'downloadLimited', 'peer_limit', 'queuePosition'
+            , 'seedIdleLimit', 'seedIdleMode', 'seedRatioLimit', 'seedRatioMode', 'uploadLimit', 'uploadLimited']
+        fields = []
+        for key in outgoing_keys:
+            if key in self._fields and self._fields[key].dirty:
+                fields.append(key)
+        return fields
+
+    def _push(self):
+        """Push changed fields to the server"""
+        dirty = self._dirty_fields()
+        args = {}
+        for key in dirty:
+            args[key] = self._fields[key].value
+            self._fields[key] = self._fields[key]._replace(dirty=False)
+        if len(args) > 0:
+            self._client.change_torrent(self.id, **args)
+
+    def _update_fields(self, other):
+        """
+        Update the torrent data from a Transmission JSON-RPC arguments dictionary
+        """
+        fields = None
+        if isinstance(other, dict):
+            for key, value in other.iteritems():
+                self._fields[key.replace('-', '_')] = Field(value, False)
+        elif isinstance(other, Torrent):
+            for key in other._fields.keys():
+                self._fields[key] = Field(other._fields[key].value, False)
+        else:
+            raise ValueError('Cannot update with supplied data')
+        self._incoming_pending = False
     
     def _status_old(self, code):
         mapping = {
@@ -92,21 +130,6 @@ class Torrent(object):
             return self._status_new(code)
         else:
             return self._status_old(code)
-
-    def _update_fields(self, other):
-        """
-        Update the torrent data from a Transmission JSON-RPC arguments dictionary
-        """
-        fields = None
-        if isinstance(other, dict):
-            for key, value in other.iteritems():
-                self._fields[key.replace('-', '_')] = Field(value, False)
-        elif isinstance(other, Torrent):
-            for key in other._fields.keys():
-                self._fields[key] = Field(other._fields[key].value, False)
-        else:
-            raise ValueError('Cannot update with supplied data')
-        self._incoming_pending = False
 
     def files(self):
         """
@@ -143,12 +166,6 @@ class Torrent(object):
                     'name': item[1]['name'],
                     'completed': item[1]['bytesCompleted']}
         return result
-
-    def __getattr__(self, name):
-        try:
-            return self._fields[name].value
-        except KeyError:
-            raise AttributeError('No attribute %s' % name)
 
     @property
     def status(self):
@@ -421,26 +438,6 @@ class Torrent(object):
             pass
 
     queue_position = property(_get_queue_position, _set_queue_position, None, "Queue position")
-
-    def _dirty_fields(self):
-        """Enumerate changed fields"""
-        outgoing_keys = ['bandwidthPriority', 'downloadLimit', 'downloadLimited', 'peer_limit', 'queuePosition'
-            , 'seedIdleLimit', 'seedIdleMode', 'seedRatioLimit', 'seedRatioMode', 'uploadLimit', 'uploadLimited']
-        fields = []
-        for key in outgoing_keys:
-            if key in self._fields and self._fields[key].dirty:
-                fields.append(key)
-        return fields
-
-    def _push(self):
-        """Push changed fields to the server"""
-        dirty = self._dirty_fields()
-        args = {}
-        for key in dirty:
-            args[key] = self._fields[key].value
-            self._fields[key] = self._fields[key]._replace(dirty=False)
-        if len(args) > 0:
-            self._client.change_torrent(self.id, **args)
 
     def update(self, timeout=None):
         """Update the torrent information."""

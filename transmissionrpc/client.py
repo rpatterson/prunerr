@@ -91,7 +91,7 @@ class Client(object):
         elif user or password:
             LOGGER.warning('Either user or password missing, not using authentication.')
         self._sequence = 0
-        self.session = Session()
+        self.session = None
         self.session_id = 0
         self.server_version = None
         self.protocol_version = None
@@ -264,7 +264,10 @@ class Client(object):
         """
         Update session data.
         """
-        self.session.update(data)
+        if self.session:
+            self.session.from_request(data)
+        else:
+            self.session = Session(self, data)
 
     def _update_server_version(self):
         if self.server_version is None:

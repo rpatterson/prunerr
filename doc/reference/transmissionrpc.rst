@@ -108,6 +108,12 @@ The attributes available are the same as the session arguments in the
 Transmission RPC specification, but with underscore instead of hyphen.
 ``download-dir`` -> ``download_dir``.
 
+Mutators
+--------
+
+Some attributes can be changed, these are called mutators. These changes will be sent to the server when changed.
+To reload information from Transmission use ``update()``.
+
 Reference
 ---------
 

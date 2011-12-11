@@ -5,7 +5,7 @@
 import sys, datetime
 from collections import namedtuple
 
-from transmissionrpc.constants import PRIORITY
+from transmissionrpc.constants import PRIORITY, RATIO_LIMIT, IDLE_LIMIT
 from transmissionrpc.utils import format_timedelta
 
 Field = namedtuple('Field', ['value', 'dirty'])
@@ -219,52 +219,6 @@ class Torrent(object):
         else:
             return format_timedelta(self.eta)
 
-    def _get_priority(self):
-        """
-        Get the priority as string.
-        Can be one of 'low', 'normal', 'high'.
-        """
-        return PRIORITY[self._fields['bandwidthPriority'].value]
-
-    def _set_priority(self, priority):
-        """
-        Set the priority as string.
-        Can be one of 'low', 'normal', 'high'.
-        """
-        if isinstance(priority, (str, unicode)):
-            self._fields['bandwidthPriority'] = Field(PRIORITY[priority], True)
-            self._push()
-
-    priority = property(_get_priority, _set_priority, None
-        , "Priority as string. Can be one of 'low', 'normal', 'high'.")
-
-    def _get_upload_limit(self):
-        """
-        Get the upload limit.
-        Can be a number or None.
-        """
-        if self._fields['uploadLimited'].value:
-            return self._fields['uploadLimit'].value
-        else:
-            return None
-
-    def _set_upload_limit(self, limit):
-        """
-        Get the upload limit.
-        Can be a number, 'session' or None.
-        """
-        if isinstance(limit, (int, long)):
-            self._fields['uploadLimited'] = Field(True, True)
-            self._fields['uploadLimit'] = Field(limit, True)
-            self._push()
-        elif limit == None:
-            self._fields['uploadLimited'] = Field(False, True)
-            self._push()
-        else:
-            raise ValueError("Not a valid limit")
-
-    upload_limit = property(_get_upload_limit, _set_upload_limit, None, "Upload limit in Kbps or None")
-
     def _get_download_limit(self):
         """
         Get the download limit.
@@ -290,7 +244,165 @@ class Torrent(object):
         else:
             raise ValueError("Not a valid limit")
 
-    download_limit = property(_get_download_limit, _set_download_limit, None, "Download limit in Kbps or None")
+    download_limit = property(_get_download_limit, _set_download_limit, None, "Download limit in Kbps or None. This is a mutator.")
+
+    def _get_peer_limit(self):
+        """
+        Get the peer limit.
+        """
+        return self._fields['peer_limit'].value
+
+    def _set_peer_limit(self, limit):
+        """
+        Set the peer limit.
+        """
+        if isinstance(limit, (int, long)):
+            self._fields['peer_limit'] = Field(limit, True)
+            self._push()
+        else:
+            raise ValueError("Not a valid limit")
+
+    peer_limit = property(_get_peer_limit, _set_peer_limit, None, "Peer limit. This is a mutator.")
+
+    def _get_priority(self):
+        """
+        Get the priority as string.
+        Can be one of 'low', 'normal', 'high'.
+        """
+        return PRIORITY[self._fields['bandwidthPriority'].value]
+
+    def _set_priority(self, priority):
+        """
+        Set the priority as string.
+        Can be one of 'low', 'normal', 'high'.
+        """
+        if isinstance(priority, (str, unicode)):
+            self._fields['bandwidthPriority'] = Field(PRIORITY[priority], True)
+            self._push()
+
+    priority = property(_get_priority, _set_priority, None
+        , "Bandwidth priority as string. Can be one of 'low', 'normal', 'high'. This is a mutator.")
+
+    def _get_seed_idle_limit(self):
+        """
+        Get the seed idle limit in minutes.
+        """
+        return self._fields['seedIdleLimit'].value
+
+    def _set_seed_idle_limit(self, limit):
+        """
+        Set the seed idle limit in minutes.
+        """
+        if isinstance(limit, (int, long)):
+            self._fields['seedIdleLimit'] = Field(limit, True)
+            self._push()
+        else:
+            raise ValueError("Not a valid limit")
+
+    seed_idle_limit = property(_get_seed_idle_limit, _set_seed_idle_limit, None
+        , "Torrent seed idle limit in minutes. Also see seed_idle_mode. This is a mutator.")
+
+    def _get_seed_idle_mode(self):
+        """
+        Get the seed ratio mode as string. Can be one of 'global', 'single' or 'unlimited'.
+        """
+        return IDLE_LIMIT[self._fields['seedIdleMode'].value]
+
+    def _set_seed_idle_mode(self, mode):
+        """
+        Set the seed ratio mode as string. Can be one of 'global', 'single' or 'unlimited'.
+        """
+        if isinstance(mode, str):
+            self._fields['seedIdleMode'] = Field(IDLE_LIMIT[mode], True)
+            self._push()
+        else:
+            raise ValueError("Not a valid limit")
+
+    seed_idle_mode = property(_get_seed_idle_mode, _set_seed_idle_mode, None,
+        """
+        Seed idle mode as string. Can be one of 'global', 'single' or 'unlimited'.
+
+         * global, use session seed idle limit.
+         * single, use torrent seed idle limit. See seed_idle_limit.
+         * unlimited, no seed idle limit.
+
+        This is a mutator.
+        """
+    )
+
+    def _get_seed_ratio_limit(self):
+        """
+        Get the seed ratio limit as float.
+        """
+        return float(self._fields['seedRatioLimit'].value)
+
+    def _set_seed_ratio_limit(self, limit):
+        """
+        Set the seed ratio limit as float.
+        """
+        if isinstance(limit, (int, long, float)) and limit >= 0.0:
+            self._fields['seedRatioLimit'] = Field(float(limit), True)
+            self._push()
+        else:
+            raise ValueError("Not a valid limit")
+
+    seed_ratio_limit = property(_get_seed_ratio_limit, _set_seed_ratio_limit, None
+        , "Torrent seed ratio limit as float. Also see seed_ratio_mode. This is a mutator.")
+
+    def _get_seed_ratio_mode(self):
+        """
+        Get the seed ratio mode as string. Can be one of 'global', 'single' or 'unlimited'.
+        """
+        return RATIO_LIMIT[self._fields['seedRatioMode'].value]
+
+    def _set_seed_ratio_mode(self, mode):
+        """
+        Set the seed ratio mode as string. Can be one of 'global', 'single' or 'unlimited'.
+        """
+        if isinstance(mode, str):
+            self._fields['seedRatioMode'] = Field(RATIO_LIMIT[mode], True)
+            self._push()
+        else:
+            raise ValueError("Not a valid limit")
+
+    seed_ratio_mode = property(_get_seed_ratio_mode, _set_seed_ratio_mode, None,
+        """
+        Seed ratio mode as string. Can be one of 'global', 'single' or 'unlimited'.
+
+         * global, use session seed ratio limit.
+         * single, use torrent seed ratio limit. See seed_ratio_limit.
+         * unlimited, no seed ratio limit.
+
+        This is a mutator.
+        """
+    )
+
+    def _get_upload_limit(self):
+        """
+        Get the upload limit.
+        Can be a number or None.
+        """
+        if self._fields['uploadLimited'].value:
+            return self._fields['uploadLimit'].value
+        else:
+            return None
+
+    def _set_upload_limit(self, limit):
+        """
+        Set the upload limit.
+        Can be a number, 'session' or None.
+        """
+        if isinstance(limit, (int, long)):
+            self._fields['uploadLimited'] = Field(True, True)
+            self._fields['uploadLimit'] = Field(limit, True)
+            self._push()
+        elif limit == None:
+            self._fields['uploadLimited'] = Field(False, True)
+            self._push()
+        else:
+            raise ValueError("Not a valid limit")
+
+    upload_limit = property(_get_upload_limit, _set_upload_limit, None, "Upload limit in Kbps or None. This is a mutator.")
 
     def _get_queue_position(self):
         if self._rpc_version() >= 14:
@@ -311,8 +423,9 @@ class Torrent(object):
     queue_position = property(_get_queue_position, _set_queue_position, None, "Queue position")
 
     def _dirty_fields(self):
-        outgoing_keys = ['bandwidthPriority', 'downloadLimit', 'downloadLimited', 'queuePosition'
-            , 'uploadLimit', 'uploadLimited']
+        """Enumerate changed fields"""
+        outgoing_keys = ['bandwidthPriority', 'downloadLimit', 'downloadLimited', 'peer_limit', 'queuePosition'
+            , 'seedIdleLimit', 'seedIdleMode', 'seedRatioLimit', 'seedRatioMode', 'uploadLimit', 'uploadLimited']
         fields = []
         for key in outgoing_keys:
             if key in self._fields and self._fields[key].dirty:
@@ -320,6 +433,7 @@ class Torrent(object):
         return fields
 
     def _push(self):
+        """Push changed fields to the server"""
         dirty = self._dirty_fields()
         args = {}
         for key in dirty:
@@ -329,26 +443,29 @@ class Torrent(object):
             self._client.change_torrent(self.id, **args)
 
     def update(self, timeout=None):
+        """Update the torrent information."""
         self._push()
         torrent = self._client.get_torrent(self.id, timeout=timeout)
         self._update_fields(torrent)
 
     def start(self, bypass_queue=False, timeout=None):
-        """Move torrent data to location"""
+        """
+        Start the torrent.
+        """
         self._incoming_pending = True
         self._client.start_torrent(self.id, bypass_queue=bypass_queue, timeout=timeout)
 
     def stop(self, timeout=None):
-        """Move torrent data to location"""
+        """Stop the torrent."""
         self._incoming_pending = True
         self._client.stop_torrent(self.id, timeout=timeout)
 
     def move_data(self, location, timeout=None):
-        """Move torrent data to location"""
+        """Move torrent data to location."""
         self._incoming_pending = True
         self._client.move_torrent_data(self.id, location, timeout=timeout)
 
     def locate_data(self, location, timeout=None):
-        """Locate torrent data at location"""
+        """Locate torrent data at location."""
         self._incoming_pending = True
         self._client.locate_torrent_data(self.id, location, timeout=timeout)

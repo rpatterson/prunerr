@@ -181,3 +181,9 @@ div.note {
     border: 1px solid #dad503;
 }
 
+div.warning {
+    background: #ffe38b;
+    border: 1px solid #c2701a;
+}
+
+

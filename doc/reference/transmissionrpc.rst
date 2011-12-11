@@ -15,7 +15,7 @@ the `RPC specification`_ for more information on RPC data.
 .. _RPC specification: http://trac.transmissionbt.com/wiki/rpc
 
 .. contents::
-    :depth: 3
+	:depth: 3
 
 Exceptions
 ==========
@@ -28,75 +28,96 @@ Exceptions
 
 .. autoclass:: HTTPHandlerError
 
-    .. attribute:: url
+	.. attribute:: url
 
-        The requested url.
+		The requested url.
 
-    .. attribute:: code
+	.. attribute:: code
 
-        HTTP error code.
+		HTTP error code.
 
-    .. attribute:: message
+	.. attribute:: message
 
-	    HTTP error message.
+		HTTP error message.
 
-    .. attribute:: headers
+	.. attribute:: headers
 
-	    HTTP headers.
+		HTTP headers.
 
-    .. attribute:: data
+	.. attribute:: data
 
-	    HTTP data.
+		HTTP data.
 
 Torrent object
 ==============
 
-Torrent is a class holding the information received from Transmission regarding
-a bittorrent transfer. All fetched torrent fields are accessible through this
-class using attributes. The attributes use underscore instead of hyphen in the
-names though. This class has a few convenience attributes using the torrent
-information.
+Torrent is a class holding the information received from Transmission regarding a bittorrent transfer.
+
+Attributes
+----------
+
+All fetched torrent fields are accessible through this class using attributes. The attributes use underscore instead of
+hyphen in the names though. This class has a few convenience attributes using the torrent information.
 
 Example:
 ::
 
 	>>> import transmissionrpc
-	>>> t = transmissionrpc.Torrent({'id': 1, 'comment': 'My torrent', 'addedDate': 1232281019})
+	>>> t = transmissionrpc.Torrent(None, {'id': 1, 'comment': 'My torrent', 'addedDate': 1232281019})
 	>>> t.comment
 	'My torrent'
 	>>> t.date_added
 	datetime.datetime(2009, 1, 18, 13, 16, 59)
 	>>>
 
+Mutators
+--------
+
+Some attributes can be changed, these are called mutators. These changes will be sent to the server when changed.
+To reload information from Transmission use ``update()``.
+
+Example:
+::
+
+	>>> import transmissionrpc
+	>>> c = transmissionrpc.Client()
+	>>> t = c.get_torrent(0)
+	>>> t.peer_limit
+	10
+	>>> t.peer_limit = 20
+	>>> t.update()
+	>>> t.peer_limit
+	20
+
+Reference
+---------
+
 .. autoclass:: Torrent
-    :members:
+	:members:
 
 Session object
 ==============
 
 Session is a class holding the session data for a Transmission session.
 
+Attributes
+----------
+
 Access the session field can be done through attributes.
 The attributes available are the same as the session arguments in the
 Transmission RPC specification, but with underscore instead of hyphen.
 ``download-dir`` -> ``download_dir``.
 
-.. class:: Session(fields = {})
+Reference
+---------
 
-	*fields* should be an dictionary build from session information from an
-	Transmission JSON-RPC result.
-
-.. method:: Session.update(other)
-
-	Updates the Session object with data from *other*.
-
-	*other* should be a Session object or session information from an
-	Transmission JSON-RPC result.
+.. autoclass:: Session
+	:members:
 
 Client object
 =============
 
-This is it. This class implements the JSON-RPC protocol to communicate with Transmission.
+This class implements the JSON-RPC protocol to communicate with Transmission.
 
 Torrent ids
 -----------
@@ -113,8 +134,8 @@ accessible through transmissionrpc by either changing the timeout property of
 a Client object or supply the named argument ``timeout`` in most methods of
 Client. The default timeout is 30 seconds.
 
+Reference
+---------
+
 .. autoclass:: Client
-    :members:
-
-
-
+	:members:

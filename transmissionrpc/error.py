@@ -9,15 +9,15 @@ class TransmissionError(Exception):
     """
     def __init__(self, message='', original=None):
         Exception.__init__(self)
-        self._message = message
+        self.message = message
         self.original = original
 
     def __str__(self):
         if self.original:
             original_name = type(self.original).__name__
-            return '%s Original exception: %s, "%s"' % (self._message, original_name, str(self.original))
+            return '%s Original exception: %s, "%s"' % (self.message, original_name, str(self.original))
         else:
-            return self._message
+            return self.message
 
 class HTTPHandlerError(Exception):
     """
@@ -28,7 +28,7 @@ class HTTPHandlerError(Exception):
         Exception.__init__(self)
         self.url = ''
         self.code = 600
-        self._message = ''
+        self.message = ''
         self.headers = {}
         self.data = ''
         if isinstance(httpurl, (str, unicode)):
@@ -36,17 +36,17 @@ class HTTPHandlerError(Exception):
         if isinstance(httpcode, (int, long)):
             self.code = httpcode
         if isinstance(httpmsg, (str, unicode)):
-            self._message = httpmsg
+            self.message = httpmsg
         if isinstance(httpheaders, dict):
             self.headers = httpheaders
         if isinstance(httpdata, (str, unicode)):
             self.data = httpdata
 
     def __repr__(self):
-        return '<HTTPHandlerError %d, %s>' % (self.code, self._message)
+        return '<HTTPHandlerError %d, %s>' % (self.code, self.message)
 
     def __str__(self):
-        return 'HTTPHandlerError %d: %s' % (self.code, self._message)
+        return 'HTTPHandlerError %d: %s' % (self.code, self.message)
 
     def __unicode__(self):
-        return u'HTTPHandlerError %d: %s' % (self.code, self._message)
+        return u'HTTPHandlerError %d: %s' % (self.code, self.message)

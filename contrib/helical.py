@@ -277,7 +277,7 @@ start without a command.
                 print(self._torrent_brief(torrent))
 
     def _torrent_brief_header(self):
-        return u' Id  Done   ETA           Status       Download    Upload      Ratio  Name'
+        return u' Id   Done   ETA           Status       Download     Upload       Ratio  Name'
 
     def _torrent_brief(self, torrent):
         s = u'% 3d: ' % (torrent.id)
@@ -286,26 +286,23 @@ start without a command.
         except:
             pass
         try:
-            if torrent.fields['eta'] > 0:
-                s += u' %- 13s' % torrent.format_eta()
-            else:
-                s += u' -            '
+            s += u' %- 13s' % torrent.format_eta()
         except:
-            pass
+            s += u' -            '
         try:
             s += u' %- 12s' % torrent.status
         except:
             s += u' -status     '
             pass
         try:
-            s += u' %5.1f %- 5s' % format_speed(torrent.rateDownload)
-            s += u' %5.1f %- 5s' % format_speed(torrent.rateUpload)
+            s += u' %6.1f %- 5s' % format_speed(torrent.rateDownload)
+            s += u' %6.1f %- 5s' % format_speed(torrent.rateUpload)
         except:
-            s += u' -rate     '
-            s += u' -rate     '
+            s += u' -rate      '
+            s += u' -rate      '
             pass
         try:
-            s += u' %6.2f' % torrent.ratio
+            s += u' %4.2f  ' % torrent.ratio
         except:
             s += u' -ratio'
             pass

@@ -1,6 +1,11 @@
 Transmissionrpc 0.9
 -------------------
 
+Fixed message handling in TransmissionError. Issue #35. Thanks Adam Rothman.
+Made Client.start_all honour queue order. Thanks stephenharrell.
+Changed interface for Client.
+Added mutators to Torrent and Session.
+
 Transmissionrpc 0.8
 -------------------
 

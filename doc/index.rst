@@ -1,5 +1,5 @@
 ..
-    Copyright (c) 2008-2011 Erik Svensson <erik.public@gmail.com>
+    Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
     Licensed under the MIT license.
 
 Transmission RPC
@@ -10,7 +10,7 @@ Introduction
 
 This is **transmissionrpc**. This module helps using Python to connect
 to a Transmission_ JSON-RPC service. transmissionrpc is compatible with
-Transmission 1.3 and later.
+Transmission 1.31 and later.
 
 transmissionrpc is licensed under the MIT license.
 
@@ -97,15 +97,15 @@ around. Following will create a RPC client and list all torrents.
 
     >>> import transmissionrpc
     >>> tc = transmissionrpc.Client('localhost', port=9091)
-    >>> tc.list()
+    >>> tc.get_torrents()
 
 List will return a dictionary of Torrent object indexed by their id. You might
 not have any torrents yet. This can be remedied by adding an torrent.
 ::
 
-    >>> tc.add_url('http://releases.ubuntu.com/8.10/ubuntu-8.10-desktop-i386.iso.torrent')
+    >>> tc.add_torrent('http://releases.ubuntu.com/8.10/ubuntu-8.10-desktop-i386.iso.torrent')
     {1: <Torrent 1 "ubuntu-8.10-desktop-i386.iso">}
-    >>> tc.info(1)
+    >>> tc.get_torrent(1)
     {1: <Torrent 1 "ubuntu-8.10-desktop-i386.iso">}
 
 As you saw, the add_url and info calls also returns a dictionary with
@@ -113,7 +113,7 @@ As you saw, the add_url and info calls also returns a dictionary with
 found in the Torrent object.
 ::
 
-    >>> torrent = tc.info(1)[1]
+    >>> torrent = tc.get_torrent(1)[1]
     >>> torrent.name
     'ubuntu-8.10-desktop-i386.iso'
     >>> torrent.hashString
@@ -134,16 +134,16 @@ remove it.
 
 ::
 
-    >>> tc.stop(1)
-    >>> tc.remove('33820db6dd5e5928d23bc811bbac2f4ae94cb882')
+    >>> tc.stop_torrent(1)
+    >>> tc.remove_torrent('33820db6dd5e5928d23bc811bbac2f4ae94cb882')
 
 See what we did there? most methods in transmissionrpc can take both torrent id
 and torrent hash when referring to a torrent. lists and sequences are also
 supported.
 
-    >>> tc.info([2, 'caff87b88f50f46bc22da3a2712a6a4e9a98d91e'])
+    >>> tc.get_torrents([2, 'caff87b88f50f46bc22da3a2712a6a4e9a98d91e'])
     {2: <Torrent 2 "ubuntu-8.10-server-amd64.iso">, 3: <Torrent 3 "ubuntu-8.10-alternate-amd64.iso">}
-    >>> tc.info('1:3')
+    >>> tc.get_torrents('1:3')
     {2: <Torrent 2 "ubuntu-8.10-server-amd64.iso">, 3: <Torrent 3 "ubuntu-8.10-alternate-amd64.iso">}
 
 Continue to explore and have fun! For more in depth information read the module

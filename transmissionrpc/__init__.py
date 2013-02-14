@@ -11,6 +11,6 @@ from transmissionrpc.client import Client
 from transmissionrpc.utils import add_stdout_logger
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
-__version__   = u'0.9'
+__version__   = u'0.10'
 __copyright__ = u'Copyright (c) 2008-2013 Erik Svensson'
 __license__   = u'MIT'

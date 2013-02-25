@@ -7,6 +7,8 @@ from collections import namedtuple
 import transmissionrpc.constants as constants
 from transmissionrpc.constants import LOGGER
 
+from six import string_types, iteritems
+
 UNITS = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB']
 
 def format_size(size):
@@ -87,11 +89,11 @@ def rpc_bool(arg):
     """
     Convert between Python boolean and Transmission RPC boolean.
     """
-    if isinstance(arg, (str, unicode)):
+    if isinstance(arg, string_types):
         try:
             arg = bool(int(arg))
         except ValueError:
-            arg = arg.lower() in [u'true', u'yes']
+            arg = arg.lower() in ['true', 'yes']
     return 1 if bool(arg) else 0
 
 TR_TYPE_MAP = {
@@ -164,7 +166,7 @@ def get_arguments(method, rpc_version):
     else:
         return ValueError('Method "%s" not supported' % (method))
     accessible = []
-    for argument, info in args.iteritems():
+    for argument, info in iteritems(args):
         valid_version = True
         if rpc_version < info[1]:
             valid_version = False
@@ -182,7 +184,7 @@ def add_stdout_logger(level='debug'):
 
     trpc_logger = logging.getLogger('transmissionrpc')
     loghandler = logging.StreamHandler()
-    if level in levels.keys():
+    if level in list(levels.keys()):
         loglevel = levels[level]
         trpc_logger.setLevel(loglevel)
         loghandler.setLevel(loglevel)

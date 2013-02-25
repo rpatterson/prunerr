@@ -3,7 +3,7 @@
 # Licensed under the MIT license.
 
 import unittest
-import client, torrent, utils
+from . import client, torrent, utils
 
 def test():
     tests = unittest.TestSuite([utils.suite(), torrent.suite(), client.suite()])

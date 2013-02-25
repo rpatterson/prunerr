@@ -4,6 +4,8 @@
 
 from transmissionrpc.utils import Field
 
+from six import iteritems, integer_types
+
 class Session(object):
     """
     Session is a class holding the session data for a Transmission daemon.
@@ -38,10 +40,10 @@ class Session(object):
         """
         fields = None
         if isinstance(other, dict):
-            for key, value in other.iteritems():
+            for key, value in iteritems(other):
                 self._fields[key.replace('-', '_')] = Field(value, False)
         elif isinstance(other, Session):
-            for key in other._fields.keys():
+            for key in list(other._fields.keys()):
                 self._fields[key] = Field(other._fields[key].value, False)
         else:
             raise ValueError('Cannot update with supplied data')
@@ -87,7 +89,7 @@ class Session(object):
         """
         Set the peer port.
         """
-        if isinstance(port, (int, long)):
+        if isinstance(port, integer_types):
             self._fields['peer_port'] = Field(port, True)
             self._push()
         else:

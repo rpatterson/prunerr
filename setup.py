@@ -5,7 +5,7 @@
 
 from setuptools import setup
 
-required = []
+required = ['six']
 try:
     import json
 except ImportError:

@@ -197,6 +197,20 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(r.hashString, 'A001')
         self.assertEqual(r.name, 'testtransfer1')
 
+    def testAddUri2(self):
+        data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+        tc = createClient(test_name='adduri')
+
+        r = tc.add_torrent('torrent.txt', paused=False, download_dir='/var/downloads', peer_limit=1)
+        self.assertEqual(r.id, 0)
+        self.assertEqual(r.hashString, 'A000')
+        self.assertEqual(r.name, 'testtransfer0')
+
+        r = tc.add_torrent('file://' + os.path.join(data_path, 'torrent.txt'), paused=True, download_dir='/tmp', peer_limit=200)
+        self.assertEqual(r.id, 1)
+        self.assertEqual(r.hashString, 'A001')
+        self.assertEqual(r.name, 'testtransfer1')
+
     def testRemove(self):
         tc = createClient(test_name='remove')
         

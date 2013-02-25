@@ -360,7 +360,13 @@ class Client(object):
                 torrent_data = torrent_file.read()
                 torrent_data = base64.b64encode(torrent_data).decode('utf-8')
             if parsed_uri.scheme in ['file']:
-                torrent_file = open(parsed_uri.netloc, 'rb')
+                filepath = torrent
+                # uri decoded different on linux / windows ?
+                if len(parsed_uri.path) > 0:
+                    filepath = parsed_uri.path
+                elif len(parsed_uri.netloc) > 0:
+                    filepath = parsed_uri.netloc
+                torrent_file = open(filepath, 'rb')
                 torrent_data = torrent_file.read()
                 torrent_data = base64.b64encode(torrent_data).decode('utf-8')
         args = {}
@@ -405,11 +411,17 @@ class Client(object):
         parsed_uri = urlparse(uri)
         torrent_data = None
         if parsed_uri.scheme in ['ftp', 'ftps', 'http', 'https']:
-            torrent_file = urlopen(torrent)
+            torrent_file = urlopen(uri)
             torrent_data = torrent_file.read()
             torrent_data = base64.b64encode(torrent_data).decode('utf-8')
         if parsed_uri.scheme in ['file']:
-            torrent_file = open(parsed_uri.netloc, 'rb')
+            filepath = uri
+            # uri decoded different on linux / windows ?
+            if len(parsed_uri.path) > 0:
+                filepath = parsed_uri.path
+            elif len(parsed_uri.netloc) > 0:
+                filepath = parsed_uri.netloc
+            torrent_file = open(filepath, 'rb')
             torrent_data = torrent_file.read()
             torrent_data = base64.b64encode(torrent_data).decode('utf-8')
         warnings.warn('add_uri has been deprecated, please use add_torrent instead.', DeprecationWarning)

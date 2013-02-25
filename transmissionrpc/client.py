@@ -3,7 +3,7 @@
 # Licensed under the MIT license.
 
 import re, time, operator, warnings
-import urllib2, urlparse, base64
+import base64
 
 try:
     import json
@@ -16,6 +16,15 @@ from transmissionrpc.utils import LOGGER, get_arguments, make_rpc_name, argument
 from transmissionrpc.httphandler import DefaultHTTPHandler
 from transmissionrpc.torrent import Torrent
 from transmissionrpc.session import Session
+
+from six import PY3, integer_types, string_types, iteritems
+
+if PY3:
+    from urllib.parse import urlparse
+    from urllib.request import urlopen
+else:
+    from urlparse import urlparse
+    from urllib2 import urlopen
 
 def debug_httperror(error):
     """
@@ -60,11 +69,11 @@ class Client(object):
     """
 
     def __init__(self, address='localhost', port=DEFAULT_PORT, user=None, password=None, http_handler=None, timeout=None):
-        if isinstance(timeout, (int, long, float)):
+        if isinstance(timeout, (integer_types, float)):
             self._query_timeout = float(timeout)
         else:
             self._query_timeout = DEFAULT_TIMEOUT
-        urlo = urlparse.urlparse(address)
+        urlo = urlparse(address)
         if urlo.scheme == '':
             base_url = 'http://' + address + ':' + str(port)
             self.url = base_url + '/transmission/rpc'
@@ -133,7 +142,7 @@ class Client(object):
             try:
                 result = self.http_handler.request(self.url, query, headers, timeout)
                 break
-            except HTTPHandlerError, error:
+            except HTTPHandlerError as error:
                 if error.code == 409:
                     LOGGER.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
@@ -154,7 +163,7 @@ class Client(object):
         """
         Send json-rpc request to Transmission using http POST
         """
-        if not isinstance(method, (str, unicode)):
+        if not isinstance(method, string_types):
             raise ValueError('request takes method as string')
         if arguments is None:
             arguments = {}
@@ -176,7 +185,7 @@ class Client(object):
 
         try:
             data = json.loads(http_data)
-        except ValueError, error:
+        except ValueError as error:
             LOGGER.error('Error: ' + str(error))
             LOGGER.error('Request: \"%s\"' % (query))
             LOGGER.error('HTTP data: \"%s\"' % (http_data))
@@ -221,10 +230,10 @@ class Client(object):
 
         if args is None:
             pass
-        elif isinstance(args, (int, long)):
+        elif isinstance(args, integer_types):
             ids.append(args)
-        elif isinstance(args, (str, unicode)):
-            for item in re.split(u'[ ,]+', args):
+        elif isinstance(args, string_types):
+            for item in re.split('[ ,]+', args):
                 if len(item) == 0:
                     continue
                 addition = None
@@ -242,22 +251,22 @@ class Client(object):
                         pass
                 if not addition:
                     # handle index ranges i.e. 5:10
-                    match = re.match(u'^(\d+):(\d+)$', item)
+                    match = re.match('^(\d+):(\d+)$', item)
                     if match:
                         try:
                             idx_from = int(match.group(1))
                             idx_to = int(match.group(2))
-                            addition = range(idx_from, idx_to + 1)
+                            addition = list(range(idx_from, idx_to + 1))
                         except ValueError:
                             pass
                 if not addition:
-                    raise ValueError(u'Invalid torrent id, \"%s\"' % item)
+                    raise ValueError('Invalid torrent id, \"%s\"' % item)
                 ids.extend(addition)
         elif isinstance(args, list):
             for item in args:
                 ids.extend(self._format_ids(item))
         else:
-            raise ValueError(u'Invalid torrent id')
+            raise ValueError('Invalid torrent id')
         return ids
 
     def _update_session(self, data):
@@ -343,23 +352,27 @@ class Client(object):
         except Exception:
             torrent_data = None
         if not torrent_data:
-            parsed_uri = urlparse.urlparse(torrent)
-            if parsed_uri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
+            parsed_uri = urlparse(torrent)
+            if parsed_uri.scheme in ['ftp', 'ftps', 'http', 'https']:
                 # there has been some problem with T's built in torrent fetcher,
                 # use a python one instead
-                torrent_file = urllib2.urlopen(torrent)
+                torrent_file = urlopen(torrent)
                 torrent_data = torrent_file.read()
-                torrent_data = base64.b64encode(torrent_data)
+                torrent_data = base64.b64encode(torrent_data).decode('utf-8')
+            if parsed_uri.scheme in ['file']:
+                torrent_file = open(parsed_uri.netloc, 'rb')
+                torrent_data = torrent_file.read()
+                torrent_data = base64.b64encode(torrent_data).decode('utf-8')
         args = {}
         if torrent_data:
             args = {'metainfo': torrent_data}
         else:
             args = {'filename': torrent}
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-add', argument, value, self.rpc_version)
             args[arg] = val
-        return self._request('torrent-add', args, timeout=timeout).values()[0]
+        return list(self._request('torrent-add', args, timeout=timeout).values())[0]
 
     def add(self, data, timeout=None, **kwargs):
         """
@@ -372,7 +385,7 @@ class Client(object):
             args = {'metainfo': data}
         elif 'metainfo' not in kwargs and 'filename' not in kwargs:
             raise ValueError('No torrent data or torrent uri.')
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-add', argument, value, self.rpc_version)
             args[arg] = val
@@ -389,11 +402,16 @@ class Client(object):
             raise ValueError('add_uri requires a URI.')
         # there has been some problem with T's built in torrent fetcher,
         # use a python one instead
-        parsed_uri = urlparse.urlparse(uri)
+        parsed_uri = urlparse(uri)
         torrent_data = None
-        if parsed_uri.scheme in ['file', 'ftp', 'ftps', 'http', 'https']:
-            torrent_file = urllib2.urlopen(uri)
-            torrent_data = base64.b64encode(torrent_file.read())
+        if parsed_uri.scheme in ['ftp', 'ftps', 'http', 'https']:
+            torrent_file = urlopen(torrent)
+            torrent_data = torrent_file.read()
+            torrent_data = base64.b64encode(torrent_data).decode('utf-8')
+        if parsed_uri.scheme in ['file']:
+            torrent_file = open(parsed_uri.netloc, 'rb')
+            torrent_data = torrent_file.read()
+            torrent_data = base64.b64encode(torrent_data).decode('utf-8')
         warnings.warn('add_uri has been deprecated, please use add_torrent instead.', DeprecationWarning)
         if torrent_data:
             return self.add(torrent_data, **kwargs)
@@ -493,7 +511,7 @@ class Client(object):
         """
         if not arguments:
             arguments = self.torrent_get_arguments
-        if not isinstance(id, (int, long, str, unicode)):
+        if not isinstance(id, (integer_types, string_types)):
             raise ValueError("Invalid id")
         return self._request('torrent-get', {'fields': arguments}, id, require_ids=True, timeout=timeout)[id]
 
@@ -505,7 +523,7 @@ class Client(object):
         """
         if not arguments:
             arguments = self.torrent_get_arguments
-        return self._request('torrent-get', {'fields': arguments}, ids, timeout=timeout).values()
+        return list(self._request('torrent-get', {'fields': arguments}, ids, timeout=timeout).values())
 
     def info(self, ids=None, arguments=None, timeout=None):
         """
@@ -559,7 +577,7 @@ class Client(object):
         fields = ['id', 'name', 'hashString', 'files', 'priorities', 'wanted']
         request_result = self._request('torrent-get', {'fields': fields}, ids, timeout=timeout)
         result = {}
-        for tid, torrent in request_result.iteritems():
+        for tid, torrent in iteritems(request_result):
             result[tid] = torrent.files()
         return result
 
@@ -585,7 +603,7 @@ class Client(object):
         """
         if not isinstance(items, dict):
             raise ValueError('Invalid file description')
-        for tid, files in items.iteritems():
+        for tid, files in iteritems(items):
             if not isinstance(files, dict):
                 continue
             wanted = []
@@ -593,7 +611,7 @@ class Client(object):
             high = []
             normal = []
             low = []
-            for fid, file_desc in files.iteritems():
+            for fid, file_desc in iteritems(files):
                 if not isinstance(file_desc, dict):
                     continue
                 if 'selected' in file_desc and file_desc['selected']:
@@ -659,7 +677,7 @@ class Client(object):
     	   transmissionrpc will try to automatically fix argument errors.
         """
         args = {}
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             argument = make_rpc_name(key)
             (arg, val) = argument_value_convert('torrent-set' , argument, value, self.rpc_version)
             args[arg] = val
@@ -792,7 +810,7 @@ class Client(object):
     	   transmissionrpc will try to automatically fix argument errors.
         """
         args = {}
-        for key, value in kwargs.iteritems():
+        for key, value in iteritems(kwargs):
             if key == 'encryption' and value not in ['required', 'preferred', 'tolerated']:
                 raise ValueError('Invalid encryption value')
             argument = make_rpc_name(key)

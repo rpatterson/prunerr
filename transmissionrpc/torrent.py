@@ -7,6 +7,9 @@ import sys, datetime
 from transmissionrpc.constants import PRIORITY, RATIO_LIMIT, IDLE_LIMIT
 from transmissionrpc.utils import Field, format_timedelta
 
+from six import integer_types, string_types, text_type, iteritems
+# import six.moves.xrange
+
 class Torrent(object):
     """
     Torrent is a class holding the data received from Transmission regarding a bittorrent transfer.
@@ -31,7 +34,7 @@ class Torrent(object):
         if 'name' in self._fields:
             name = self._fields['name'].value
         # if name is unicode, try to decode
-        if isinstance(name, unicode):
+        if isinstance(name, text_type):
             try:
                 name = name.encode(codec)
             except UnicodeError:
@@ -93,10 +96,10 @@ class Torrent(object):
         """
         fields = None
         if isinstance(other, dict):
-            for key, value in other.iteritems():
+            for key, value in iteritems(other):
                 self._fields[key.replace('-', '_')] = Field(value, False)
         elif isinstance(other, Torrent):
-            for key in other._fields.keys():
+            for key in list(other._fields.keys()):
                 self._fields[key] = Field(other._fields[key].value, False)
         else:
             raise ValueError('Cannot update with supplied data')
@@ -153,7 +156,7 @@ class Torrent(object):
         result = {}
         if 'files' in self._fields:
             files = self._fields['files'].value
-            indices = xrange(len(files))
+            indices = range(len(files))
             priorities = self._fields['priorities'].value
             wanted = self._fields['wanted'].value
             for item in zip(indices, files, priorities, wanted):
@@ -251,7 +254,7 @@ class Torrent(object):
         Get the download limit.
         Can be a number, 'session' or None.
         """
-        if isinstance(limit, (int, long)):
+        if isinstance(limit, integer_types):
             self._fields['downloadLimited'] = Field(True, True)
             self._fields['downloadLimit'] = Field(limit, True)
             self._push()
@@ -273,7 +276,7 @@ class Torrent(object):
         """
         Set the peer limit.
         """
-        if isinstance(limit, (int, long)):
+        if isinstance(limit, integer_types):
             self._fields['peer_limit'] = Field(limit, True)
             self._push()
         else:
@@ -293,7 +296,7 @@ class Torrent(object):
         Set the priority as string.
         Can be one of 'low', 'normal', 'high'.
         """
-        if isinstance(priority, (str, unicode)):
+        if isinstance(priority, string_types):
             self._fields['bandwidthPriority'] = Field(PRIORITY[priority], True)
             self._push()
 
@@ -310,7 +313,7 @@ class Torrent(object):
         """
         Set the seed idle limit in minutes.
         """
-        if isinstance(limit, (int, long)):
+        if isinstance(limit, integer_types):
             self._fields['seedIdleLimit'] = Field(limit, True)
             self._push()
         else:
@@ -357,7 +360,7 @@ class Torrent(object):
         """
         Set the seed ratio limit as float.
         """
-        if isinstance(limit, (int, long, float)) and limit >= 0.0:
+        if isinstance(limit, (integer_types, float)) and limit >= 0.0:
             self._fields['seedRatioLimit'] = Field(float(limit), True)
             self._push()
         else:
@@ -409,7 +412,7 @@ class Torrent(object):
         Set the upload limit.
         Can be a number, 'session' or None.
         """
-        if isinstance(limit, (int, long)):
+        if isinstance(limit, integer_types):
             self._fields['uploadLimited'] = Field(True, True)
             self._fields['uploadLimit'] = Field(limit, True)
             self._push()
@@ -429,7 +432,7 @@ class Torrent(object):
 
     def _set_queue_position(self, position):
         if self._rpc_version() >= 14:
-            if isinstance(position, (int, long)):
+            if isinstance(position, integer_types):
                 self._fields['queuePosition'] = Field(position, True)
                 self._push()
             else:

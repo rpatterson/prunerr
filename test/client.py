@@ -4,7 +4,13 @@
 
 import sys, os, os.path, base64
 import unittest
-import urlparse
+
+from six import iteritems, string_types, PY3
+
+if PY3:
+    from urllib.parse import urlparse
+else:
+    from urlparse import urlparse
 
 try:
     import json
@@ -20,13 +26,13 @@ def tree_differences(a, b):
 def node_differences(a, b, root):
     errors = []
     if isinstance(a, dict) and isinstance(b, dict):
-        for k, v in a.iteritems():
+        for k, v in iteritems(a):
             node = root + '.' + k
             if k not in b:
                 errors.append('Field %s missing from b at %s' % (k, node))
             else:
                 errors.extend(node_differences(a[k], b[k], node))
-        for k, v in b.iteritems():
+        for k, v in iteritems(b):
             node = root + '.' + k
             if k not in a:
                 errors.append('Field %s missing from a at %s' % (k, node))
@@ -60,17 +66,17 @@ class TestHTTPHandler(HTTPHandler):
                 self.tests = test_data['test sequence']
     
     def set_authentication(self, url, user, password):
-        urlo = urlparse.urlparse(url)
+        urlo = urlparse(url)
         if urlo.scheme == '':
             raise ValueError('URL should have a scheme.')
         else:
             self.url = url
         if user and password:
-            if isinstance(user, (str, unicode)):
+            if isinstance(user, string_types):
                 self.user = user
             else:
                 raise TypeError('Invalid type for user.')
-            if isinstance(password, (str, unicode)):
+            if isinstance(password, string_types):
                 self.password = password
             else:
                 raise TypeError('Invalid type for password.')
@@ -81,7 +87,7 @@ class TestHTTPHandler(HTTPHandler):
         response = {}
         if self.url and self.url != url:
             raise ValueError('New URL?!')
-        urlo = urlparse.urlparse(url)
+        urlo = urlparse(url)
         if urlo.scheme == '':
             raise ValueError('URL should have a scheme.')
         else:
@@ -128,15 +134,15 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(tc.timeout, 0.1)
         tc = createClient('127.0.0.1', 7000, password='secret', timeout=10, test_name='construction')
         self.assertEqual(tc.timeout, 10.0)
-        tc = createClient('127.0.0.1', 7000, password='secret', timeout=10L, test_name='construction')
+        tc = createClient('127.0.0.1', 7000, password='secret', timeout=10, test_name='construction')
         self.assertEqual(tc.timeout, 10.0)
 
     def testTimeoutProperty(self):
-        tc = createClient('127.0.0.1', 12345, timeout=10L, test_name='construction')
+        tc = createClient('127.0.0.1', 12345, timeout=10, test_name='construction')
         self.assertEqual(tc.timeout, 10.0)
         tc.timeout = 0.1
         self.assertEqual(tc.timeout, 0.1)
-        tc.timeout = 100L
+        tc.timeout = 100
         self.assertEqual(tc.timeout, 100.0)
         tc.timeout = 100
         self.assertEqual(tc.timeout, 100.0)

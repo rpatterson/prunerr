@@ -2,6 +2,8 @@
 # Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
+from six import string_types, integer_types
+
 class TransmissionError(Exception):
     """
 	This exception is raised when there has occurred an error related to
@@ -31,15 +33,15 @@ class HTTPHandlerError(Exception):
         self.message = ''
         self.headers = {}
         self.data = ''
-        if isinstance(httpurl, (str, unicode)):
+        if isinstance(httpurl, string_types):
             self.url = httpurl
-        if isinstance(httpcode, (int, long)):
+        if isinstance(httpcode, integer_types):
             self.code = httpcode
-        if isinstance(httpmsg, (str, unicode)):
+        if isinstance(httpmsg, string_types):
             self.message = httpmsg
         if isinstance(httpheaders, dict):
             self.headers = httpheaders
-        if isinstance(httpdata, (str, unicode)):
+        if isinstance(httpdata, string_types):
             self.data = httpdata
 
     def __repr__(self):
@@ -49,4 +51,4 @@ class HTTPHandlerError(Exception):
         return 'HTTPHandlerError %d: %s' % (self.code, self.message)
 
     def __unicode__(self):
-        return u'HTTPHandlerError %d: %s' % (self.code, self.message)
+        return 'HTTPHandlerError %d: %s' % (self.code, self.message)

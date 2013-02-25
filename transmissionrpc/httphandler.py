@@ -2,9 +2,22 @@
 # Copyright (c) 2011-2013 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import sys, httplib, urllib2
+import sys
 
 from transmissionrpc.error import HTTPHandlerError
+
+from six import PY3
+
+if PY3:
+    from urllib.request import Request, urlopen, build_opener, install_opener, \
+        HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPDigestAuthHandler
+    from urllib.error import HTTPError, URLError
+    from http.client import BadStatusLine
+else:
+    from urllib2 import Request, urlopen, build_opener, install_opener, \
+        HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPDigestAuthHandler
+    from urllib2 import HTTPError, URLError
+    from httplib import BadStatusLine
 
 class HTTPHandler(object):
     """
@@ -40,33 +53,33 @@ class DefaultHTTPHandler(HTTPHandler):
         HTTPHandler.__init__(self)
 
     def set_authentication(self, uri, login, password):
-        password_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_manager = HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(realm=None, uri=uri, user=login, passwd=password)
-        opener = urllib2.build_opener(
-            urllib2.HTTPBasicAuthHandler(password_manager)
-            , urllib2.HTTPDigestAuthHandler(password_manager)
+        opener = build_opener(
+            HTTPBasicAuthHandler(password_manager)
+            , HTTPDigestAuthHandler(password_manager)
             )
-        urllib2.install_opener(opener)
+        install_opener(opener)
 
     def request(self, url, query, headers, timeout):
-        request = urllib2.Request(url, query, headers)
+        request = Request(url, query, headers)
         try:
             if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
-                response = urllib2.urlopen(request, timeout=timeout)
+                response = urlopen(request, timeout=timeout)
             else:
-                response = urllib2.urlopen(request)
-        except urllib2.HTTPError, error:
+                response = urlopen(request)
+        except HTTPError as error:
             if error.fp is None:
                 raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.hdrs))
             else:
                 raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.hdrs), error.read())
-        except urllib2.URLError, error:
+        except URLError as error:
             # urllib2.URLError documentation is horrendous!
             # Try to get the tuple arguments of URLError
             if hasattr(error.reason, 'args') and isinstance(error.reason.args, tuple) and len(error.reason.args) == 2:
                 raise HTTPHandlerError(httpcode=error.reason.args[0], httpmsg=error.reason.args[1])
             else:
                 raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.reason))
-        except httplib.BadStatusLine, error:
+        except BadStatusLine as error:
             raise HTTPHandlerError(httpmsg='httplib.BadStatusLine: %s' % (error.line))
         return response.read()

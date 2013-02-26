@@ -62,7 +62,7 @@ class DefaultHTTPHandler(HTTPHandler):
         install_opener(opener)
 
     def request(self, url, query, headers, timeout):
-        request = Request(url, query, headers)
+        request = Request(url, query.encode('utf-8'), headers)
         try:
             if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
                 response = urlopen(request, timeout=timeout)
@@ -82,4 +82,4 @@ class DefaultHTTPHandler(HTTPHandler):
                 raise HTTPHandlerError(httpmsg='urllib2.URLError: %s' % (error.reason))
         except BadStatusLine as error:
             raise HTTPHandlerError(httpmsg='httplib.BadStatusLine: %s' % (error.line))
-        return response.read()
+        return response.read().decode('utf-8')

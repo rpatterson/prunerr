@@ -147,10 +147,13 @@ class Client(object):
                     LOGGER.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed.', error)
-                    if 'x-transmission-session-id' in error.headers:
-                        self.session_id = error.headers['x-transmission-session-id']
-                        headers = {'x-transmission-session-id': str(self.session_id)}
-                    else:
+                    sessionId = None
+                    for key in list(error.headers.keys()):
+                        if key.lower() == 'x-transmission-session-id':
+                            sessionId = error.headers[key]
+                            self.session_id = sessionId
+                            headers = {'x-transmission-session-id': str(self.session_id)}
+                    if sessionId is None:
                         debug_httperror(error)
                         raise TransmissionError('Unknown conflict.', error)
                 else:

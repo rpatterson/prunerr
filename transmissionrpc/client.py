@@ -325,7 +325,7 @@ class Client(object):
 
     def add_torrent(self, torrent, timeout=None, **kwargs):
         """
-        Add torrent to transfers list. Takes a uri to a torrent or base64 encoded torrent data.
+        Add torrent to transfers list. Takes a uri to a torrent or base64 encoded torrent data in ``torrent``.
         Additional arguments are:
 
         ===================== ===== =========== =============================================================
@@ -343,7 +343,7 @@ class Client(object):
         ``priority_normal``   1 -               A list of file id's that should have normal priority.
         ===================== ===== =========== =============================================================
 
-        Returns a Torrent object with limited fields.
+        Returns a Torrent object with the fields.
         """
         if torrent is None:
             raise ValueError('add_torrent requires data or a URI.')
@@ -521,8 +521,10 @@ class Client(object):
     def get_torrent(self, id, arguments=None, timeout=None):
         """
         Get information for torrent with provided id.
+        ``arguments`` contains a list of field names to be returned, when None
+        all fields are requested. See the Torrent class for more information.
 
-        Returns a Torrent object.
+        Returns a Torrent object with the requested fields.
         """
         if not arguments:
             arguments = self.torrent_get_arguments
@@ -532,7 +534,7 @@ class Client(object):
 
     def get_torrents(self, ids=None, arguments=None, timeout=None):
         """
-        Get information for torrents with provided ids.
+        Get information for torrents with provided ids. For more information see get_torrent.
 
         Returns a list of Torrent object.
         """
@@ -762,7 +764,9 @@ class Client(object):
         self._request('queue-move-down', ids=ids, require_ids=True, timeout=timeout)
 
     def get_session(self, timeout=None):
-        """Get session parameters"""
+        """
+        Get session parameters. See the Session class for more information.
+        """
         self._request('session-get', timeout=timeout)
         self._update_server_version()
         return self.session
@@ -786,17 +790,17 @@ class Client(object):
         ``cache_size_mb``                10 -                    The maximum size of the disk cache in MB
         ``dht_enabled``                  6 -                     Enables DHT.
         ``download_dir``                 1 -                     Set the session download directory.
-        ``download_queue_enabled``       14 -                    Enable parallel download restriction.
-        ``download_queue_size``          14 -                    Number of parallel downloads.
+        ``download_queue_enabled``       14 -                    Enables download queue.
+        ``download_queue_size``          14 -                    Number of slots in the download queue.
         ``encryption``                   1 -                     Set the session encryption mode, one of ``required``, ``preferred`` or ``tolerated``.
         ``idle_seeding_limit``           10 -                    The default seed inactivity limit in minutes.
         ``idle_seeding_limit_enabled``   10 -                    Enables the default seed inactivity limit
         ``incomplete_dir``               7 -                     The path to the directory of incomplete transfer data.
         ``incomplete_dir_enabled``       7 -                     Enables the incomplete transfer data directory. Otherwise data for incomplete transfers are stored in the download target.
         ``lpd_enabled``                  9 -                     Enables local peer discovery for public torrents.
-        ``peer_limit``                   1 - 5 peer-limit-global Maximum number of peers
-        ``peer_limit_global``            5 -                     Maximum number of peers
-        ``peer_limit_per_torrent``       5 -                     Maximum number of peers per transfer
+        ``peer_limit``                   1 - 5 peer-limit-global Maximum number of peers.
+        ``peer_limit_global``            5 -                     Maximum number of peers.
+        ``peer_limit_per_torrent``       5 -                     Maximum number of peers per transfer.
         ``peer_port``                    5 -                     Peer port.
         ``peer_port_random_on_start``    5 -                     Enables randomized peer port on start of Transmission.
         ``pex_allowed``                  1 - 5 pex-enabled       Allowing PEX in public torrents.
@@ -808,8 +812,8 @@ class Client(object):
         ``rename_partial_files``         8 -                     Appends ".part" to incomplete files
         ``script_torrent_done_enabled``  9 -                     Whether or not to call the "done" script.
         ``script_torrent_done_filename`` 9 -                     Filename of the script to run when the transfer is done.
-        ``seed_queue_enabled``           14 -                    Enable parallel upload restriction.
-        ``seed_queue_size``              14 -                    Number of parallel uploads.
+        ``seed_queue_enabled``           14 -                    Enables upload queue.
+        ``seed_queue_size``              14 -                    Number of slots in the upload queue.
         ``seedRatioLimit``               5 -                     Seed ratio limit. 1.0 means 1:1 download and upload ratio.
         ``seedRatioLimited``             5 -                     Enables seed ration limit.
         ``speed_limit_down``             1 -                     Download speed limit (in Kib/s).

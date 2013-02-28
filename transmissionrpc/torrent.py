@@ -8,11 +8,11 @@ from transmissionrpc.constants import PRIORITY, RATIO_LIMIT, IDLE_LIMIT
 from transmissionrpc.utils import Field, format_timedelta
 
 from six import integer_types, string_types, text_type, iteritems
-# import six.moves.xrange
 
 class Torrent(object):
     """
     Torrent is a class holding the data received from Transmission regarding a bittorrent transfer.
+
     All fetched torrent fields are accessible through this class using attributes.
     This class has a few convenience properties using the torrent data.
     """

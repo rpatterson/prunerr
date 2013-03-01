@@ -9,12 +9,12 @@ from transmissionrpc.error import HTTPHandlerError
 from six import PY3
 
 if PY3:
-    from urllib.request import Request, urlopen, build_opener, install_opener, \
+    from urllib.request import Request, build_opener, \
         HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPDigestAuthHandler
     from urllib.error import HTTPError, URLError
     from http.client import BadStatusLine
 else:
-    from urllib2 import Request, urlopen, build_opener, install_opener, \
+    from urllib2 import Request, build_opener, \
         HTTPPasswordMgrWithDefaultRealm, HTTPBasicAuthHandler, HTTPDigestAuthHandler
     from urllib2 import HTTPError, URLError
     from httplib import BadStatusLine
@@ -51,23 +51,20 @@ class DefaultHTTPHandler(HTTPHandler):
     """
     def __init__(self):
         HTTPHandler.__init__(self)
+        self.http_opener = build_opener()
 
     def set_authentication(self, uri, login, password):
         password_manager = HTTPPasswordMgrWithDefaultRealm()
         password_manager.add_password(realm=None, uri=uri, user=login, passwd=password)
-        opener = build_opener(
-            HTTPBasicAuthHandler(password_manager)
-            , HTTPDigestAuthHandler(password_manager)
-            )
-        install_opener(opener)
+        self.http_opener = build_opener(HTTPBasicAuthHandler(password_manager), HTTPDigestAuthHandler(password_manager))
 
     def request(self, url, query, headers, timeout):
         request = Request(url, query.encode('utf-8'), headers)
         try:
             if (sys.version_info[0] == 2 and sys.version_info[1] > 5) or sys.version_info[0] > 2:
-                response = urlopen(request, timeout=timeout)
+                response = self.http_opener.open(request, timeout=timeout)
             else:
-                response = urlopen(request)
+                response = self.http_opener.open(request)
         except HTTPError as error:
             if error.fp is None:
                 raise HTTPHandlerError(error.filename, error.code, error.msg, dict(error.hdrs))

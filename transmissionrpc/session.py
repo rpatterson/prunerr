@@ -38,7 +38,6 @@ class Session(object):
         """
         Update the session data from a Transmission JSON-RPC arguments dictionary
         """
-        fields = None
         if isinstance(other, dict):
             for key, value in iteritems(other):
                 self._fields[key.replace('-', '_')] = Field(value, False)
@@ -98,13 +97,15 @@ class Session(object):
     peer_port = property(_get_peer_port, _set_peer_port, None, "Peer port. This is a mutator.")
 
     def _get_pex_enabled(self):
+        """Is peer exchange enabled?"""
         return self._fields['pex_enabled'].value
 
     def _set_pex_enabled(self, enabled):
+        """Enable/disable peer exchange."""
         if isinstance(enabled, bool):
             self._fields['pex_enabled'] = Field(enabled, True)
             self._push()
         else:
             raise TypeError("Not a valid type")
 
-    pex_enabled = property(_get_pex_enabled, _set_pex_enabled, None, "Enable PEX. This is a mutator.")
+    pex_enabled = property(_get_pex_enabled, _set_pex_enabled, None, "Enable peer exchange. This is a mutator.")

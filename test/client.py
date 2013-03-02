@@ -152,7 +152,7 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(tc.timeout, 100.1)
         self.failUnlessRaises(ValueError, tc._set_timeout, '10 years')
             
-    def testAdd(self):
+    def testAddOld(self):
         tc = createClient(test_name='add')
         data = 'data'
         
@@ -183,7 +183,7 @@ class ClientTest(unittest.TestCase):
         
         self.failUnlessRaises(ValueError, tc.add, data, peer_limit='apa')
 
-    def testAddUri(self):
+    def testAddUriOld(self):
         data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
         tc = createClient(test_name='adduri')
 
@@ -197,7 +197,7 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(r.hashString, 'A001')
         self.assertEqual(r.name, 'testtransfer1')
 
-    def testAddUri2(self):
+    def testAddTorrent(self):
         data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
         tc = createClient(test_name='adduri')
 
@@ -211,33 +211,61 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(r.hashString, 'A001')
         self.assertEqual(r.name, 'testtransfer1')
 
-    def testRemove(self):
+    def testRemoveOld(self):
         tc = createClient(test_name='remove')
         
         tc.remove(['b000', 2, 3])
         tc.remove(1, delete_data=True)
         tc.remove('b002', delete_data=False)
 
-    def testStart(self):
+    def testRemoveTorrent(self):
+        tc = createClient(test_name='remove')
+        
+        tc.remove_torrent(['b000', 2, 3])
+        tc.remove_torrent(1, delete_data=True)
+        tc.remove_torrent('b002', delete_data=False)
+
+    def testStartOld(self):
         tc = createClient(test_name='start')
         
         tc.start(['abcdef', 20, 30])
         tc.start(1)
         tc.start('a0123456789')
 
-    def testStop(self):
+    def testStartTorrent(self):
+        tc = createClient(test_name='start')
+        
+        tc.start_torrent(['abcdef', 20, 30])
+        tc.start_torrent(1)
+        tc.start_torrent('a0123456789')
+
+    def testStopOld(self):
         tc = createClient(test_name='stop')
         
         tc.stop(2)
         tc.stop('bad')
         tc.stop(['bad', 'ba5', '30', 20])
 
-    def testVerify(self):
+    def testStopTorrent(self):
+        tc = createClient(test_name='stop')
+        
+        tc.stop(2)
+        tc.stop('bad')
+        tc.stop(['bad', 'ba5', '30', 20])
+
+    def testVerifyOld(self):
         tc = createClient(test_name='verify')
         
         tc.verify(10000)
         tc.verify('d')
         tc.verify(['a', 'b', 'c'])
+
+    def testVerifyTorrent(self):
+        tc = createClient(test_name='verify')
+        
+        tc.verify_torrent(10000)
+        tc.verify_torrent('d')
+        tc.verify_torrent(['a', 'b', 'c'])
 
     def testInfo(self):
         tc = createClient(test_name='info')
@@ -249,6 +277,118 @@ class ClientTest(unittest.TestCase):
         self.assertEqual(t.id, 2)
         self.assertEqual(t.name, 'ubuntu-10.04-server-amd64.iso')
         self.assertEqual(t.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+
+    def testGetTorrent(self):
+        tc = createClient(test_name='get_torrent')
+        torrent = tc.get_torrent(2)
+        self.assertEqual(torrent.id, 2)
+        self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+        self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+
+        tc = createClient(test_name='get_torrent_hash')
+        torrent = tc.get_torrent('ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+        self.assertEqual(torrent.id, 2)
+        self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+        self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+
+    def testGetTorrents(self):
+        tc = createClient(test_name='info')
+        r = tc.get_torrents()
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+
+    def testGetTorrentsRange(self):
+        tc = createClient(test_name='get_torrents_2to3')        
+        r = tc.get_torrents([2,3])
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+        
+        tc = createClient(test_name='get_torrents_2to3')        
+        r = tc.get_torrents("2:3")
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+        
+        tc = createClient(test_name='get_torrents_2to3')
+        r = tc.get_torrents("2,3")
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+        
+        tc = createClient(test_name='get_torrents_2to3')
+        r = tc.get_torrents("2 3")
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+        
+    def testGetTorrentsHashes(self):
+        tc = createClient(test_name='get_torrents_hashes')        
+        r = tc.get_torrents(["ab8ea951c022d4745a9b06ab8020b952a52b71ca", "a33e98826003515e46ef5075fcbf4914b307abe2"])
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+        
+        tc = createClient(test_name='get_torrents_hashes')        
+        r = tc.get_torrents("ab8ea951c022d4745a9b06ab8020b952a52b71ca,a33e98826003515e46ef5075fcbf4914b307abe2")
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
+
+        tc = createClient(test_name='get_torrents_hashes')        
+        r = tc.get_torrents("ab8ea951c022d4745a9b06ab8020b952a52b71ca a33e98826003515e46ef5075fcbf4914b307abe2")
+        for torrent in r:
+            if torrent.id == 2:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-server-amd64.iso')
+                self.assertEqual(torrent.hashString, 'ab8ea951c022d4745a9b06ab8020b952a52b71ca')
+            elif torrent.id == 3:
+                self.assertEqual(torrent.name, 'ubuntu-10.04-alternate-i386.iso')
+                self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
+            else:
+                self.fail("Unknown torrent")
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(ClientTest)

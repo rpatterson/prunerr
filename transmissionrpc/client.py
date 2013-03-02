@@ -225,6 +225,22 @@ class Client(object):
 
         return results
 
+    def _parse_id(self, arg):
+        torrent_id = None
+        try:
+            # handle index
+            torrent_id = int(arg)
+        except ValueError:
+            pass
+        if torrent_id is None:
+            # handle hashes
+            try:
+                int(arg, 16)
+                torrent_id = arg
+            except ValueError:
+                pass
+        return torrent_id
+
     def _format_ids(self, args):
         """
         Take things and make them valid torrent identifiers
@@ -240,18 +256,9 @@ class Client(object):
                 if len(item) == 0:
                     continue
                 addition = None
-                try:
-                    # handle index
-                    addition = [int(item)]
-                except ValueError:
-                    pass
-                if not addition:
-                    # handle hashes
-                    try:
-                        int(item, 16)
-                        addition = [item]
-                    except ValueError:
-                        pass
+                torrent_id = self._parse_id(item)
+                if torrent_id is not None:
+                    addition = [torrent_id]
                 if not addition:
                     # handle index ranges i.e. 5:10
                     match = re.match('^(\d+):(\d+)$', item)
@@ -528,9 +535,17 @@ class Client(object):
         """
         if not arguments:
             arguments = self.torrent_get_arguments
-        if not isinstance(id, (integer_types, string_types)):
+        torrent_id = self._parse_id(id)
+        if torrent_id is None:
             raise ValueError("Invalid id")
-        return self._request('torrent-get', {'fields': arguments}, id, require_ids=True, timeout=timeout)[id]
+        result = self._request('torrent-get', {'fields': arguments}, torrent_id, require_ids=True, timeout=timeout)
+        if torrent_id in result:
+            return result[torrent_id]
+        else:
+            for torrent in result.values():
+                if torrent.hashString == torrent_id:
+                    return torrent
+            raise KeyError("Torrent not found in result")
 
     def get_torrents(self, ids=None, arguments=None, timeout=None):
         """

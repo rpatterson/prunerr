@@ -43,10 +43,8 @@ Dependecies
 
 transmissionrpc has the following dependencies.
 
- * Python >= 2.5.
- * simplejson >= 1.7.1 or Python >= 2.6.
-
-If Python 2.6 or later is detected the standard library json implementation will be used.
+ * Python >= 2.6
+ * Six >= 1.2.0, https://pypi.python.org/pypi/six/
 
 Report a problem
 ----------------

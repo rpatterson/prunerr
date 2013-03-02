@@ -4,11 +4,7 @@
 
 import re, time, operator, warnings
 import base64
-
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import json
 
 from transmissionrpc.constants import DEFAULT_PORT, DEFAULT_TIMEOUT
 from transmissionrpc.error import TransmissionError, HTTPHandlerError

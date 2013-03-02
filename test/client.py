@@ -12,11 +12,7 @@ if PY3:
 else:
     from urlparse import urlparse
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
+import json
 import transmissionrpc.constants
 from transmissionrpc import TransmissionError, Client, HTTPHandler
 

@@ -5,11 +5,7 @@
 
 from setuptools import setup
 
-required = ['six']
-try:
-    import json
-except ImportError:
-    required = ['simplejson>=1.7.1']
+required = ['six>=1.1.0']
 
 setup(
     name='transmissionrpc',

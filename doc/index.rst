@@ -44,7 +44,7 @@ Dependecies
 transmissionrpc has the following dependencies.
 
  * Python >= 2.6
- * Six >= 1.2.0, https://pypi.python.org/pypi/six/
+ * Six >= 1.1.0, https://pypi.python.org/pypi/six/
 
 Report a problem
 ----------------

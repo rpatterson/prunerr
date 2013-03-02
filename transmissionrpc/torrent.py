@@ -9,6 +9,31 @@ from transmissionrpc.utils import Field, format_timedelta
 
 from six import integer_types, string_types, text_type, iteritems
 
+
+def get_status_old(code):
+    """Get the torrent status using old status codes"""
+    mapping = {
+        (1<<0): 'check pending',
+        (1<<1): 'checking',
+        (1<<2): 'downloading',
+        (1<<3): 'seeding',
+        (1<<4): 'stopped',
+    }
+    return mapping[code]
+
+def get_status_new(code):
+    """Get the torrent status using new status codes"""
+    mapping = {
+        0: 'stopped',
+        1: 'check pending',
+        2: 'checking',
+        3: 'download pending',
+        4: 'downloading',
+        5: 'seed pending',
+        6: 'seeding',
+    }
+    return mapping[code]
+
 class Torrent(object):
     """
     Torrent is a class holding the data received from Transmission regarding a bittorrent transfer.
@@ -22,11 +47,12 @@ class Torrent(object):
             raise ValueError('Torrent requires an id')
         self._fields = {}
         self._update_fields(fields)
-        self._incoming_pending= False
-        self._outgoing_pending= False
+        self._incoming_pending = False
+        self._outgoing_pending = False
         self._client = client
 
-    def _getNameString(self, codec=None):
+    def _get_name_string(self, codec=None):
+        """Get the name"""
         if codec is None:
             codec = sys.getdefaultencoding()
         name = None
@@ -43,14 +69,14 @@ class Torrent(object):
 
     def __repr__(self):
         tid = self._fields['id'].value
-        name = self._getNameString()
+        name = self._get_name_string()
         if isinstance(name, str):
             return '<Torrent %d \"%s\">' % (tid, name)
         else:
             return '<Torrent %d>' % (tid)
 
     def __str__(self):
-        name = self._getNameString()
+        name = self._get_name_string()
         if isinstance(name, str):
             return 'Torrent \"%s\"' % (name)
         else:
@@ -66,6 +92,7 @@ class Torrent(object):
             raise AttributeError('No attribute %s' % name)
 
     def _rpc_version(self):
+        """Get the Transmission RPC API version."""
         if self._client:
             return self._client.rpc_version
         return 2
@@ -105,34 +132,13 @@ class Torrent(object):
             raise ValueError('Cannot update with supplied data')
         self._incoming_pending = False
     
-    def _status_old(self, code):
-        mapping = {
-            (1<<0): 'check pending',
-            (1<<1): 'checking',
-            (1<<2): 'downloading',
-            (1<<3): 'seeding',
-            (1<<4): 'stopped',
-        }
-        return mapping[code]
-    
-    def _status_new(self, code):
-        mapping = {
-            0: 'stopped',
-            1: 'check pending',
-            2: 'checking',
-            3: 'download pending',
-            4: 'downloading',
-            5: 'seed pending',
-            6: 'seeding',
-        }
-        return mapping[code]
-    
     def _status(self):
+        """Get the torrent status"""
         code = self._fields['status'].value
         if self._rpc_version() >= 14:
-            return self._status_new(code)
+            return get_status_new(code)
         else:
-            return self._status_old(code)
+            return get_status_old(code)
 
     def files(self):
         """
@@ -425,12 +431,14 @@ class Torrent(object):
     upload_limit = property(_get_upload_limit, _set_upload_limit, None, "Upload limit in Kbps or None. This is a mutator.")
 
     def _get_queue_position(self):
+        """Get the queue position for this torrent."""
         if self._rpc_version() >= 14:
             return self._fields['queuePosition'].value
         else:
             return 0
 
     def _set_queue_position(self, position):
+        """Set the queue position for this torrent."""
         if self._rpc_version() >= 14:
             if isinstance(position, integer_types):
                 self._fields['queuePosition'] = Field(position, True)

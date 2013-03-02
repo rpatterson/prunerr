@@ -45,6 +45,25 @@ def debug_httperror(error):
         )
     )
 
+
+
+def parse_torrent_id(arg):
+    """Parse an torrent id or torrent hashString."""
+    torrent_id = None
+    try:
+        # handle index
+        torrent_id = int(arg)
+    except ValueError:
+        pass
+    if torrent_id is None:
+        # handle hashes
+        try:
+            int(arg, 16)
+            torrent_id = arg
+        except ValueError:
+            pass
+    return torrent_id
+
 """
 Torrent ids
 
@@ -143,13 +162,13 @@ class Client(object):
                     LOGGER.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed.', error)
-                    sessionId = None
+                    session_id = None
                     for key in list(error.headers.keys()):
                         if key.lower() == 'x-transmission-session-id':
-                            sessionId = error.headers[key]
-                            self.session_id = sessionId
+                            session_id = error.headers[key]
+                            self.session_id = session_id
                             headers = {'x-transmission-session-id': str(self.session_id)}
-                    if sessionId is None:
+                    if session_id is None:
                         debug_httperror(error)
                         raise TransmissionError('Unknown conflict.', error)
                 else:
@@ -221,22 +240,6 @@ class Client(object):
 
         return results
 
-    def _parse_id(self, arg):
-        torrent_id = None
-        try:
-            # handle index
-            torrent_id = int(arg)
-        except ValueError:
-            pass
-        if torrent_id is None:
-            # handle hashes
-            try:
-                int(arg, 16)
-                torrent_id = arg
-            except ValueError:
-                pass
-        return torrent_id
-
     def _format_ids(self, args):
         """
         Take things and make them valid torrent identifiers
@@ -252,7 +255,7 @@ class Client(object):
                 if len(item) == 0:
                     continue
                 addition = None
-                torrent_id = self._parse_id(item)
+                torrent_id = parse_torrent_id(item)
                 if torrent_id is not None:
                     addition = [torrent_id]
                 if not addition:
@@ -285,6 +288,7 @@ class Client(object):
             self.session = Session(self, data)
 
     def _update_server_version(self):
+        """Decode the Transmission version string, if available."""
         if self.server_version is None:
             version_major = 1
             version_minor = 30
@@ -521,7 +525,7 @@ class Client(object):
         warnings.warn('reannounce has been deprecated, please use reannounce_torrent instead.', DeprecationWarning)
         self.reannounce_torrent(ids, timeout)
 
-    def get_torrent(self, id, arguments=None, timeout=None):
+    def get_torrent(self, torrent_id, arguments=None, timeout=None):
         """
         Get information for torrent with provided id.
         ``arguments`` contains a list of field names to be returned, when None
@@ -531,7 +535,7 @@ class Client(object):
         """
         if not arguments:
             arguments = self.torrent_get_arguments
-        torrent_id = self._parse_id(id)
+        torrent_id = parse_torrent_id(torrent_id)
         if torrent_id is None:
             raise ValueError("Invalid id")
         result = self._request('torrent-get', {'fields': arguments}, torrent_id, require_ids=True, timeout=timeout)

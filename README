@@ -19,8 +19,7 @@ Requirements
 
 transmissionrpc requires:
 
- * Python >= 2.5
- * simplejson >= 1.71 or Python >= 2.6
+ * Python >= 2.6
 
 Install
 -------

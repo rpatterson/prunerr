@@ -2,8 +2,9 @@
 # 2008-12, Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import sys, os, os.path, base64
+import os
 import unittest
+import base64
 
 from six import iteritems, string_types, PY3
 
@@ -195,7 +196,18 @@ class ClientTest(unittest.TestCase):
 
     def testAddTorrent(self):
         data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+
+        tc = createClient(test_name='add_torrent_base64')
+        torrent_path = os.path.join(data_path, 'ubuntu-12.04.2-alternate-amd64.iso.torrent')
+        data = open(torrent_path, 'rb').read()
+        data_b64 = base64.b64encode(data).decode('utf-8')
+        r = tc.add_torrent(data_b64)
+        self.assertEqual(r.id, 0)
+        self.assertEqual(r.hashString, 'a21c45469c565f3fb9595e4e9707e6e9d45abca6')
+        self.assertEqual(r.name, 'ubuntu-12.04.2-alternate-amd64.iso')
+
         tc = createClient(test_name='adduri')
+        self.assertRaises(ValueError, tc.add_torrent, None)
 
         r = tc.add_torrent('torrent.txt', paused=False, download_dir='/var/downloads', peer_limit=1)
         self.assertEqual(r.id, 0)
@@ -385,6 +397,37 @@ class ClientTest(unittest.TestCase):
                 self.assertEqual(torrent.hashString, 'a33e98826003515e46ef5075fcbf4914b307abe2')
             else:
                 self.fail("Unknown torrent")
+
+    def testParseId(self):
+        from transmissionrpc.client import parse_torrent_id
+        self.assertEqual(parse_torrent_id(None), None)
+        self.assertEqual(parse_torrent_id(10), 10)
+        self.assertEqual(parse_torrent_id(10.0), 10)
+        self.assertEqual(parse_torrent_id(10.5), None)
+        self.assertEqual(parse_torrent_id("10"), 10)
+        self.assertEqual(parse_torrent_id("A"), "A")
+        self.assertEqual(parse_torrent_id("a21c45469c565f3fb9595e4e9707e6e9d45abca6"), "a21c45469c565f3fb9595e4e9707e6e9d45abca6")
+        self.assertEqual(parse_torrent_id("T"), None)
+        self.assertEqual(parse_torrent_id([10]), None)
+        self.assertEqual(parse_torrent_id((10, 11)), None)
+        self.assertEqual(parse_torrent_id({10: 10}), None)
+
+    def testParseIds(self):
+        from transmissionrpc.client import parse_torrent_ids
+        self.assertEqual(parse_torrent_ids(None), [])
+        self.assertEqual(parse_torrent_ids(10), [10])
+        self.assertEqual(parse_torrent_ids(10.0), [10])
+        self.assertEqual(parse_torrent_ids("10"), [10])
+        self.assertEqual(parse_torrent_ids("A"), ["A"])
+        self.assertEqual(parse_torrent_ids("a21c45469c565f3fb9595e4e9707e6e9d45abca6"), ["a21c45469c565f3fb9595e4e9707e6e9d45abca6"])
+        self.assertEqual(parse_torrent_ids(",, "), [])
+        self.assertEqual(parse_torrent_ids("1,2,3"), [1,2,3])
+        self.assertEqual(parse_torrent_ids("1:3"), [1,2,3])
+        self.assertRaises(ValueError, parse_torrent_ids, "A:3")
+        self.assertRaises(ValueError, parse_torrent_ids, "T")
+        self.assertEqual(parse_torrent_ids([10]), [10])
+        self.assertEqual(parse_torrent_ids((10, 11)), [10, 11])
+        self.assertRaises(ValueError, parse_torrent_ids, {10: 10})
 
 def suite():
     suite = unittest.TestLoader().loadTestsFromTestCase(ClientTest)

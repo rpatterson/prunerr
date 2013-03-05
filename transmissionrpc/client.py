@@ -45,24 +45,71 @@ def debug_httperror(error):
         )
     )
 
-
-
 def parse_torrent_id(arg):
     """Parse an torrent id or torrent hashString."""
     torrent_id = None
-    try:
+    if isinstance(arg, integer_types):
         # handle index
         torrent_id = int(arg)
-    except ValueError:
-        pass
-    if torrent_id is None:
-        # handle hashes
+    elif isinstance(arg, float):
+        torrent_id = int(arg)
+        if torrent_id != arg:
+            torrent_id = None
+    elif isinstance(arg, string_types):
         try:
-            int(arg, 16)
-            torrent_id = arg
-        except ValueError:
+            torrent_id = int(arg)
+            if torrent_id >= 2**31:
+                torrent_id = None
+        except (ValueError, TypeError):
             pass
+        if torrent_id is None:
+            # handle hashes
+            try:
+                int(arg, 16)
+                torrent_id = arg
+            except (ValueError, TypeError):
+                pass
     return torrent_id
+
+def parse_torrent_ids(args):
+    """
+    Take things and make them valid torrent identifiers
+    """
+    ids = []
+
+    if args is None:
+        pass
+    elif isinstance(args, string_types):
+        for item in re.split('[ ,]+', args):
+            if len(item) == 0:
+                continue
+            addition = None
+            torrent_id = parse_torrent_id(item)
+            if torrent_id is not None:
+                addition = [torrent_id]
+            if not addition:
+                # handle index ranges i.e. 5:10
+                match = re.match('^(\d+):(\d+)$', item)
+                if match:
+                    try:
+                        idx_from = int(match.group(1))
+                        idx_to = int(match.group(2))
+                        addition = list(range(idx_from, idx_to + 1))
+                    except ValueError:
+                        pass
+            if not addition:
+                raise ValueError('Invalid torrent id, \"%s\"' % item)
+            ids.extend(addition)
+    elif isinstance(args, (list, tuple)):
+        for item in args:
+            ids.extend(parse_torrent_ids(item))
+    else:
+        torrent_id = parse_torrent_id(args)
+        if torrent_id == None:
+            raise ValueError('Invalid torrent id')
+        else:
+            ids = [torrent_id]
+    return ids
 
 """
 Torrent ids
@@ -187,7 +234,7 @@ class Client(object):
             arguments = {}
         if not isinstance(arguments, dict):
             raise ValueError('request takes arguments as dict')
-        ids = self._format_ids(ids)
+        ids = parse_torrent_ids(ids)
         if len(ids) > 0:
             arguments['ids'] = ids
         elif require_ids:
@@ -239,44 +286,6 @@ class Client(object):
             return None
 
         return results
-
-    def _format_ids(self, args):
-        """
-        Take things and make them valid torrent identifiers
-        """
-        ids = []
-
-        if args is None:
-            pass
-        elif isinstance(args, integer_types):
-            ids.append(args)
-        elif isinstance(args, string_types):
-            for item in re.split('[ ,]+', args):
-                if len(item) == 0:
-                    continue
-                addition = None
-                torrent_id = parse_torrent_id(item)
-                if torrent_id is not None:
-                    addition = [torrent_id]
-                if not addition:
-                    # handle index ranges i.e. 5:10
-                    match = re.match('^(\d+):(\d+)$', item)
-                    if match:
-                        try:
-                            idx_from = int(match.group(1))
-                            idx_to = int(match.group(2))
-                            addition = list(range(idx_from, idx_to + 1))
-                        except ValueError:
-                            pass
-                if not addition:
-                    raise ValueError('Invalid torrent id, \"%s\"' % item)
-                ids.extend(addition)
-        elif isinstance(args, list):
-            for item in args:
-                ids.extend(self._format_ids(item))
-        else:
-            raise ValueError('Invalid torrent id')
-        return ids
 
     def _update_session(self, data):
         """
@@ -355,30 +364,36 @@ class Client(object):
         if torrent is None:
             raise ValueError('add_torrent requires data or a URI.')
         torrent_data = None
-        try:
-            # check if this is base64 data
-            base64.b64decode(torrent).decode('ascii')
-            torrent_data = torrent
-        except Exception:
-            torrent_data = None
+        parsed_uri = urlparse(torrent)
+        if parsed_uri.scheme in ['ftp', 'ftps', 'http', 'https']:
+            # there has been some problem with T's built in torrent fetcher,
+            # use a python one instead
+            torrent_file = urlopen(torrent)
+            torrent_data = torrent_file.read()
+            torrent_data = base64.b64encode(torrent_data).decode('utf-8')
+        if parsed_uri.scheme in ['file']:
+            filepath = torrent
+            # uri decoded different on linux / windows ?
+            if len(parsed_uri.path) > 0:
+                filepath = parsed_uri.path
+            elif len(parsed_uri.netloc) > 0:
+                filepath = parsed_uri.netloc
+            torrent_file = open(filepath, 'rb')
+            torrent_data = torrent_file.read()
+            torrent_data = base64.b64encode(torrent_data).decode('utf-8')
         if not torrent_data:
-            parsed_uri = urlparse(torrent)
-            if parsed_uri.scheme in ['ftp', 'ftps', 'http', 'https']:
-                # there has been some problem with T's built in torrent fetcher,
-                # use a python one instead
-                torrent_file = urlopen(torrent)
-                torrent_data = torrent_file.read()
-                torrent_data = base64.b64encode(torrent_data).decode('utf-8')
-            if parsed_uri.scheme in ['file']:
-                filepath = torrent
-                # uri decoded different on linux / windows ?
-                if len(parsed_uri.path) > 0:
-                    filepath = parsed_uri.path
-                elif len(parsed_uri.netloc) > 0:
-                    filepath = parsed_uri.netloc
-                torrent_file = open(filepath, 'rb')
-                torrent_data = torrent_file.read()
-                torrent_data = base64.b64encode(torrent_data).decode('utf-8')
+            if torrent.endswith('.torrent') or torrent.startswith('magnet:'):
+                torrent_data = None
+            else:
+                might_be_base64 = False
+                try:
+                    # check if this is base64 data
+                    base64.b64decode(torrent)
+                    might_be_base64 = True
+                except Exception:
+                    pass
+                if might_be_base64:
+                    torrent_data = torrent
         args = {}
         if torrent_data:
             args = {'metainfo': torrent_data}

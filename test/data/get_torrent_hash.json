@@ -21,7 +21,7 @@
                     "alt-speed-down": 50, 
                     "download-dir": "/var/torrents", 
                     "alt-speed-enabled": false, 
-                    "version": "1.92", 
+                    "version": "1.92 (00)",
                     "blocklist-size": 0, 
                     "dht-enabled": true, 
                     "peer-limit-global": 240, 

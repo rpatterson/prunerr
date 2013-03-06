@@ -2,7 +2,7 @@
 # Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import re, time, operator, warnings
+import re, time, operator, warnings, os
 import base64
 import json
 
@@ -773,7 +773,7 @@ class Client(object):
         warnings.warn('locate has been deprecated, please use locate_torrent_data instead.', DeprecationWarning)
         self.locate_torrent_data(ids, location, timeout)
 
-    def rename_torrent_path(self, torrent_id, location, destination, timeout=None):
+    def rename_torrent_path(self, torrent_id, location, name, timeout=None):
         """
         Rename directory and/or files for torrent.
         Remember to use get_torrent or get_torrents to update your file information.
@@ -782,7 +782,10 @@ class Client(object):
         torrent_id = parse_torrent_id(torrent_id)
         if torrent_id is None:
             raise ValueError("Invalid id")
-        args = {'path': location, 'name': destination}
+        dirname = os.path.dirname(name)
+        if len(dirname) > 0:
+            raise ValueError("Target name cannot contain a path delimiter")
+        args = {'path': location, 'name': name}
         result = self._request('torrent-rename-path', args, torrent_id, True, timeout=timeout)
         return (result['path'], result['name'])
 

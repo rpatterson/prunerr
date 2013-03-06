@@ -36,13 +36,13 @@ def node_differences(a, b, root):
     elif isinstance(a, list) and isinstance(b, list):
         for v in a:
             if v not in b:
-                errors.append('Value %s missing from b at %s' % (v, root))
+                errors.append('Value %s missing from b at %s' % (v[0:32], root))
         for v in b:
             if v not in a:
-                errors.append('Value %s missing from a at %s' % (v, root))
+                errors.append('Value %s missing from a at %s' % (v[0:32], root))
     else:
         if a != b:
-            errors.append('Value %s != %s at %s' % (a, b, root))
+            errors.append('Value %s != %s at %s' % (a[0:32], b[0:32], root))
     return errors
 
 class TestHTTPHandler(HTTPHandler):

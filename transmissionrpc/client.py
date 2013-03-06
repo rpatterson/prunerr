@@ -388,7 +388,10 @@ class Client(object):
                 might_be_base64 = False
                 try:
                     # check if this is base64 data
-                    base64.b64decode(torrent)
+                    if PY3:
+                        base64.b64decode(torrent.encode('utf-8'))
+                    else:
+                        base64.b64decode(torrent)
                     might_be_base64 = True
                 except Exception:
                     pass

@@ -190,4 +190,18 @@ def add_stdout_logger(level='debug'):
         loghandler.setLevel(loglevel)
     trpc_logger.addHandler(loghandler)
 
+def add_file_logger(filepath, level='debug'):
+    """
+    Add a stdout target for the transmissionrpc logging.
+    """
+    levels = {'debug': logging.DEBUG, 'info': logging.INFO, 'warning': logging.WARNING, 'error': logging.ERROR}
+
+    trpc_logger = logging.getLogger('transmissionrpc')
+    loghandler = logging.FileHandler(filepath)
+    if level in list(levels.keys()):
+        loglevel = levels[level]
+        trpc_logger.setLevel(loglevel)
+        loghandler.setLevel(loglevel)
+    trpc_logger.addHandler(loghandler)
+
 Field = namedtuple('Field', ['value', 'dirty'])

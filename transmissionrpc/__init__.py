@@ -8,7 +8,7 @@ from transmissionrpc.httphandler import HTTPHandler, DefaultHTTPHandler
 from transmissionrpc.torrent import Torrent
 from transmissionrpc.session import Session
 from transmissionrpc.client import Client
-from transmissionrpc.utils import add_stdout_logger
+from transmissionrpc.utils import add_stdout_logger, add_file_logger
 
 __author__    		= 'Erik Svensson <erik.public@gmail.com>'
 __version_major__   = 0

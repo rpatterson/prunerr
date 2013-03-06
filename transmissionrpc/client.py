@@ -280,7 +280,7 @@ class Client(object):
                 self._update_session(data['arguments']['session-stats'])
             else:
                 self._update_session(data['arguments'])
-        elif method in ('port-test', 'blocklist-update'):
+        elif method in ('port-test', 'blocklist-update', 'free-space', 'torrent-rename-path'):
             results = data['arguments']
         else:
             return None
@@ -773,6 +773,19 @@ class Client(object):
         warnings.warn('locate has been deprecated, please use locate_torrent_data instead.', DeprecationWarning)
         self.locate_torrent_data(ids, location, timeout)
 
+    def rename_torrent_path(self, torrent_id, location, destination, timeout=None):
+        """
+        Rename directory and/or files for torrent.
+        Remember to use get_torrent or get_torrents to update your file information.
+        """
+        self._rpc_version_warning(15)
+        torrent_id = parse_torrent_id(torrent_id)
+        if torrent_id is None:
+            raise ValueError("Invalid id")
+        args = {'path': location, 'name': destination}
+        result = self._request('torrent-rename-path', args, torrent_id, True, timeout=timeout)
+        return (result['path'], result['name'])
+
     def queue_top(self, ids, timeout=None):
         """Move transfer to the top of the queue."""
         self._rpc_version_warning(14)
@@ -885,6 +898,16 @@ class Client(object):
         result = self._request('port-test', timeout=timeout)
         if 'port-is-open' in result:
             return result['port-is-open']
+        return None
+
+    def free_space(self, path, timeout=None):
+        """
+        Get the ammount of free space (in bytes) at the provided location.
+        """
+        self._rpc_version_warning(15)
+        result = self._request('free-space', {'path': path}, timeout=timeout)
+        if result['path'] == path:
+            return result['size-bytes']
         return None
 
     def session_stats(self, timeout=None):

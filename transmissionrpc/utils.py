@@ -197,7 +197,7 @@ def add_file_logger(filepath, level='debug'):
     levels = {'debug': logging.DEBUG, 'info': logging.INFO, 'warning': logging.WARNING, 'error': logging.ERROR}
 
     trpc_logger = logging.getLogger('transmissionrpc')
-    loghandler = logging.FileHandler(filepath)
+    loghandler = logging.FileHandler(filepath, encoding='utf-8')
     if level in list(levels.keys()):
         loglevel = levels[level]
         trpc_logger.setLevel(loglevel)

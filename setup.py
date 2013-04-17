@@ -9,7 +9,7 @@ required = ['six>=1.1.0']
 
 setup(
     name='transmissionrpc',
-    version='0.10',
+    version='0.11',
     description='Python module that implements the Transmission bittorent client RPC protocol.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',

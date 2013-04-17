@@ -1,1 +1,2 @@
-recursive-include test *.json *.py *.txt
+recursive-include test *
+recursive-exclude test *.pyc *.pyo

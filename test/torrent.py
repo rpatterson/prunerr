@@ -66,6 +66,9 @@ class torrent(unittest.TestCase):
         
         self.assertEqual(torrent.format_eta(), transmissionrpc.utils.format_timedelta(torrent.eta))
 
+        torrent = transmissionrpc.Torrent(None, {'id': 42, 'eta': -1})
+        self.assertPropertyException(ValueError, torrent, 'eta')
+
     def testUnicode(self):
         torrent = transmissionrpc.Torrent(None, {'id': 42, 'name': 'あみ'})
         self.assertEqual(torrent.id, 42)

@@ -207,7 +207,7 @@ class Torrent(object):
         if eta >= 0:
             return datetime.timedelta(seconds=eta)
         else:
-            ValueError('eta not valid')
+            raise ValueError('eta not valid')
 
     @property
     def date_active(self):

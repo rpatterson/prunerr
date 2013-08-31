@@ -270,8 +270,15 @@ class Client(object):
                 if self.protocol_version == 2 and 'peers' not in item:
                     self.protocol_version = 1
         elif method == 'torrent-add':
-            item = data['arguments']['torrent-added']
-            results[item['id']] = Torrent(self, item)
+            item = None
+            if 'torrent-added' in data['arguments']:
+                item = data['arguments']['torrent-added']
+            elif 'torrent-duplicate' in data['arguments']:
+                item = data['arguments']['torrent-duplicate']
+            if item:
+                results[item['id']] = Torrent(self, item)
+            else:
+                raise TransmissionError('Invalid torrent-add response.')
         elif method == 'session-get':
             self._update_session(data['arguments'])
         elif method == 'session-stats':

@@ -119,6 +119,8 @@ TORRENT_ARGS = {
         'rateDownload':                 ('number', 1, None, None, None, 'Download rate in bps.'),
         'rateUpload':                   ('number', 1, None, None, None, 'Upload rate in bps.'),
         'recheckProgress':              ('double', 1, None, None, None, 'Progress of recheck. 0.0 to 1.0.'),
+        'secondsDownloading':           ('number', 15, None, None, None, ''),
+        'secondsSeeding':               ('number', 15, None, None, None, ''),
         'scrapeResponse':               ('string', 1, 7, None, None, 'Scrape response message.'),
         'scrapeURL':                    ('string', 1, 7, None, None, 'Current scrape URL'),
         'seeders':                      ('number', 1, 7, None, None, 'Number of seeders reported by the tracker.'),

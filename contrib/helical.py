@@ -446,8 +446,8 @@ def main(args=None):
             return
 
     if command:
-        command_args = u' '.join([u'"%s"' % arg for arg in args[args.index(command)+1:]])
-        helical.onecmd(command + command_args)
+        line = u' '.join([command] + args[args.index(command)+1:])
+        helical.onecmd(line)
     else:
         try:
             helical.cmdloop()

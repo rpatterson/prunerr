@@ -437,12 +437,13 @@ def main(args=None):
             address = arg
             port = None
     helical = Helical(values.settings)
-    try:
-        helical.connect(address, port, values.username, values.password)
-    except transmissionrpc.TransmissionError, error:
-        print(error)
-        parser.print_help()
-        return
+    if command.lower() != 'help':
+        try:
+            helical.connect(address, port, values.username, values.password)
+        except transmissionrpc.TransmissionError, error:
+            print(error)
+            parser.print_help()
+            return
 
     if command:
         command_args = u' '.join([u'"%s"' % arg for arg in args[args.index(command)+1:]])

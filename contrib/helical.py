@@ -21,7 +21,10 @@ __copyright__ = u'Copyright (c) 2008 Erik Svensson'
 __license__   = u'MIT'
 
 class Helical(cmd.Cmd):
-    def __init__(self):
+
+    settings = {}
+    
+    def __init__(self, settings=None):
         cmd.Cmd.__init__(self)
         self.intro = u'Helical %s' % (__version__)
         self.doc_leader = u'''
@@ -29,6 +32,9 @@ Helical is a command line interface that communicates with Transmission
 bittorent client through json-rpc. To run helical in interactive mode
 start without a command.
 '''
+        if isinstance(settings, (str, unicode)):
+            import json
+            self.settings = json.load(open(os.path.expanduser(settings)))
 
     def connect(self, address=None, port=None, username=None, password=None):
         self.tc = transmissionrpc.Client(address, port, username, password)
@@ -362,6 +368,10 @@ def main(args=None):
                     help='Athentication username.')
     parser.add_option('-p', '--password', dest='password',
                     help='Athentication password.')
+    parser.add_option('-s', '--settings', dest='settings',
+                      default="~/info/settings.json",
+                      help='JSON file containing settings [default: %default].'
+                      )
     parser.add_option('-d', '--debug', dest='debug',
                     help='Enable debug messages.', action="store_true")
     (values, args) = parser.parse_args(args)
@@ -400,7 +410,7 @@ def main(args=None):
         except INetAddressError:
             address = arg
             port = None
-    helical = Helical()
+    helical = Helical(values.settings)
     try:
         helical.connect(address, port, values.username, values.password)
     except transmissionrpc.TransmissionError, error:

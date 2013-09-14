@@ -266,6 +266,31 @@ start without a command.
         elif args[0] == u'stats':
             print(self.tc.session_stats())
 
+    def help_update_priorities(self):
+        print(u'update_priorities\n')
+        print(u'Set the bandwidth priority for each torrent using the '
+              u'settings JSON\n"tracker-priorities" object where each property '
+              u'name is a tracker\nand the value is the priority.')
+
+    def do_update_priorities(self, line):
+        """Set torrent priority by private/public trackers"""
+        if line:
+            raise ValueError(u"'update_priorities' command doesn't accept args")
+
+        torrents = self.tc.info()
+        for id_, torrent in torrents.iteritems():
+            for tracker in torrent.trackers:
+                for action in ('announce', 'scrape'):
+                    parsed = urlparse.urlsplit(tracker[action])
+                    for hostname, priority in self.settings[
+                            'tracker-priorities'].iteritems():
+                        if (not parsed.hostname.endswith(hostname) or
+                            torrent.bandwidthPriority == priority):
+                            continue
+                        logger.info('Marking torrent %s as priority %s',
+                                    priority, torrent)
+                        self.tc.change([id_], bandwidthPriority=priority)
+
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')
         try:

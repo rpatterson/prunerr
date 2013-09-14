@@ -328,6 +328,58 @@ start without a command.
             self.tc.move([id_], torrent_location)
             torrent.downloadDir = torrent_location
 
+    def help_free_space(self):
+        print(u'free_space\n')
+        print(u"Delete torrents if there's not enough free space\n"
+              u'according to the "free-space" JSON setting.')
+
+    def do_free_space(self, line):
+        """Delete some torrents if running out of disk space."""
+        if line:
+            raise ValueError(u"'free_space' command doesn't accept args")
+
+        session = self.tc.get_session()
+        if session.download_dir_free_space >= self.settings["free-space"]:
+            if self.tc.get_session().speed_limit_down_enabled:
+                kwargs = dict(speed_limit_down_enabled=False)
+                logger.info('Resuming downloading: %s', kwargs)
+                self.tc.set_session(**kwargs)
+            return
+        
+        torrents = self.tc.info()
+        by_ratio = sorted(
+            (torrent for torrent in torrents.itervalues()
+             # only those previously synced and moved
+             if torrent.status == 'seeding'
+             and torrent.downloadDir.startswith(self.settings.get(
+                 'seeding-dir', os.path.join(
+                     os.path.dirname(session.download_dir), 'seeding')))),
+            # delete lowest priority and highest ratio first
+            key=lambda torrent: (0 - torrent.bandwidthPriority, torrent.ratio))
+        while session.download_dir_free_space < self.settings["free-space"]:
+            if not by_ratio:
+                logger.error(
+                    'Running out of space but no torrents can be removed: %s',
+                    session.download_dir_free_space)
+                kwargs = dict(speed_limit_down=0,
+                              speed_limit_down_enabled=True)
+                logger.info('Stopping downloading: %s', kwargs)
+                self.tc.set_session(**kwargs)
+                break
+            delete = by_ratio.pop()
+            logger.info(
+                'Deleting seeding torrent to free space: %sMB, %s, %s, %s',
+                session.download_dir_free_space / (1024 * 1024),
+                delete, delete.bandwidthPriority, delete.ratio)
+            self.tc.remove(delete.id, delete_data=True)
+
+            session.update()
+        else:
+            if self.tc.get_session().speed_limit_down_enabled:
+                kwargs = dict(speed_limit_down_enabled=False)
+                logger.info('Resuming downloading: %s', kwargs)
+                self.tc.set_session(**kwargs)
+
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')
         try:

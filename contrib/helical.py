@@ -20,6 +20,9 @@ __version__   = u'0.2'
 __copyright__ = u'Copyright (c) 2008 Erik Svensson'
 __license__   = u'MIT'
 
+logger = logging.getLogger('transmissionrpc.helical')
+
+
 class Helical(cmd.Cmd):
 
     settings = {}
@@ -395,12 +398,10 @@ def main(args=None):
         if authenticators:
             values.username, account, values.password = authenticators
 
+    logging.basicConfig()
+    logger.setLevel(logging.INFO)
     if values.debug:
-        logger = logging.getLogger('transmissionrpc')
-        logger.setLevel(logging.DEBUG)
-        loghandler = logging.StreamHandler()
-        loghandler.setLevel(logging.DEBUG)
-        logging.getLogger('transmissionrpc').addHandler(loghandler)
+        logging.getLogger('transmissionrpc').setLevel(logging.DEBUG)
     for arg in args:
         if arg in commands:
             command = arg

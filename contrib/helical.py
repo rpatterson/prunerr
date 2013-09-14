@@ -369,6 +369,22 @@ def main(args=None):
     address = 'localhost'
     port = DEFAULT_PORT
     command = None
+
+    if not values.username:
+        # Default to using ~/.netrc for authentication
+        import netrc
+        try:
+            # Don't rely on os.environ['HOME'] such as under cron jobs
+            import pwd
+            home = pwd.getpwuid(os.getuid()).pw_dir
+        except ImportError:
+            # Windows
+            home = os.path.expanduser('~')
+        authenticators = netrc.netrc(
+            os.path.join(home, '.netrc')).authenticators(address)
+        if authenticators:
+            values.username, account, values.password = authenticators
+
     if values.debug:
         logger = logging.getLogger('transmissionrpc')
         logger.setLevel(logging.DEBUG)

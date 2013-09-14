@@ -291,6 +291,43 @@ start without a command.
                                     priority, torrent)
                         self.tc.change([id_], bandwidthPriority=priority)
 
+    def help_update_locations(self):
+        print(u'update_locations\n')
+        print(u'Move torrents to the correct locations based on the\n'
+              u'"incomplete-dir", "download-dir", and "seeding-dir" '
+              u'JSON settings.')
+
+    def do_update_locations(self, line):
+        """Put all unfinished torrents in the right place"""
+        if line:
+            raise ValueError(u"'update_locations' command doesn't accept args")
+
+        session = self.tc.get_session()
+        torrents = self.tc.info()
+        for id_, torrent in torrents.iteritems():
+            if torrent.status == 'downloading':
+                location = session.incomplete_dir
+                if torrent.downloadDir.startswith(location):
+                    continue
+            elif torrent.status == 'seeding':
+                location = session.download_dir
+                if (torrent.downloadDir.startswith(location) or
+                    torrent.downloadDir.startswith(self.settings.get(
+                        'seeding-dir', os.path.join(
+                            os.path.dirname(location), 'seeding')))):
+                    continue
+
+            if not torrent.downloadDir.startswith(os.path.dirname(location)):
+                # Don't move torrents whose location isn't in the same
+                # folder as the location
+                continue
+
+            relative = torrent.downloadDir[len(location):]
+            torrent_location = os.path.join(location, relative)
+            logger.info('Moving torrent %s to %s', torrent, torrent_location)
+            self.tc.move([id_], torrent_location)
+            torrent.downloadDir = torrent_location
+
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')
         try:

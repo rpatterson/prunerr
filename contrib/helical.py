@@ -354,7 +354,7 @@ start without a command.
              and torrent.downloadDir.startswith(self.settings.get(
                  'seeding-dir', os.path.join(
                      os.path.dirname(session.download_dir), 'seeding')))),
-            # delete lowest priority and highest ratio first
+            # remove lowest priority and highest ratio first
             key=lambda torrent: (0 - torrent.bandwidthPriority, torrent.ratio))
         while session.download_dir_free_space < self.settings["free-space"]:
             if not by_ratio:
@@ -366,12 +366,12 @@ start without a command.
                 logger.info('Stopping downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
                 break
-            delete = by_ratio.pop()
+            remove = by_ratio.pop()
             logger.info(
                 'Deleting seeding torrent to free space: %sMB, %s, %s, %s',
                 session.download_dir_free_space / (1024 * 1024),
-                delete, delete.bandwidthPriority, delete.ratio)
-            self.tc.remove(delete.id, delete_data=True)
+                remove, remove.bandwidthPriority, remove.ratio)
+            self.tc.remove(remove.id, remove_data=True)
 
             session.update()
         else:

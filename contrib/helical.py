@@ -40,7 +40,7 @@ class Helical(cmd.Cmd):
 
     settings = {}
 
-    def __init__(self, settings=None):
+    def __init__(self, settings_file=None):
         cmd.Cmd.__init__(self)
         self.intro = u'Helical %s' % (__version__)
         self.doc_leader = u'''
@@ -48,9 +48,7 @@ Helical is a command line interface that communicates with Transmission
 bittorent client through json-rpc. To run helical in interactive mode
 start without a command.
 '''
-        if isinstance(settings, (str, unicode)):
-            import json
-            self.settings = json.load(open(os.path.expanduser(settings)))
+        self.settings_file = settings_file
 
     def connect(self, address=None, port=None, username=None, password=None):
         self.tc = transmissionrpc.Client(address, port, username, password)
@@ -59,6 +57,7 @@ start without a command.
             self.prompt = u'Helical %s:%d> ' % (urlo.hostname, urlo.port)
         else:
             self.prompt = u'Helical %s> ' % (urlo.hostname)
+        self.do_update('')
 
     def arg_tokenize(self, argstr):
         return [unicode(token, 'utf-8') for token in shlex.split(argstr.encode('utf-8'))] or ['']
@@ -71,7 +70,7 @@ start without a command.
         return suggestions
 
     def _complete_torrent(self, name, offset):
-        words = [torrent.name for torrent in self.tc.get_torrents()]
+        words = [torrent.name for torrent in self.torrents]
         suggestions = []
         cut_index = len(name) - offset
         for word in words:
@@ -94,6 +93,17 @@ start without a command.
     do_exit = do_quit
     help_exit = help_quit
     do_EOF = do_quit
+    
+    def help_update(self):
+        print(u'update\n')
+        print(u'Update the torrents and session from the server.\n')
+
+    def do_update(self, line):
+        self.torrents = self.tc.get_torrents()
+        if isinstance(self.settings_file, (str, unicode)):
+            import json
+            self.settings = json.load(
+                open(os.path.expanduser(self.settings_file)))
 
     def help_add(self):
         print(u'add <torrent file or url> [<target dir> paused=(yes|no) peer-limit=#]\n')
@@ -358,9 +368,8 @@ start without a command.
 
             # Find any torrents that have finished downloading but
             # hasn't already been moved to the seeding directory
-            torrents = self.tc.get_torrents()
             to_copy = sorted(
-                (torrent for torrent in torrents
+                (torrent for torrent in self.torrents
                  if torrent.status == 'seeding' and
                  os.path.relpath(
                      torrent.downloadDir, seeding_dir
@@ -411,6 +420,7 @@ start without a command.
 
             # Wait for the next interval
             time.sleep(self.settings.get("daemon-poll", 15 * 60))
+            self.do_update('')
 
     def help_update_priorities(self):
         print(u'update_priorities\n')
@@ -423,9 +433,8 @@ start without a command.
         if line:
             raise ValueError(u"'update_priorities' command doesn't accept args")
 
-        torrents = self.tc.get_torrents()
         changed = []
-        for torrent in torrents:
+        for torrent in self.torrents:
             found = False
             for tracker in torrent.trackers:
                 for action in ('announce', 'scrape'):
@@ -473,9 +482,8 @@ start without a command.
             raise ValueError(u"'update_locations' command doesn't accept args")
 
         session = self.tc.get_session()
-        torrents = self.tc.get_torrents()
         moved = []
-        for torrent in torrents:
+        for torrent in self.torrents:
             if torrent.status == 'downloading':
                 location = session.incomplete_dir
                 relative = os.path.relpath(torrent.downloadDir, location)
@@ -527,9 +535,8 @@ start without a command.
                 self.tc.set_session(**kwargs)
             return
 
-        torrents = self.tc.get_torrents()
         by_ratio = sorted(
-            (torrent for torrent in torrents
+            (torrent for torrent in self.torrents
              # only those previously synced and moved
              if torrent.status == 'seeding'
              and torrent.downloadDir.startswith(self.settings.get(
@@ -575,7 +582,7 @@ start without a command.
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
 
         corrupt = dict(
-            (torrent.id, torrent) for torrent in self.tc.get_torrents()
+            (torrent.id, torrent) for torrent in self.torrents
             if torrent.error == 3 and not torrent.status.startswith('check'))
         if corrupt:
             logger.info('Verifying corrupt torrents:\n%s',

@@ -23,6 +23,19 @@ __license__   = u'MIT'
 logger = logging.getLogger('transmissionrpc.helical')
 
 
+def splitpath(path, split=os.path.split):
+    result = []
+    head, tail = split(path)
+    result.append(tail)
+    while head:
+        head, tail = split(head)
+        result.append(tail or os.path.sep)
+        if not tail and head == os.path.sep:
+            break
+    result.reverse()
+    return result
+
+
 class Helical(cmd.Cmd):
 
     settings = {}
@@ -312,23 +325,30 @@ start without a command.
         for id_, torrent in torrents.iteritems():
             if torrent.status == 'downloading':
                 location = session.incomplete_dir
-                if torrent.downloadDir.startswith(location):
+                relative = os.path.relpath(torrent.downloadDir, location)
+                if not relative.startswith(os.pardir + os.sep):
+                    # Already in the right place
                     continue
             elif torrent.status == 'seeding':
                 location = session.download_dir
-                if (torrent.downloadDir.startswith(location) or
-                    torrent.downloadDir.startswith(self.settings.get(
-                        'seeding-dir', os.path.join(
-                            os.path.dirname(location), 'seeding')))):
+                seeding_dir = self.settings.get('seeding-dir', os.path.join(
+                    os.path.dirname(location), 'seeding'))
+                relative = os.path.relpath(torrent.downloadDir, location)
+                if (not relative.startswith(os.pardir + os.sep) or
+                    not os.path.relpath(torrent.downloadDir, seeding_dir
+                                        ).startswith(os.pardir + os.sep)):
+                    # Already in the right place
                     continue
 
-            if not torrent.downloadDir.startswith(os.path.dirname(location)):
-                # Don't move torrents whose location isn't in the same
-                # folder as the location
+            relative = os.path.relpath(torrent.downloadDir,
+                                       os.path.dirname(location))
+            if relative.startswith(os.pardir + os.sep):
+                # Don't move torrents whose download dir isn't in the same
+                # parent folder as the location
                 continue
 
-            relative = torrent.downloadDir[len(location):]
-            torrent_location = os.path.join(location, relative)
+            subpath = os.path.join(*splitpath(relative)[1:])
+            torrent_location = os.path.join(location, subpath)
             logger.info('Moving torrent %s to %s', torrent, torrent_location)
             self.tc.move([id_], torrent_location)
             torrent.downloadDir = torrent_location

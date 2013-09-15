@@ -317,6 +317,101 @@ start without a command.
 
         return popen
 
+    def help_daemon(self):
+        print(u'daemon destination [command...]\n')
+        print(u'Run as a monitoring process that does a series of operations\n'
+              u'every "daemon-poll" seconds from settings JSON.\n'
+              u'\n'
+              u'1. "update_locations"\n'
+              u'2. Run "copy" on the smallest seeding torrent that hasn\'t\n'
+              u'   already been moved to the "seeding-dir" directory from\n'
+              u'   settings JSON using the destination and command (see \n'
+              u'   "help copy" for details).  This also kills an existing\n'
+              u'   running copy if the smallest seeding torrent is a\n'
+              u'   different torrent.\n'
+              u'3. if a torrent copy process succeeded,\n'
+              u'   move the torrent to the "seeding-dir" directory.\n'
+              u'4. "update_priorities"\n'
+              u'5. "free_space"\n'
+              u'6. "verify_corrupted"\n'
+              u'7. Resume any previously verified torrents.\n'
+              u'\n'
+              u'"daemon-poll" defaults to 15 minutes, and "seeding-dir"\n'
+              u'defaults to a "seeding" directory next to the "download-dir".'
+              u'\n')
+
+    def do_daemon(self, line):
+        """Loop running several regular commands every interval."""
+        import time
+
+        popen = copying = None
+        corrupt = {}
+        while True:
+            # Do anything that would affect finding out the next
+            # torrent to copy first
+            self.do_update_locations('')
+
+            session = self.tc.get_session()
+            seeding_dir = self.settings.get(
+                'seeding-dir', os.path.join(
+                    os.path.dirname(session.download_dir), 'seeding'))
+
+            # Find any torrents that have finished downloading but
+            # hasn't already been moved to the seeding directory
+            torrents = self.tc.get_torrents()
+            to_copy = sorted(
+                (torrent for torrent in torrents
+                 if torrent.status == 'seeding' and
+                 os.path.relpath(
+                     torrent.downloadDir, seeding_dir
+                     ).startswith(os.pardir + os.sep)),
+                # copy smaller torrents first
+                key=lambda item: item.totalSize)
+            if popen is not None:
+                if popen.poll() is None:
+                    if copying.id == to_copy.id:
+                        logger.info('Letting running copy finish: %s', copying)
+                        to_copy = None
+                    else:
+                        logger.info('Terminating running copy: %s', copying)
+                        popen.terminate()
+                elif popen.returncode == 0:
+                    # Copy process succeeded
+                    relative = os.path.relpath(
+                        copying.downloadDir,
+                        os.path.dirname(session.download_dir))
+                    subpath = os.path.join(*splitpath(relative)[1:])
+                    torrent_location = os.path.join(seeding_dir, subpath) 
+                    logger.info('Moving copied torrent %s to %s',
+                                copying, torrent_location)
+                    self.tc.move([copying.id], torrent_location)
+                    copying = None
+
+            if to_copy:
+                logger.info('Copying torrent: %s', to_copy[0])
+                popen = self.do_copy(' '.join([str(to_copy[0].id), line]))
+                copying = to_copy[0]
+
+            # Do any other cleanup
+            self.do_update_priorities('')
+            self.do_free_space('')
+
+            # Keep track of torrents being verified to resume them
+            # when verification is complete
+            corrupt.update(self.do_verify_corrupted(''))
+            for id_, torrent in corrupt.items():
+                torrent.update()
+                if not torrent.status.startswith('check'):
+                    logger.info('Resuming verified torrent: %s', torrent)
+                    self.tc.start([id_])
+                    del corrupt[id_]
+            if corrupt:
+                logger.info('Waiting for torrents to verify:%s',
+                            '\n'.join(map(str, corrupt.itervalues())))
+
+            # Wait for the next interval
+            time.sleep(self.settings.get("daemon-poll", 15 * 60))
+
     def help_update_priorities(self):
         print(u'update_priorities\n')
         print(u'Set the bandwidth priority for each torrent using the '

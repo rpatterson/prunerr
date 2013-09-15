@@ -278,6 +278,7 @@ start without a command.
             raise ValueError(u"'update_priorities' command doesn't accept args")
 
         torrents = self.tc.info()
+        changed = []
         for id_, torrent in torrents.iteritems():
             for tracker in torrent.trackers:
                 for action in ('announce', 'scrape'):
@@ -290,6 +291,9 @@ start without a command.
                         logger.info('Marking torrent %s as priority %s',
                                     priority, torrent)
                         self.tc.change([id_], bandwidthPriority=priority)
+                        changed.append(torrent)
+
+        return changed
 
     def help_update_locations(self):
         print(u'update_locations\n')
@@ -304,6 +308,7 @@ start without a command.
 
         session = self.tc.get_session()
         torrents = self.tc.info()
+        moved = []
         for id_, torrent in torrents.iteritems():
             if torrent.status == 'downloading':
                 location = session.incomplete_dir
@@ -327,6 +332,9 @@ start without a command.
             logger.info('Moving torrent %s to %s', torrent, torrent_location)
             self.tc.move([id_], torrent_location)
             torrent.downloadDir = torrent_location
+            moved.append(torrent)
+
+        return moved
 
     def help_free_space(self):
         print(u'free_space\n')
@@ -356,6 +364,7 @@ start without a command.
                      os.path.dirname(session.download_dir), 'seeding')))),
             # remove lowest priority and highest ratio first
             key=lambda torrent: (0 - torrent.bandwidthPriority, torrent.ratio))
+        removed = []
         while session.download_dir_free_space < self.settings["free-space"]:
             if not by_ratio:
                 logger.error(
@@ -372,6 +381,7 @@ start without a command.
                 session.download_dir_free_space / (1024 * 1024),
                 remove, remove.bandwidthPriority, remove.ratio)
             self.tc.remove(remove.id, remove_data=True)
+            removed.append(remove)
 
             session.update()
         else:
@@ -379,6 +389,8 @@ start without a command.
                 kwargs = dict(speed_limit_down_enabled=False)
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
+
+        return removed
 
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')

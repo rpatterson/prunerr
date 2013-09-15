@@ -513,6 +513,7 @@ def main(args=None):
             values.username, account, values.password = authenticators
 
     logging.basicConfig()
+    # Want just our logger, not transmissionrpc's to log INFO
     logger.setLevel(logging.INFO)
     if values.debug:
         logging.getLogger('transmissionrpc').setLevel(logging.DEBUG)

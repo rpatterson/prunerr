@@ -291,7 +291,7 @@ start without a command.
             print(self.tc.session_stats())
 
     def help_copy(self):
-        print(u'copy <torrent id> destination [command...]\n')
+        print(u'copy <torrent id> destination [-- command...]\n')
         print(u'Copy the torrent to the destination by piping the relative\n'
               u'torrent file paths to the shell command on stdin.\n'
               u'Leaves the command running in the background.\n'

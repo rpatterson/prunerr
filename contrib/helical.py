@@ -71,7 +71,7 @@ start without a command.
         return suggestions
 
     def _complete_torrent(self, name, offset):
-        words = [torrent.name for id, torrent in self.tc.torrents.iteritems()]
+        words = [torrent.name for torrent in self.tc.get_torrents()]
         suggestions = []
         cut_index = len(name) - offset
         for word in words:
@@ -219,8 +219,8 @@ start without a command.
         args = self.arg_tokenize(line)
         if len(args) == 0:
             raise ValueError(u'No torrent id')
-        result = self.tc.info(args)
-        for id, torrent in result.iteritems():
+        result = self.tc.get_torrents(args)
+        for torrent in result:
             print(self._torrent_detail(torrent))
 
     def help_list(self):
@@ -290,9 +290,9 @@ start without a command.
         if line:
             raise ValueError(u"'update_priorities' command doesn't accept args")
 
-        torrents = self.tc.info()
+        torrents = self.tc.get_torrents()
         changed = []
-        for id_, torrent in torrents.iteritems():
+        for torrent in torrents:
             for tracker in torrent.trackers:
                 for action in ('announce', 'scrape'):
                     parsed = urlparse.urlsplit(tracker[action])
@@ -303,7 +303,7 @@ start without a command.
                             continue
                         logger.info('Marking torrent %s as priority %s',
                                     priority, torrent)
-                        self.tc.change([id_], bandwidthPriority=priority)
+                        self.tc.change([torrent.id], bandwidthPriority=priority)
                         changed.append(torrent)
 
         return changed
@@ -320,9 +320,9 @@ start without a command.
             raise ValueError(u"'update_locations' command doesn't accept args")
 
         session = self.tc.get_session()
-        torrents = self.tc.info()
+        torrents = self.tc.get_torrents()
         moved = []
-        for id_, torrent in torrents.iteritems():
+        for torrent in torrents:
             if torrent.status == 'downloading':
                 location = session.incomplete_dir
                 relative = os.path.relpath(torrent.downloadDir, location)
@@ -350,7 +350,7 @@ start without a command.
             subpath = os.path.join(*splitpath(relative)[1:])
             torrent_location = os.path.join(location, subpath)
             logger.info('Moving torrent %s to %s', torrent, torrent_location)
-            self.tc.move([id_], torrent_location)
+            self.tc.move([torrent.id], torrent_location)
             torrent.downloadDir = torrent_location
             moved.append(torrent)
 
@@ -374,9 +374,9 @@ start without a command.
                 self.tc.set_session(**kwargs)
             return
         
-        torrents = self.tc.info()
+        torrents = self.tc.get_torrents()
         by_ratio = sorted(
-            (torrent for torrent in torrents.itervalues()
+            (torrent for torrent in torrents
              # only those previously synced and moved
              if torrent.status == 'seeding'
              and torrent.downloadDir.startswith(self.settings.get(
@@ -422,7 +422,7 @@ start without a command.
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
 
         corrupt = dict(
-            (id_, torrent) for id_, torrent in self.tc.info().iteritems()
+            (torrent.id, torrent) for torrent in self.tc.get_torrents()
             if torrent.error == 3 and not torrent.status.startswith('check'))
         if corrupt:
             logger.info('Verifying corrupt torrents:\n%s',

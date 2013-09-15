@@ -279,6 +279,44 @@ start without a command.
         elif args[0] == u'stats':
             print(self.tc.session_stats())
 
+    def help_copy(self):
+        print(u'copy <torrent id> destination [command...]\n')
+        print(u'Copy the torrent to the destination by piping the relative\n'
+              u'torrent file paths to the shell command on stdin.\n'
+              u'Leaves the command running in the background.\n'
+              u'The command defaults to: rsync -tSmP --files-from=-\n'
+              u'Example: copy 1 192.168.1.1:/path/to/library/ '
+              u'rsync -tSmPvv --files-from=-\n')
+
+    def do_copy(self, line):
+        args = self.arg_tokenize(line)
+        if len(args) < 2:
+            raise ValueError(
+                u"'copy' command requires a torrent id and a destination path")
+        elif len(args) < 3:
+            args.extend(['rsync', '-tSmP', '--files-from=-'])
+        id_, destination = args[:2]
+        cmd = args[2:]
+
+        torrent = self.tc.get_torrent(id_)
+        session = self.tc.get_session()
+        relative = os.path.relpath(torrent.downloadDir,
+                                   session.download_dir).encode('utf-8')
+
+        import tempfile
+        files = tempfile.TemporaryFile()
+        files.writelines(os.path.join(relative,
+                                      file_['name'].encode('utf-8')) + '\n'
+                         for file_ in torrent.files().itervalues())
+        files.seek(0)
+
+        import subprocess
+        cmd.extend([session.download_dir.encode('utf-8'), destination])
+        logger.info('Launching copy command: %s', ' '.join(cmd))
+        popen = subprocess.Popen(cmd, stdin=files)
+
+        return popen
+
     def help_update_priorities(self):
         print(u'update_priorities\n')
         print(u'Set the bandwidth priority for each torrent using the '

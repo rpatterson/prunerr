@@ -321,7 +321,8 @@ start without a command.
         files = tempfile.TemporaryFile()
         files.writelines(os.path.join(relative,
                                       file_['name'].encode('utf-8')) + '\n'
-                         for file_ in torrent.files().itervalues())
+                         for file_ in torrent.files().itervalues()
+                         if file_.get('selected'))
         files.seek(0)
 
         import subprocess

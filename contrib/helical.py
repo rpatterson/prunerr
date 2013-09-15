@@ -578,7 +578,7 @@ def main(args=None):
             address = arg
             port = None
     helical = Helical(values.settings)
-    if command.lower() != 'help':
+    if not command or command.lower() != 'help':
         try:
             helical.connect(address, port, values.username, values.password)
         except transmissionrpc.TransmissionError, error:

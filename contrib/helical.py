@@ -382,7 +382,7 @@ start without a command.
                 key=lambda item: item.totalSize)
             if popen is not None:
                 if popen.poll() is None:
-                    if copying.id == to_copy.id:
+                    if copying.id == to_copy[0].id:
                         logger.info('Letting running copy finish: %s', copying)
                         to_copy = None
                     else:

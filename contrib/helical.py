@@ -394,6 +394,7 @@ start without a command.
                     logger.info('Moving copied torrent %s to %s',
                                 copying, torrent_location)
                     self.tc.move([copying.id], torrent_location)
+                    copying.update()
                     copying = None
 
             if to_copy:
@@ -413,6 +414,7 @@ start without a command.
                 if not torrent.status.startswith('check'):
                     logger.info('Resuming verified torrent: %s', torrent)
                     self.tc.start([id_])
+                    torrent.update()
                     del corrupt[id_]
             if corrupt:
                 logger.info('Waiting for torrents to verify:%s',
@@ -450,6 +452,7 @@ start without a command.
                                         torrent, priority)
                             self.tc.change([torrent.id],
                                             bandwidthPriority=priority)
+                            torrent.update()
                             changed.append(torrent)
 
                         break
@@ -466,6 +469,7 @@ start without a command.
                 logger.info('Marking torrent %s as default priority %s',
                             torrent, priority)
                 self.tc.change([torrent.id], bandwidthPriority=priority)
+                torrent.update()
                 changed.append(torrent)
 
         return changed
@@ -512,6 +516,7 @@ start without a command.
             torrent_location = os.path.join(location, subpath)
             logger.info('Moving torrent %s to %s', torrent, torrent_location)
             self.tc.move([torrent.id], torrent_location)
+            torrent.update()
             torrent.downloadDir = torrent_location
             moved.append(torrent)
 
@@ -561,6 +566,7 @@ start without a command.
                 session.download_dir_free_space / (1024 * 1024),
                 remove, remove.bandwidthPriority, remove.ratio)
             self.tc.remove(remove.id, remove_data=True)
+            remove.update()
             removed.append(remove)
 
             session.update()
@@ -588,6 +594,8 @@ start without a command.
             logger.info('Verifying corrupt torrents:\n%s',
                         '\n'.join(map(str, corrupt.itervalues())))
             self.tc.verify(corrupt.keys())
+            for torrent in corrupt.itervalues():
+                torrent.update()
 
         return corrupt
 

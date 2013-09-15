@@ -23,14 +23,14 @@ __license__   = u'MIT'
 logger = logging.getLogger('transmissionrpc.helical')
 
 
-def splitpath(path, split=os.path.split):
+def splitpath(path, platform=os.path):
     result = []
-    head, tail = split(path)
+    head, tail = platform.split(path)
     result.append(tail)
     while head:
-        head, tail = split(head)
-        result.append(tail or os.path.sep)
-        if not tail and head == os.path.sep:
+        head, tail = platform.split(head)
+        result.append(tail or platform.sep)
+        if not tail and head == platform.sep:
             break
     result.reverse()
     return result

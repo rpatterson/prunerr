@@ -392,6 +392,25 @@ start without a command.
 
         return removed
 
+    def help_verify_corrupted(self):
+        print(u'verify_corrupted\n')
+        print(u"Verify local data for any corrupt torrents.")
+
+    def do_verify_corrupted(self, line):
+        """Verify local data if corrupt."""
+        if line:
+            raise ValueError(u"'verify_corrupted' command doesn't accept args")
+
+        corrupt = dict(
+            (id_, torrent) for id_, torrent in self.tc.info().iteritems()
+            if torrent.error == 3 and not torrent.status.startswith('check'))
+        if corrupt:
+            logger.info('Verifying corrupt torrents:\n%s',
+                        '\n'.join(map(str, corrupt.itervalues())))
+            self.tc.verify(corrupt.keys())
+
+        return corrupt
+
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')
         try:

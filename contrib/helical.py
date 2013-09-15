@@ -24,6 +24,7 @@ logger = logging.getLogger('transmissionrpc.helical')
 
 
 def splitpath(path, platform=os.path):
+    """Split all path elements"""
     result = []
     head, tail = platform.split(path)
     result.append(tail)
@@ -96,7 +97,7 @@ start without a command.
     
     def help_update(self):
         print(u'update\n')
-        print(u'Update the torrents and session from the server.\n')
+        print(u'Update the torrents list and settings.\n')
 
     def do_update(self, line):
         self.torrents = self.tc.get_torrents()
@@ -299,6 +300,7 @@ start without a command.
               u'rsync -tSmPvv --files-from=-\n')
 
     def do_copy(self, line):
+        """Launch the copy subprocess and return the popen object."""
         args = self.arg_tokenize(line)
         if len(args) < 2:
             raise ValueError(
@@ -313,6 +315,8 @@ start without a command.
         relative = os.path.relpath(torrent.downloadDir,
                                    session.download_dir).encode('utf-8')
 
+        # Use a temporary file to keep feeding the file list to the
+        # subprocess from blocking us
         import tempfile
         files = tempfile.TemporaryFile()
         files.writelines(os.path.join(relative,

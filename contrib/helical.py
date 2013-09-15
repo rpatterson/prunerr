@@ -39,7 +39,7 @@ def splitpath(path, platform=os.path):
 class Helical(cmd.Cmd):
 
     settings = {}
-    
+
     def __init__(self, settings=None):
         cmd.Cmd.__init__(self)
         self.intro = u'Helical %s' % (__version__)
@@ -150,12 +150,12 @@ start without a command.
             return
 
         torrent_url = args[0]
-        
+
         try:
             self.tc.add_uri(torrent_url)
         except transmissionrpc.TransmissionError, e:
             print(u'Failed to add torrent "%s"' % e)
-            
+
     def complete_remove(self, text, line, begidx, endidx):
         return self._complete_torrent_command(text, line, begidx, endidx)
 
@@ -339,7 +339,7 @@ start without a command.
                             'tracker-priorities'].iteritems():
                         if not parsed.hostname.endswith(hostname):
                             continue
-                        
+
                         found = True
                         if torrent.bandwidthPriority != priority:
                             logger.info('Marking torrent %s as priority %s',
@@ -431,7 +431,7 @@ start without a command.
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
             return
-        
+
         torrents = self.tc.get_torrents()
         by_ratio = sorted(
             (torrent for torrent in torrents

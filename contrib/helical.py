@@ -49,7 +49,8 @@ Helical is a command line interface that communicates with Transmission
 bittorent client through json-rpc. To run helical in interactive mode
 start without a command.
 '''
-        self.settings_file = settings_file
+        self.settings_file = settings_file or os.path.join(
+            get_home(), 'info', 'settings.json')
 
     def connect(self, address=None, port=None, username=None, password=None):
         self.tc = transmissionrpc.Client(address, port, username, password)
@@ -103,8 +104,7 @@ start without a command.
         self.torrents = self.tc.get_torrents()
         if isinstance(self.settings_file, (str, unicode)):
             import json
-            self.settings = json.load(
-                open(os.path.expanduser(self.settings_file)))
+            self.settings = json.load(open(self.settings_file))
 
     def help_add(self):
         print(u'add <torrent file or url> [<target dir> paused=(yes|no) peer-limit=#]\n')
@@ -697,6 +697,15 @@ start without a command.
             pass
         return s
 
+def get_home():
+    try:
+        # Don't rely on os.environ['HOME'] such as under cron jobs
+        import pwd
+        return pwd.getpwuid(os.getuid()).pw_dir
+    except ImportError:
+        # Windows
+        return os.path.expanduser('~')
+            
 def main(args=None):
     """Main entry point"""
     if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:
@@ -709,9 +718,8 @@ def main(args=None):
     parser.add_option('-p', '--password', dest='password',
                     help='Athentication password.')
     parser.add_option('-s', '--settings', dest='settings',
-                      default="~/info/settings.json",
-                      help='JSON file containing settings [default: %default].'
-                      )
+                      help='JSON file containing settings '
+                      '[default: ~/info/settings.json].')
     parser.add_option('-d', '--debug', dest='debug',
                     help='Enable debug messages.', action="store_true")
     (values, args) = parser.parse_args(args)
@@ -723,15 +731,8 @@ def main(args=None):
     if not values.username:
         # Default to using ~/.netrc for authentication
         import netrc
-        try:
-            # Don't rely on os.environ['HOME'] such as under cron jobs
-            import pwd
-            home = pwd.getpwuid(os.getuid()).pw_dir
-        except ImportError:
-            # Windows
-            home = os.path.expanduser('~')
         authenticators = netrc.netrc(
-            os.path.join(home, '.netrc')).authenticators(address)
+            os.path.join(get_home(), '.netrc')).authenticators(address)
         if authenticators:
             values.username, account, values.password = authenticators
 

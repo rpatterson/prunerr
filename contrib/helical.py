@@ -485,9 +485,9 @@ start without a command.
 
     def _torrent_detail(self, torrent):
         s = ''
-        s +=   '            id: ' + str(torrent.fields['id'])
-        s += '\n          name: ' + torrent.fields['name']
-        s += '\n          hash: ' + torrent.fields['hashString']
+        s +=   '            id: ' + str(torrent.id)
+        s += '\n          name: ' + torrent.name
+        s += '\n          hash: ' + torrent.hashString
         s += '\n'
         try: # size
             f = ''

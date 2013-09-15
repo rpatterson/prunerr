@@ -293,18 +293,38 @@ start without a command.
         torrents = self.tc.get_torrents()
         changed = []
         for torrent in torrents:
+            found = False
             for tracker in torrent.trackers:
                 for action in ('announce', 'scrape'):
                     parsed = urlparse.urlsplit(tracker[action])
                     for hostname, priority in self.settings[
                             'tracker-priorities'].iteritems():
-                        if (not parsed.hostname.endswith(hostname) or
-                            torrent.bandwidthPriority == priority):
+                        if not parsed.hostname.endswith(hostname):
                             continue
-                        logger.info('Marking torrent %s as priority %s',
-                                    priority, torrent)
-                        self.tc.change([torrent.id], bandwidthPriority=priority)
-                        changed.append(torrent)
+                        
+                        found = True
+                        if torrent.bandwidthPriority != priority:
+                            logger.info('Marking torrent %s as priority %s',
+                                        torrent, priority)
+                            self.tc.change([torrent.id],
+                                            bandwidthPriority=priority)
+                            changed.append(torrent)
+
+                        break
+                    if found:
+                        break
+                if found:
+                    break
+
+            else:
+                priority = self.settings.get('default-priority')
+                if (priority is None or
+                    torrent.bandwidthPriority == priority):
+                    continue
+                logger.info('Marking torrent %s as default priority %s',
+                            torrent, priority)
+                self.tc.change([torrent.id], bandwidthPriority=priority)
+                changed.append(torrent)
 
         return changed
 

@@ -514,6 +514,8 @@ start without a command.
                                         ).startswith(os.pardir + os.sep)):
                     # Already in the right place
                     continue
+            else:
+                continue
 
             relative = os.path.relpath(torrent.downloadDir,
                                        os.path.dirname(location))

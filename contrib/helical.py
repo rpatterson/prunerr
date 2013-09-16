@@ -426,7 +426,12 @@ start without a command.
                             '\n'.join(map(str, corrupt.itervalues())))
 
             # Wait for the next interval
-            time.sleep(self.settings.get("daemon-poll", 15 * 60))
+            start = time.clock()
+            poll = self.settings.get("daemon-poll", 15 * 60)
+            # Loop early if the copy process finishes early
+            while (popen is not None and popen.poll() is None and
+                   time.clock() - start < poll):
+                time.sleep(1)
             self.do_update('')
 
     def help_update_priorities(self):

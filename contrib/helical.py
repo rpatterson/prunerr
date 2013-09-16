@@ -578,7 +578,6 @@ start without a command.
                 session.download_dir_free_space / (1024 * 1024),
                 remove, remove.bandwidthPriority, remove.ratio)
             self.tc.remove(remove.id, delete_data=True)
-            remove.update()
             removed.append(remove)
 
             session.update()

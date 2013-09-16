@@ -401,6 +401,8 @@ start without a command.
                     self.tc.move([copying.id], torrent_location)
                     copying.update()
                     copying = None
+                    if copying.id == to_copy[0].id:
+                        to_copy.pop(0)
 
             if to_copy:
                 logger.info('Copying torrent: %s', to_copy[0])
@@ -553,14 +555,14 @@ start without a command.
             return
 
         by_ratio = sorted(
-            (torrent for torrent in self.torrents
+            ((index, torrent) for index, torrent in enumerate(self.torrents)
              # only those previously synced and moved
              if torrent.status == 'seeding'
              and torrent.downloadDir.startswith(self.settings.get(
                  'seeding-dir', os.path.join(
                      os.path.dirname(session.download_dir), 'seeding')))),
             # remove lowest priority and highest ratio first
-            key=lambda torrent: (0 - torrent.bandwidthPriority, torrent.ratio))
+            key=lambda item: (0 - item[1].bandwidthPriority, item[1].ratio))
         removed = []
         while session.download_dir_free_space < self.settings["free-space"]:
             if not by_ratio:
@@ -572,13 +574,14 @@ start without a command.
                 logger.info('Stopping downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
                 break
-            remove = by_ratio.pop()
+            index, remove = by_ratio.pop()
             logger.info(
                 'Deleting seeding torrent to free space: %sMB, %s, %s, %s',
                 session.download_dir_free_space / (1024 * 1024),
                 remove, remove.bandwidthPriority, remove.ratio)
             self.tc.remove(remove.id, delete_data=True)
             removed.append(remove)
+            self.torrents.pop(index)
 
             session.update()
         else:

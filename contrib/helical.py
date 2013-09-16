@@ -422,7 +422,7 @@ start without a command.
                     torrent.update()
                     del corrupt[id_]
             if corrupt:
-                logger.info('Waiting for torrents to verify:%s',
+                logger.info('Waiting for torrents to verify:\n%s',
                             '\n'.join(map(str, corrupt.itervalues())))
 
             # Wait for the next interval

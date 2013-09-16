@@ -570,7 +570,7 @@ start without a command.
                 'Deleting seeding torrent to free space: %sMB, %s, %s, %s',
                 session.download_dir_free_space / (1024 * 1024),
                 remove, remove.bandwidthPriority, remove.ratio)
-            self.tc.remove(remove.id, remove_data=True)
+            self.tc.remove(remove.id, delete_data=True)
             remove.update()
             removed.append(remove)
 

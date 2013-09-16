@@ -399,10 +399,10 @@ start without a command.
                     logger.info('Moving copied torrent %s to %s',
                                 copying, torrent_location)
                     self.tc.move([copying.id], torrent_location)
-                    copying.update()
-                    copying = None
                     if copying.id == to_copy[0].id:
                         to_copy.pop(0)
+                    copying.update()
+                    copying = None
 
             if to_copy:
                 logger.info('Copying torrent: %s', to_copy[0])

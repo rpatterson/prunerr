@@ -6,6 +6,7 @@ import sys, os, os.path, re, itertools
 import socket, urllib2, urlparse, base64, shlex
 import time
 import logging
+from logging import handlers
 from optparse import OptionParser
 try:
     import readline
@@ -358,6 +359,28 @@ start without a command.
 
     def do_daemon(self, line):
         """Loop running several regular commands every interval."""
+        # setup syslog for daemon messages
+        root = logging.getLogger()
+        for handler in root.handlers:
+            if isinstance(handler, handlers.SysLogHandler):
+                break
+        else:
+            # Linux
+            address = '/dev/log'
+            if not os.path.exists(address):
+                # OS X
+                address = '/var/run/syslog'
+            if os.path.exists(address):
+                handler = handlers.SysLogHandler(
+                    address, facility=handlers.SysLogHandler.LOG_DAEMON)
+            else:
+                # Windows
+                handler = handlers.SysLogHandler(
+                    facility=handlers.SysLogHandler.LOG_DAEMON)
+            handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+            handler.setLevel(logging.INFO)
+            root.addHandler(handler)
+
         self.popen = self.copying = None
         self.corrupt = {}
         while True:

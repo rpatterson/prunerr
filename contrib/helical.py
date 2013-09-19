@@ -364,16 +364,20 @@ start without a command.
             try:
                 self._daemon_inner(line)
             except socket.error:
-                logger.exception(
-                    'Connection error while running update_locations')
-                # re-initialize everything
-                self.tc.get_session()
-                self.do_update('')
-                if self.popen is not None:
-                    self.popen.terminate()
-                self.popen = self.copying = None
-                self.corrupt = {}
-                continue
+                logger.exception('Connection error while running daemon')
+                pass
+
+            while True:
+                try:
+                    # update everything from the server
+                    self.tc.get_session()
+                    self.do_update('')
+                except socket.error:
+                    logger.exception(
+                        'Connection error while updating from server')
+                    pass
+                else:
+                    break
                 
     def _daemon_inner(self, line):
         """'daemon' command innner loop."""
@@ -450,7 +454,6 @@ start without a command.
         while (self.popen is not None and self.popen.poll() is None and
                time.time() - start < poll):
             time.sleep(1)
-        self.do_update('')
 
     def help_update_priorities(self):
         print(u'update_priorities\n')

@@ -437,7 +437,8 @@ start without a command.
                 relative = os.path.relpath(
                     self.copying.downloadDir,
                     os.path.dirname(session.download_dir))
-                subpath = os.path.join(*splitpath(relative)[1:])
+                split = splitpath(relative)[1:]
+                subpath = split and os.path.join(*split) or ''
                 torrent_location = os.path.join(seeding_dir, subpath) 
                 logger.info('Moving copied torrent %s to %s',
                             self.copying, torrent_location)
@@ -568,7 +569,8 @@ start without a command.
                 # parent folder as the location
                 continue
 
-            subpath = os.path.join(*splitpath(relative)[1:])
+            split = splitpath(relative)[1:]
+            subpath = split and os.path.join(*split) or ''
             torrent_location = os.path.join(location, subpath)
             logger.info('Moving torrent %s to %s', torrent, torrent_location)
             self.tc.move([torrent.id], torrent_location)

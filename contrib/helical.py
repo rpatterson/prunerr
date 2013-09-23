@@ -475,7 +475,7 @@ start without a command.
         start = time.time()
         poll = self.settings.get("daemon-poll", 15 * 60)
         # Loop early if the copy process finishes early
-        while (self.popen is not None and self.popen.poll() is None and
+        while ((self.popen is None or self.popen.poll() is None) and
                time.time() - start < poll):
             time.sleep(1)
 

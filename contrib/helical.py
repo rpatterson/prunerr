@@ -425,7 +425,7 @@ start without a command.
             key=lambda item: item.totalSize)
         if self.popen is not None:
             if self.popen.poll() is None:
-                if self.copying.id == to_copy[0].id:
+                if not to_copy or self.copying.id == to_copy[0].id:
                     logger.info('Letting running copy finish: %s',
                                 self.copying)
                     to_copy = None
@@ -442,7 +442,7 @@ start without a command.
                 logger.info('Moving copied torrent %s to %s',
                             self.copying, torrent_location)
                 self.tc.move([self.copying.id], torrent_location)
-                if self.copying.id == to_copy[0].id:
+                if to_copy and self.copying.id == to_copy[0].id:
                     to_copy.pop(0)
                 self.copying.update()
                 self.copying = None

@@ -34,8 +34,8 @@ You may also download the tarball from `Python Package Index <http://pypi.python
 
 ::
 
-    $ tar -xzf transmissionrpc-0.11.tar.gz
-    $ cd transmissionrpc-0.11
+    $ tar -xzf transmissionrpc-0.12.tar.gz
+    $ cd transmissionrpc-0.12
     $ python setup.py install
 
 Dependecies

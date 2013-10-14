@@ -121,8 +121,6 @@ found in the Torrent object.
     >>> torrent.eta
     datetime.timedelta(0, 750)
 
-The last call will list all known data provided by Transmission.
-
 Well, we weren't that interested in Ubuntu so lets stop the transfer and the
 remove it.
 

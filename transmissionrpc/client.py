@@ -2,7 +2,7 @@
 # Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import re, time, operator, warnings, os
+import sys, re, time, operator, warnings, os
 import base64
 import json
 
@@ -26,6 +26,10 @@ def debug_httperror(error):
     """
     Log the Transmission RPC HTTP error.
     """
+    if sys.platform == 'win32':
+        m = error.message.decode(sys.stdout.encoding)
+    else:
+        m = error.message
     try:
         data = json.loads(error.data)
     except ValueError:
@@ -36,7 +40,7 @@ def debug_httperror(error):
                 'response': {
                     'url': error.url,
                     'code': error.code,
-                    'msg': error.message,
+                    'msg': m,
                     'headers': error.headers,
                     'data': data,
                 }

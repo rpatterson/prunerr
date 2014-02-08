@@ -176,6 +176,13 @@ def get_arguments(method, rpc_version):
             accessible.append(argument)
     return accessible
 
+def is_logger_configured():
+    """
+    Check if there are any logging handlers.
+    """
+    trpc_logger = logging.getLogger('transmissionrpc')
+    return len(trpc_logger.handlers) > 0
+
 def add_stdout_logger(level='debug'):
     """
     Add a stdout target for the transmissionrpc logging.

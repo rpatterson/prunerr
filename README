@@ -39,4 +39,4 @@ Developer
 
 transmissionrpc is hosted by bitbucket at http://www.bitbucket.org/blueluna/transmissionrpc/.
 
-Copyright (c) 2008-2013 Erik Svensson.
+Copyright (c) 2008-2014 Erik Svensson.

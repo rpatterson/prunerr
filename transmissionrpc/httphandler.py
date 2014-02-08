@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2011-2013 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2011-2014 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
 import sys

@@ -226,8 +226,13 @@ class Torrent(object):
 
     @property
     def date_done(self):
-        """Get the attribute "doneDate" as datetime.datetime."""
-        return datetime.datetime.fromtimestamp(self._fields['doneDate'].value)
+        """Get the attribute "doneDate" as datetime.datetime. returns None if "doneDate" is invalid."""
+        done_date = self._fields['doneDate'].value
+        # Transmission might forget to set doneDate which is initialized to zero, so if doneDate is zero return None
+        if done_date == 0:
+            return None
+        else:
+            return datetime.datetime.fromtimestamp(done_date)
 
     def format_eta(self):
         """

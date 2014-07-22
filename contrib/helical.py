@@ -322,7 +322,10 @@ start without a command.
         files.writelines(os.path.join(relative,
                                       file_['name'].encode('utf-8')) + '\n'
                          for file_ in torrent.files().itervalues()
-                         if file_.get('selected'))
+                         if file_.get('selected') and os.path.exists(
+                                 os.path.join(
+                                     torrent.downloadDir,
+                                     file_['name'].encode('utf-8'))))
         files.seek(0)
 
         import subprocess

@@ -2,19 +2,15 @@
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
-import sys, os, os.path, re, itertools
+import sys, os, os.path, itertools
 import socket, urllib2, urlparse, base64, shlex
 import time
 import logging
 from logging import handlers
 from optparse import OptionParser
-try:
-    import readline
-except:
-    pass
 import cmd
 import transmissionrpc
-from transmissionrpc.utils import *
+from transmissionrpc import utils
 from transmissionrpc.constants import DEFAULT_PORT
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
@@ -242,6 +238,8 @@ start without a command.
 
     def do_list(self, line):
         args = self.arg_tokenize(line)
+        if args:
+            raise ValueError(u"'list' takes no arguments")
         result = self.tc.list()
         self._list_torrents(result)
 
@@ -275,7 +273,7 @@ start without a command.
                     else:
                         print(u'Unknown argument: "%s"' % arg)
         if len(ids) > 0:
-            result = self.tc.change(ids, **set_args)
+            self.tc.change(ids, **set_args)
 
     def complete_session(self, text, line, begidx, endidx):
         return self.word_complete(text, [u'get', u'set', u'stats'])
@@ -695,8 +693,8 @@ start without a command.
             s += u' -status     '
             pass
         try:
-            s += u' %6.1f %- 5s' % format_speed(torrent.rateDownload)
-            s += u' %6.1f %- 5s' % format_speed(torrent.rateUpload)
+            s += u' %6.1f %- 5s' % utils.format_speed(torrent.rateDownload)
+            s += u' %6.1f %- 5s' % utils.format_speed(torrent.rateUpload)
         except:
             s += u' -rate      '
             s += u' -rate      '
@@ -718,20 +716,20 @@ start without a command.
         try: # size
             f = ''
             f += '\n      progress: %.2f%%' % torrent.progress
-            f += '\n         total: %.2f %s' % format_size(torrent.totalSize)
-            f += '\n      reqested: %.2f %s' % format_size(torrent.sizeWhenDone)
-            f += '\n     remaining: %.2f %s' % format_size(torrent.leftUntilDone)
-            f += '\n      verified: %.2f %s' % format_size(torrent.haveValid)
-            f += '\n  not verified: %.2f %s' % format_size(torrent.haveUnchecked)
+            f += '\n         total: %.2f %s' % utils.format_size(torrent.totalSize)
+            f += '\n      reqested: %.2f %s' % utils.format_size(torrent.sizeWhenDone)
+            f += '\n     remaining: %.2f %s' % utils.format_size(torrent.leftUntilDone)
+            f += '\n      verified: %.2f %s' % utils.format_size(torrent.haveValid)
+            f += '\n  not verified: %.2f %s' % utils.format_size(torrent.haveUnchecked)
             s += f + '\n'
         except KeyError:
             pass
         try: # activity
             f = ''
             f += '\n        status: ' + str(torrent.status)
-            f += '\n      download: %.2f %s' % format_speed(torrent.rateDownload)
-            f += '\n        upload: %.2f %s' % format_speed(torrent.rateUpload)
-            f += '\n     available: %.2f %s' % format_size(torrent.desiredAvailable)
+            f += '\n      download: %.2f %s' % utils.format_speed(torrent.rateDownload)
+            f += '\n        upload: %.2f %s' % utils.format_speed(torrent.rateUpload)
+            f += '\n     available: %.2f %s' % utils.format_size(torrent.desiredAvailable)
             f += '\ndownload peers: ' + str(torrent.peersSendingToUs)
             f += '\n  upload peers: ' + str(torrent.peersGettingFromUs)
             s += f + '\n'
@@ -740,12 +738,12 @@ start without a command.
         try: # history
             f = ''
             f += '\n         ratio: %.2f' % torrent.ratio
-            f += '\n    downloaded: %.2f %s' % format_size(torrent.downloadedEver)
-            f += '\n      uploaded: %.2f %s' % format_size(torrent.uploadedEver)
-            f += '\n        active: ' + format_timestamp(torrent.activityDate)
-            f += '\n         added: ' + format_timestamp(torrent.addedDate)
-            f += '\n       started: ' + format_timestamp(torrent.startDate)
-            f += '\n          done: ' + format_timestamp(torrent.doneDate)
+            f += '\n    downloaded: %.2f %s' % utils.format_size(torrent.downloadedEver)
+            f += '\n      uploaded: %.2f %s' % utils.format_size(torrent.uploadedEver)
+            f += '\n        active: ' + utils.format_timestamp(torrent.activityDate)
+            f += '\n         added: ' + utils.format_timestamp(torrent.addedDate)
+            f += '\n       started: ' + utils.format_timestamp(torrent.startDate)
+            f += '\n          done: ' + utils.format_timestamp(torrent.doneDate)
             s += f + '\n'
         except KeyError:
             pass
@@ -800,8 +798,8 @@ def main(args=None):
             command = arg
             break
         try:
-            (address, port) = inet_address(arg, DEFAULT_PORT)
-        except INetAddressError:
+            (address, port) = utils.inet_address(arg, DEFAULT_PORT)
+        except utils.INetAddressError:
             address = arg
             port = None
     helical = Helical(values.settings)

@@ -337,26 +337,24 @@ start without a command.
 
     def help_daemon(self):
         print(u'daemon destination [command...]\n')
-        print(u'Run as a monitoring process that does a series of operations\n'
-              u'every "daemon-poll" seconds from settings JSON.\n'
-              u'\n'
-              u'1. Run "update_locations"\n'
-              u'2. Run "copy" on the smallest seeding torrent that hasn\'t\n'
-              u'   already been moved to the "seeding-dir" directory from\n'
-              u'   settings JSON using the destination and command (see \n'
-              u'   "help copy" for details).  This also kills an existing\n'
-              u'   running copy if the smallest seeding torrent is a\n'
-              u'   different torrent.\n'
-              u'3. if a torrent copy process succeeded,\n'
-              u'   move the torrent to the "seeding-dir" directory.\n'
-              u'4. Run "update_priorities"\n'
-              u'5. Run "free_space"\n'
-              u'6. Run "verify_corrupted"\n'
-              u'7. Resume any previously verified torrents.\n'
-              u'\n'
-              u'"daemon-poll" defaults to 15 minutes, and "seeding-dir"\n'
-              u'defaults to a "seeding" directory next to the "download-dir".'
-              u'\n')
+        print(u"""\
+Run as a monitoring process that does a series of operations every
+'daemon-poll' seconds from settings JSON.
+
+1. Run 'update_locations'
+2. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
+   the 'seeding-dir' directory from settings JSON using the destination and
+   command (see 'help copy' for details).  This also kills an existing running
+   copy if the smallest seeding torrent is a different torrent.
+3. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
+4. Run 'update_priorities'
+5. Run 'free_space'
+6. Run 'verify_corrupted'
+7. Resume any previously verified torrents.
+
+'daemon-poll' defaults to 15 minutes, and 'seeding-dir' defaults to a 'seeding'
+directory next to the 'download-dir'.
+""")
 
     def do_daemon(self, line):
         """Loop running several regular commands every interval."""

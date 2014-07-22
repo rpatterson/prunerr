@@ -345,7 +345,12 @@ Run as a monitoring process that does a series of operations every
 2. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
    the 'seeding-dir' directory from settings JSON using the destination and
    command (see 'help copy' for details).  This also kills an existing running
-   copy if the smallest seeding torrent is a different torrent.
+   copy if the smallest seeding torrent is a different torrent.  If the command
+   fails with a return/exit code included in "daemon-retry-codes" from settings
+   JSON, then the copy will be retried.  Otherwise, the torrent will be paused
+   so as not to keep retrying a failing copy.  The default "daemon-retry-codes"
+   cover the codes rsync uses for network issues or intentional
+   signals/interruptions/kills (10, 12, 20, 30, and 35).
 3. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
 4. Run 'update_priorities'
 5. Run 'free_space'
@@ -411,6 +416,8 @@ directory next to the 'download-dir'.
         seeding_dir = self.settings.get(
             'seeding-dir', os.path.join(
                 os.path.dirname(session.download_dir), 'seeding'))
+        retry_codes = self.settings.get(
+            'daemon-retry-codes', [10, 12, 20, 30, 35])
 
         # Find any torrents that have finished downloading but
         # hasn't already been moved to the seeding directory
@@ -446,6 +453,12 @@ directory next to the 'download-dir'.
                     to_copy.pop(0)
                 self.copying.update()
                 self.copying = None
+            elif self.popen.returncode not in retry_codes:
+                failed = to_copy.pop(0)
+                logger.error(
+                    'Copy failed with return code %s, pausing %s',
+                    self.popen.returncode, failed)
+                self.tc.stop_torrent([failed.id])
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])

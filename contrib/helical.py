@@ -4,6 +4,8 @@
 
 import sys, os, os.path, itertools
 import socket, urllib2, urlparse, base64, shlex
+import shutil
+import subprocess
 import time
 import logging
 from logging import handlers
@@ -33,6 +35,12 @@ def splitpath(path, platform=os.path):
             break
     result.reverse()
     return result
+
+def log_rmtree_error(function, path, excinfo):
+    logger.error(
+        'Error removing %r (%s)',
+        path, '.'.join((function.__module__, function.__name__)),
+        exc_info=excinfo)
 
 
 class Helical(cmd.Cmd):
@@ -328,7 +336,6 @@ start without a command.
                                      file_['name'].encode('utf-8'))))
         files.seek(0)
 
-        import subprocess
         cmd.extend([session.download_dir.encode('utf-8'), destination])
         logger.info('Launching copy command: %s', ' '.join(cmd))
         popen = subprocess.Popen(cmd, stdin=files)
@@ -596,7 +603,7 @@ directory next to the 'download-dir'.
         print(u'free_space\n')
         print(u"Delete torrents if there's not enough free space\n"
               u'according to the "free-space" JSON setting.')
-
+        
     def do_free_space(self, line):
         """Delete some torrents if running out of disk space."""
         if line:
@@ -610,6 +617,62 @@ directory next to the 'download-dir'.
                 self.tc.set_session(**kwargs)
             return
 
+        # First find orphaned files, remove smallest files first
+        download_dirs = (
+            self.settings.get('seeding-dir', os.path.join(
+                os.path.dirname(session.download_dir), 'seeding')),
+            session.download_dir, session.incomplete_dir)
+        # Assemble all directories whose descendants are torrents
+        torrent_dirs = set()
+        torrent_paths = set()
+        for torrent in self.torrents:
+            torrent_dir, tail = os.path.split(torrent.downloadDir + os.sep)
+            # Include the ancestors of the torrent's path
+            # so we know what dirs to descend into when looking for orphans
+            while torrent_dir not in torrent_dirs or torrent_dir != os.sep:
+                torrent_dirs.add(torrent_dir)
+                torrent_dir, tail = os.path.split(torrent_dir)
+            torrent_paths.add(os.path.join(torrent.downloadDir, torrent.name))
+        # Sort the orphans by total directory size
+        du_cmd = ['du', '-s', '--files0-from=-']  # TODO Windows compatibility
+        du = subprocess.Popen(
+            du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        orphans = sorted(
+            itertools.chain(*(
+                self._list_orphans(
+                    torrent_dirs, torrent_paths, du, download_dir)
+                for download_dir in download_dirs)),
+            key=lambda orphan: int(orphan[0]))
+        du.stdin.close()
+        # Remove orphans, smallest first until enough space is freed
+        # or there are no more orphans
+        while (
+                session.download_dir_free_space < self.settings["free-space"]
+                and orphans):
+            size, orphan = orphans.pop(0)
+            logger.warn(
+                'Deleting orphaned path %r to free space: %s%s + %s%s', orphan,
+                *itertools.chain(
+                    utils.format_size(session.download_dir_free_space),
+                    utils.format_size(size)))
+            if os.path.isdir(orphan):
+                shutil.rmtree(orphan, onerror=log_rmtree_error)
+            else:
+                os.remove(orphan)
+            session.update()
+        du.wait()
+        if du.returncode:
+            raise subprocess.CalledProcessError(du.returncode, du_cmd)
+        if session.download_dir_free_space >= self.settings["free-space"]:
+            # No need to process seeding torrents
+            # if removing orphans already freed enough space
+            if self.tc.get_session().speed_limit_down_enabled:
+                kwargs = dict(speed_limit_down_enabled=False)
+                logger.info('Resuming downloading: %s', kwargs)
+                self.tc.set_session(**kwargs)
+            return
+
+        # Next remove seeding and copied torrents
         by_ratio = sorted(
             ((index, torrent) for index, torrent in enumerate(self.torrents)
              # only those previously synced and moved
@@ -647,6 +710,22 @@ directory next to the 'download-dir'.
                 self.tc.set_session(**kwargs)
 
         return removed
+
+    def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
+        """Recursively list paths that aren't a part of any torrent."""
+        for entry in os.listdir(path):
+            entry_path = os.path.join(
+                path, entry.decode('utf-8')).encode('utf-8')
+            if (
+                    entry_path not in torrent_paths and
+                    entry_path not in torrent_dirs):
+                du.stdin.write(entry_path + '\0')
+                size, du_path = du.stdout.readline()[:-1].split('\t', 1)[:2]
+                yield (size, entry_path)
+            elif entry_path in torrent_dirs:
+                for orphan in self._list_orphans(
+                        torrent_dirs, torrent_paths, du, entry_path):
+                    yield orphan
 
     def help_verify_corrupted(self):
         print(u'verify_corrupted\n')

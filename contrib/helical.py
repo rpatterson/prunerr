@@ -695,9 +695,11 @@ directory next to the 'download-dir'.
                 break
             index, remove = by_ratio.pop()
             logger.info(
-                'Deleting seeding torrent to free space: %sMB, %s, %s, %s',
-                session.download_dir_free_space / (1024 * 1024),
-                remove, remove.bandwidthPriority, remove.ratio)
+                'Deleting seeding torrent %s to free space, %s + %s: '
+                'priority=%s, ratio=%s', remove,
+                *(utils.format_size(session.download_dir_free_space) +
+                  utils.format_size(remove.totalSize) +
+                  (remove.bandwidthPriority, remove.ratio)))
             self.tc.remove(remove.id, delete_data=True)
             removed.append(remove)
             self.torrents.pop(index)

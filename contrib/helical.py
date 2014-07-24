@@ -332,7 +332,7 @@ start without a command.
                          for file_ in torrent.files().itervalues()
                          if file_.get('selected') and os.path.exists(
                                  os.path.join(
-                                     torrent.downloadDir,
+                                     torrent.downloadDir.encode('utf-8'),
                                      file_['name'].encode('utf-8'))))
         files.seek(0)
 

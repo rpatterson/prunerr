@@ -460,6 +460,7 @@ directory next to the 'download-dir'.
                     to_copy.pop(0)
                 self.copying.update()
                 self.copying = None
+                self.popen = None
             elif self.popen.returncode not in retry_codes:
                 failed = to_copy.pop(0)
                 logger.error(

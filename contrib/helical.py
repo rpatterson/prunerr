@@ -652,7 +652,8 @@ directory next to the 'download-dir'.
                 and orphans):
             size, orphan = orphans.pop(0)
             logger.warn(
-                'Deleting orphaned path %r to free space: %s%s + %s%s', orphan,
+                'Deleting orphaned path %r to free space: '
+                '%0.2f %s + %0.2f %s', orphan,
                 *itertools.chain(
                     utils.format_size(session.download_dir_free_space),
                     utils.format_size(size)))
@@ -696,8 +697,8 @@ directory next to the 'download-dir'.
                 break
             index, remove = by_ratio.pop()
             logger.info(
-                'Deleting seeding torrent %s to free space, %s + %s: '
-                'priority=%s, ratio=%s', remove,
+                'Deleting seeding torrent %s to free space, '
+                '%0.2f %s + %0.2f %s: priority=%s, ratio=%0.2f', remove,
                 *(utils.format_size(session.download_dir_free_space) +
                   utils.format_size(remove.totalSize) +
                   (remove.bandwidthPriority, remove.ratio)))

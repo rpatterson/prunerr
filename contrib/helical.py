@@ -348,8 +348,7 @@ start without a command.
 Run as a monitoring process that does a series of operations every
 'daemon-poll' seconds from settings JSON.
 
-1. Run 'update_locations'
-2. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
+1. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
    the 'seeding-dir' directory from settings JSON using the destination and
    command (see 'help copy' for details).  This also kills an existing running
    copy if the smallest seeding torrent is a different torrent.  If the command
@@ -358,11 +357,11 @@ Run as a monitoring process that does a series of operations every
    so as not to keep retrying a failing copy.  The default "daemon-retry-codes"
    cover the codes rsync uses for network issues or intentional
    signals/interruptions/kills (10, 12, 20, 30, and 35).
-3. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
-4. Run 'update_priorities'
-5. Run 'free_space'
-6. Run 'verify_corrupted'
-7. Resume any previously verified torrents.
+2. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
+3. Run 'update_priorities'
+4. Run 'free_space'
+5. Run 'verify_corrupted'
+6. Resume any previously verified torrents.
 
 'daemon-poll' defaults to 15 minutes, and 'seeding-dir' defaults to a 'seeding'
 directory next to the 'download-dir'.
@@ -415,10 +414,6 @@ directory next to the 'download-dir'.
 
     def _daemon_inner(self, line):
         """'daemon' command innner loop."""
-        # Do anything that would affect finding out the next
-        # torrent to copy first
-        self.do_update_locations('')
-
         session = self.tc.get_session()
         seeding_dir = self.settings.get(
             'seeding-dir', os.path.join(
@@ -548,57 +543,6 @@ directory next to the 'download-dir'.
                 changed.append(torrent)
 
         return changed
-
-    def help_update_locations(self):
-        print(u'update_locations\n')
-        print(u'Move torrents to the correct locations based on the\n'
-              u'"incomplete-dir", "download-dir", and "seeding-dir" '
-              u'JSON settings.')
-
-    def do_update_locations(self, line):
-        """Put all unfinished torrents in the right place"""
-        if line:
-            raise ValueError(u"'update_locations' command doesn't accept args")
-
-        session = self.tc.get_session()
-        moved = []
-        for torrent in self.torrents:
-            if torrent.status == 'downloading':
-                location = session.incomplete_dir
-                relative = os.path.relpath(torrent.downloadDir, location)
-                if not relative.startswith(os.pardir + os.sep):
-                    # Already in the right place
-                    continue
-            elif torrent.status == 'seeding':
-                location = session.download_dir
-                seeding_dir = self.settings.get('seeding-dir', os.path.join(
-                    os.path.dirname(location), 'seeding'))
-                relative = os.path.relpath(torrent.downloadDir, location)
-                if (not relative.startswith(os.pardir + os.sep) or
-                    not os.path.relpath(torrent.downloadDir, seeding_dir
-                                        ).startswith(os.pardir + os.sep)):
-                    # Already in the right place
-                    continue
-            else:
-                continue
-
-            relative = os.path.relpath(torrent.downloadDir,
-                                       os.path.dirname(location))
-            if relative.startswith(os.pardir + os.sep):
-                # Don't move torrents whose download dir isn't in the same
-                # parent folder as the location
-                continue
-
-            split = splitpath(relative)[1:]
-            subpath = split and os.path.join(*split) or ''
-            torrent_location = os.path.join(location, subpath)
-            logger.info('Moving torrent %s to %s', torrent, torrent_location)
-            self.tc.move([torrent.id], torrent_location)
-            torrent.update()
-            torrent.downloadDir = torrent_location
-            moved.append(torrent)
-
-        return moved
 
     def help_free_space(self):
         print(u'free_space\n')

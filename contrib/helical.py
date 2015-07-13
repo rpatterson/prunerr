@@ -101,7 +101,7 @@ start without a command.
     do_exit = do_quit
     help_exit = help_quit
     do_EOF = do_quit
-    
+
     def help_update(self):
         print(u'update\n')
         print(u'Update the torrents list and settings.\n')
@@ -412,7 +412,7 @@ directory next to the 'download-dir'.
                     pass
                 else:
                     break
-                
+
     def _daemon_inner(self, line):
         """'daemon' command innner loop."""
         # Do anything that would affect finding out the next
@@ -452,7 +452,7 @@ directory next to the 'download-dir'.
                     os.path.dirname(session.download_dir))
                 split = splitpath(relative)[1:]
                 subpath = split and os.path.join(*split) or ''
-                torrent_location = os.path.join(seeding_dir, subpath) 
+                torrent_location = os.path.join(seeding_dir, subpath)
                 logger.info('Moving copied torrent %s to %s',
                             self.copying, torrent_location)
                 self.tc.move([self.copying.id], torrent_location)
@@ -604,7 +604,7 @@ directory next to the 'download-dir'.
         print(u'free_space\n')
         print(u"Delete torrents if there's not enough free space\n"
               u'according to the "free-space" JSON setting.')
-        
+
     def do_free_space(self, line):
         """Delete some torrents if running out of disk space."""
         if line:
@@ -854,7 +854,7 @@ def get_home():
     except ImportError:
         # Windows
         return os.path.expanduser('~')
-            
+
 def main(args=None):
     """Main entry point"""
     if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:

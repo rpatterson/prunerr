@@ -421,6 +421,20 @@ directory next to the 'download-dir'.
         retry_codes = self.settings.get(
             'daemon-retry-codes', [10, 12, 20, 30, 35])
 
+        # Keep track of torrents being verified to resume them
+        # when verification is complete
+        self.corrupt.update(self.do_verify_corrupted(''))
+        for id_, torrent in self.corrupt.items():
+            torrent.update()
+            if not torrent.status.startswith('check'):
+                logger.info('Resuming verified torrent: %s', torrent)
+                self.tc.start([id_])
+                torrent.update()
+                del self.corrupt[id_]
+        if self.corrupt:
+            logger.info('Waiting for torrents to verify:\n%s',
+                        '\n'.join(map(str, self.corrupt.itervalues())))
+
         # Find any torrents that have finished downloading but
         # hasn't already been moved to the seeding directory
         to_copy = sorted(
@@ -471,20 +485,6 @@ directory next to the 'download-dir'.
         # Do any other cleanup
         self.do_update_priorities('')
         self.do_free_space('')
-
-        # Keep track of torrents being verified to resume them
-        # when verification is complete
-        self.corrupt.update(self.do_verify_corrupted(''))
-        for id_, torrent in self.corrupt.items():
-            torrent.update()
-            if not torrent.status.startswith('check'):
-                logger.info('Resuming verified torrent: %s', torrent)
-                self.tc.start([id_])
-                torrent.update()
-                del self.corrupt[id_]
-        if self.corrupt:
-            logger.info('Waiting for torrents to verify:\n%s',
-                        '\n'.join(map(str, self.corrupt.itervalues())))
 
         # Wait for the next interval
         start = time.time()
@@ -685,8 +685,9 @@ directory next to the 'download-dir'.
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
 
         corrupt = dict(
-            (torrent.id, torrent) for torrent in self.torrents
-            if torrent.error == 3 and not torrent.status.startswith('check'))
+            (torrent.id, torrent) for torrent in self.torrents if (
+                torrent.status in ['stopped', 'seeding'] and (
+                    torrent.error == 3 or torrent.corruptEver)))
         if corrupt:
             logger.info('Verifying corrupt torrents:\n%s',
                         '\n'.join(map(str, corrupt.itervalues())))

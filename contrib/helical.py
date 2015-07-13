@@ -471,11 +471,10 @@ directory next to the 'download-dir'.
                 self.copying = None
                 self.popen = None
             elif self.popen.returncode not in retry_codes:
-                failed = to_copy.pop(0)
                 logger.error(
                     'Copy failed with return code %s, pausing %s',
-                    self.popen.returncode, failed)
-                self.tc.stop_torrent([failed.id])
+                    self.popen.returncode, self.copying)
+                self.tc.stop_torrent([self.copying.id])
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])

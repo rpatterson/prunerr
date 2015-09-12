@@ -1,7 +1,13 @@
-Transmissionrpc 0.11
+Transmissionrpc 0.12
 --------------------
 
- * Feature.
+ * Features
+
+ Transmissionrpc 0.11
+--------------------
+
+ * Added support for Transmission RPC version 15.
+ * Minor fixes.
 
 Transmissionrpc 0.10
 --------------------

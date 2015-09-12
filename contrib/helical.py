@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
-import sys, os, os.path, itertools
+import sys, os, os.path, re, itertools
 import socket, urllib2, urlparse, base64, shlex
 import shutil
 import subprocess
@@ -10,6 +10,10 @@ import time
 import logging
 from logging import handlers
 from optparse import OptionParser
+try:
+    import readline
+except:
+    pass
 import cmd
 import transmissionrpc
 from transmissionrpc import utils

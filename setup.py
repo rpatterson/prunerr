@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2014 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
 from setuptools import setup
@@ -9,7 +9,7 @@ required = ['six>=1.1.0']
 
 setup(
     name='transmissionrpc',
-    version='0.11',
+    version='0.12',
     description='Python module that implements the Transmission bittorent client RPC protocol.',
     author='Erik Svensson',
     author_email='erik.public@gmail.com',

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2014 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
-import re, time, operator, warnings, os
+import sys, re, time, operator, warnings, os
 import base64
 import json
 
 from transmissionrpc.constants import DEFAULT_PORT, DEFAULT_TIMEOUT
 from transmissionrpc.error import TransmissionError, HTTPHandlerError
-from transmissionrpc.utils import LOGGER, get_arguments, make_rpc_name, argument_value_convert, rpc_bool
+from transmissionrpc.utils import LOGGER, get_arguments, make_rpc_name, argument_value_convert, rpc_bool, is_logger_configured
 from transmissionrpc.httphandler import DefaultHTTPHandler
 from transmissionrpc.torrent import Torrent
 from transmissionrpc.session import Session
@@ -26,6 +26,10 @@ def debug_httperror(error):
     """
     Log the Transmission RPC HTTP error.
     """
+    if sys.platform == 'win32':
+        m = error.message.decode(sys.stdout.encoding)
+    else:
+        m = error.message
     try:
         data = json.loads(error.data)
     except ValueError:
@@ -36,7 +40,7 @@ def debug_httperror(error):
                 'response': {
                     'url': error.url,
                     'code': error.code,
-                    'msg': error.message,
+                    'msg': m,
                     'headers': error.headers,
                     'data': data,
                 }
@@ -199,14 +203,17 @@ class Client(object):
         request_count = 0
         if timeout is None:
             timeout = self._query_timeout
+        use_logger = is_logger_configured()
         while True:
-            LOGGER.debug(json.dumps({'url': self.url, 'headers': headers, 'query': query, 'timeout': timeout}, indent=2))
+            if use_logger:
+                LOGGER.debug(json.dumps({'url': self.url, 'headers': headers, 'query': query, 'timeout': timeout}, indent=2))
             try:
                 result = self.http_handler.request(self.url, query, headers, timeout)
                 break
             except HTTPHandlerError as error:
                 if error.code == 409:
-                    LOGGER.info('Server responded with 409, trying to set session-id.')
+                    if use_logger:
+                        LOGGER.info('Server responded with 409, trying to set session-id.')
                     if request_count > 1:
                         raise TransmissionError('Session ID negotiation failed.', error)
                     session_id = None
@@ -216,10 +223,12 @@ class Client(object):
                             self.session_id = session_id
                             headers = {'x-transmission-session-id': str(self.session_id)}
                     if session_id is None:
-                        debug_httperror(error)
+                        if use_logger:
+                            debug_httperror(error)
                         raise TransmissionError('Unknown conflict.', error)
                 else:
-                    debug_httperror(error)
+                    if use_logger:
+                        debug_httperror(error)
                     raise TransmissionError('Request failed.', error)
             request_count += 1
         return result
@@ -239,6 +248,7 @@ class Client(object):
             arguments['ids'] = ids
         elif require_ids:
             raise ValueError('request require ids')
+        use_logger = is_logger_configured()
 
         query = json.dumps({'tag': self._sequence, 'method': method
                             , 'arguments': arguments})
@@ -246,17 +256,20 @@ class Client(object):
         start = time.time()
         http_data = self._http_query(query, timeout)
         elapsed = time.time() - start
-        LOGGER.info('http request took %.3f s' % (elapsed))
+        if use_logger:
+            LOGGER.info('http request took %.3f s' % (elapsed))
 
         try:
             data = json.loads(http_data)
         except ValueError as error:
-            LOGGER.error('Error: ' + str(error))
-            LOGGER.error('Request: \"%s\"' % (query))
-            LOGGER.error('HTTP data: \"%s\"' % (http_data))
+            if use_logger:
+                LOGGER.error('Error: ' + str(error))
+                LOGGER.error('Request: \"%s\"' % (query))
+                LOGGER.error('HTTP data: \"%s\"' % (http_data))
             raise
-
-        LOGGER.debug(json.dumps(data, indent=2))
+        
+        if use_logger:
+            LOGGER.debug(json.dumps(data, indent=2))
         if 'result' in data:
             if data['result'] != 'success':
                 raise TransmissionError('Query failed with result \"%s\".' % (data['result']))

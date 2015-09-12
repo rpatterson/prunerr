@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
+# Copyright (c) 2008-2014 Erik Svensson <erik.public@gmail.com>
 # Licensed under the MIT license.
 
 import socket, datetime, logging
@@ -175,6 +175,13 @@ def get_arguments(method, rpc_version):
         if valid_version:
             accessible.append(argument)
     return accessible
+
+def is_logger_configured():
+    """
+    Check if there are any logging handlers.
+    """
+    trpc_logger = logging.getLogger('transmissionrpc')
+    return len(trpc_logger.handlers) > 0
 
 def add_stdout_logger(level='debug'):
     """

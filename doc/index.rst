@@ -1,5 +1,5 @@
 ..
-    Copyright (c) 2008-2013 Erik Svensson <erik.public@gmail.com>
+    Copyright (c) 2008-2014 Erik Svensson <erik.public@gmail.com>
     Licensed under the MIT license.
 
 Transmission RPC
@@ -34,8 +34,8 @@ You may also download the tarball from `Python Package Index <http://pypi.python
 
 ::
 
-    $ tar -xzf transmissionrpc-0.11.tar.gz
-    $ cd transmissionrpc-0.11
+    $ tar -xzf transmissionrpc-0.12.tar.gz
+    $ cd transmissionrpc-0.12
     $ python setup.py install
 
 Dependecies
@@ -120,12 +120,6 @@ found in the Torrent object.
     'downloading'
     >>> torrent.eta
     datetime.timedelta(0, 750)
-    >>> for key, value in torrent.fields.iteritems():
-    ...     print(key, value)
-    ...
-    ('comment', 'Ubuntu CD releases.ubuntu.com')
-
-The last call will list all known data provided by Transmission.
 
 Well, we weren't that interested in Ubuntu so lets stop the transfer and the
 remove it.

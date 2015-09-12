@@ -475,6 +475,7 @@ directory next to the 'download-dir'.
                     'Copy failed with return code %s, pausing %s',
                     self.popen.returncode, self.copying)
                 self.tc.stop_torrent([self.copying.id])
+                self.copying.update()
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])
@@ -683,6 +684,7 @@ directory next to the 'download-dir'.
         if line:
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
 
+        self.do_update('')
         corrupt = dict(
             (torrent.id, torrent) for torrent in self.torrents if (
                 torrent.status in ['stopped', 'seeding'] and (

@@ -105,7 +105,7 @@ start without a command.
     do_exit = do_quit
     help_exit = help_quit
     do_EOF = do_quit
-    
+
     def help_update(self):
         print(u'update\n')
         print(u'Update the torrents list and settings.\n')
@@ -352,8 +352,7 @@ start without a command.
 Run as a monitoring process that does a series of operations every
 'daemon-poll' seconds from settings JSON.
 
-1. Run 'update_locations'
-2. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
+1. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
    the 'seeding-dir' directory from settings JSON using the destination and
    command (see 'help copy' for details).  This also kills an existing running
    copy if the smallest seeding torrent is a different torrent.  If the command
@@ -362,11 +361,11 @@ Run as a monitoring process that does a series of operations every
    so as not to keep retrying a failing copy.  The default "daemon-retry-codes"
    cover the codes rsync uses for network issues or intentional
    signals/interruptions/kills (10, 12, 20, 30, and 35).
-3. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
-4. Run 'update_priorities'
-5. Run 'free_space'
-6. Run 'verify_corrupted'
-7. Resume any previously verified torrents.
+2. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
+3. Run 'update_priorities'
+4. Run 'free_space'
+5. Run 'verify_corrupted'
+6. Resume any previously verified torrents.
 
 'daemon-poll' defaults to 15 minutes, and 'seeding-dir' defaults to a 'seeding'
 directory next to the 'download-dir'.
@@ -416,19 +415,29 @@ directory next to the 'download-dir'.
                     pass
                 else:
                     break
-                
+
     def _daemon_inner(self, line):
         """'daemon' command innner loop."""
-        # Do anything that would affect finding out the next
-        # torrent to copy first
-        self.do_update_locations('')
-
         session = self.tc.get_session()
         seeding_dir = self.settings.get(
             'seeding-dir', os.path.join(
                 os.path.dirname(session.download_dir), 'seeding'))
         retry_codes = self.settings.get(
             'daemon-retry-codes', [10, 12, 20, 30, 35])
+
+        # Keep track of torrents being verified to resume them
+        # when verification is complete
+        self.corrupt.update(self.do_verify_corrupted(''))
+        for id_, torrent in self.corrupt.items():
+            torrent.update()
+            if not torrent.status.startswith('check'):
+                logger.info('Resuming verified torrent: %s', torrent)
+                self.tc.start([id_])
+                torrent.update()
+                del self.corrupt[id_]
+        if self.corrupt:
+            logger.info('Waiting for torrents to verify:\n%s',
+                        '\n'.join(map(str, self.corrupt.itervalues())))
 
         # Find any torrents that have finished downloading but
         # hasn't already been moved to the seeding directory
@@ -456,7 +465,7 @@ directory next to the 'download-dir'.
                     os.path.dirname(session.download_dir))
                 split = splitpath(relative)[1:]
                 subpath = split and os.path.join(*split) or ''
-                torrent_location = os.path.join(seeding_dir, subpath) 
+                torrent_location = os.path.join(seeding_dir, subpath)
                 logger.info('Moving copied torrent %s to %s',
                             self.copying, torrent_location)
                 self.tc.move([self.copying.id], torrent_location)
@@ -466,11 +475,11 @@ directory next to the 'download-dir'.
                 self.copying = None
                 self.popen = None
             elif self.popen.returncode not in retry_codes:
-                failed = to_copy.pop(0)
                 logger.error(
                     'Copy failed with return code %s, pausing %s',
-                    self.popen.returncode, failed)
-                self.tc.stop_torrent([failed.id])
+                    self.popen.returncode, self.copying)
+                self.tc.stop_torrent([self.copying.id])
+                self.copying.update()
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])
@@ -480,20 +489,6 @@ directory next to the 'download-dir'.
         # Do any other cleanup
         self.do_update_priorities('')
         self.do_free_space('')
-
-        # Keep track of torrents being verified to resume them
-        # when verification is complete
-        self.corrupt.update(self.do_verify_corrupted(''))
-        for id_, torrent in self.corrupt.items():
-            torrent.update()
-            if not torrent.status.startswith('check'):
-                logger.info('Resuming verified torrent: %s', torrent)
-                self.tc.start([id_])
-                torrent.update()
-                del self.corrupt[id_]
-        if self.corrupt:
-            logger.info('Waiting for torrents to verify:\n%s',
-                        '\n'.join(map(str, self.corrupt.itervalues())))
 
         # Wait for the next interval
         start = time.time()
@@ -553,62 +548,11 @@ directory next to the 'download-dir'.
 
         return changed
 
-    def help_update_locations(self):
-        print(u'update_locations\n')
-        print(u'Move torrents to the correct locations based on the\n'
-              u'"incomplete-dir", "download-dir", and "seeding-dir" '
-              u'JSON settings.')
-
-    def do_update_locations(self, line):
-        """Put all unfinished torrents in the right place"""
-        if line:
-            raise ValueError(u"'update_locations' command doesn't accept args")
-
-        session = self.tc.get_session()
-        moved = []
-        for torrent in self.torrents:
-            if torrent.status == 'downloading':
-                location = session.incomplete_dir
-                relative = os.path.relpath(torrent.downloadDir, location)
-                if not relative.startswith(os.pardir + os.sep):
-                    # Already in the right place
-                    continue
-            elif torrent.status == 'seeding':
-                location = session.download_dir
-                seeding_dir = self.settings.get('seeding-dir', os.path.join(
-                    os.path.dirname(location), 'seeding'))
-                relative = os.path.relpath(torrent.downloadDir, location)
-                if (not relative.startswith(os.pardir + os.sep) or
-                    not os.path.relpath(torrent.downloadDir, seeding_dir
-                                        ).startswith(os.pardir + os.sep)):
-                    # Already in the right place
-                    continue
-            else:
-                continue
-
-            relative = os.path.relpath(torrent.downloadDir,
-                                       os.path.dirname(location))
-            if relative.startswith(os.pardir + os.sep):
-                # Don't move torrents whose download dir isn't in the same
-                # parent folder as the location
-                continue
-
-            split = splitpath(relative)[1:]
-            subpath = split and os.path.join(*split) or ''
-            torrent_location = os.path.join(location, subpath)
-            logger.info('Moving torrent %s to %s', torrent, torrent_location)
-            self.tc.move([torrent.id], torrent_location)
-            torrent.update()
-            torrent.downloadDir = torrent_location
-            moved.append(torrent)
-
-        return moved
-
     def help_free_space(self):
         print(u'free_space\n')
         print(u"Delete torrents if there's not enough free space\n"
               u'according to the "free-space" JSON setting.')
-        
+
     def do_free_space(self, line):
         """Delete some torrents if running out of disk space."""
         if line:
@@ -656,7 +600,8 @@ directory next to the 'download-dir'.
                 and orphans):
             size, orphan = orphans.pop(0)
             logger.warn(
-                'Deleting orphaned path %r to free space: %s%s + %s%s', orphan,
+                'Deleting orphaned path %r to free space: '
+                '%0.2f %s + %0.2f %s', orphan,
                 *itertools.chain(
                     utils.format_size(session.download_dir_free_space),
                     utils.format_size(size)))
@@ -700,8 +645,8 @@ directory next to the 'download-dir'.
                 break
             index, remove = by_ratio.pop()
             logger.info(
-                'Deleting seeding torrent %s to free space, %s + %s: '
-                'priority=%s, ratio=%s', remove,
+                'Deleting seeding torrent %s to free space, '
+                '%0.2f %s + %0.2f %s: priority=%s, ratio=%0.2f', remove,
                 *(utils.format_size(session.download_dir_free_space) +
                   utils.format_size(remove.totalSize) +
                   (remove.bandwidthPriority, remove.ratio)))
@@ -743,9 +688,11 @@ directory next to the 'download-dir'.
         if line:
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
 
+        self.do_update('')
         corrupt = dict(
-            (torrent.id, torrent) for torrent in self.torrents
-            if torrent.error == 3 and not torrent.status.startswith('check'))
+            (torrent.id, torrent) for torrent in self.torrents if (
+                torrent.status in ['stopped', 'seeding'] and (
+                    torrent.error == 3 or torrent.corruptEver)))
         if corrupt:
             logger.info('Verifying corrupt torrents:\n%s',
                         '\n'.join(map(str, corrupt.itervalues())))
@@ -857,7 +804,7 @@ def get_home():
     except ImportError:
         # Windows
         return os.path.expanduser('~')
-            
+
 def main(args=None):
     """Main entry point"""
     if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:

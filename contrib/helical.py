@@ -698,7 +698,9 @@ directory next to the 'download-dir'.
         self.do_update('')
         corrupt = dict(
             (torrent.id, torrent) for torrent in self.torrents
-            if torrent.status == 'stopped' and torrent.error == 3)
+            if torrent.status == 'stopped' and torrent.error == 3 and (
+                'verif' in torrent.errorString.lower() or
+                'corrput' in torrent.errorString.lower()))
         if corrupt:
             logger.info('Verifying corrupt torrents:\n%s',
                         '\n'.join(map(str, corrupt.itervalues())))

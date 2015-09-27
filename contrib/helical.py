@@ -445,11 +445,11 @@ directory next to the 'download-dir'.
         # Find any torrents that have finished downloading but
         # hasn't already been moved to the seeding directory
         to_copy = sorted(
-            (torrent for torrent in self.torrents
-             if torrent.status == 'seeding' and
-             os.path.relpath(
-                 torrent.downloadDir, seeding_dir
-                 ).startswith(os.pardir + os.sep)),
+            (
+                torrent for torrent in self.torrents
+                if torrent.status == 'seeding' and os.path.relpath(
+                    torrent.downloadDir, seeding_dir).startswith(
+                        os.pardir + os.sep)),
             # copy smaller torrents first
             key=lambda item: item.totalSize)
         if self.popen is not None:

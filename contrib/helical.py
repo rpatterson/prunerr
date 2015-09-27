@@ -409,7 +409,7 @@ directory next to the 'download-dir'.
 
             while True:
                 try:
-                    # update everything from the server
+                    # Don't loop until we successfully update everything
                     self.tc.get_session()
                     self.do_update('')
                 except socket.error:

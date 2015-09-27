@@ -319,13 +319,13 @@ start without a command.
                 u"'copy' command requires a torrent id and a destination path")
         elif len(args) < 3:
             args.extend(['rsync', '-tSmP', '--files-from=-'])
-        id_, destination = args[:2]
-        cmd = args[2:]
-        self.copy(id_, destination, cmd)
+        torrent_id, destination = args[:2]
+        command = args[2:]
+        self.copy(torrent_id, destination, command)
 
-    def copy(self, id_, destination, command):
+    def copy(self, torrent_id, destination, command):
         """Launch the copy subprocess and return the popen object."""
-        torrent = self.tc.get_torrent(id_)
+        torrent = self.tc.get_torrent(torrent_id)
         session = self.tc.get_session()
         relative = os.path.relpath(torrent.downloadDir,
                                    session.download_dir).encode('utf-8')
@@ -343,9 +343,9 @@ start without a command.
                                      file_['name'].encode('utf-8'))))
         files.seek(0)
 
-        cmd.extend([session.download_dir.encode('utf-8'), destination])
-        logger.info('Launching copy command: %s', ' '.join(cmd))
-        popen = subprocess.Popen(cmd, stdin=files)
+        command.extend([session.download_dir.encode('utf-8'), destination])
+        logger.info('Launching copy command: %s', ' '.join(command))
+        popen = subprocess.Popen(command, stdin=files)
 
         return popen
 
@@ -431,13 +431,13 @@ directory next to the 'download-dir'.
         # Keep track of torrents being verified to resume them
         # when verification is complete
         self.corrupt.update(self.verify_corrupted())
-        for id_, torrent in self.corrupt.items():
+        for torrent_id, torrent in self.corrupt.items():
             torrent.update()
             if not torrent.status.startswith('check'):
                 logger.info('Resuming verified torrent: %s', torrent)
-                self.tc.start([id_])
+                self.tc.start([torrent_id])
                 torrent.update()
-                del self.corrupt[id_]
+                del self.corrupt[torrent_id]
         if self.corrupt:
             logger.info('Waiting for torrents to verify:\n%s',
                         '\n'.join(map(str, self.corrupt.itervalues())))

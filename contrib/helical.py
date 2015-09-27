@@ -312,7 +312,7 @@ start without a command.
               u'rsync -tSmPvv --files-from=-\n')
 
     def do_copy(self, line):
-        """Launch the copy subprocess and return the popen object."""
+        """Copy a torrent using the given command."""
         args = self.arg_tokenize(line)
         if len(args) < 2:
             raise ValueError(
@@ -321,7 +321,10 @@ start without a command.
             args.extend(['rsync', '-tSmP', '--files-from=-'])
         id_, destination = args[:2]
         cmd = args[2:]
+        self.copy(id_, destination, cmd)
 
+    def copy(self, id_, destination, command):
+        """Launch the copy subprocess and return the popen object."""
         torrent = self.tc.get_torrent(id_)
         session = self.tc.get_session()
         relative = os.path.relpath(torrent.downloadDir,
@@ -427,7 +430,7 @@ directory next to the 'download-dir'.
 
         # Keep track of torrents being verified to resume them
         # when verification is complete
-        self.corrupt.update(self.do_verify_corrupted(''))
+        self.corrupt.update(self.verify_corrupted())
         for id_, torrent in self.corrupt.items():
             torrent.update()
             if not torrent.status.startswith('check'):
@@ -474,7 +477,10 @@ directory next to the 'download-dir'.
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])
-            self.popen = self.do_copy(' '.join([str(to_copy[0].id), line]))
+            args = self.arg_tokenize(line)
+            destination = args[0]
+            command = args[1:]
+            self.popen = self.copy(to_copy[0].id, destination, command)
             self.copying = to_copy[0]
 
         # Do any other cleanup
@@ -547,8 +553,6 @@ directory next to the 'download-dir'.
                 self.tc.change([torrent.id], bandwidthPriority=priority)
                 torrent.update()
                 changed.append(torrent)
-
-        return changed
 
     def help_free_space(self):
         print(u'free_space\n')
@@ -663,8 +667,6 @@ directory next to the 'download-dir'.
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
 
-        return removed
-
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
         """Recursively list paths that aren't a part of any torrent."""
         for entry in os.listdir(path):
@@ -689,7 +691,10 @@ directory next to the 'download-dir'.
         """Verify local data if corrupt."""
         if line:
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
+        self.verify_corrupted()
 
+    def verify_corrupted(self):
+        """Verify local data if corrupt."""
         self.do_update('')
         corrupt = dict(
             (torrent.id, torrent) for torrent in self.torrents if (

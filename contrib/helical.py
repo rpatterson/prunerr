@@ -460,18 +460,9 @@ directory next to the 'download-dir'.
                     self.popen.terminate()
             elif self.popen.returncode == 0:
                 # Copy process succeeded
-                relative = os.path.relpath(
-                    self.copying.downloadDir,
-                    os.path.dirname(session.download_dir))
-                split = splitpath(relative)[1:]
-                subpath = split and os.path.join(*split) or ''
-                torrent_location = os.path.join(seeding_dir, subpath)
-                logger.info('Moving copied torrent %s to %s',
-                            self.copying, torrent_location)
-                self.tc.move([self.copying.id], torrent_location)
+                self.move(self.copying, session.download_dir, seeding_dir)
                 if to_copy and self.copying.id == to_copy[0].id:
                     to_copy.pop(0)
-                self.copying.update()
                 self.copying = None
                 self.popen = None
             elif self.popen.returncode not in retry_codes:
@@ -497,6 +488,17 @@ directory next to the 'download-dir'.
         while ((self.popen is None or self.popen.poll() is None) and
                time.time() - start < poll):
             time.sleep(1)
+
+    def move(self, torrent, src_path, dst_path):
+        """Move a torrent preserving subpath."""
+        relative = os.path.relpath(
+            torrent.downloadDir, os.path.dirname(src_path))
+        split = splitpath(relative)[1:]
+        subpath = split and os.path.join(*split) or ''
+        torrent_location = os.path.join(dst_path, subpath)
+        logger.info('Moving torrent %s to %s', torrent, torrent_location)
+        self.tc.move([torrent.id], torrent_location)
+        torrent.update()
 
     def help_update_priorities(self):
         print(u'update_priorities\n')

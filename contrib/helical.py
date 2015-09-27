@@ -442,8 +442,8 @@ directory next to the 'download-dir'.
             logger.info('Waiting for torrents to verify:\n%s',
                         '\n'.join(map(str, self.corrupt.itervalues())))
 
-        # Find any torrents that have finished downloading but
-        # hasn't already been moved to the seeding directory
+        # Start copying the most optimal torrent that is fully downloaded and
+        # in the downloads directory.
         to_copy = sorted(
             (
                 torrent for torrent in self.torrents
@@ -685,16 +685,22 @@ directory next to the 'download-dir'.
 
     def help_verify_corrupted(self):
         print(u'verify_corrupted\n')
-        print(u"Verify local data for any corrupt torrents.")
+        print(
+            u'Verify any incomplete torrents '
+            u'that are paused because of corruption.')
 
     def do_verify_corrupted(self, line):
-        """Verify local data if corrupt."""
+        """
+        Verify any incomplete torrents that are paused because of corruption.
+        """
         if line:
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
         self.verify_corrupted()
 
     def verify_corrupted(self):
-        """Verify local data if corrupt."""
+        """
+        Verify any incomplete torrents that are paused because of corruption.
+        """
         self.do_update('')
         corrupt = dict(
             (torrent.id, torrent) for torrent in self.torrents

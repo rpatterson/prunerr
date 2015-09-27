@@ -27,6 +27,10 @@ __license__   = u'MIT'
 logger = logging.getLogger('transmissionrpc.helical')
 
 
+class TransmissionTimeout(Exception):
+    """A transmission operation took too long."""
+
+
 def splitpath(path, platform=os.path):
     """Split all path elements"""
     result = []
@@ -323,6 +327,18 @@ start without a command.
         command = args[2:]
         self.copy(torrent_id, destination, command)
 
+    def list_torrent_files(self, torrent, download_dir=None):
+        """
+        Iterate over all torrent selected file paths that exist.
+        """
+        if download_dir is None:
+            download_dir = torrent.downloadDir
+        return (
+            file_['name'].encode('utf-8')
+            for file_ in torrent.files().itervalues()
+            if file_.get('selected') and os.path.exists(os.path.join(
+                download_dir.encode('utf-8'), file_['name'].encode('utf-8'))))
+
     def copy(self, torrent_id, destination, command):
         """Launch the copy subprocess and return the popen object."""
         torrent = self.tc.get_torrent(torrent_id)
@@ -334,13 +350,9 @@ start without a command.
         # subprocess from blocking us
         import tempfile
         files = tempfile.TemporaryFile()
-        files.writelines(os.path.join(relative,
-                                      file_['name'].encode('utf-8')) + '\n'
-                         for file_ in torrent.files().itervalues()
-                         if file_.get('selected') and os.path.exists(
-                                 os.path.join(
-                                     torrent.downloadDir.encode('utf-8'),
-                                     file_['name'].encode('utf-8'))))
+        files.writelines(
+            os.path.join(relative, subpath) + '\n'
+            for subpath in self.list_torrent_files_relative(torrent))
         files.seek(0)
 
         command.extend([session.download_dir.encode('utf-8'), destination])
@@ -463,7 +475,13 @@ directory next to the 'download-dir'.
                     self.popen.terminate()
             elif self.popen.returncode == 0:
                 # Copy process succeeded
-                self.move(self.copying, session.download_dir, seeding_dir)
+                try:
+                    self.move_relative(
+                        self.copying, session.download_dir, seeding_dir)
+                except TransmissionTimeout as exc:
+                    logger.error('Moving torrent timed out, pausing: %s', exc)
+                    self.copying.stop()
+                    self.copying.update()
                 if to_copy and self.copying.id == to_copy[0].id:
                     to_copy.pop(0)
                 self.copying = None
@@ -495,15 +513,25 @@ directory next to the 'download-dir'.
                time.time() - start < poll):
             time.sleep(1)
 
-    def move(self, torrent, src_path, dst_path):
-        """Move a torrent preserving subpath."""
-        relative = os.path.relpath(
-            torrent.downloadDir, os.path.dirname(src_path))
+    def move_relative(self, torrent, src_path, dst_path, move_timeout=5 * 60):
+        """Move a torrent preserving subpath and block until done."""
+        download_dir = torrent.downloadDir
+        relative = os.path.relpath(download_dir, os.path.dirname(src_path))
         split = splitpath(relative)[1:]
         subpath = split and os.path.join(*split) or ''
         torrent_location = os.path.join(dst_path, subpath)
         logger.info('Moving torrent %s to %s', torrent, torrent_location)
         self.tc.move([torrent.id], torrent_location)
+
+        # Wait until the files are finished moving
+        start = time.time()
+        while list(self.list_torrent_files(torrent, download_dir)):
+            if time.time() - start > move_timeout:
+                raise TransmissionTimeout(
+                    'Timed out waiting for {torrent} to move '
+                    'from {src_path!r} to {dst_path!r}'.format(**locals()))
+            time.sleep(1)
+
         torrent.update()
 
     def help_update_priorities(self):

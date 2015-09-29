@@ -353,7 +353,7 @@ start without a command.
         files = tempfile.TemporaryFile()
         files.writelines(
             os.path.join(relative, subpath) + '\n'
-            for subpath in self.list_torrent_files_relative(torrent))
+            for subpath in self.list_torrent_files(torrent))
         files.seek(0)
 
         command.extend([session.download_dir.encode('utf-8'), destination])

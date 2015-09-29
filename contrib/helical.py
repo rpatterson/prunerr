@@ -612,7 +612,7 @@ directory next to the 'download-dir'.
         download_dirs = (
             self.settings.get('seeding-dir', os.path.join(
                 os.path.dirname(session.download_dir), 'seeding')),
-            session.download_dir, session.incomplete_dir)
+            session.download_dir)
         # Assemble all directories whose descendants are torrents
         torrent_dirs = set()
         torrent_paths = set()

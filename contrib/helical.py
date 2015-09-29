@@ -17,6 +17,7 @@ except:
 import cmd
 import transmissionrpc
 from transmissionrpc import utils
+from transmissionrpc import error
 from transmissionrpc.constants import DEFAULT_PORT
 
 __author__    = u'Erik Svensson <erik.public@gmail.com>'
@@ -424,7 +425,7 @@ directory next to the 'download-dir'.
                     # Don't loop until we successfully update everything
                     self.tc.get_session()
                     self.do_update('')
-                except socket.error:
+                except (socket.error, error.TransmissionError):
                     logger.exception(
                         'Connection error while updating from server')
                     pass
@@ -444,12 +445,19 @@ directory next to the 'download-dir'.
         # when verification is complete
         self.corrupt.update(self.verify_corrupted())
         for torrent_id, torrent in self.corrupt.items():
-            torrent.update()
-            if not torrent.status.startswith('check'):
-                logger.info('Resuming verified torrent: %s', torrent)
-                self.tc.start([torrent_id])
+            try:
                 torrent.update()
+            except KeyError as exc:
+                logger.error(
+                    'Error updating corrupt torrent %s, '
+                    'may have been removed: %s', torrent, exc)
                 del self.corrupt[torrent_id]
+            else:
+                if not torrent.status.startswith('check'):
+                    logger.info('Resuming verified torrent: %s', torrent)
+                    self.tc.start([torrent_id])
+                    torrent.update()
+                    del self.corrupt[torrent_id]
         if self.corrupt:
             logger.info('Waiting for torrents to verify:\n%s',
                         '\n'.join(map(str, self.corrupt.itervalues())))

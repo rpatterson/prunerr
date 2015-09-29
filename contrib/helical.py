@@ -625,7 +625,8 @@ directory next to the 'download-dir'.
                 torrent_dir, tail = os.path.split(torrent_dir)
             torrent_paths.add(os.path.join(torrent.downloadDir, torrent.name))
         # Sort the orphans by total directory size
-        du_cmd = ['du', '-s', '--files0-from=-']  # TODO Windows compatibility
+        # TODO Windows compatibility
+        du_cmd = ['du', '-s', '--block-size=1', '--files0-from=-']
         du = subprocess.Popen(
             du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         orphans = sorted(
@@ -713,7 +714,7 @@ directory next to the 'download-dir'.
                     entry_path not in torrent_dirs):
                 du.stdin.write(entry_path + '\0')
                 size, du_path = du.stdout.readline()[:-1].split('\t', 1)[:2]
-                yield (size, entry_path)
+                yield (int(size), entry_path)
             elif entry_path in torrent_dirs:
                 for orphan in self._list_orphans(
                         torrent_dirs, torrent_paths, du, entry_path):

@@ -707,12 +707,11 @@ directory next to the 'download-dir'.
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
         """Recursively list paths that aren't a part of any torrent."""
         for entry in os.listdir(path):
-            entry_path = os.path.join(
-                path, entry.decode('utf-8')).encode('utf-8')
+            entry_path = os.path.join(path, entry)
             if (
                     entry_path not in torrent_paths and
                     entry_path not in torrent_dirs):
-                du.stdin.write(entry_path + '\0')
+                du.stdin.write(entry_path.encode('utf-8') + '\0')
                 size, du_path = du.stdout.readline()[:-1].split('\t', 1)[:2]
                 yield (int(size), entry_path)
             elif entry_path in torrent_dirs:

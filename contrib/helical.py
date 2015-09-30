@@ -326,7 +326,8 @@ start without a command.
             args.extend(['rsync', '-tSmP', '--files-from=-'])
         torrent_id, destination = args[:2]
         command = args[2:]
-        self.copy(torrent_id, destination, command)
+        torrent = self.tc.get_torrent(torrent_id)
+        self.copy(torrent, destination, command)
 
     def list_torrent_files(self, torrent, download_dir=None):
         """
@@ -340,9 +341,8 @@ start without a command.
             if file_.get('selected') and os.path.exists(os.path.join(
                 download_dir.encode('utf-8'), file_['name'].encode('utf-8'))))
 
-    def copy(self, torrent_id, destination, command):
+    def copy(self, torrent, destination, command):
         """Launch the copy subprocess and return the popen object."""
-        torrent = self.tc.get_torrent(torrent_id)
         session = self.tc.get_session()
         relative = os.path.relpath(torrent.downloadDir,
                                    session.download_dir).encode('utf-8')
@@ -414,16 +414,10 @@ directory next to the 'download-dir'.
         self.popen = self.copying = None
         self.corrupt = {}
         while True:
-            try:
-                self._daemon_inner(line)
-            except socket.error:
-                logger.exception('Connection error while running daemon')
-                pass
-
             while True:
                 try:
                     # Don't loop until we successfully update everything
-                    self.tc.get_session()
+                    session = self.tc.get_session()
                     self.do_update('')
                 except (socket.error, error.TransmissionError):
                     logger.exception(
@@ -432,7 +426,13 @@ directory next to the 'download-dir'.
                 else:
                     break
 
-    def _daemon_inner(self, line):
+            try:
+                self._daemon_inner(session, destination, command)
+            except socket.error:
+                logger.exception('Connection error while running daemon')
+                pass
+
+    def _daemon_inner(self, session, line):
         """'daemon' command innner loop."""
         session = self.tc.get_session()
         seeding_dir = self.settings.get(
@@ -506,7 +506,7 @@ directory next to the 'download-dir'.
             args = self.arg_tokenize(line)
             destination = args[0]
             command = args[1:]
-            self.popen = self.copy(to_copy[0].id, destination, command)
+            self.popen = self.copy(to_copy[0], destination, command)
             self.copying = to_copy[0]
 
         # Do any other cleanup
@@ -602,7 +602,7 @@ directory next to the 'download-dir'.
 
         session = self.tc.get_session()
         if session.download_dir_free_space >= self.settings["free-space"]:
-            if self.tc.get_session().speed_limit_down_enabled:
+            if session.speed_limit_down_enabled:
                 kwargs = dict(speed_limit_down_enabled=False)
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
@@ -659,7 +659,7 @@ directory next to the 'download-dir'.
         if session.download_dir_free_space >= self.settings["free-space"]:
             # No need to process seeding torrents
             # if removing orphans already freed enough space
-            if self.tc.get_session().speed_limit_down_enabled:
+            if session.speed_limit_down_enabled:
                 kwargs = dict(speed_limit_down_enabled=False)
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
@@ -693,13 +693,13 @@ directory next to the 'download-dir'.
                 *(utils.format_size(session.download_dir_free_space) +
                   utils.format_size(remove.totalSize) +
                   (remove.bandwidthPriority, remove.ratio)))
-            self.tc.remove(remove.id, delete_data=True)
+            self.tc.remove_torrent(remove.id, delete_data=True)
             removed.append(remove)
             self.torrents.pop(index)
 
             session.update()
         else:
-            if self.tc.get_session().speed_limit_down_enabled:
+            if session.speed_limit_down_enabled:
                 kwargs = dict(speed_limit_down_enabled=False)
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
@@ -731,13 +731,13 @@ directory next to the 'download-dir'.
         """
         if line:
             raise ValueError(u"'verify_corrupted' command doesn't accept args")
+        self.do_update('')
         self.verify_corrupted()
 
     def verify_corrupted(self):
         """
         Verify any incomplete torrents that are paused because of corruption.
         """
-        self.do_update('')
         corrupt = dict(
             (torrent.id, torrent) for torrent in self.torrents
             if torrent.status == 'stopped' and torrent.error == 3 and (

@@ -389,6 +389,9 @@ directory next to the 'download-dir'.
 
     def do_daemon(self, line):
         """Loop running several regular commands every interval."""
+        args = self.arg_tokenize(line)
+        destination = args[0]
+        command = args[1:]
 
         self.popen = self.copying = None
         self.corrupt = {}
@@ -411,7 +414,15 @@ directory next to the 'download-dir'.
                 logger.exception('Connection error while running daemon')
                 pass
 
-    def _daemon_inner(self, session, line):
+            # Wait for the next interval
+            start = time.time()
+            poll = self.settings.get("daemon-poll", 60)
+            # Loop early if the copy process finishes early
+            while ((self.popen is None or self.popen.poll() is None) and
+                   time.time() - start < poll):
+                time.sleep(1)
+
+    def _daemon_inner(self, session, destination, command):
         """'daemon' command innner loop."""
         session = self.tc.get_session()
         seeding_dir = self.settings.get(
@@ -482,23 +493,12 @@ directory next to the 'download-dir'.
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])
-            args = self.arg_tokenize(line)
-            destination = args[0]
-            command = args[1:]
             self.popen = self.copy(to_copy[0], destination, command)
             self.copying = to_copy[0]
 
         # Do any other cleanup
         self.do_update_priorities('')
         self.do_free_space('')
-
-        # Wait for the next interval
-        start = time.time()
-        poll = self.settings.get("daemon-poll", 15 * 60)
-        # Loop early if the copy process finishes early
-        while ((self.popen is None or self.popen.poll() is None) and
-               time.time() - start < poll):
-            time.sleep(1)
 
     def move_relative(self, torrent, src_path, dst_path, move_timeout=5 * 60):
         """Move a torrent preserving subpath and block until done."""

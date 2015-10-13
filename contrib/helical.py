@@ -508,7 +508,7 @@ directory next to the 'download-dir'.
         subpath = split and os.path.join(*split) or ''
         torrent_location = os.path.join(dst_path, subpath)
         logger.info('Moving torrent %s to %s', torrent, torrent_location)
-        self.tc.move([torrent.id], torrent_location)
+        torrent.move_data(torrent_location)
 
         # Wait until the files are finished moving
         start = time.time()

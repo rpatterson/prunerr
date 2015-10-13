@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
-import sys, os, os.path, re, itertools
+import sys, os, os.path, itertools
 import socket, urllib2, urlparse, base64, shlex
 import shutil
 import subprocess

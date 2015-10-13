@@ -588,6 +588,8 @@ directory next to the 'download-dir'.
             return
 
         # First find orphaned files, remove smallest files first
+        # Update torrent.downloadDir first to identify orphans
+        self.do_update('')
         download_dirs = (
             self.settings.get('seeding-dir', os.path.join(
                 os.path.dirname(session.download_dir), 'seeding')),

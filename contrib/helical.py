@@ -356,9 +356,10 @@ start without a command.
             for subpath in self.list_torrent_files(torrent))
         files.seek(0)
 
-        command.extend([session.download_dir.encode('utf-8'), destination])
-        logger.info('Launching copy command: %s', ' '.join(command))
-        popen = subprocess.Popen(command, stdin=files)
+        popen_cmd = command + [
+            session.download_dir.encode('utf-8'), destination]
+        logger.info('Launching copy command: %s', ' '.join(popen_cmd))
+        popen = subprocess.Popen(popen_cmd, stdin=files)
 
         return popen
 

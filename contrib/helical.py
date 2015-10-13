@@ -488,7 +488,7 @@ directory next to the 'download-dir'.
                 logger.error(
                     'Copy failed with return code %s, pausing %s',
                     self.popen.returncode, self.copying)
-                self.tc.stop_torrent([self.copying.id])
+                self.copying.stop()
                 self.copying.update()
 
         if to_copy:

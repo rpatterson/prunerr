@@ -383,7 +383,7 @@ Run as a monitoring process that does a series of operations every
 5. Run 'verify_corrupted'
 6. Resume any previously verified torrents.
 
-'daemon-poll' defaults to 15 minutes, and 'seeding-dir' defaults to a 'seeding'
+'daemon-poll' defaults to 1 minute, and 'seeding-dir' defaults to a 'seeding'
 directory next to the 'download-dir'.
 """)
 

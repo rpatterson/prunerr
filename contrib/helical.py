@@ -540,7 +540,9 @@ directory next to the 'download-dir'.
                     parsed = urlparse.urlsplit(tracker[action])
                     for hostname, priority in self.settings[
                             'tracker-priorities'].iteritems():
-                        if not parsed.hostname.endswith(hostname):
+                        if (
+                                parsed.hostname is None or
+                                not parsed.hostname.endswith(hostname)):
                             continue
 
                         found = True

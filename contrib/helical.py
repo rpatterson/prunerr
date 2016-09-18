@@ -842,7 +842,7 @@ def get_home():
         # Windows
         return os.path.expanduser('~')
 
-def main(args=None):
+def main(args=None, connect_timeout=5 * 60):
     """Main entry point"""
     if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:
         socket.setdefaulttimeout(30)
@@ -888,12 +888,21 @@ def main(args=None):
             port = None
     helical = Helical(values.settings)
     if not command or command.lower() != 'help':
-        try:
-            helical.connect(address, port, values.username, values.password)
-        except transmissionrpc.TransmissionError, error:
-            print(error)
-            parser.print_help()
-            return
+        start = time.time()
+        while not getattr(helical, 'tc', None):
+            try:
+                helical.connect(
+                    address, port, values.username, values.password)
+            except socket.error:
+                logger.exception(
+                    'Connection error while connecting to server')
+            except transmissionrpc.TransmissionError, error:
+                print(error)
+                parser.print_help()
+                return 1
+            if time.time() - start > connect_timeout:
+                return 'Timed out trying to connect to the server'
+            time.sleep(1)
 
     if command:
         line = u' '.join([command] + args[args.index(command)+1:])

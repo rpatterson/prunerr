@@ -483,6 +483,7 @@ directory next to the 'download-dir'.
                     logger.error('Moving torrent timed out, pausing: %s', exc)
                     self.copying.stop()
                     self.copying.update()
+                self.copying.update()
                 if to_copy and self.copying.id == to_copy[0].id:
                     to_copy.pop(0)
                 self.copying = None
@@ -690,6 +691,10 @@ directory next to the 'download-dir'.
                 kwargs = dict(speed_limit_down_enabled=False)
                 logger.info('Resuming downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
+
+        if removed:
+            # Update the list of torrents if we removed any
+            self.do_update('')
 
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
         """Recursively list paths that aren't a part of any torrent."""

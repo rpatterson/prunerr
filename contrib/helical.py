@@ -587,7 +587,10 @@ directory next to the 'download-dir'.
 
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(' `\'"')
-        if session.download_dir_free_space >= self.settings["free-space"]:
+        statvfs = os.statvfs(session.download_dir)
+        if (
+                statvfs.f_frsize * statvfs.f_bavail >=
+                self.settings["free-space"]):
             if session.speed_limit_down_enabled:
                 kwargs = dict(speed_limit_down_enabled=False)
                 logger.info('Resuming downloading: %s', kwargs)
@@ -626,25 +629,31 @@ directory next to the 'download-dir'.
         du.stdin.close()
         # Remove orphans, smallest first until enough space is freed
         # or there are no more orphans
+        statvfs = os.statvfs(session.download_dir)
         while (
-                session.download_dir_free_space < self.settings["free-space"]
+                statvfs.f_frsize * statvfs.f_bavail <
+                self.settings["free-space"]
                 and orphans):
             size, orphan = orphans.pop(0)
             logger.warn(
                 'Deleting orphaned path %r to free space: '
                 '%0.2f %s + %0.2f %s', orphan,
                 *itertools.chain(
-                    utils.format_size(session.download_dir_free_space),
+                    utils.format_size(statvfs.f_frsize * statvfs.f_bavail),
                     utils.format_size(size)))
             if os.path.isdir(orphan):
                 shutil.rmtree(orphan, onerror=log_rmtree_error)
             else:
                 os.remove(orphan)
             session.update()
+            statvfs = os.statvfs(session.download_dir)
         du.wait()
         if du.returncode:
             raise subprocess.CalledProcessError(du.returncode, du_cmd)
-        if session.download_dir_free_space >= self.settings["free-space"]:
+        statvfs = os.statvfs(session.download_dir)
+        if (
+                statvfs.f_frsize * statvfs.f_bavail >=
+                self.settings["free-space"]):
             # No need to process seeding torrents
             # if removing orphans already freed enough space
             if session.speed_limit_down_enabled:
@@ -664,11 +673,13 @@ directory next to the 'download-dir'.
             # remove lowest priority and highest ratio first
             key=lambda item: (0 - item[1].bandwidthPriority, item[1].ratio))
         removed = []
-        while session.download_dir_free_space < self.settings["free-space"]:
+        while (
+                statvfs.f_frsize * statvfs.f_bavail <
+                self.settings["free-space"]):
             if not by_ratio:
                 logger.error(
                     'Running out of space but no torrents can be removed: %s',
-                    session.download_dir_free_space)
+                    utils.format_size(statvfs.f_frsize * statvfs.f_bavail))
                 kwargs = dict(speed_limit_down=0,
                               speed_limit_down_enabled=True)
                 logger.info('Stopping downloading: %s', kwargs)
@@ -678,7 +689,7 @@ directory next to the 'download-dir'.
             logger.info(
                 'Deleting seeding torrent %s to free space, '
                 '%0.2f %s + %0.2f %s: priority=%s, ratio=%0.2f', remove,
-                *(utils.format_size(session.download_dir_free_space) +
+                *(utils.format_size(statvfs.f_frsize * statvfs.f_bavail) +
                   utils.format_size(remove.totalSize) +
                   (remove.bandwidthPriority, remove.ratio)))
             self.tc.remove_torrent(remove.id, delete_data=True)

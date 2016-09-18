@@ -343,6 +343,7 @@ start without a command.
     def copy(self, torrent, destination, command):
         """Launch the copy subprocess and return the popen object."""
         session = self.tc.get_session()
+        session.download_dir = session.download_dir.strip(' `\'"')
         relative = os.path.relpath(torrent.downloadDir,
                                    session.download_dir).encode('utf-8')
 
@@ -400,6 +401,7 @@ directory next to the 'download-dir'.
                 try:
                     # Don't loop until we successfully update everything
                     session = self.tc.get_session()
+                    session.download_dir = session.download_dir.strip(' `\'"')
                     self.do_update('')
                 except (socket.error, error.TransmissionError):
                     logger.exception(
@@ -425,6 +427,7 @@ directory next to the 'download-dir'.
     def _daemon_inner(self, session, destination, command):
         """'daemon' command innner loop."""
         session = self.tc.get_session()
+        session.download_dir = session.download_dir.strip(' `\'"')
         seeding_dir = self.settings.get(
             'seeding-dir', os.path.join(
                 os.path.dirname(session.download_dir), 'seeding'))
@@ -582,6 +585,7 @@ directory next to the 'download-dir'.
             raise ValueError(u"'free_space' command doesn't accept args")
 
         session = self.tc.get_session()
+        session.download_dir = session.download_dir.strip(' `\'"')
         if session.download_dir_free_space >= self.settings["free-space"]:
             if session.speed_limit_down_enabled:
                 kwargs = dict(speed_limit_down_enabled=False)

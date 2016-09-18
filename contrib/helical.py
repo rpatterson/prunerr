@@ -476,9 +476,18 @@ directory next to the 'download-dir'.
                     self.popen.terminate()
             elif self.popen.returncode == 0:
                 # Copy process succeeded
+                # Move a torrent preserving subpath and block until done.
+                download_dir = self.copying.downloadDir
+                relative = os.path.relpath(
+                    download_dir, os.path.dirname(session.download_dir))
+                split = splitpath(relative)[1:]
+                subpath = split and os.path.join(*split) or ''
+                torrent_location = os.path.join(seeding_dir, subpath)
+                logger.info(
+                    'Moving torrent %s to %s', self.copying, torrent_location)
+                self.copying.move_data(torrent_location)
                 try:
-                    self.move_relative(
-                        self.copying, session.download_dir, seeding_dir)
+                    self.move_timeout(self.copying, download_dir)
                 except TransmissionTimeout as exc:
                     logger.error('Moving torrent timed out, pausing: %s', exc)
                     self.copying.stop()
@@ -504,26 +513,20 @@ directory next to the 'download-dir'.
         self.do_update_priorities('')
         self.do_free_space('')
 
-    def move_relative(self, torrent, src_path, dst_path, move_timeout=5 * 60):
-        """Move a torrent preserving subpath and block until done."""
-        download_dir = torrent.downloadDir
-        relative = os.path.relpath(download_dir, os.path.dirname(src_path))
-        split = splitpath(relative)[1:]
-        subpath = split and os.path.join(*split) or ''
-        torrent_location = os.path.join(dst_path, subpath)
-        logger.info('Moving torrent %s to %s', torrent, torrent_location)
-        torrent.move_data(torrent_location)
+    def move_timeout(self, torrent, download_dir, move_timeout=5 * 60):
+        """
+        Block until a torrents files are no longer in the old location.
 
+        Useful for both moving and deleting.
+        """
         # Wait until the files are finished moving
         start = time.time()
         while list(self.list_torrent_files(torrent, download_dir)):
             if time.time() - start > move_timeout:
                 raise TransmissionTimeout(
                     'Timed out waiting for {torrent} to move '
-                    'from {src_path!r} to {dst_path!r}'.format(**locals()))
+                    'from {download_dir!r}'.format(**locals()))
             time.sleep(1)
-
-        torrent.update()
 
     def help_update_priorities(self):
         print(u'update_priorities\n')
@@ -692,10 +695,10 @@ directory next to the 'download-dir'.
                 *(utils.format_size(statvfs.f_frsize * statvfs.f_bavail) +
                   utils.format_size(remove.totalSize) +
                   (remove.bandwidthPriority, remove.ratio)))
+            download_dir = remove.downloadDir
             self.tc.remove_torrent(remove.id, delete_data=True)
+            self.move_timeout(remove, download_dir)
             removed.append(remove)
-            self.torrents.pop(index)
-
             session.update()
         else:
             if session.speed_limit_down_enabled:

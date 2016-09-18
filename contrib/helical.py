@@ -14,6 +14,9 @@ try:
 except:
     pass
 import cmd
+
+import servicelogging
+
 import transmissionrpc
 from transmissionrpc import utils
 from transmissionrpc import error
@@ -891,7 +894,7 @@ def main(args=None, connect_timeout=5 * 60):
         if authenticators:
             values.username, account, values.password = authenticators
 
-    logging.basicConfig()
+    servicelogging.basicConfig()
     # Want just our logger, not transmissionrpc's to log INFO
     logger.setLevel(logging.INFO)
     if values.debug:

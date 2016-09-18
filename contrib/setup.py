@@ -5,7 +5,7 @@
 
 from setuptools import setup
 
-required = ['transmissionrpc']
+required = ['transmissionrpc', 'service-logging']
 
 setup(
     name='transmissionrpc-contrib',

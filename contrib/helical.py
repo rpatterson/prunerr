@@ -597,11 +597,7 @@ directory next to the 'download-dir'.
         if (
                 statvfs.f_frsize * statvfs.f_bavail >=
                 self.settings["free-space"]):
-            if session.speed_limit_down_enabled:
-                kwargs = dict(speed_limit_down_enabled=False)
-                logger.info('Resuming downloading: %s', kwargs)
-                self.tc.set_session(**kwargs)
-            return
+            return self._resume_down(session)
 
         # First find orphaned files, remove smallest files first
         # Update torrent.downloadDir first to identify orphans
@@ -662,11 +658,7 @@ directory next to the 'download-dir'.
                 self.settings["free-space"]):
             # No need to process seeding torrents
             # if removing orphans already freed enough space
-            if session.speed_limit_down_enabled:
-                kwargs = dict(speed_limit_down_enabled=False)
-                logger.info('Resuming downloading: %s', kwargs)
-                self.tc.set_session(**kwargs)
-            return
+            return self._resume_down(session)
 
         # Next remove seeding and copied torrents
         by_ratio = sorted(
@@ -704,10 +696,7 @@ directory next to the 'download-dir'.
             removed.append(remove)
             session.update()
         else:
-            if session.speed_limit_down_enabled:
-                kwargs = dict(speed_limit_down_enabled=False)
-                logger.info('Resuming downloading: %s', kwargs)
-                self.tc.set_session(**kwargs)
+            self._resume_down(session)
 
         if removed:
             # Update the list of torrents if we removed any
@@ -727,6 +716,21 @@ directory next to the 'download-dir'.
                 for orphan in self._list_orphans(
                         torrent_dirs, torrent_paths, du, entry_path):
                     yield orphan
+
+    def _resume_down(self, session):
+        """
+        Resume downloading if it's been stopped.
+        """
+        speed_limit_down = self.settings.get("daemon-speed-limit-down")
+        if (session.speed_limit_down_enabled and (
+                not speed_limit_down or
+                speed_limit_down != session.speed_limit_down)):
+            if speed_limit_down:
+                kwargs = dict(speed_limit_down=speed_limit_down)
+            else:
+                kwargs = dict(speed_limit_down_enabled=False)
+            logger.info('Resuming downloading: %s', kwargs)
+            self.tc.set_session(**kwargs)
 
     def help_verify_corrupted(self):
         print(u'verify_corrupted\n')

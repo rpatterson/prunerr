@@ -506,6 +506,7 @@ directory next to the 'download-dir'.
                     self.popen.returncode, self.copying)
                 self.copying.stop()
                 self.copying.update()
+                self.popen = None
 
         if to_copy:
             logger.info('Copying torrent: %s', to_copy[0])

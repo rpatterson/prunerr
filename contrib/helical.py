@@ -435,7 +435,7 @@ directory next to the 'download-dir'.
             'seeding-dir', os.path.join(
                 os.path.dirname(session.download_dir), 'seeding'))
         retry_codes = self.settings.get(
-            'daemon-retry-codes', [10, 12, 20, 30, 35])
+            'daemon-retry-codes', [10, 12, 20, 30, 35, 255])
 
         # Keep track of torrents being verified to resume them
         # when verification is complete

@@ -504,8 +504,11 @@ directory next to the 'download-dir'.
                 logger.error(
                     'Copy failed with return code %s, pausing %s',
                     self.popen.returncode, self.copying)
-                self.copying.stop()
-                self.copying.update()
+                try:
+                    self.copying.stop()
+                    self.copying.update()
+                except KeyError:
+                    logger.exception('Error pausing %s', self.copying)
                 self.popen = None
 
         if to_copy:

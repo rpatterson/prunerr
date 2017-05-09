@@ -597,6 +597,25 @@ directory next to the 'download-dir'.
 
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(' `\'"')
+
+        # Delete any torrents that have already been copied and are no longer
+        # recognized by their tracker: e.g. when a private tracker removes a
+        # duplicate/invalid/unauthorized torrent
+        for torrent in self.torrents:
+            if (
+                    (
+                        torrent.status == 'downloading' or
+                        torrent.downloadDir.startswith(self.settings.get(
+                            'seeding-dir', os.path.join(
+                                os.path.dirname(session.download_dir),
+                                'seeding')))) and
+                    torrent.error == 2 and
+                    'unregistered torrent' in torrent.errorString.lower()):
+                logger.error(
+                    'Deleting seeding torrent %s '
+                    'no longer registered with tracker', torrent)
+                self.tc.remove_torrent(torrent.id, delete_data=True)
+
         statvfs = os.statvfs(session.download_dir)
         if (
                 statvfs.f_frsize * statvfs.f_bavail >=

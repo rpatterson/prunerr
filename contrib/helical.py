@@ -718,6 +718,7 @@ directory next to the 'download-dir'.
             self.move_timeout(remove, download_dir)
             removed.append(remove)
             session.update()
+            statvfs = os.statvfs(session.download_dir)
         else:
             self._resume_down(session)
 

@@ -445,7 +445,7 @@ directory next to the 'download-dir'.
                 torrent.update()
             except KeyError as exc:
                 logger.error(
-                    'Error updating corrupt torrent %s, '
+                    'Error updating corrupt %s, '
                     'may have been removed: %s', torrent, exc)
                 del self.corrupt[torrent_id]
             else:
@@ -487,7 +487,7 @@ directory next to the 'download-dir'.
                 subpath = split and os.path.join(*split) or ''
                 torrent_location = os.path.join(seeding_dir, subpath)
                 logger.info(
-                    'Moving torrent %s to %s', self.copying, torrent_location)
+                    'Moving %s to %s', self.copying, torrent_location)
                 self.copying.move_data(torrent_location)
                 try:
                     self.move_timeout(self.copying, download_dir)
@@ -561,7 +561,7 @@ directory next to the 'download-dir'.
 
                         found = True
                         if torrent.bandwidthPriority != priority:
-                            logger.info('Marking torrent %s as priority %s',
+                            logger.info('Marking %s as priority %s',
                                         torrent, priority)
                             self.tc.change([torrent.id],
                                             bandwidthPriority=priority)
@@ -579,7 +579,7 @@ directory next to the 'download-dir'.
                 if (priority is None or
                     torrent.bandwidthPriority == priority):
                     continue
-                logger.info('Marking torrent %s as default priority %s',
+                logger.info('Marking %s as default priority %s',
                             torrent, priority)
                 self.tc.change([torrent.id], bandwidthPriority=priority)
                 torrent.update()
@@ -612,7 +612,7 @@ directory next to the 'download-dir'.
                     torrent.error == 2 and
                     'unregistered torrent' in torrent.errorString.lower()):
                 logger.error(
-                    'Deleting seeding torrent %s '
+                    'Deleting seeding %s '
                     'no longer registered with tracker', torrent)
                 self.tc.remove_torrent(torrent.id, delete_data=True)
 
@@ -708,7 +708,7 @@ directory next to the 'download-dir'.
                 break
             index, remove = by_ratio.pop()
             logger.info(
-                'Deleting seeding torrent %s to free space, '
+                'Deleting seeding %s to free space, '
                 '%0.2f %s + %0.2f %s: priority=%s, ratio=%0.2f', remove,
                 *(utils.format_size(statvfs.f_frsize * statvfs.f_bavail) +
                   utils.format_size(remove.totalSize) +

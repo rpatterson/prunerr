@@ -267,7 +267,7 @@ class Client(object):
                 LOGGER.error('Request: \"%s\"' % (query))
                 LOGGER.error('HTTP data: \"%s\"' % (http_data))
             raise
-        
+
         if use_logger:
             LOGGER.debug(json.dumps(data, indent=2))
         if 'result' in data:

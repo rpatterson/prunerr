@@ -10,7 +10,7 @@ import time
 import logging
 from optparse import OptionParser
 try:
-    import readline
+    import readline  # noqa
 except:
     pass
 import cmd
@@ -46,6 +46,7 @@ def splitpath(path, platform=os.path):
             break
     result.reverse()
     return result
+
 
 def log_rmtree_error(function, path, excinfo):
     logger.error(
@@ -108,7 +109,7 @@ start without a command.
 
     def do_quit(self, line):
         sys.exit('')
-    #Alias
+    # Alias
     do_exit = do_quit
     help_exit = help_quit
     do_EOF = do_quit
@@ -152,7 +153,7 @@ start without a command.
         if len(args) > 0:
             for arg in args:
                 try:
-                    (k,v) = arg.split('=')
+                    (k, v) = arg.split('=')
                     add_args[str(k)] = str(v)
                 except:
                     if 'download_dir' not in add_args:
@@ -283,7 +284,7 @@ start without a command.
         if len(args) > 0:
             for arg in args:
                 try:
-                    (k,v) = arg.split(u'=')
+                    (k, v) = arg.split(u'=')
                     set_args[str(k)] = str(v)
                     add_ids = False
                 except:
@@ -563,8 +564,9 @@ directory next to the 'download-dir'.
                         if torrent.bandwidthPriority != priority:
                             logger.info('Marking %s as priority %s',
                                         torrent, priority)
-                            self.tc.change([torrent.id],
-                                            bandwidthPriority=priority)
+                            self.tc.change(
+                                [torrent.id],
+                                bandwidthPriority=priority)
                             torrent.update()
                             changed.append(torrent)
 
@@ -576,8 +578,9 @@ directory next to the 'download-dir'.
 
             else:
                 priority = self.settings.get('default-priority')
-                if (priority is None or
-                    torrent.bandwidthPriority == priority):
+                if (
+                        priority is None or
+                        torrent.bandwidthPriority == priority):
                     continue
                 logger.info('Marking %s as default priority %s',
                             torrent, priority)
@@ -847,7 +850,7 @@ directory next to the 'download-dir'.
         s += '\n          name: ' + torrent.name
         s += '\n          hash: ' + torrent.hashString
         s += '\n'
-        try: # size
+        try:   # size
             f = ''
             f += '\n      progress: %.2f%%' % torrent.progress
             f += '\n         total: %.2f %s' % utils.format_size(torrent.totalSize)
@@ -858,7 +861,7 @@ directory next to the 'download-dir'.
             s += f + '\n'
         except KeyError:
             pass
-        try: # activity
+        try:   # activity
             f = ''
             f += '\n        status: ' + str(torrent.status)
             f += '\n      download: %.2f %s' % utils.format_speed(torrent.rateDownload)
@@ -869,7 +872,7 @@ directory next to the 'download-dir'.
             s += f + '\n'
         except KeyError:
             pass
-        try: # history
+        try:   # history
             f = ''
             f += '\n         ratio: %.2f' % torrent.ratio
             f += '\n    downloaded: %.2f %s' % utils.format_size(torrent.downloadedEver)
@@ -883,6 +886,7 @@ directory next to the 'download-dir'.
             pass
         return s
 
+
 def get_home():
     try:
         # Don't rely on os.environ['HOME'] such as under cron jobs
@@ -892,6 +896,7 @@ def get_home():
         # Windows
         return os.path.expanduser('~')
 
+
 def main(args=None, connect_timeout=5 * 60):
     """Main entry point"""
     if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:
@@ -899,15 +904,16 @@ def main(args=None, connect_timeout=5 * 60):
     if args is None:
         args = sys.argv[1:]
     parser = OptionParser(usage='Usage: %prog [options] [[address]:[port]] [command]')
-    parser.add_option('-u', '--username', dest='username',
-                    help='Athentication username.')
-    parser.add_option('-p', '--password', dest='password',
-                    help='Athentication password.')
-    parser.add_option('-s', '--settings', dest='settings',
-                      help='JSON file containing settings '
-                      '[default: ~/info/settings.json].')
-    parser.add_option('-d', '--debug', dest='debug',
-                    help='Enable debug messages.', action="store_true")
+    parser.add_option(
+        '-u', '--username', dest='username', help='Athentication username.')
+    parser.add_option(
+        '-p', '--password', dest='password', help='Athentication password.')
+    parser.add_option(
+        '-s', '--settings', dest='settings',
+        help='JSON file containing settings [default: ~/info/settings.json].')
+    parser.add_option(
+        '-d', '--debug', dest='debug', help='Enable debug messages.',
+        action="store_true")
     (values, args) = parser.parse_args(args)
     commands = [cmd[3:] for cmd in itertools.ifilter(lambda c: c[:3] == 'do_', dir(Helical))]
     address = 'localhost'
@@ -962,6 +968,7 @@ def main(args=None, connect_timeout=5 * 60):
             helical.cmdloop()
         except KeyboardInterrupt:
             helical.do_quit('')
+
 
 if __name__ == '__main__':
     sys.exit(main())

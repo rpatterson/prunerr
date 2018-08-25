@@ -121,7 +121,6 @@ class Torrent(object):
         """
         Update the torrent data from a Transmission JSON-RPC arguments dictionary
         """
-        fields = None
         if isinstance(other, dict):
             for key, value in iteritems(other):
                 self._fields[key.replace('-', '_')] = Field(value, False)
@@ -131,7 +130,7 @@ class Torrent(object):
         else:
             raise ValueError('Cannot update with supplied data')
         self._incoming_pending = False
-    
+
     def _status(self):
         """Get the torrent status"""
         code = self._fields['status'].value

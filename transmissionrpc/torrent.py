@@ -42,6 +42,12 @@ class Torrent(object):
     This class has a few convenience properties using the torrent data.
     """
 
+    __slots__ = (
+        '_fields',
+        '_incoming_pending',
+        '_outgoing_pending',
+        '_client')
+
     def __init__(self, client, fields):
         if 'id' not in fields:
             raise ValueError('Torrent requires an id')

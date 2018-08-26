@@ -119,7 +119,10 @@ start without a command.
         print(u'Update the torrents list and settings.\n')
 
     def do_update(self, line):
-        self.torrents = self.tc.get_torrents()
+        self.torrents = self.tc.get_torrents(arguments=(
+            'id', 'name', 'status', 'error', 'errorString', 'trackers',
+            'bandwidthPriority', 'downloadDir', 'totalSize', 'uploadRatio',
+            'priorities', 'wanted', 'files'))
         if isinstance(self.settings_file, (str, unicode)):
             import json
             self.settings = json.load(open(self.settings_file))
@@ -338,9 +341,13 @@ start without a command.
         """
         if download_dir is None:
             download_dir = torrent.downloadDir
+
+        torrent_files = torrent.files()
+        assert torrent_files, 'Must be able to find torrent files to copy'
+
         return (
             file_['name'].encode('utf-8')
-            for file_ in torrent.files().itervalues()
+            for file_ in torrent_files.itervalues()
             if file_.get('selected') and os.path.exists(os.path.join(
                 download_dir.encode('utf-8'), file_['name'].encode('utf-8'))))
 

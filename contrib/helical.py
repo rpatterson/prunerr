@@ -488,22 +488,9 @@ directory next to the 'download-dir'.
             elif self.popen.returncode == 0:
                 # Copy process succeeded
                 # Move a torrent preserving subpath and block until done.
-                download_dir = self.copying.downloadDir
-                relative = os.path.relpath(
-                    download_dir, os.path.dirname(session.download_dir))
-                split = splitpath(relative)[1:]
-                subpath = split and os.path.join(*split) or ''
-                torrent_location = os.path.join(seeding_dir, subpath)
-                logger.info(
-                    'Moving %s to %s', self.copying, torrent_location)
-                self.copying.move_data(torrent_location)
-                try:
-                    self.move_timeout(self.copying, download_dir)
-                except TransmissionTimeout as exc:
-                    logger.error('Moving torrent timed out, pausing: %s', exc)
-                    self.copying.stop()
-                    self.copying.update()
-                self.copying.update()
+                self.move_torrent(
+                    self.copying,
+                    old_path=session.download_dir, new_path=seeding_dir)
                 if to_copy and self.copying.id == to_copy[0].id:
                     to_copy.pop(0)
                 self.copying = None
@@ -798,6 +785,57 @@ directory next to the 'download-dir'.
                 torrent.update()
 
         return corrupt
+
+    def move_torrent(self, torrent, old_path, new_path):
+        """
+        Move the given torrent relative to its old path.
+        """
+        download_dir = torrent.downloadDir
+        relative = os.path.relpath(download_dir, os.path.dirname(old_path))
+        split = splitpath(relative)[1:]
+        subpath = split and os.path.join(*split) or ''
+        torrent_location = os.path.join(new_path, subpath)
+        logger.info(
+            'Moving %s to %s', torrent, torrent_location)
+        torrent.move_data(torrent_location)
+        try:
+            self.move_timeout(torrent, download_dir)
+        except TransmissionTimeout as exc:
+            logger.error('Moving torrent timed out, pausing: %s', exc)
+            torrent.stop()
+        finally:
+            torrent.update()
+
+        return torrent_location
+
+    def do_recopy_seeding(self, line):
+        """
+        Re-copy all seeding torrents managed by the `daemon` command.
+
+        Move all seeding torrents back to the downloads directory so that the
+        `daemon` command will re-copy them.  Useful to recover from any remote
+        data loss as much as is still possible with what torrents are still
+        local.
+        """
+        if line:
+            raise ValueError(u"'recopy_seeding' command doesn't accept args")
+        self.do_update('')
+        session = self.tc.get_session()
+
+        for torrent in self.torrents:
+            if torrent.status != 'seeding' or torrent.downloadDir.startswith(
+                    session.download_dir):
+                continue
+
+            self.move_torrent(
+                torrent,
+                old_path=self.settings.get('seeding-dir', os.path.join(
+                    os.path.dirname(session.download_dir), 'seeding')),
+                new_path=session.download_dir)
+
+    def help_recopy_seeding(self):
+        print(u'recopy_seeding\n')
+        print(self.do_recopy_seeding.__doc__)
 
     def do_request(self, line):
         (method, sep, args) = line.partition(' ')

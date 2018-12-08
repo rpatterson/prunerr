@@ -474,8 +474,11 @@ directory next to the 'download-dir'.
                 if torrent.status == 'seeding' and os.path.relpath(
                     torrent.downloadDir, seeding_dir).startswith(
                         os.pardir + os.sep)),
-            # copy smaller torrents first
-            key=lambda item: item.totalSize)
+            # 1. Copy lower priority torrents first so they may be deleted
+            # first.
+            # 2. Copy smaller torrents first to avoid huge torrents preventing
+            # timely download of others.
+            key=lambda item: (item.bandwidthPriority, item.totalSize))
         if self.popen is not None:
             if self.popen.poll() is None:
                 if not to_copy or self.copying.id == to_copy[0].id:

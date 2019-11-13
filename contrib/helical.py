@@ -510,9 +510,16 @@ directory next to the 'download-dir'.
                 self.popen = None
 
         if to_copy:
+            logger.info(
+                'Enabling upload speed limit during copy: %s',
+                session.speed_limit_up)
+            self.tc.set_session(speed_limit_up_enabled=True)
             logger.info('Copying torrent: %s', to_copy[0])
             self.popen = self.copy(to_copy[0], destination, command)
             self.copying = to_copy[0]
+        elif self.popen is None:
+            logger.info('Disabling upload speed limit while not copying')
+            self.tc.set_session(speed_limit_up_enabled=False)
 
         # Do any other cleanup
         self.do_update_priorities('')

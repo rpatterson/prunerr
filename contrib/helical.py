@@ -4,6 +4,8 @@
 
 import sys, os, os.path, itertools
 import socket, urllib2, urlparse, base64, shlex
+import collections
+import json
 import shutil
 import subprocess
 import time
@@ -124,8 +126,9 @@ start without a command.
             'bandwidthPriority', 'downloadDir', 'totalSize', 'uploadRatio',
             'priorities', 'wanted', 'files'))
         if isinstance(self.settings_file, (str, unicode)):
-            import json
-            self.settings = json.load(open(self.settings_file))
+            self.settings = json.load(
+                open(self.settings_file),
+                object_pairs_hook=collections.OrderedDict)
 
     def help_add(self):
         print(u'add <torrent file or url> [<target dir> paused=(yes|no) peer-limit=#]\n')

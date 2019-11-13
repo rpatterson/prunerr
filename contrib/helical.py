@@ -3,7 +3,9 @@
 # 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, os.path, itertools
-import socket, urllib2, urlparse, base64, shlex
+import socket
+import base64
+import shlex
 import collections
 import json
 import shutil
@@ -16,6 +18,10 @@ try:
 except:
     pass
 import cmd
+
+import six
+from six import moves
+from six.moves import urllib
 
 import servicelogging
 
@@ -74,7 +80,7 @@ start without a command.
 
     def connect(self, address=None, port=None, username=None, password=None):
         self.tc = transmissionrpc.Client(address, port, username, password)
-        urlo = urlparse.urlparse(self.tc.url)
+        urlo = urllib.parse.urlparse(self.tc.url)
         if urlo.port:
             self.prompt = u'Helical %s:%d> ' % (urlo.hostname, urlo.port)
         else:
@@ -82,7 +88,7 @@ start without a command.
         self.do_update('')
 
     def arg_tokenize(self, argstr):
-        return [unicode(token, 'utf-8') for token in shlex.split(argstr.encode('utf-8'))] or ['']
+        return [token for token in shlex.split(argstr)] or ['']
 
     def word_complete(self, text, words):
         suggestions = []
@@ -125,7 +131,7 @@ start without a command.
             'id', 'name', 'status', 'error', 'errorString', 'trackers',
             'bandwidthPriority', 'downloadDir', 'totalSize', 'uploadRatio',
             'priorities', 'wanted', 'files'))
-        if isinstance(self.settings_file, (str, unicode)):
+        if isinstance(self.settings_file, six.string_types):
             self.settings = json.load(
                 open(self.settings_file),
                 object_pairs_hook=collections.OrderedDict)
@@ -148,7 +154,7 @@ start without a command.
             torrent_file = open(torrent_url, 'r')
         else:
             try:
-                torrent_file = urllib2.urlopen(torrent_url)
+                torrent_file = urllib.request.urlopen(torrent_url)
             except:
                 torrent_file = None
         if not torrent_file:
@@ -174,7 +180,7 @@ start without a command.
         torrent_data = base64.b64encode(torrent_file.read())
         try:
             self.tc.add(torrent_data, **add_args)
-        except transmissionrpc.TransmissionError, e:
+        except transmissionrpc.TransmissionError as e:
             print(u'Failed to add torrent "%s"' % e)
 
     def do_magnet(self, line):
@@ -188,7 +194,7 @@ start without a command.
 
         try:
             self.tc.add_uri(torrent_url)
-        except transmissionrpc.TransmissionError, e:
+        except transmissionrpc.TransmissionError as e:
             print(u'Failed to add torrent "%s"' % e)
 
     def complete_remove(self, text, line, begidx, endidx):
@@ -276,9 +282,9 @@ start without a command.
     def do_files(self, line):
         args = self.arg_tokenize(line)
         result = self.tc.get_files(args)
-        for tid, files in result.iteritems():
+        for tid, files in result.items():
             print('torrent id: %d' % tid)
-            for fid, file in files.iteritems():
+            for fid, file in files.items():
                 print('  %d: %s' % (fid, file['name']))
 
     def do_set(self, line):
@@ -349,31 +355,29 @@ start without a command.
         assert torrent_files, 'Must be able to find torrent files to copy'
 
         return (
-            file_['name'].encode('utf-8')
-            for file_ in torrent_files.itervalues()
+            file_['name']
+            for file_ in torrent_files.values()
             if file_.get('selected') and os.path.exists(os.path.join(
-                download_dir.encode('utf-8'), file_['name'].encode('utf-8'))))
+                download_dir, file_['name'])))
 
     def copy(self, torrent, destination, command):
         """Launch the copy subprocess and return the popen object."""
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(' `\'"')
-        relative = os.path.relpath(torrent.downloadDir,
-                                   session.download_dir).encode('utf-8')
+        relative = os.path.relpath(torrent.downloadDir, session.download_dir)
 
         # Use a temporary file to keep feeding the file list to the
         # subprocess from blocking us
         import tempfile
-        files = tempfile.TemporaryFile()
+        files = tempfile.TemporaryFile(mode='w')
         files.writelines(
             os.path.join(relative, subpath) + '\n'
             for subpath in self.list_torrent_files(torrent))
         files.seek(0)
 
-        popen_cmd = command + [
-            session.download_dir.encode('utf-8'), destination]
+        popen_cmd = command + [session.download_dir, destination]
         logger.info('Launching copy command: %s', ' '.join(popen_cmd))
-        popen = subprocess.Popen(popen_cmd, stdin=files)
+        popen = subprocess.Popen(popen_cmd, stdin=files, text=True)
 
         return popen
 
@@ -451,7 +455,7 @@ directory next to the 'download-dir'.
         # Keep track of torrents being verified to resume them
         # when verification is complete
         self.corrupt.update(self.verify_corrupted())
-        for torrent_id, torrent in self.corrupt.items():
+        for torrent_id, torrent in list(self.corrupt.items()):
             try:
                 torrent.update()
             except KeyError as exc:
@@ -467,7 +471,7 @@ directory next to the 'download-dir'.
                     del self.corrupt[torrent_id]
         if self.corrupt:
             logger.info('Waiting for torrents to verify:\n%s',
-                        '\n'.join(map(str, self.corrupt.itervalues())))
+                        '\n'.join(map(str, self.corrupt.values())))
 
         # Start copying the most optimal torrent that is fully downloaded and
         # in the downloads directory.
@@ -559,9 +563,9 @@ directory next to the 'download-dir'.
             found = False
             for tracker in torrent.trackers:
                 for action in ('announce', 'scrape'):
-                    parsed = urlparse.urlsplit(tracker[action])
+                    parsed = urllib.parse.urlsplit(tracker[action])
                     for hostname, priority in self.settings[
-                            'tracker-priorities'].iteritems():
+                            'tracker-priorities'].items():
                         if (
                                 parsed.hostname is None or
                                 not parsed.hostname.endswith(hostname)):
@@ -654,7 +658,7 @@ directory next to the 'download-dir'.
         # TODO Windows compatibility
         du_cmd = ['du', '-s', '--block-size=1', '--files0-from=-']
         du = subprocess.Popen(
-            du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0)
         orphans = sorted(
             itertools.chain(*(
                 self._list_orphans(
@@ -743,8 +747,9 @@ directory next to the 'download-dir'.
             if (
                     entry_path not in torrent_paths and
                     entry_path not in torrent_dirs):
-                du.stdin.write(entry_path.encode('utf-8') + '\0')
-                size, du_path = du.stdout.readline()[:-1].split('\t', 1)[:2]
+                du.stdin.write(entry_path.encode('utf-8') + b'\0')
+                du_line = du.stdout.readline()
+                size, du_path = du_line[:-1].split(b'\t', 1)[:2]
                 yield (int(size), entry_path)
             elif entry_path in torrent_dirs:
                 for orphan in self._list_orphans(
@@ -792,9 +797,9 @@ directory next to the 'download-dir'.
                 'corrput' in torrent.errorString.lower()))
         if corrupt:
             logger.info('Verifying corrupt torrents:\n%s',
-                        '\n'.join(map(str, corrupt.itervalues())))
-            self.tc.verify(corrupt.keys())
-            for torrent in corrupt.itervalues():
+                        '\n'.join(map(str, corrupt.values())))
+            self.tc.verify(list(corrupt.keys()))
+            for torrent in corrupt.values():
                 torrent.update()
 
         return corrupt
@@ -866,7 +871,7 @@ directory next to the 'download-dir'.
     def _list_torrents(self, torrents):
         if len(torrents) > 0:
             print(self._torrent_brief_header())
-            for tid, torrent in torrents.iteritems():
+            for tid, torrent in torrents.items():
                 print(self._torrent_brief(torrent))
 
     def _torrent_brief_header(self):
@@ -973,7 +978,8 @@ def main(args=None, connect_timeout=5 * 60):
         '-d', '--debug', dest='debug', help='Enable debug messages.',
         action="store_true")
     (values, args) = parser.parse_args(args)
-    commands = [cmd[3:] for cmd in itertools.ifilter(lambda c: c[:3] == 'do_', dir(Helical))]
+    commands = [cmd[3:] for cmd in moves.filter(
+        lambda c: c[:3] == 'do_', dir(Helical))]
     address = 'localhost'
     port = DEFAULT_PORT
     command = None
@@ -1010,7 +1016,7 @@ def main(args=None, connect_timeout=5 * 60):
             except socket.error:
                 logger.exception(
                     'Connection error while connecting to server')
-            except transmissionrpc.TransmissionError, error:
+            except transmissionrpc.TransmissionError as error:
                 print(error)
                 parser.print_help()
                 return 1

@@ -57,20 +57,12 @@ class Torrent(object):
         self._outgoing_pending = False
         self._client = client
 
-    def _get_name_string(self, codec=None):
+    def _get_name_string(self):
         """Get the name"""
-        if codec is None:
-            codec = sys.getdefaultencoding()
         name = None
         # try to find name
         if 'name' in self._fields:
             name = self._fields['name'].value
-        # if name is unicode, try to decode
-        if isinstance(name, text_type):
-            try:
-                name = name.encode(codec)
-            except UnicodeError:
-                name = None
         return name
 
     def __repr__(self):

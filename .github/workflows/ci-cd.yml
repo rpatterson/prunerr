@@ -1,9 +1,9 @@
-name: sentry-syslog tests
+name: Run tests and linter and release on master
 
 on: [push]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,3 +21,13 @@ jobs:
         pip install tox tox-gh-actions
     - name: Test with tox
       run: tox
+  release:
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Bump version and push tag
+        uses: mathieudutour/github-tag-action@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}

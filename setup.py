@@ -33,6 +33,10 @@ setuptools.setup(
         dev=[
             "pre-commit",
             "coverage",
+            "flake8",
+            "autoflake",
+            "autopep8",
+            "flake8-black",
         ]
     ),
 )

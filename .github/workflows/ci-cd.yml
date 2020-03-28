@@ -12,10 +12,10 @@ jobs:
         python-version: [3.7]
     steps:
 
-    - uses: actions/checkout@v1
+    - uses: actions/checkout
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -37,6 +37,7 @@ jobs:
       - uses: actions/checkout@master
 
       - name: Bump version and push tag
-        uses: mathieudutour/github-tag-action@v4
+        id: github-tag-action
+        uses: mathieudutour/github-tag-action
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

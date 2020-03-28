@@ -19,10 +19,26 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Cache Python bootstrapping dependencies
+      uses: actions/cache
+      env:
+        cache-name: cache-pip-installs
+      with:
+        path: ~/.local
+        key: ${{ runner.os }}-test-${{ env.cache-name }}
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install tox tox-gh-actions
+        python -m pip install -U --upgrade-strategy=eager --user pip
+        pip install -U --upgrade-strategy=eager --user tox tox-gh-actions
+
+    - name: Cache tox virtual environments
+      uses: actions/cache
+      env:
+        cache-name: cache-tox-envs
+      with:
+        path: ./.tox
+        key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('./setup.*') }}-${{ hashFiles('./tox.ini') }}
 
     - name: Test with tox
       run: tox

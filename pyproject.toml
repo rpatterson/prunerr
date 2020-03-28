@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "python-project-structure"
 version = "0.1.0"
-description = ""
+description = "Python project structure foundation or template"
 authors = ["Ross Patterson <me@rpatterson.net>"]
 
 [tool.poetry.dependencies]

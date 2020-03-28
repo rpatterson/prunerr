@@ -38,7 +38,7 @@ jobs:
         cache-name: cache-tox-envs
       with:
         path: ./.tox
-        key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('./setup.*') }}-${{ hashFiles('./tox.ini') }}
+        key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}
 
     - name: Test with tox
       run: tox

@@ -12,15 +12,15 @@ jobs:
         python-version: [3.7]
     steps:
 
-    - uses: actions/checkout
+    - uses: actions/checkout@master
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python
+      uses: actions/setup-python@master
       with:
         python-version: ${{ matrix.python-version }}
 
     - name: Cache Python bootstrapping dependencies
-      uses: actions/cache
+      uses: actions/cache@master
       env:
         cache-name: cache-pip-installs
       with:
@@ -33,7 +33,7 @@ jobs:
         pip install -U --upgrade-strategy=eager --user tox tox-gh-actions
 
     - name: Cache tox virtual environments
-      uses: actions/cache
+      uses: actions/cache@master
       env:
         cache-name: cache-tox-envs
       with:
@@ -54,6 +54,6 @@ jobs:
 
       - name: Bump version and push tag
         id: github-tag-action
-        uses: mathieudutour/github-tag-action
+        uses: mathieudutour/github-tag-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

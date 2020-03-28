@@ -13,8 +13,8 @@ test: all
 
 ## Real targets
 
-.tox: pyproject.toml
-	tox --notest -v
+.tox: setup.py setup.cfg
+	tox -r --notest -v
 	touch "$(@)"
 
 ../.git/hooks/pre-commit: .tox

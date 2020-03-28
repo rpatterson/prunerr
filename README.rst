@@ -8,7 +8,7 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- `Poetry`_ for dependency management and packaging
+- `Flit`_ for packaging
 - A `Makefile`_ for local development build and maintenance tasks
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
@@ -45,6 +45,6 @@ template.
 
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
-.. _Poetry: https://python-poetry.org
+.. _Flit: https://flit.readthedocs.io/en/latest/
 
 .. _Makefile: ./Makefile

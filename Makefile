@@ -4,7 +4,7 @@
 ## Top-level targets
 
 .PHONY: all
-all: .venv ../.git/hooks/pre-commit
+all: .tox ../.git/hooks/pre-commit
 
 .PHONY: test
 test: all
@@ -13,8 +13,9 @@ test: all
 
 ## Real targets
 
-.venv: pyproject.toml poetry.toml poetry.lock
-	poetry install
+.tox: pyproject.toml
+	tox --notest -v
+	touch "$(@)"
 
-../.git/hooks/pre-commit: .venv
-	poetry run pre-commit install
+../.git/hooks/pre-commit: .tox
+	.tox/py3/bin/pre-commit install

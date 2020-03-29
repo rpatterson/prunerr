@@ -39,4 +39,9 @@ setuptools.setup(
             "flake8-black",
         ]
     ),
+    entry_points=dict(
+        console_scripts=[
+            "python-project-structure=pythonprojectstructure:main",
+        ]
+    ),
 )

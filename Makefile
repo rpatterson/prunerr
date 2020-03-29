@@ -8,7 +8,7 @@ VENVS = $(shell tox -l)
 ## Top-level targets
 
 .PHONY: all
-all: upgrade
+all: upgrade .git/hooks/pre-commit
 
 .PHONY: format
 format: var/log/tox-recreate.log
@@ -23,7 +23,7 @@ test: all format
 	tox
 
 .PHONY: upgrade
-upgrade: .git/hooks/pre-commit var/log/tox-recreate.log
+upgrade: var/log/tox-recreate.log
 	make -j $(words $(VENVS:%=upgrade-%)) $(VENVS:%=upgrade-%)
 
 

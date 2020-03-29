@@ -1,3 +1,6 @@
+# Project-specific variable data
+/var
+
 # Python build/packaging/distribution artifacts
 /.eggs
 /src/*/version.py

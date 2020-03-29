@@ -2,6 +2,8 @@
 
 VENVS = $(shell tox -l)
 
+VENVS = $(shell tox -l)
+
 
 ## Top-level targets
 

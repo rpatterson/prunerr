@@ -14,14 +14,14 @@ jobs:
 
       - uses: actions/checkout@master
 
+      - name: Add user installs to PATH
+        run: |
+          echo "::add-path::$HOME/.local/bin"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@master
         with:
           python-version: ${{ matrix.python-version }}
-
-      - name: Add user installs to PATH
-        run: |
-          echo "::add-path::$HOME/.local/bin"
 
       - name: Cache Python bootstrapping dependencies
         uses: actions/cache@master
@@ -29,7 +29,11 @@ jobs:
           cache-name: cache-pip-installs
         with:
           path: ~/.local
-          key: ${{ runner.os }}-test-${{ env.cache-name }}
+          # Never get a cache hit to force always caching the upgraded dependencies
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
+          # Always re-use the cache and then upgrade
+          restore-keys:
+            ${{ runner.os }}-test-${{ env.cache-name }}-
 
       - name: Install dependencies
         run: |
@@ -42,10 +46,16 @@ jobs:
           cache-name: cache-tox-envs
         with:
           path: ./.tox
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}
+          # Never get a cache hit to force always caching the upgraded dependencies
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
+          # Always re-use the cache and then upgrade
+          restore-keys:
+            ${{ runner.os }}-test-${{ env.cache-name }}-
 
       - name: Test with tox
-        run: tox
+        run: |
+          make upgrade
+          tox
 
 
   release:

@@ -29,6 +29,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
+    use_scm_version=dict(write_to="src/pythonprojectstructure/version.py"),
+    setup_requires=["setuptools_scm"],
     extras_require=dict(
         dev=[
             "pre-commit",

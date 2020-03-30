@@ -1,2 +1,7 @@
+# Python build/packaging/distribution artifacts
+/.eggs
+/src/*/version.py
+
+# Testing artifacts
 /.tox
 /.coverage

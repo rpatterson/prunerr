@@ -2,4 +2,8 @@
 Python project structure foundation or template, top-level package.
 """
 
-__version__ = '0.1.0'
+
+from . import version
+
+# Manage version through the VCS CI/CD process
+__version__ = version.version

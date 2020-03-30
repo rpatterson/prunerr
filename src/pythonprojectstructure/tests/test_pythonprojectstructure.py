@@ -21,7 +21,7 @@ class PythonProjectStructureTests(unittest.TestCase):
         stdout_file = io.StringIO()
         with self.assertRaises(SystemExit):
             with contextlib.redirect_stdout(stdout_file):
-                pythonprojectstructure.main(args=["python-project-structure", "--help"])
+                pythonprojectstructure.main(args=["--help"])
         stdout = stdout_file.getvalue()
         self.assertIn(
             pythonprojectstructure.__doc__.strip(),

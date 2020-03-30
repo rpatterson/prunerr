@@ -34,6 +34,7 @@ setuptools.setup(
     setup_requires=["setuptools_scm"],
     extras_require=dict(
         dev=[
+            "pytest",
             "pre-commit",
             "coverage",
             "flake8",

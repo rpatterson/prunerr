@@ -38,5 +38,5 @@ var/log/tox-recreate.log: var/log setup.py setup.cfg tox.ini
 
 .PHONY: $(VENVS:%=upgrade-%)
 $(VENVS:%=upgrade-%):
-	.tox/$(@:upgrade-%=%)/bin/pip install -U --upgrade-strategy=eager -e .[dev] | \
+	.tox/$(@:upgrade-%=%)/bin/pip install -U --upgrade-strategy=eager .[dev] | \
 		tee .tox/$(@:upgrade-%=%)/log/pip-upgrade.log

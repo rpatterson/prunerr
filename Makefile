@@ -9,7 +9,7 @@ VENVS = $(shell tox -l)
 all: upgrade
 
 .PHONY: format
-format: all
+format: var/log/tox-recreate.log
 	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./

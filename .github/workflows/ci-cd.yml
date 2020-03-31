@@ -4,8 +4,7 @@ on: [push]
 
 jobs:
 
-
-  test:
+  ci-cd:
     runs-on: ubuntu-latest
     strategy:
       matrix:

@@ -51,7 +51,8 @@ jobs:
         uses: mathieudutour/github-tag-action@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
+      - name: Fetch release version tag
+        run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
 
       # Run tests and linters
 

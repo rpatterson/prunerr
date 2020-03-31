@@ -18,6 +18,15 @@ Django, etc.), libraries and such, branches will be used for each such variation
 that structure common to different variations can be merged back into the branches for
 those specific variations.
 
+
+Installation
+============
+
+Install using any tool for installing standard Python 3 distributions such as `pip`_::
+
+  $ sudo pip3 install python-project-structure
+
+
 Motivation
 ==========
 
@@ -44,5 +53,6 @@ template.
 
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
+.. _pip: https://pip.pypa.io/en/stable/installing/
 
 .. _Makefile: ./Makefile

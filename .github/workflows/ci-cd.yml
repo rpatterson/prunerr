@@ -62,7 +62,10 @@ jobs:
 
       - name: Test with tox
         run: |
-          make upgrade
+          cat src/sentry_syslog/version.py
+          .tox/py3/bin/python setup.py --version
+          cat src/sentry_syslog/version.py
+          SETUPTOOLS_SCM_DEBUG=true make upgrade
           tox
 
       - name: Build a binary wheel and a source tarball

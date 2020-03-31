@@ -23,7 +23,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache Python bootstrapping dependencies
-        if: github.ref == 'refs/heads/master'
+        if: github.ref != 'refs/heads/master'
         uses: actions/cache@master
         env:
           cache-name: cache-pip-installs
@@ -41,7 +41,7 @@ jobs:
           pip install -U --upgrade-strategy=eager --user tox tox-gh-actions
 
       - name: Cache tox virtual environments
-        if: github.ref == 'refs/heads/master'
+        if: github.ref != 'refs/heads/master'
         uses: actions/cache@master
         env:
           cache-name: cache-tox-envs

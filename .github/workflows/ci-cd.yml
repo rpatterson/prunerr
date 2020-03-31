@@ -54,17 +54,16 @@ jobs:
           restore-keys:
             ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
 
-      - name: Test with tox
-        run: |
-          make upgrade
-          tox
-
-      - run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
       - name: Bump version and push tag
         id: github-tag-action
         uses: mathieudutour/github-tag-action@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test with tox
+        run: |
+          make upgrade
+          tox
 
       - name: Build a binary wheel and a source tarball
         run: |

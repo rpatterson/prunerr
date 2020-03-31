@@ -60,7 +60,6 @@ jobs:
 
   release:
     needs: test
-    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
 
@@ -71,3 +70,24 @@ jobs:
         uses: mathieudutour/github-tag-action@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@master
+        with:
+          python-version: 3.7
+
+      - name: Build a binary wheel and a source tarball
+        run: |
+          python setup.py sdist bdist_wheel
+
+      - name: Publish distribution to Test PyPI for devel branches
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.test_pypi_password }}
+          repository_url: https://test.pypi.org/legacy/
+
+      - name: Publish distribution to PyPI for master
+        if: github.ref == 'refs/heads/master'
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.pypi_password }}

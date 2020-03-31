@@ -30,10 +30,10 @@ jobs:
         with:
           path: ~/.local
           # Never get a cache hit to force always caching the upgraded dependencies
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
+          key: ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ${{ runner.os }}-test-${{ env.cache-name }}-
+            ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-
 
       - name: Install dependencies
         run: |
@@ -47,10 +47,10 @@ jobs:
         with:
           path: ./.tox
           # Never get a cache hit to force always caching the upgraded dependencies
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
+          key: ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ${{ runner.os }}-test-${{ env.cache-name }}-
+            ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-
 
       - name: Test with tox
         run: |

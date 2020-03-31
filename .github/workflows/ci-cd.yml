@@ -63,11 +63,16 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test with tox
+        env:
+          SETUPTOOLS_SCM_DEBUG: "true"
         run: |
+          python setup.py --version
           make upgrade
           tox
 
       - name: Build a binary wheel and a source tarball
+        env:
+          SETUPTOOLS_SCM_DEBUG: "true"
         run: |
           .tox/py3/bin/python setup.py sdist bdist_wheel
 

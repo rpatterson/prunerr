@@ -3,6 +3,8 @@
 
 # Python build/packaging/distribution artifacts
 /.eggs
+/dist
+/build
 /src/*/version.py
 
 # Testing artifacts

@@ -72,6 +72,7 @@ jobs:
           .tox/py3/bin/python setup.py sdist bdist_wheel
 
       - name: Publish distribution to Test PyPI for devel branches
+        if: github.ref != 'refs/heads/master'
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.test_pypi_password }}

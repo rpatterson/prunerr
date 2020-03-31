@@ -4,6 +4,8 @@ python-project-structure
 Python project structure foundation or template
 ------------------------------------------------------------------------------
 
+.. image:: https://github.com/rpatterson/python-project-structure/.github/workflows/ci-cd.yml/badge.svg
+
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
 software projects.  It includes:
 

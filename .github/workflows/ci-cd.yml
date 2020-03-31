@@ -57,28 +57,15 @@ jobs:
           make upgrade
           tox
 
-
-  release:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-
-      - uses: actions/checkout@master
-
       - name: Bump version and push tag
         id: github-tag-action
         uses: mathieudutour/github-tag-action@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python 3.7
-        uses: actions/setup-python@master
-        with:
-          python-version: 3.7
-
       - name: Build a binary wheel and a source tarball
         run: |
-          python setup.py sdist bdist_wheel
+          .tox/bin/python setup.py sdist bdist_wheel
 
       - name: Publish distribution to Test PyPI for devel branches
         uses: pypa/gh-action-pypi-publish@master

@@ -23,16 +23,17 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache Python bootstrapping dependencies
+        if: github.ref == 'refs/heads/master'
         uses: actions/cache@master
         env:
           cache-name: cache-pip-installs
         with:
           path: ~/.local
           # Never get a cache hit to force always caching the upgraded dependencies
-          key: ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-
 
       - name: Install dependencies
         run: |
@@ -40,16 +41,18 @@ jobs:
           pip install -U --upgrade-strategy=eager --user tox tox-gh-actions
 
       - name: Cache tox virtual environments
+        if: github.ref == 'refs/heads/master'
         uses: actions/cache@master
         env:
           cache-name: cache-tox-envs
         with:
           path: ./.tox
           # Never get a cache hit to force always caching the upgraded dependencies
-          key: ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-${{ github.sha }}
+          # Use hashFiles to force venv recreation when dependencies change
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ${{ github.ref == 'refs/heads/master' }}-${{ runner.os }}-test-${{ env.cache-name }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
 
       - name: Test with tox
         run: |

@@ -11,9 +11,7 @@ jobs:
         python-version: [3.7]
     steps:
 
-      - uses: actions/checkout@master
-        with:
-          fetch-depth: 0
+      # Global set up
 
       - name: Add user installs to PATH
         run: |
@@ -42,6 +40,20 @@ jobs:
           python -m pip install -U --upgrade-strategy=eager --user pip
           pip install -U --upgrade-strategy=eager --user tox tox-gh-actions
 
+      # VCS set up
+
+      - uses: actions/checkout@master
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and push tag
+        id: github-tag-action
+        uses: mathieudutour/github-tag-action@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Run tests and linters
+
       - name: Cache tox virtual environments
         if: github.ref != 'refs/heads/master'
         uses: actions/cache@master
@@ -56,12 +68,6 @@ jobs:
           restore-keys:
             ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
 
-      - name: Bump version and push tag
-        id: github-tag-action
-        uses: mathieudutour/github-tag-action@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Test with tox
         env:
           SETUPTOOLS_SCM_DEBUG: "true"
@@ -69,6 +75,8 @@ jobs:
           python setup.py --version
           make upgrade
           tox
+
+      # Release
 
       - name: Build a binary wheel and a source tarball
         env:

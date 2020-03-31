@@ -65,12 +65,14 @@ jobs:
           SETUPTOOLS_SCM_DEBUG: "true"
         run: |
           cat src/sentry_syslog/version.py || true
-          .tox/py3/bin/python setup.py --version
+          python setup.py --version
           cat src/sentry_syslog/version.py
           make upgrade
           tox
 
       - name: Build a binary wheel and a source tarball
+        env:
+          SETUPTOOLS_SCM_DEBUG: "true"
         run: |
           .tox/py3/bin/python setup.py sdist bdist_wheel
 

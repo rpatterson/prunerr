@@ -1,4 +1,4 @@
-name: Run tests and linter and release on master
+name: Run linter, tests and, and release
 
 on: [push]
 

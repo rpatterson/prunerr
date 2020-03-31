@@ -12,6 +12,8 @@ jobs:
     steps:
 
       - uses: actions/checkout@master
+        with:
+          fetch-depth: 0
 
       - name: Add user installs to PATH
         run: |

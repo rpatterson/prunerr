@@ -61,11 +61,13 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test with tox
+        env:
+          SETUPTOOLS_SCM_DEBUG: "true"
         run: |
-          cat src/sentry_syslog/version.py
+          cat src/sentry_syslog/version.py || true
           .tox/py3/bin/python setup.py --version
           cat src/sentry_syslog/version.py
-          SETUPTOOLS_SCM_DEBUG=true make upgrade
+          make upgrade
           tox
 
       - name: Build a binary wheel and a source tarball

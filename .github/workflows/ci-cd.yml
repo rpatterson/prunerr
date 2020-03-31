@@ -59,6 +59,7 @@ jobs:
           make upgrade
           tox
 
+      - run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
       - name: Bump version and push tag
         id: github-tag-action
         uses: mathieudutour/github-tag-action@v4

@@ -18,9 +18,14 @@ setuptools.setup(
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "Intended Audience :: System Administrators",
         "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
         "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Topic :: Utilities",
     ],
     python_requires=">=3.6",
     use_scm_version=dict(

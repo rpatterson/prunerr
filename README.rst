@@ -29,6 +29,19 @@ Install using any tool for installing standard Python 3 distributions such as `p
   $ sudo pip3 install python-project-structure
 
 
+Usage
+=====
+
+See the command-line help for details on options and arguments::
+
+  $ usage: python-project-structure [-h]
+
+  Python project structure foundation or template, top-level package.
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
+
 Motivation
 ==========
 

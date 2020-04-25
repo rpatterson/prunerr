@@ -46,14 +46,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump version and push tag
-        id: github-tag-action
-        uses: mathieudutour/github-tag-action@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fetch release version tag
-        run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
-
       # Run tests and linters
 
       - name: Cache tox virtual environments
@@ -79,6 +71,14 @@ jobs:
           tox
 
       # Release
+
+      - name: Bump version and push tag
+        id: github-tag-action
+        uses: mathieudutour/github-tag-action@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fetch release version tag
+        run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
 
       - name: Build a binary wheel and a source tarball
         env:

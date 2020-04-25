@@ -15,8 +15,7 @@ setuptools.setup(
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/x-rst",
     url="https://github.com/rpatterson/python-project-structure",
-    packages=setuptools.find_packages("src"),
-    package_dir={"": "src"},
+    license="MIT",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -28,6 +27,8 @@ setuptools.setup(
         "Topic :: Utilities",
     ],
     python_requires=">=3.6",
+    packages=setuptools.find_packages("src"),
+    package_dir={"": "src"},
     use_scm_version=dict(
         write_to="src/pythonprojectstructure/version.py",
         local_scheme="no-local-version",

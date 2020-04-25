@@ -4,6 +4,8 @@ python-project-structure
 Python project structure foundation or template
 ------------------------------------------------------------------------------
 
+.. image:: https://github.com/rpatterson/python-project-structure/workflows/Run%20linter,%20tests%20and,%20and%20release/badge.svg
+
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
 software projects.  It includes:
 

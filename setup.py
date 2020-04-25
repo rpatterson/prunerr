@@ -40,8 +40,6 @@ setuptools.setup(
         ]
     ),
     entry_points=dict(
-        console_scripts=[
-            "python-project-structure=pythonprojectstructure:main",
-        ]
+        console_scripts=["python-project-structure=pythonprojectstructure:main"]
     ),
 )

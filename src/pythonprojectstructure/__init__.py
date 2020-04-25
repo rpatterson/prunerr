@@ -13,7 +13,9 @@ if version is not None:  # pragma: no cover
     __version__ = version.version
 
 # Define command line options and arguments
-parser = argparse.ArgumentParser(description=__doc__.strip())
+parser = argparse.ArgumentParser(
+    description=__doc__.strip(), formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
 
 
 def main(args=None):

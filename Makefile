@@ -23,7 +23,7 @@ test: all format
 	tox
 
 .PHONY: upgrade
-upgrade: var/log/tox-recreate.log
+upgrade: .git/hooks/pre-commit .git/hooks/pre-push
 	make -j $(words $(VENVS:%=upgrade-%)) $(VENVS:%=upgrade-%)
 
 
@@ -37,6 +37,9 @@ var/log/tox-recreate.log: var/log setup.py setup.cfg tox.ini
 
 .git/hooks/pre-commit: var/log/tox-recreate.log
 	.tox/lint/bin/pre-commit install
+
+.git/hooks/pre-push: var/log/tox-recreate.log
+	.tox/lint/bin/pre-commit install --hook-type pre-push
 
 .PHONY: $(VENVS:%=upgrade-%)
 $(VENVS:%=upgrade-%):

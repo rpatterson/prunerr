@@ -27,10 +27,8 @@ upgrade: .git/hooks/pre-commit .git/hooks/pre-push
 
 ## Real targets
 
-var/log:
-	mkdir -p "$(@)"
-
-var/log/tox-recreate.log: var/log setup.py setup.cfg tox.ini
+var/log/tox-recreate.log: setup.py setup.cfg tox.ini
+	mkdir -p "var/log"
 	tox -r --notest -v | tee "$(@)"
 
 .git/hooks/pre-commit: var/log/tox-recreate.log

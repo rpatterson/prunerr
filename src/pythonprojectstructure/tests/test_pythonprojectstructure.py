@@ -2,11 +2,17 @@
 python-project-structure unit and integration tests.
 """
 
-import contextlib
-import io
 import unittest
 
-import pythonprojectstructure
+# BBB: Python 2 compatibility
+try:
+    import contextlib2 as contextlib
+except ImportError:  # pragma: no cover
+    import contextlib
+
+import six
+
+from pythonprojectstructure import __main__ as pythonprojectstructure
 
 
 class PythonProjectStructureTests(unittest.TestCase):
@@ -18,7 +24,7 @@ class PythonProjectStructureTests(unittest.TestCase):
         """
         Run the CLI script and return any error messages.
         """
-        stderr_file = io.StringIO()
+        stderr_file = six.StringIO()
         with self.assertRaises(SystemExit):
             with contextlib.redirect_stderr(stderr_file):
                 pythonprojectstructure.main(args=args)
@@ -28,7 +34,7 @@ class PythonProjectStructureTests(unittest.TestCase):
         """
         The command line script is self-docummenting.
         """
-        stdout_file = io.StringIO()
+        stdout_file = six.StringIO()
         with self.assertRaises(SystemExit):
             with contextlib.redirect_stdout(stdout_file):
                 pythonprojectstructure.main(args=["--help"])

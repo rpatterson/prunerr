@@ -6,7 +6,7 @@ import contextlib
 import io
 import unittest
 
-import pythonprojectstructure
+from pythonprojectstructure import __main__ as pythonprojectstructure
 
 
 class PythonProjectStructureTests(unittest.TestCase):

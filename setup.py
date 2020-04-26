@@ -7,6 +7,8 @@ import setuptools
 with open("README.rst", "r") as readme:
     LONG_DESCRIPTION = readme.read()
 
+tests_require = ["six", 'contextlib2;python_version<"3"']
+
 setuptools.setup(
     name="python-project-structure",
     author="Ross Patterson",
@@ -35,8 +37,10 @@ setuptools.setup(
         local_scheme="no-local-version",
     ),
     setup_requires=["setuptools_scm"],
+    tests_require=tests_require,
     extras_require=dict(
-        dev=[
+        dev=tests_require
+        + [
             "pytest",
             "pre-commit",
             "coverage",

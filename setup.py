@@ -26,7 +26,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Topic :: Utilities",
     ],
-    python_requires=">=3.6",
+    python_requires=">=2.7",
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     use_scm_version=dict(
@@ -42,7 +42,7 @@ setuptools.setup(
             "flake8",
             "autoflake",
             "autopep8",
-            "flake8-black",
+            'flake8-black;python_version>="3"',
         ]
     ),
 )

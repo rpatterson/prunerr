@@ -12,7 +12,7 @@ except ImportError:  # pragma: no cover
 
 import six
 
-from pythonprojectstructure import __main__ as pythonprojectstructure
+import pythonprojectstructure
 
 
 class PythonProjectStructureTests(unittest.TestCase):

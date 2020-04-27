@@ -78,7 +78,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Fetch release version tag
-        run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v*
+        run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v* || true
 
       - name: Build a binary wheel and a source tarball
         env:

@@ -30,10 +30,10 @@ jobs:
         with:
           path: ~/.local
           # Never get a cache hit to force always caching the upgraded dependencies
-          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ github.sha }}
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-
 
       - name: Install dependencies
         run: |
@@ -57,10 +57,10 @@ jobs:
           path: ./.tox
           # Never get a cache hit to force always caching the upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
-          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
 
       - name: Test with tox
         env:

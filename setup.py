@@ -48,6 +48,7 @@ setuptools.setup(
             "autoflake",
             "autopep8",
             'flake8-black;python_version>="3"',
+            "rstcheck",
         ]
     ),
     entry_points=dict(

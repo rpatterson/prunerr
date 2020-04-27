@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.7, 2.7]
     steps:
 
       # Global set up
@@ -30,10 +30,10 @@ jobs:
         with:
           path: ~/.local
           # Never get a cache hit to force always caching the upgraded dependencies
-          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ github.sha }}
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-
 
       - name: Install dependencies
         run: |
@@ -57,10 +57,10 @@ jobs:
           path: ./.tox
           # Never get a cache hit to force always caching the upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
-          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
 
       - name: Test with tox
         env:
@@ -75,26 +75,29 @@ jobs:
       - name: Bump version and push tag
         id: github-tag-action
         uses: mathieudutour/github-tag-action@v4
+        if: matrix.python-version == 3.7
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Fetch release version tag
+        if: matrix.python-version == 3.7
         run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v* || true
 
       - name: Build a binary wheel and a source tarball
+        if: matrix.python-version == 3.7
         env:
           SETUPTOOLS_SCM_DEBUG: "true"
         run: |
           .tox/py3/bin/python setup.py sdist bdist_wheel
 
       - name: Publish distribution to Test PyPI for devel branches
-        if: github.ref != 'refs/heads/master'
+        if: (github.ref != 'refs/heads/master') && (matrix.python-version == 3.7)
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.test_pypi_password }}
           repository_url: https://test.pypi.org/legacy/
 
       - name: Publish distribution to PyPI for master
-        if: github.ref == 'refs/heads/master'
+        if: (github.ref == 'refs/heads/master') && (matrix.python-version == 3.7)
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.pypi_password }}

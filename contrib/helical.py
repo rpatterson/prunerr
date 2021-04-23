@@ -478,9 +478,11 @@ directory next to the 'download-dir'.
         to_copy = sorted(
             (
                 torrent for torrent in self.torrents
-                if torrent.status == 'seeding' and os.path.relpath(
-                    torrent.downloadDir, seeding_dir).startswith(
-                        os.pardir + os.sep)),
+                if torrent.status == 'seeding' and not os.path.relpath(
+                        torrent.downloadDir,
+                        self.settings["download-dir"],
+                ).startswith(os.pardir + os.sep)
+            ),
             # 1. Copy lower priority torrents first so they may be deleted
             # first.
             # 2. Copy smaller torrents first to avoid huge torrents preventing
@@ -549,9 +551,38 @@ directory next to the 'download-dir'.
 
     def help_update_priorities(self):
         print(u'update_priorities\n')
-        print(u'Set the bandwidth priority for each torrent using the '
-              u'settings JSON\n"tracker-priorities" object where each property '
-              u'name is a tracker\nand the value is the priority.')
+        print(
+            u'Set the bandwidth priority for each torrent using the settings JSON '
+            u'"tracker-priorities" array/list where each item is itself an array '
+            u'consisting of the tracker hostname and an integer priority value.'
+        )
+
+    def lookup_tracker_priority(self, torrent):
+        """
+        Determine which tracker hostname and priority apply to the torrent if any.
+        """
+        for tracker in torrent.trackers:
+            for action in ('announce', 'scrape'):
+                parsed = urllib.parse.urlsplit(tracker[action])
+                for hostname, priority in self.settings[
+                        'tracker-priorities']:
+                    if parsed.hostname and parsed.hostname.endswith(hostname):
+                        return hostname, priority
+        return None, None
+
+    def get_torrent_priority_key(self, trackers_ordered, torrent):
+        """
+        Combine tracker ranking, torrent priority, and ratio into a sort key.
+        """
+        hostname, priority = self.lookup_tracker_priority(torrent)
+        traker_rank = -1
+        if hostname in trackers_ordered:
+            traker_rank = trackers_ordered.index(hostname)
+        return (
+                traker_rank,
+                torrent.bandwidthPriority,
+                -torrent.ratio,
+        )
 
     def do_update_priorities(self, line):
         """Set torrent priority by private/public trackers"""
@@ -560,33 +591,16 @@ directory next to the 'download-dir'.
 
         changed = []
         for torrent in self.torrents:
-            found = False
-            for tracker in torrent.trackers:
-                for action in ('announce', 'scrape'):
-                    parsed = urllib.parse.urlsplit(tracker[action])
-                    for hostname, priority in self.settings[
-                            'tracker-priorities'].items():
-                        if (
-                                parsed.hostname is None or
-                                not parsed.hostname.endswith(hostname)):
-                            continue
-
-                        found = True
-                        if torrent.bandwidthPriority != priority:
-                            logger.info('Marking %s as priority %s',
-                                        torrent, priority)
-                            self.tc.change(
-                                [torrent.id],
-                                bandwidthPriority=priority)
-                            torrent.update()
-                            changed.append(torrent)
-
-                        break
-                    if found:
-                        break
-                if found:
-                    break
-
+            hostname, priority = self.lookup_tracker_priority(torrent)
+            if priority is not None:
+                if torrent.bandwidthPriority != priority:
+                    logger.info('Marking %s as priority %s',
+                                torrent, priority)
+                    self.tc.change(
+                        [torrent.id],
+                        bandwidthPriority=priority)
+                    torrent.update()
+                    changed.append(torrent)
             else:
                 priority = self.settings.get('default-priority')
                 if (
@@ -611,6 +625,10 @@ directory next to the 'download-dir'.
 
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(' `\'"')
+        trackers_ordered = [
+            hostname for hostname, priority in
+            reversed(self.settings["tracker-priorities"])
+        ]
 
         # Delete any torrents that have already been copied and are no longer
         # recognized by their tracker: e.g. when a private tracker removes a
@@ -706,7 +724,8 @@ directory next to the 'download-dir'.
                  'seeding-dir', os.path.join(
                      os.path.dirname(session.download_dir), 'seeding')))),
             # remove lowest priority and highest ratio first
-            key=lambda item: (0 - item[1].bandwidthPriority, item[1].ratio))
+            key=lambda item: self.get_torrent_priority_key(trackers_ordered, item[1]),
+        )
         removed = []
         while (
                 statvfs.f_frsize * statvfs.f_bavail <
@@ -720,13 +739,18 @@ directory next to the 'download-dir'.
                 logger.info('Stopping downloading: %s', kwargs)
                 self.tc.set_session(**kwargs)
                 break
-            index, remove = by_ratio.pop()
+            index, remove = by_ratio.pop(0)
+            hostname, priority = self.lookup_tracker_priority(remove)
             logger.info(
                 'Deleting seeding %s to free space, '
-                '%0.2f %s + %0.2f %s: priority=%s, ratio=%0.2f', remove,
-                *(utils.format_size(statvfs.f_frsize * statvfs.f_bavail) +
-                  utils.format_size(remove.totalSize) +
-                  (remove.bandwidthPriority, remove.ratio)))
+                "%0.2f %s + %0.2f %s: tracker=%s, priority=%s, ratio=%0.2f",
+                remove,
+                *(
+                    utils.format_size(statvfs.f_frsize * statvfs.f_bavail) +
+                    utils.format_size(remove.totalSize) +
+                    (hostname, remove.bandwidthPriority, remove.ratio)
+                ),
+            )
             download_dir = remove.downloadDir
             self.tc.remove_torrent(remove.id, delete_data=True)
             self.move_timeout(remove, download_dir)

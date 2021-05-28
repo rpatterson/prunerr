@@ -1,23 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (c) 2008-2014 Erik Svensson <erik.public@gmail.com>
-# Licensed under the MIT license.
+"""
+Remove Servarr download client items to preserve disk space according to rules.
+"""
 
 from setuptools import setup
 
-required = ['six>=1.1.0']
+required = ['transmissionrpc', 'service-logging']
 
 setup(
-    name='transmissionrpc',
-    version='0.12',
-    description='Python module that implements the Transmission bittorent client RPC protocol.',
-    author='Erik Svensson',
-    author_email='erik.public@gmail.com',
-    url='http://bitbucket.org/blueluna/transmissionrpc',
-    keywords='transmission bittorent torrent',
-    packages=['transmissionrpc'],
+    name='prunerr',
+    version='0.1',
+    description=__doc__.strip(),
+    author='Ross Patterson',
+    author_email='me@rpatterson.net',
+    url='https://gitlab.com/rpatterson/transmissionrpc',
+    keywords='servarr sonarr radarr transmission bittorent torrent',
+    py_modules = ['prunerr'],
     install_requires = required,
-    test_suite = "test",
     zip_safe=True,
     classifiers = [
         'Intended Audience :: Developers',
@@ -25,4 +25,7 @@ setup(
         'Topic :: Communications :: File Sharing',
         'Topic :: Internet'
         ],
+    entry_points={
+        'console_scripts': ['prunerr=prunerr:main'],
+        },
     )

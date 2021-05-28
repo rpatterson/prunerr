@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-# 2008-07, Erik Svensson <erik.public@gmail.com>
 
 import sys, os, os.path, itertools
 import socket
@@ -35,7 +33,7 @@ __version__   = u'0.2'
 __copyright__ = u'Copyright (c) 2008 Erik Svensson'
 __license__   = u'MIT'
 
-logger = logging.getLogger('transmissionrpc.helical')
+logger = logging.getLogger('prunerr')
 
 
 class TransmissionTimeout(Exception):
@@ -63,16 +61,16 @@ def log_rmtree_error(function, path, excinfo):
         exc_info=excinfo)
 
 
-class Helical(cmd.Cmd):
+class Prunerr(cmd.Cmd):
 
     settings = {}
 
     def __init__(self, settings_file=None):
         cmd.Cmd.__init__(self)
-        self.intro = u'Helical %s' % (__version__)
+        self.intro = u'Prunerr %s' % (__version__)
         self.doc_leader = u'''
-Helical is a command line interface that communicates with Transmission
-bittorent client through json-rpc. To run helical in interactive mode
+Prunerr is a command line interface that communicates with Transmission
+bittorent client through json-rpc. To run prunerr in interactive mode
 start without a command.
 '''
         self.settings_file = settings_file or os.path.join(
@@ -82,9 +80,9 @@ start without a command.
         self.tc = transmissionrpc.Client(address, port, username, password)
         urlo = urllib.parse.urlparse(self.tc.url)
         if urlo.port:
-            self.prompt = u'Helical %s:%d> ' % (urlo.hostname, urlo.port)
+            self.prompt = u'Prunerr %s:%d> ' % (urlo.hostname, urlo.port)
         else:
-            self.prompt = u'Helical %s> ' % (urlo.hostname)
+            self.prompt = u'Prunerr %s> ' % (urlo.hostname)
         self.do_update('')
 
     def arg_tokenize(self, argstr):
@@ -1003,7 +1001,7 @@ def main(args=None, connect_timeout=5 * 60):
         action="store_true")
     (values, args) = parser.parse_args(args)
     commands = [cmd[3:] for cmd in moves.filter(
-        lambda c: c[:3] == 'do_', dir(Helical))]
+        lambda c: c[:3] == 'do_', dir(Prunerr))]
     address = 'localhost'
     port = DEFAULT_PORT
     command = None
@@ -1020,7 +1018,7 @@ def main(args=None, connect_timeout=5 * 60):
     # Want just our logger, not transmissionrpc's to log INFO
     logger.setLevel(logging.INFO)
     if values.debug:
-        logging.getLogger('transmissionrpc').setLevel(logging.DEBUG)
+        logging.getLogger('prunerr').setLevel(logging.DEBUG)
     for arg in args:
         if arg in commands:
             command = arg
@@ -1030,12 +1028,12 @@ def main(args=None, connect_timeout=5 * 60):
         except utils.INetAddressError:
             address = arg
             port = None
-    helical = Helical(values.settings)
+    prunerr = Prunerr(values.settings)
     if not command or command.lower() != 'help':
         start = time.time()
-        while not getattr(helical, 'tc', None):
+        while not getattr(prunerr, 'tc', None):
             try:
-                helical.connect(
+                prunerr.connect(
                     address, port, values.username, values.password)
             except socket.error:
                 logger.exception(
@@ -1050,12 +1048,12 @@ def main(args=None, connect_timeout=5 * 60):
 
     if command:
         line = u' '.join([command] + args[args.index(command)+1:])
-        helical.onecmd(line)
+        prunerr.onecmd(line)
     else:
         try:
-            helical.cmdloop()
+            prunerr.cmdloop()
         except KeyboardInterrupt:
-            helical.do_quit('')
+            prunerr.do_quit('')
 
 
 if __name__ == '__main__':

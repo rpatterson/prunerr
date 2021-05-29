@@ -6,7 +6,7 @@ Remove Servarr download client items to preserve disk space according to rules.
 
 from setuptools import setup
 
-required = ["transmissionrpc", "service-logging"]
+required = ["transmission-rpc", "service-logging"]
 
 setup(
     name="prunerr",

@@ -27,10 +27,9 @@ from six.moves import urllib
 
 import servicelogging
 
-import transmissionrpc
-from transmissionrpc import utils
-from transmissionrpc import error
-from transmissionrpc.constants import DEFAULT_PORT
+import transmission_rpc
+from transmission_rpc import utils
+from transmission_rpc import error
 
 __author__ = "Erik Svensson <erik.public@gmail.com>"
 __version__ = "0.2"
@@ -84,7 +83,7 @@ start without a command.
         )
 
     def connect(self, address=None, port=None, username=None, password=None):
-        self.tc = transmissionrpc.Client(address, port, username, password)
+        self.tc = transmission_rpc.Client(address, port, username, password)
         urlo = urllib.parse.urlparse(self.tc.url)
         if urlo.port:
             self.prompt = "Prunerr %s:%d> " % (urlo.hostname, urlo.port)
@@ -497,7 +496,7 @@ directory next to the 'download-dir'.
             else:
                 if not torrent.status.startswith("check"):
                     logger.info("Resuming verified torrent: %s", torrent)
-                    self.tc.start([torrent_id])
+                    torrent.start()
                     torrent.update()
                     del self.corrupt[torrent_id]
         if self.corrupt:
@@ -874,7 +873,7 @@ directory next to the 'download-dir'.
             logger.info(
                 "Verifying corrupt torrents:\n%s", "\n".join(map(str, corrupt.values()))
             )
-            self.tc.verify(list(corrupt.keys()))
+            self.tc.verify_torrent(list(corrupt.keys()))
             for torrent in corrupt.values():
                 torrent.update()
 
@@ -1085,7 +1084,7 @@ def main(args=None, connect_timeout=5 * 60):
             values.username, account, values.password = authenticators
 
     servicelogging.basicConfig()
-    # Want just our logger, not transmissionrpc's to log INFO
+    # Want just our logger, not transmission-rpc's to log INFO
     logger.setLevel(logging.INFO)
     if values.debug:
         logging.getLogger("prunerr").setLevel(logging.DEBUG)

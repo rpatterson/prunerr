@@ -5,7 +5,6 @@ import os
 import os.path
 import itertools
 import socket
-import base64
 import shlex
 import collections
 import json
@@ -15,14 +14,9 @@ import time
 import logging
 from optparse import OptionParser
 
-try:
-    import readline  # noqa
-except:
-    pass
 import cmd
 
 import six
-from six import moves
 from six.moves import urllib
 
 import servicelogging
@@ -72,12 +66,6 @@ class Prunerr(cmd.Cmd):
 
     def __init__(self, settings_file=None):
         cmd.Cmd.__init__(self)
-        self.intro = "Prunerr %s" % (__version__)
-        self.doc_leader = """
-Prunerr is a command line interface that communicates with Transmission
-bittorent client through json-rpc. To run prunerr in interactive mode
-start without a command.
-"""
         self.settings_file = settings_file or os.path.join(
             get_home(), "info", "settings.json"
         )
@@ -93,43 +81,6 @@ start without a command.
 
     def arg_tokenize(self, argstr):
         return [token for token in shlex.split(argstr)] or [""]
-
-    def word_complete(self, text, words):
-        suggestions = []
-        for word in words:
-            if word.startswith(text):
-                suggestions.append(word)
-        return suggestions
-
-    def _complete_torrent(self, name, offset):
-        words = [torrent.name for torrent in self.torrents]
-        suggestions = []
-        cut_index = len(name) - offset
-        for word in words:
-            if word.startswith(name):
-                suggestions.append(word[cut_index:])
-        return suggestions
-
-    def _complete_torrent_command(self, text, line, begidx, endidx):
-        args = self.arg_tokenize(line)
-        item = args[-1] if len(args) > 1 else ""
-        return self._complete_torrent(item, endidx - begidx)
-
-    def help_quit(self):
-        print("quit|exit\n")
-        print("Exit to shell.\n")
-
-    def do_quit(self, line):
-        sys.exit("")
-
-    # Alias
-    do_exit = do_quit
-    help_exit = help_quit
-    do_EOF = do_quit
-
-    def help_update(self):
-        print("update\n")
-        print("Update the torrents list and settings.\n")
 
     def do_update(self, line):
         self.torrents = self.tc.get_torrents(
@@ -153,219 +104,6 @@ start without a command.
             self.settings = json.load(
                 open(self.settings_file), object_pairs_hook=collections.OrderedDict
             )
-
-    def help_add(self):
-        print("add <torrent file or url> [<target dir> paused=(yes|no) peer-limit=#]\n")
-        print("Add a torrent to the transfer list.\n")
-
-    def do_add(self, line):
-        args = self.arg_tokenize(line)
-
-        if len(args) == 0:
-            print("Specify a torrent file or url")
-            return
-
-        torrent_url = args[0]
-        args = args[1:]
-        torrent_file = None
-        if os.path.exists(torrent_url):
-            torrent_file = open(torrent_url, "r")
-        else:
-            try:
-                torrent_file = urllib.request.urlopen(torrent_url)
-            except:
-                torrent_file = None
-        if not torrent_file:
-            print('Couldn\'t find torrent "%s"' % torrent_url)
-            return
-
-        add_args = {}
-        if len(args) > 0:
-            for arg in args:
-                try:
-                    (k, v) = arg.split("=")
-                    add_args[str(k)] = str(v)
-                except:
-                    if "download_dir" not in add_args:
-                        try:
-                            os.mkdir(arg)
-                            add_args["target"] = arg
-                            continue
-                        except:
-                            pass
-                    print('Unknown argument: "%s"' % arg)
-
-        torrent_data = base64.b64encode(torrent_file.read())
-        try:
-            self.tc.add(torrent_data, **add_args)
-        except transmissionrpc.TransmissionError as e:
-            print('Failed to add torrent "%s"' % e)
-
-    def do_magnet(self, line):
-        args = self.arg_tokenize(line)
-
-        if len(args) == 0:
-            print("Specify a torrent file or url")
-            return
-
-        torrent_url = args[0]
-
-        try:
-            self.tc.add_uri(torrent_url)
-        except transmissionrpc.TransmissionError as e:
-            print('Failed to add torrent "%s"' % e)
-
-    def complete_remove(self, text, line, begidx, endidx):
-        return self._complete_torrent_command(text, line, begidx, endidx)
-
-    def help_remove(self):
-        print("remove <torrent id> [,<torrent id>, ...]\n")
-        print("Remove one or more torrents from the transfer list.\n")
-
-    def do_remove(self, line):
-        args = self.arg_tokenize(line)
-        if len(args) == 0:
-            raise ValueError("No torrent id")
-        self.tc.remove(args)
-
-    def complete_start(self, text, line, begidx, endidx):
-        return self._complete_torrent_command(text, line, begidx, endidx)
-
-    def help_start(self):
-        print("start <torrent id> [,<torrent id>, ...]\n")
-        print("Start one or more queued torrent transfers.\n")
-
-    def do_start(self, line):
-        args = self.arg_tokenize(line)
-        if len(args) == 0:
-            raise ValueError("No torrent id")
-        self.tc.start(args)
-
-    def complete_stop(self, text, line, begidx, endidx):
-        return self._complete_torrent_command(text, line, begidx, endidx)
-
-    def help_stop(self):
-        print("stop <torrent id> [,<torrent id>, ...]\n")
-        print("Stop one or more active torrent transfers.\n")
-
-    def do_stop(self, line):
-        args = self.arg_tokenize(line)
-        if len(args) == 0:
-            raise ValueError("No torrent id")
-        self.tc.stop(args)
-
-    def complete_verify(self, text, line, begidx, endidx):
-        return self._complete_torrent_command(text, line, begidx, endidx)
-
-    def help_verify(self):
-        print("verify <torrent id> [,<torrent id>, ...]\n")
-        print("Verify one or more torrent transfers.\n")
-
-    def do_verify(self, line):
-        args = self.arg_tokenize(line)
-        if len(args) == 0:
-            raise ValueError("No torrent id")
-        self.tc.verify(args)
-
-    def complete_info(self, text, line, begidx, endidx):
-        return self._complete_torrent_command(text, line, begidx, endidx)
-
-    def help_info(self):
-        print("info [<torrent id>, ...]\n")
-        print(
-            "Get details for a torrent. If no torrent id is provided, all torrents are displayed.\n"
-        )
-
-    def do_info(self, line):
-        args = self.arg_tokenize(line)
-        if len(args) == 0:
-            raise ValueError("No torrent id")
-        result = self.tc.get_torrents(args)
-        for torrent in result:
-            print(self._torrent_detail(torrent))
-
-    def help_list(self):
-        print("list\n")
-        print("List all torrent transfers.\n")
-
-    def do_list(self, line):
-        args = self.arg_tokenize(line)
-        if args:
-            raise ValueError("'list' takes no arguments")
-        result = self.tc.list()
-        self._list_torrents(result)
-
-    def help_files(self):
-        print("files [<torrent id>, ...]\n")
-        print("Get the file list for one or more torrents\n")
-
-    def do_files(self, line):
-        args = self.arg_tokenize(line)
-        result = self.tc.get_files(args)
-        for tid, files in result.items():
-            print("torrent id: %d" % tid)
-            for fid, file in files.items():
-                print("  %d: %s" % (fid, file["name"]))
-
-    def do_set(self, line):
-        args = self.arg_tokenize(line)
-        set_args = {}
-        ids = []
-        add_ids = True
-
-        if len(args) > 0:
-            for arg in args:
-                try:
-                    (k, v) = arg.split("=")
-                    set_args[str(k)] = str(v)
-                    add_ids = False
-                except:
-                    if add_ids:
-                        ids.append(arg)
-                    else:
-                        print('Unknown argument: "%s"' % arg)
-        if len(ids) > 0:
-            self.tc.change(ids, **set_args)
-
-    def complete_session(self, text, line, begidx, endidx):
-        return self.word_complete(text, ["get", "set", "stats"])
-
-    def help_session(self):
-        print("session (get|stats)\n")
-        print("Get session parameters or session statistics.\n")
-
-    def do_session(self, line):
-        args = self.arg_tokenize(line)
-        if len(args[0]) == 0 or args[0] == "get":
-            self.tc.get_session()
-            print(self.tc.session)
-        elif args[0] == "stats":
-            print(self.tc.session_stats())
-
-    def help_copy(self):
-        print("copy <torrent id> destination [-- command...]\n")
-        print(
-            "Copy the torrent to the destination by piping the relative\n"
-            "torrent file paths to the shell command on stdin.\n"
-            "Leaves the command running in the background.\n"
-            "The command defaults to: rsync -tSmP --files-from=-\n"
-            "Example: copy 1 192.168.1.1:/path/to/library/ "
-            "rsync -tSmPvv --files-from=-\n"
-        )
-
-    def do_copy(self, line):
-        """Copy a torrent using the given command."""
-        args = self.arg_tokenize(line)
-        if len(args) < 2:
-            raise ValueError(
-                "'copy' command requires a torrent id and a destination path"
-            )
-        elif len(args) < 3:
-            args.extend(["rsync", "-tSmP", "--files-from=-"])
-        torrent_id, destination = args[:2]
-        command = args[2:]
-        torrent = self.tc.get_torrent(torrent_id)
-        self.copy(torrent, destination, command)
 
     def list_torrent_files(self, torrent, download_dir=None):
         """
@@ -406,33 +144,6 @@ start without a command.
         popen = subprocess.Popen(popen_cmd, stdin=files, text=True)
 
         return popen
-
-    def help_daemon(self):
-        print("daemon destination [command...]\n")
-        print(
-            """\
-Run as a monitoring process that does a series of operations every
-'daemon-poll' seconds from settings JSON.
-
-1. Run 'copy' on the smallest seeding torrent that hasn't already been moved to
-   the 'seeding-dir' directory from settings JSON using the destination and
-   command (see 'help copy' for details).  This also kills an existing running
-   copy if the smallest seeding torrent is a different torrent.  If the command
-   fails with a return/exit code included in "daemon-retry-codes" from settings
-   JSON, then the copy will be retried.  Otherwise, the torrent will be paused
-   so as not to keep retrying a failing copy.  The default "daemon-retry-codes"
-   cover the codes rsync uses for network issues or intentional
-   signals/interruptions/kills (10, 12, 20, 30, and 35).
-2. If a torrent copy process succeeded, move the torrent to the 'seeding-dir'.
-3. Run 'update_priorities'
-4. Run 'free_space'
-5. Run 'verify_corrupted'
-6. Resume any previously verified torrents.
-
-'daemon-poll' defaults to 1 minute, and 'seeding-dir' defaults to a 'seeding'
-directory next to the 'download-dir'.
-"""
-        )
 
     def do_daemon(self, line):
         """Loop running several regular commands every interval."""
@@ -585,14 +296,6 @@ directory next to the 'download-dir'.
                 )
             time.sleep(1)
 
-    def help_update_priorities(self):
-        print("update_priorities\n")
-        print(
-            "Set the bandwidth priority for each torrent using the settings JSON "
-            '"tracker-priorities" array/list where each item is itself an array '
-            "consisting of the tracker hostname and an integer priority value."
-        )
-
     def lookup_tracker_priority(self, torrent):
         """
         Determine which tracker hostname and priority apply to the torrent if any.
@@ -641,13 +344,6 @@ directory next to the 'download-dir'.
                 self.tc.change([torrent.id], bandwidthPriority=priority)
                 torrent.update()
                 changed.append(torrent)
-
-    def help_free_space(self):
-        print("free_space\n")
-        print(
-            "Delete torrents if there's not enough free space\n"
-            'according to the "free-space" JSON setting.'
-        )
 
     def do_free_space(self, line):
         """Delete some torrents if running out of disk space."""
@@ -840,21 +536,6 @@ directory next to the 'download-dir'.
             logger.info("Resuming downloading: %s", kwargs)
             self.tc.set_session(**kwargs)
 
-    def help_verify_corrupted(self):
-        print("verify_corrupted\n")
-        print(
-            "Verify any incomplete torrents " "that are paused because of corruption."
-        )
-
-    def do_verify_corrupted(self, line):
-        """
-        Verify any incomplete torrents that are paused because of corruption.
-        """
-        if line:
-            raise ValueError("'verify_corrupted' command doesn't accept args")
-        self.do_update("")
-        self.verify_corrupted()
-
     def verify_corrupted(self):
         """
         Verify any incomplete torrents that are paused because of corruption.
@@ -929,106 +610,6 @@ directory next to the 'download-dir'.
                 new_path=session.download_dir,
             )
 
-    def help_recopy_seeding(self):
-        print("recopy_seeding\n")
-        print(self.do_recopy_seeding.__doc__)
-
-    def do_request(self, line):
-        (method, sep, args) = line.partition(" ")
-        try:
-            args = eval(args)
-        except SyntaxError:
-            args = {}
-        if not isinstance(args, dict):
-            args = {}
-        verbose = self.tc.verbose
-        self.tc.verbose = True
-        self.tc._request(method, args)
-        self.tc.verbose = verbose
-
-    def _list_torrents(self, torrents):
-        if len(torrents) > 0:
-            print(self._torrent_brief_header())
-            for tid, torrent in torrents.items():
-                print(self._torrent_brief(torrent))
-
-    def _torrent_brief_header(self):
-        return " Id   Done   ETA           Status       Download     Upload       Ratio  Name"
-
-    def _torrent_brief(self, torrent):
-        s = "% 3d: " % (torrent.id)
-        try:
-            s += "%5.1f%%" % torrent.progress
-        except:
-            pass
-        try:
-            s += " %- 13s" % torrent.format_eta()
-        except:
-            s += " -            "
-        try:
-            s += " %- 12s" % torrent.status
-        except:
-            s += " -status     "
-            pass
-        try:
-            s += " %6.1f %- 5s" % utils.format_speed(torrent.rateDownload)
-            s += " %6.1f %- 5s" % utils.format_speed(torrent.rateUpload)
-        except:
-            s += " -rate      "
-            s += " -rate      "
-            pass
-        try:
-            s += " %4.2f  " % torrent.ratio
-        except:
-            s += " -ratio"
-            pass
-        s += " " + torrent.name
-        return s
-
-    def _torrent_detail(self, torrent):
-        s = ""
-        s += "            id: " + str(torrent.id)
-        s += "\n          name: " + torrent.name
-        s += "\n          hash: " + torrent.hashString
-        s += "\n"
-        try:  # size
-            f = ""
-            f += "\n      progress: %.2f%%" % torrent.progress
-            f += "\n         total: %.2f %s" % utils.format_size(torrent.totalSize)
-            f += "\n      reqested: %.2f %s" % utils.format_size(torrent.sizeWhenDone)
-            f += "\n     remaining: %.2f %s" % utils.format_size(torrent.leftUntilDone)
-            f += "\n      verified: %.2f %s" % utils.format_size(torrent.haveValid)
-            f += "\n  not verified: %.2f %s" % utils.format_size(torrent.haveUnchecked)
-            s += f + "\n"
-        except KeyError:
-            pass
-        try:  # activity
-            f = ""
-            f += "\n        status: " + str(torrent.status)
-            f += "\n      download: %.2f %s" % utils.format_speed(torrent.rateDownload)
-            f += "\n        upload: %.2f %s" % utils.format_speed(torrent.rateUpload)
-            f += "\n     available: %.2f %s" % utils.format_size(
-                torrent.desiredAvailable
-            )
-            f += "\ndownload peers: " + str(torrent.peersSendingToUs)
-            f += "\n  upload peers: " + str(torrent.peersGettingFromUs)
-            s += f + "\n"
-        except KeyError:
-            pass
-        try:  # history
-            f = ""
-            f += "\n         ratio: %.2f" % torrent.ratio
-            f += "\n    downloaded: %.2f %s" % utils.format_size(torrent.downloadedEver)
-            f += "\n      uploaded: %.2f %s" % utils.format_size(torrent.uploadedEver)
-            f += "\n        active: " + utils.format_timestamp(torrent.activityDate)
-            f += "\n         added: " + utils.format_timestamp(torrent.addedDate)
-            f += "\n       started: " + utils.format_timestamp(torrent.startDate)
-            f += "\n          done: " + utils.format_timestamp(torrent.doneDate)
-            s += f + "\n"
-        except KeyError:
-            pass
-        return s
-
 
 def get_home():
     try:
@@ -1043,17 +624,9 @@ def get_home():
 
 def main(args=None, connect_timeout=5 * 60):
     """Main entry point"""
-    if sys.version_info[0] <= 2 and sys.version_info[1] <= 5:
-        socket.setdefaulttimeout(30)
     if args is None:
         args = sys.argv[1:]
     parser = OptionParser(usage="Usage: %prog [options] [[address]:[port]] [command]")
-    parser.add_option(
-        "-u", "--username", dest="username", help="Athentication username."
-    )
-    parser.add_option(
-        "-p", "--password", dest="password", help="Athentication password."
-    )
     parser.add_option(
         "-s",
         "--settings",
@@ -1068,41 +641,29 @@ def main(args=None, connect_timeout=5 * 60):
         action="store_true",
     )
     (values, args) = parser.parse_args(args)
-    commands = [cmd[3:] for cmd in moves.filter(lambda c: c[:3] == "do_", dir(Prunerr))]
     address = "localhost"
     port = DEFAULT_PORT
     command = None
 
-    if not values.username:
-        # Default to using ~/.netrc for authentication
-        import netrc
+    # Default to using ~/.netrc for authentication
+    import netrc
 
-        authenticators = netrc.netrc(os.path.join(get_home(), ".netrc")).authenticators(
-            address
-        )
-        if authenticators:
-            values.username, account, values.password = authenticators
+    authenticators = netrc.netrc(os.path.join(get_home(), ".netrc")).authenticators(
+        address
+    )
+    username, account, password = authenticators
 
     servicelogging.basicConfig()
     # Want just our logger, not transmission-rpc's to log INFO
     logger.setLevel(logging.INFO)
     if values.debug:
         logging.getLogger("prunerr").setLevel(logging.DEBUG)
-    for arg in args:
-        if arg in commands:
-            command = arg
-            break
-        try:
-            (address, port) = utils.inet_address(arg, DEFAULT_PORT)
-        except utils.INetAddressError:
-            address = arg
-            port = None
     prunerr = Prunerr(values.settings)
     if not command or command.lower() != "help":
         start = time.time()
         while not getattr(prunerr, "tc", None):
             try:
-                prunerr.connect(address, port, values.username, values.password)
+                prunerr.connect(address, port, username, password)
             except socket.error:
                 logger.exception("Connection error while connecting to server")
             except transmissionrpc.TransmissionError as error:
@@ -1113,14 +674,8 @@ def main(args=None, connect_timeout=5 * 60):
                 return "Timed out trying to connect to the server"
             time.sleep(1)
 
-    if command:
-        line = " ".join([command] + args[args.index(command) + 1 :])
-        prunerr.onecmd(line)
-    else:
-        try:
-            prunerr.cmdloop()
-        except KeyboardInterrupt:
-            prunerr.do_quit("")
+    line = " ".join([command] + args[args.index(command) + 1:])
+    prunerr.onecmd(line)
 
 
 if __name__ == "__main__":

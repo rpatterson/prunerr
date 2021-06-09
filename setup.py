@@ -11,6 +11,8 @@ required = [
     transmission=["transmission-rpc"],
     # Graceful handling of logging when run on the console or as a daemon
     "service-logging",
+    # Configuration file format
+    "pyyaml",
 ]
 
 setup(

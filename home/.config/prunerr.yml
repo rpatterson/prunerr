@@ -1,0 +1,34 @@
+daemon:
+  ## The number of seconds to wait between each execution of the order of operations.
+  ## Default: 60
+  # poll: 60
+downloaders:
+  ## Connection details for the download client formatted as a URL.
+  url: "http://transmission:****************@localhost:9091/transmission/"
+  ## The amount of disk space to keep free when deciding whether to prune download
+  ## items.
+  free-space: 4294967296
+  ## The download speed limit to put back in place when resuming downloads after
+  ## previously stopping.  Defaults to unlimited if unset.
+  # daemon-speed-limit-down: 9600
+  ## The base directory of items before they are done downloading.
+  # download-dir: "/var/lib/transmission-daemon/downloads"
+  ## If items are done downloading and are seeding they will be moved to this
+  ## directory.  Defaults to the `seeding` setting of the download client.
+  # seeding-dir: "/var/lib/transmission-daemon/seeding"
+  ## Settings that control copying downloaded items to remote servarr hosts.  If
+  ## unset, downloads are left in place such as when download clients are running on
+  ## the same host as the servarr instances.
+  # copy:
+  ## The command to execute to copy competed downloads.  Must accept two arguments: the
+  ## `seeding-dir`, and the corresponding destination path on the remote host.  Must
+  ## also accept relative paths for each file in the download item on `/dev/stdin`.
+  ## Expects the same behaviour as the default `$ rsync ...` command.
+  # command: "rsync -tSmP --files-from=-"
+  ## The destination remote host and base path in the format accepted as the second
+  ## argument to `command`.
+  # destination: "servarr.example.com:/media/Library/downloads/"
+indexers:
+  # default-priority: 0
+  # priorities:
+  #   - tracker.example.com: 1

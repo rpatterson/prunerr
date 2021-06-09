@@ -9,15 +9,15 @@ import argparse
 import os.path
 import itertools
 import socket
-import collections
-import json
 import shutil
 import subprocess
 import time
 import logging
+import pathlib
 
-import six
 from six.moves import urllib
+
+import yaml
 
 import servicelogging
 
@@ -27,8 +27,23 @@ from transmission_rpc import error
 
 logger = logging.getLogger("prunerr")
 
+
+def yaml_arg_type(arg):
+    return yaml.safe_load(argparse.FileType("r")(arg))
+
+
 parser = argparse.ArgumentParser(
     description=__doc__.strip(), formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+parser.add_argument(
+    "--config",
+    "-c",
+    type=yaml_arg_type,
+    default=str(pathlib.Path.home() / ".config" / "prunerr.yml"),
+    help="""\
+The path to the Prunerr configuration file. Example:
+https://gitlab.com/rpatterson/prunerr/-/blob/master/home/.config/prunerr.yml\
+""",
 )
 subparsers = parser.add_subparsers(help="sub-command help")
 
@@ -62,17 +77,21 @@ def log_rmtree_error(function, path, excinfo):
 
 class Prunerr(object):
 
-    settings = {}
-
-    def __init__(self, settings_file=None):
-        self.settings_file = settings_file or os.path.join(
-            get_home(), "info", "settings.json"
-        )
+    def __init__(self, config):
+        self.config = config
         self.popen = self.copying = None
         self.corrupt = {}
 
-    def connect(self, address=None, port=None, username=None, password=None):
-        self.tc = transmission_rpc.Client(address, port, username, password)
+    def connect(self):
+        url_parsed = urllib.parse.urlsplit(self.config["downloaders"]["url"])
+        self.tc = transmission_rpc.client.Client(
+            protocol=url_parsed.scheme,
+            host=url_parsed.hostname,
+            port=url_parsed.port,
+            path=url_parsed.path,
+            username=url_parsed.username,
+            password=url_parsed.password,
+        )
         self.update()
 
     def exec_(self):
@@ -84,11 +103,14 @@ class Prunerr(object):
 
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
-        seeding_dir = self.settings.get(
+        seeding_dir = self.config["downloaders"].get(
             "seeding-dir",
             os.path.join(os.path.dirname(session.download_dir), "seeding"),
         )
-        retry_codes = self.settings.get("daemon-retry-codes", [10, 12, 20, 30, 35, 255])
+        retry_codes = self.config["downloaders"]["copy"].get(
+            "daemon-retry-codes",
+            [10, 12, 20, 30, 35, 255],
+        )
 
         # Keep track of torrents being verified to resume them
         # when verification is complete
@@ -123,7 +145,7 @@ class Prunerr(object):
                 for torrent in self.torrents
                 if torrent.status == "seeding"
                 and not os.path.relpath(
-                    torrent.downloadDir, self.settings["download-dir"],
+                    torrent.downloadDir, self.config["downloaders"]["download-dir"],
                 ).startswith(os.pardir + os.sep)
             ),
             # 1. Copy lower priority torrents first so they may be deleted
@@ -197,10 +219,6 @@ class Prunerr(object):
                 "files",
             )
         )
-        if isinstance(self.settings_file, six.string_types):
-            self.settings = json.load(
-                open(self.settings_file), object_pairs_hook=collections.OrderedDict
-            )
 
     def list_torrent_files(self, torrent, download_dir=None):
         """
@@ -265,7 +283,7 @@ class Prunerr(object):
 
             # Wait for the next interval
             start = time.time()
-            poll = self.settings.get("daemon-poll", 60)
+            poll = self.config["daemon"].get("poll", 60)
             # Loop early if the copy process finishes early
             while (
                 self.popen is None or self.popen.poll() is None
@@ -295,7 +313,7 @@ class Prunerr(object):
         for tracker in torrent.trackers:
             for action in ("announce", "scrape"):
                 parsed = urllib.parse.urlsplit(tracker[action])
-                for hostname, priority in self.settings["tracker-priorities"]:
+                for hostname, priority in self.config["indexers"]["priorities"]:
                     if parsed.hostname and parsed.hostname.endswith(hostname):
                         return hostname, priority
         return None, None
@@ -327,7 +345,7 @@ class Prunerr(object):
                     torrent.update()
                     changed.append(torrent)
             else:
-                priority = self.settings.get("default-priority")
+                priority = self.config["indexers"].get("default-priority")
                 if priority is None or torrent.bandwidthPriority == priority:
                     continue
                 logger.info("Marking %s as default priority %s", torrent, priority)
@@ -341,7 +359,9 @@ class Prunerr(object):
         session.download_dir = session.download_dir.strip(" `'\"")
         trackers_ordered = [
             hostname
-            for hostname, priority in reversed(self.settings["tracker-priorities"])
+            for hostname, priority in reversed(
+                self.config["indexers"]["tracker-priorities"],
+            )
         ]
 
         # Delete any torrents that have already been copied and are no longer
@@ -352,7 +372,7 @@ class Prunerr(object):
                 (
                     torrent.status == "downloading"
                     or torrent.downloadDir.startswith(
-                        self.settings.get(
+                        self.config["downloaders"].get(
                             "seeding-dir",
                             os.path.join(
                                 os.path.dirname(session.download_dir), "seeding"
@@ -369,14 +389,17 @@ class Prunerr(object):
                 self.tc.remove_torrent(torrent.id, delete_data=True)
 
         statvfs = os.statvfs(session.download_dir)
-        if statvfs.f_frsize * statvfs.f_bavail >= self.settings["free-space"]:
+        if (
+            statvfs.f_frsize * statvfs.f_bavail
+            >= self.config["downloaders"]["free-space"]
+        ):
             return self._resume_down(session)
 
         # First find orphaned files, remove smallest files first
         # Update torrent.downloadDir first to identify orphans
         self.update()
         download_dirs = (
-            self.settings.get(
+            self.config["downloaders"].get(
                 "seeding-dir",
                 os.path.join(os.path.dirname(session.download_dir), "seeding"),
             ),
@@ -413,7 +436,8 @@ class Prunerr(object):
         # or there are no more orphans
         statvfs = os.statvfs(session.download_dir)
         while (
-            statvfs.f_frsize * statvfs.f_bavail < self.settings["free-space"]
+            statvfs.f_frsize * statvfs.f_bavail
+            < self.config["downloaders"]["free-space"]
             and orphans
         ):
             size, orphan = orphans.pop(0)
@@ -435,7 +459,10 @@ class Prunerr(object):
         if du.returncode:
             raise subprocess.CalledProcessError(du.returncode, du_cmd)
         statvfs = os.statvfs(session.download_dir)
-        if statvfs.f_frsize * statvfs.f_bavail >= self.settings["free-space"]:
+        if (
+            statvfs.f_frsize * statvfs.f_bavail
+            >= self.config["downloaders"]["free-space"]
+        ):
             # No need to process seeding torrents
             # if removing orphans already freed enough space
             return self._resume_down(session)
@@ -448,7 +475,7 @@ class Prunerr(object):
                 # only those previously synced and moved
                 if torrent.status == "seeding"
                 and torrent.downloadDir.startswith(
-                    self.settings.get(
+                    self.config["downloaders"].get(
                         "seeding-dir",
                         os.path.join(os.path.dirname(session.download_dir), "seeding"),
                     )
@@ -458,7 +485,10 @@ class Prunerr(object):
             key=lambda item: self.get_torrent_priority_key(trackers_ordered, item[1]),
         )
         removed = []
-        while statvfs.f_frsize * statvfs.f_bavail < self.settings["free-space"]:
+        while (
+            statvfs.f_frsize * statvfs.f_bavail
+            < self.config["downloaders"]["free-space"]
+        ):
             if not by_ratio:
                 logger.error(
                     "Running out of space but no torrents can be removed: %s",
@@ -512,7 +542,7 @@ class Prunerr(object):
         """
         Resume downloading if it's been stopped.
         """
-        speed_limit_down = self.settings.get("daemon-speed-limit-down")
+        speed_limit_down = self.config["downloaders"].get("daemon-speed-limit-down")
         if session.speed_limit_down_enabled and (
             not speed_limit_down or speed_limit_down != session.speed_limit_down
         ):
@@ -589,7 +619,7 @@ class Prunerr(object):
 
             self.move_torrent(
                 torrent,
-                old_path=self.settings.get(
+                old_path=self.config["downloaders"].get(
                     "seeding-dir",
                     os.path.join(os.path.dirname(session.download_dir), "seeding"),
                 ),

@@ -1,20 +1,20 @@
 #!/usr/bin/env python
+"""
+Remove Servarr download client items to preserve disk space according to rules.
+"""
 
-import sys
 import os
+import argparse
+
 import os.path
 import itertools
 import socket
-import shlex
 import collections
 import json
 import shutil
 import subprocess
 import time
 import logging
-from optparse import OptionParser
-
-import cmd
 
 import six
 from six.moves import urllib
@@ -25,12 +25,12 @@ import transmission_rpc
 from transmission_rpc import utils
 from transmission_rpc import error
 
-__author__ = "Erik Svensson <erik.public@gmail.com>"
-__version__ = "0.2"
-__copyright__ = "Copyright (c) 2008 Erik Svensson"
-__license__ = "MIT"
-
 logger = logging.getLogger("prunerr")
+
+parser = argparse.ArgumentParser(
+    description=__doc__.strip(), formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+subparsers = parser.add_subparsers(help="sub-command help")
 
 
 class TransmissionTimeout(Exception):
@@ -60,129 +60,28 @@ def log_rmtree_error(function, path, excinfo):
     )
 
 
-class Prunerr(cmd.Cmd):
+class Prunerr(object):
 
     settings = {}
 
     def __init__(self, settings_file=None):
-        cmd.Cmd.__init__(self)
         self.settings_file = settings_file or os.path.join(
             get_home(), "info", "settings.json"
         )
+        self.popen = self.copying = None
+        self.corrupt = {}
 
     def connect(self, address=None, port=None, username=None, password=None):
         self.tc = transmission_rpc.Client(address, port, username, password)
-        urlo = urllib.parse.urlparse(self.tc.url)
-        if urlo.port:
-            self.prompt = "Prunerr %s:%d> " % (urlo.hostname, urlo.port)
-        else:
-            self.prompt = "Prunerr %s> " % (urlo.hostname)
-        self.do_update("")
+        self.update()
 
-    def arg_tokenize(self, argstr):
-        return [token for token in shlex.split(argstr)] or [""]
-
-    def do_update(self, line):
-        self.torrents = self.tc.get_torrents(
-            arguments=(
-                "id",
-                "name",
-                "status",
-                "error",
-                "errorString",
-                "trackers",
-                "bandwidthPriority",
-                "downloadDir",
-                "totalSize",
-                "uploadRatio",
-                "priorities",
-                "wanted",
-                "files",
-            )
-        )
-        if isinstance(self.settings_file, six.string_types):
-            self.settings = json.load(
-                open(self.settings_file), object_pairs_hook=collections.OrderedDict
-            )
-
-    def list_torrent_files(self, torrent, download_dir=None):
+    def exec_(self):
         """
-        Iterate over all torrent selected file paths that exist.
+        Prune download client items once.
         """
-        if download_dir is None:
-            download_dir = torrent.downloadDir
+        destination = self.config["downloaders"]["copy"]["destination"]
+        command = self.config["downloaders"]["copy"]["command"]
 
-        torrent_files = torrent.files()
-        assert torrent_files, "Must be able to find torrent files to copy"
-
-        return (
-            file_["name"]
-            for file_ in torrent_files.values()
-            if file_.get("selected")
-            and os.path.exists(os.path.join(download_dir, file_["name"]))
-        )
-
-    def copy(self, torrent, destination, command):
-        """Launch the copy subprocess and return the popen object."""
-        session = self.tc.get_session()
-        session.download_dir = session.download_dir.strip(" `'\"")
-        relative = os.path.relpath(torrent.downloadDir, session.download_dir)
-
-        # Use a temporary file to keep feeding the file list to the
-        # subprocess from blocking us
-        import tempfile
-
-        files = tempfile.TemporaryFile(mode="w")
-        files.writelines(
-            os.path.join(relative, subpath) + "\n"
-            for subpath in self.list_torrent_files(torrent)
-        )
-        files.seek(0)
-
-        popen_cmd = command + [session.download_dir, destination]
-        logger.info("Launching copy command: %s", " ".join(popen_cmd))
-        popen = subprocess.Popen(popen_cmd, stdin=files, text=True)
-
-        return popen
-
-    def do_daemon(self, line):
-        """Loop running several regular commands every interval."""
-        args = self.arg_tokenize(line)
-        destination = args[0]
-        command = args[1:]
-
-        self.popen = self.copying = None
-        self.corrupt = {}
-        while True:
-            while True:
-                try:
-                    # Don't loop until we successfully update everything
-                    session = self.tc.get_session()
-                    session.download_dir = session.download_dir.strip(" `'\"")
-                    self.do_update("")
-                except (socket.error, error.TransmissionError):
-                    logger.exception("Connection error while updating from server")
-                    pass
-                else:
-                    break
-
-            try:
-                self._daemon_inner(session, destination, command)
-            except socket.error:
-                logger.exception("Connection error while running daemon")
-                pass
-
-            # Wait for the next interval
-            start = time.time()
-            poll = self.settings.get("daemon-poll", 60)
-            # Loop early if the copy process finishes early
-            while (
-                self.popen is None or self.popen.poll() is None
-            ) and time.time() - start < poll:
-                time.sleep(1)
-
-    def _daemon_inner(self, session, destination, command):
-        """'daemon' command innner loop."""
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
         seeding_dir = self.settings.get(
@@ -277,8 +176,101 @@ class Prunerr(cmd.Cmd):
             self.tc.set_session(speed_limit_up_enabled=False)
 
         # Do any other cleanup
-        self.do_update_priorities("")
-        self.do_free_space("")
+        self.update_priorities()
+        self.free_space()
+
+    def update(self):
+        self.torrents = self.tc.get_torrents(
+            arguments=(
+                "id",
+                "name",
+                "status",
+                "error",
+                "errorString",
+                "trackers",
+                "bandwidthPriority",
+                "downloadDir",
+                "totalSize",
+                "uploadRatio",
+                "priorities",
+                "wanted",
+                "files",
+            )
+        )
+        if isinstance(self.settings_file, six.string_types):
+            self.settings = json.load(
+                open(self.settings_file), object_pairs_hook=collections.OrderedDict
+            )
+
+    def list_torrent_files(self, torrent, download_dir=None):
+        """
+        Iterate over all torrent selected file paths that exist.
+        """
+        if download_dir is None:
+            download_dir = torrent.downloadDir
+
+        torrent_files = torrent.files()
+        assert torrent_files, "Must be able to find torrent files to copy"
+
+        return (
+            file_["name"]
+            for file_ in torrent_files.values()
+            if file_.get("selected")
+            and os.path.exists(os.path.join(download_dir, file_["name"]))
+        )
+
+    def copy(self, torrent, destination, command):
+        """Launch the copy subprocess and return the popen object."""
+        session = self.tc.get_session()
+        session.download_dir = session.download_dir.strip(" `'\"")
+        relative = os.path.relpath(torrent.downloadDir, session.download_dir)
+
+        # Use a temporary file to keep feeding the file list to the
+        # subprocess from blocking us
+        import tempfile
+
+        files = tempfile.TemporaryFile(mode="w")
+        files.writelines(
+            os.path.join(relative, subpath) + "\n"
+            for subpath in self.list_torrent_files(torrent)
+        )
+        files.seek(0)
+
+        popen_cmd = command + [session.download_dir, destination]
+        logger.info("Launching copy command: %s", " ".join(popen_cmd))
+        popen = subprocess.Popen(popen_cmd, stdin=files, text=True)
+
+        return popen
+
+    def daemon(self):
+        """
+        Prune download client items continuously.
+        """
+        while True:
+            while True:
+                try:
+                    # Don't loop until we successfully update everything
+                    self.update()
+                except (socket.error, error.TransmissionError):
+                    logger.exception("Connection error while updating from server")
+                    pass
+                else:
+                    break
+
+            try:
+                self.exec_()
+            except socket.error:
+                logger.exception("Connection error while running daemon")
+                pass
+
+            # Wait for the next interval
+            start = time.time()
+            poll = self.settings.get("daemon-poll", 60)
+            # Loop early if the copy process finishes early
+            while (
+                self.popen is None or self.popen.poll() is None
+            ) and time.time() - start < poll:
+                time.sleep(1)
 
     def move_timeout(self, torrent, download_dir, move_timeout=5 * 60):
         """
@@ -322,10 +314,8 @@ class Prunerr(cmd.Cmd):
             -torrent.ratio,
         )
 
-    def do_update_priorities(self, line):
+    def update_priorities(self):
         """Set torrent priority by private/public trackers"""
-        if line:
-            raise ValueError("'update_priorities' command doesn't accept args")
 
         changed = []
         for torrent in self.torrents:
@@ -345,11 +335,8 @@ class Prunerr(cmd.Cmd):
                 torrent.update()
                 changed.append(torrent)
 
-    def do_free_space(self, line):
+    def free_space(self):
         """Delete some torrents if running out of disk space."""
-        if line:
-            raise ValueError("'free_space' command doesn't accept args")
-
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
         trackers_ordered = [
@@ -387,7 +374,7 @@ class Prunerr(cmd.Cmd):
 
         # First find orphaned files, remove smallest files first
         # Update torrent.downloadDir first to identify orphans
-        self.do_update("")
+        self.update()
         download_dirs = (
             self.settings.get(
                 "seeding-dir",
@@ -504,7 +491,7 @@ class Prunerr(cmd.Cmd):
 
         if removed:
             # Update the list of torrents if we removed any
-            self.do_update("")
+            self.update()
 
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
         """Recursively list paths that aren't a part of any torrent."""
@@ -540,6 +527,7 @@ class Prunerr(cmd.Cmd):
         """
         Verify any incomplete torrents that are paused because of corruption.
         """
+        self.update()
         corrupt = dict(
             (torrent.id, torrent)
             for torrent in self.torrents
@@ -581,7 +569,7 @@ class Prunerr(cmd.Cmd):
 
         return torrent_location
 
-    def do_recopy_seeding(self, line):
+    def recopy_seeding(self):
         """
         Re-copy all seeding torrents managed by the `daemon` command.
 
@@ -590,9 +578,7 @@ class Prunerr(cmd.Cmd):
         data loss as much as is still possible with what torrents are still
         local.
         """
-        if line:
-            raise ValueError("'recopy_seeding' command doesn't accept args")
-        self.do_update("")
+        self.update()
         session = self.tc.get_session()
 
         for torrent in self.torrents:
@@ -611,6 +597,9 @@ class Prunerr(cmd.Cmd):
             )
 
 
+Prunerr.__doc__ = __doc__
+
+
 def get_home():
     try:
         # Don't rely on os.environ['HOME'] such as under cron jobs
@@ -622,61 +611,44 @@ def get_home():
         return os.path.expanduser("~")
 
 
-def main(args=None, connect_timeout=5 * 60):
-    """Main entry point"""
-    if args is None:
-        args = sys.argv[1:]
-    parser = OptionParser(usage="Usage: %prog [options] [[address]:[port]] [command]")
-    parser.add_option(
-        "-s",
-        "--settings",
-        dest="settings",
-        help="JSON file containing settings [default: ~/info/settings.json].",
-    )
-    parser.add_option(
-        "-d",
-        "--debug",
-        dest="debug",
-        help="Enable debug messages.",
-        action="store_true",
-    )
-    (values, args) = parser.parse_args(args)
-    address = "localhost"
-    port = DEFAULT_PORT
-    command = None
+def exec_(prunerr):
+    prunerr.connect()
+    result = prunerr.exec_()
+    if prunerr.popen is not None:
+        logger.info("Letting running copy finish: %s", prunerr.copying)
+        prunerr.popen.wait()
+    return result
 
-    # Default to using ~/.netrc for authentication
-    import netrc
 
-    authenticators = netrc.netrc(os.path.join(get_home(), ".netrc")).authenticators(
-        address
-    )
-    username, account, password = authenticators
+exec_.__doc__ = Prunerr.exec_.__doc__
+parser_exec = subparsers.add_parser("exec", help=exec_.__doc__.strip())
+parser_exec.set_defaults(func=exec_)
 
+
+def daemon(prunerr):
+    prunerr.connect()
+    return prunerr.daemon()
+
+
+daemon.__doc__ = Prunerr.daemon.__doc__
+parser_daemon = subparsers.add_parser("daemon", help=daemon.__doc__.strip())
+parser_daemon.set_defaults(func=daemon)
+
+
+def main(args=None):
     servicelogging.basicConfig()
     # Want just our logger, not transmission-rpc's to log INFO
     logger.setLevel(logging.INFO)
-    if values.debug:
-        logging.getLogger("prunerr").setLevel(logging.DEBUG)
-    prunerr = Prunerr(values.settings)
-    if not command or command.lower() != "help":
-        start = time.time()
-        while not getattr(prunerr, "tc", None):
-            try:
-                prunerr.connect(address, port, username, password)
-            except socket.error:
-                logger.exception("Connection error while connecting to server")
-            except transmissionrpc.TransmissionError as error:
-                print(error)
-                parser.print_help()
-                return 1
-            if time.time() - start > connect_timeout:
-                return "Timed out trying to connect to the server"
-            time.sleep(1)
 
-    line = " ".join([command] + args[args.index(command) + 1:])
-    prunerr.onecmd(line)
+    parsed_args = parser.parse_args(args)
+    prunerr_kwargs = dict(vars(parsed_args))
+    del prunerr_kwargs["func"]
+    prunerr = Prunerr(**prunerr_kwargs)
+    return parsed_args.func(prunerr)
+
+
+main.__doc__ = __doc__
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

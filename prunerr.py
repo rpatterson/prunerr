@@ -14,8 +14,7 @@ import subprocess
 import time
 import logging
 import pathlib
-
-from six.moves import urllib
+import urllib
 
 import yaml
 

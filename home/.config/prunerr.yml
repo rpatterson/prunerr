@@ -28,6 +28,9 @@ downloaders:
   ## The destination remote host and base path in the format accepted as the second
   ## argument to `command`.
   # destination: "servarr.example.com:/media/Library/downloads/"
+  ## Workaround an issue with Transmission when starting torrents with no free space.
+  ## See the Python docstring for `prunerr.Prunerr.readd_missing_data()` for details.
+  # readd-missing-data: true
 indexers:
   # default-priority: 0
   # priorities:

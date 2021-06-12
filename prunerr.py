@@ -15,6 +15,7 @@ import time
 import logging
 import pathlib
 import urllib
+import tempfile
 
 import yaml
 
@@ -99,6 +100,9 @@ class Prunerr(object):
         """
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
+
+        if self.config["downloaders"].get("readd-missing-data"):
+            self.readd_missing_data()
 
         # Keep track of torrents being verified to resume them
         # when verification is complete
@@ -249,8 +253,6 @@ class Prunerr(object):
 
         # Use a temporary file to keep feeding the file list to the
         # subprocess from blocking us
-        import tempfile
-
         files = tempfile.TemporaryFile(mode="w")
         files.writelines(
             os.path.join(relative, subpath) + "\n"
@@ -314,6 +316,7 @@ class Prunerr(object):
         """
         Determine which tracker hostname and priority apply to the torrent if any.
         """
+        # TODO: abstract tracker to indexer with priorities from servarr API
         for tracker in torrent.trackers:
             for action in ("announce", "scrape"):
                 parsed = urllib.parse.urlsplit(tracker[action])
@@ -561,7 +564,6 @@ class Prunerr(object):
         """
         Verify any incomplete torrents that are paused because of corruption.
         """
-        self.update()
         corrupt = dict(
             (torrent.id, torrent)
             for torrent in self.torrents
@@ -581,6 +583,52 @@ class Prunerr(object):
                 torrent.update()
 
         return corrupt
+
+    def readd_missing_data(self):
+        """
+        Workaround an issue with Transmission when starting torrents with no free space.
+
+        While there's no free space on the device, torrents for which no significant
+        data has been downloaded will have no local files created (beyond the
+        `./resume/*.resume` file).  When Transmission is later restarted after some
+        space has been freed on the device, it will consider the "missing" local files
+        an error but no actions can be taken to force it to create the local files anew
+        and resume.  Not verifying, not moving, not re-adding the torrent without first
+        removing it and certainly not simply resuming:
+
+        https://github.com/transmission/transmission/issues/83
+
+        Work around these issues by keeping the `./torrents/*.torrent` file open so that
+        Transmission can't remove it, removing the torrent from Transmission, and
+        re-adding the opened torrent file to Transmission.  There's no way I know of to
+        distinguish between this very common case and other issues that may result in
+        the same `No data found!` error message so there's a chance this can cause
+        issues.
+        """
+        torrents_were_readded = False
+        for torrent in self.torrents:
+            if not (
+                    torrent.status == "stopped"
+                    and torrent.error == 3
+                    and torrent.errorString.lower().startswith("no data found")
+            ):
+                continue
+            torrent = self.tc.get_torrent(torrent.id)
+            logger.error("No data found for %s, re-adding", torrent)
+            with open(torrent.torrentFile, mode="r+b") as torrent_opened:
+                self.tc.remove_torrent(ids=[torrent.id])
+                self.tc.add_torrent(
+                    torrent=torrent_opened,
+                    # These are the only fields from the `add_torrent()` call signature
+                    # in the docs I could see corresponding fields for in the
+                    # representation of a torrent.
+                    bandwidthPriority=torrent.bandwidthPriority,
+                    download_dir=torrent.download_dir,
+                    peer_limit=torrent.peer_limit,
+                )
+            torrents_were_readded = True
+        if torrents_were_readded:
+            self.update()
 
     def move_torrent(self, torrent, old_path, new_path):
         """

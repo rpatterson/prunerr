@@ -97,19 +97,8 @@ class Prunerr(object):
         """
         Prune download client items once.
         """
-        destination = self.config["downloaders"]["copy"]["destination"]
-        command = self.config["downloaders"]["copy"]["command"]
-
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
-        seeding_dir = self.config["downloaders"].get(
-            "seeding-dir",
-            os.path.join(os.path.dirname(session.download_dir), "seeding"),
-        )
-        retry_codes = self.config["downloaders"]["copy"].get(
-            "daemon-retry-codes",
-            [10, 12, 20, 30, 35, 255],
-        )
 
         # Keep track of torrents being verified to resume them
         # when verification is complete
@@ -136,8 +125,26 @@ class Prunerr(object):
                 "\n".join(map(str, self.corrupt.values())),
             )
 
-        # Start copying the most optimal torrent that is fully downloaded and
-        # in the downloads directory.
+        if self.config["downloaders"].get("copy"):
+            self._exec_copy(session)
+
+        # Do any other cleanup
+        self.update_priorities()
+        self.free_space()
+
+    def _exec_copy(self, session):
+        """
+        Launch copy of most optimal, fully downloaded torrent in the downloads dir.
+        """
+        destination = self.config["downloaders"]["copy"]["destination"]
+        command = self.config["downloaders"]["copy"]["command"]
+        seeding_dir = self.config["downloaders"].get(
+            "seeding-dir",
+            os.path.join(os.path.dirname(session.download_dir), "seeding"),
+        )
+        retry_codes = self.config["downloaders"]["copy"].get(
+            "daemon-retry-codes", [10, 12, 20, 30, 35, 255],
+        )
         to_copy = sorted(
             (
                 torrent
@@ -196,10 +203,6 @@ class Prunerr(object):
             logger.info("Disabling upload speed limit while not copying")
             self.tc.set_session(speed_limit_up_enabled=False)
 
-        # Do any other cleanup
-        self.update_priorities()
-        self.free_space()
-
     def update(self):
         self.torrents = self.tc.get_torrents(
             arguments=(
@@ -238,6 +241,8 @@ class Prunerr(object):
 
     def copy(self, torrent, destination, command):
         """Launch the copy subprocess and return the popen object."""
+        if self.config["downloaders"].get("copy"):
+            raise ValueError("Cannot copy items without appropriate configuration")
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
         relative = os.path.relpath(torrent.downloadDir, session.download_dir)

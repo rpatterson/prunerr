@@ -132,8 +132,7 @@ class Prunerr(object):
         if self.config["downloaders"].get("copy"):
             self._exec_copy(session)
 
-        # Do any other cleanup
-        self.update_priorities()
+        # Free disk space if needed
         self.free_space()
 
     def _exec_copy(self, session):
@@ -358,27 +357,6 @@ class Prunerr(object):
             torrent.bandwidthPriority,
             -torrent.ratio,
         )
-
-    def update_priorities(self):
-        """Set torrent priority by private/public trackers"""
-
-        changed = []
-        for torrent in self.torrents:
-            hostname, priority = self.lookup_tracker_priority(torrent)
-            if priority is not None:
-                if torrent.bandwidthPriority != priority:
-                    logger.info("Marking %s as priority %s", torrent, priority)
-                    self.tc.change([torrent.id], bandwidthPriority=priority)
-                    torrent.update()
-                    changed.append(torrent)
-            else:
-                priority = self.config["indexers"].get("default-priority")
-                if priority is None or torrent.bandwidthPriority == priority:
-                    continue
-                logger.info("Marking %s as default priority %s", torrent, priority)
-                self.tc.change([torrent.id], bandwidthPriority=priority)
-                torrent.update()
-                changed.append(torrent)
 
     def free_space(self):
         """

@@ -550,6 +550,11 @@ class Prunerr(object):
                 du.stdin.write(entry_path.encode("utf-8") + b"\0")
                 du_line = du.stdout.readline()
                 size, du_path = du_line[:-1].split(b"\t", 1)[:2]
+                size = int(size)
+                logger.error(
+                    "Found orphan path unrecognized by download client: %s",
+                    utils.format_size(int(size)),
+                )
                 yield (int(size), entry_path)
             elif entry_path in torrent_dirs:
                 for orphan in self._list_orphans(

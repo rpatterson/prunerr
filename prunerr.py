@@ -312,6 +312,26 @@ class Prunerr(object):
                 )
             time.sleep(1)
 
+    def sort_torrents_by_tracker(self, torrents):
+        """
+        Sort the given torrents based upon tracker priority and other metrics.
+        """
+        # Next remove seeding and copied torrents
+        trackers_ordered = [
+            hostname
+            for hostname, priority in reversed(
+                self.config["indexers"]["tracker-priorities"],
+            )
+        ]
+        return sorted(
+            (
+                (index, torrent)
+                for index, torrent in enumerate(torrents)
+            ),
+            # remove lowest priority and highest ratio first
+            key=lambda item: self.get_torrent_priority_key(trackers_ordered, item[1]),
+        )
+
     def lookup_tracker_priority(self, torrent):
         """
         Determine which tracker hostname and priority apply to the torrent if any.
@@ -361,48 +381,167 @@ class Prunerr(object):
                 changed.append(torrent)
 
     def free_space(self):
-        """Delete some torrents if running out of disk space."""
+        """
+        If running out of disk space, delete some torrents until enough space is free.
+
+        Delete from the following groups of torrents in order:
+        - torrents no longer registered with the tracker
+        - orphaned paths not recognized by the download client or its items
+        - seeding torrents, that have been successfully copied if configured thus
+        """
+        # Workaround some issues with leading and trailing characters in the default
+        # download directory path
         session = self.tc.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
-        trackers_ordered = [
-            hostname
-            for hostname, priority in reversed(
-                self.config["indexers"]["tracker-priorities"],
-            )
-        ]
 
         # Delete any torrents that have already been copied and are no longer
         # recognized by their tracker: e.g. when a private tracker removes a
         # duplicate/invalid/unauthorized torrent
-        for torrent in self.torrents:
+        unregistered_torrents = self.find_unregistered()
+        if unregistered_torrents:
+            logger.error(
+                "Deleting from %s seeding torrents no longer registered with tracker",
+                len(unregistered_torrents),
+            )
+            self.free_space_remove_torrents(unregistered_torrents)
+
+        # Remove orphans, smallest first until enough space is freed
+        # or there are no more orphans
+        orphans = self.find_orphans()
+        if orphans:
+            logger.error(
+                "Deleting from %s orphans to free space",
+                len(orphans),
+            )
+            self.free_space_remove_torrents(orphans)
+
+        copied_torrents = self.find_copied()
+        if copied_torrents:
+            logger.error(
+                "Deleting from %s seeding torrents that have already been copied",
+                len(copied_torrents),
+            )
+            self.free_space_remove_torrents(copied_torrents, stop_downloading=True)
+
+    def free_space_maybe_resume(self):
+        """
+        Determine if there's sufficient free disk space, resume downloading if paused.
+        """
+        session = self.tc.get_session()
+        statvfs = os.statvfs(session.download_dir)
+        current_free_space = statvfs.f_frsize * statvfs.f_bavail
+        if current_free_space >= self.config["downloaders"]["free-space"]:
+            logger.info(
+                "Downloads directory has %0.2f %s free space, no need to remove items",
+                *utils.format_size(current_free_space),
+            )
+            self._resume_down(session)
+            return True
+        return False
+
+    def free_space_remove_torrents(self, candidates, stop_downloading=False):
+        """
+        Delete items from the candidates until the minimum free space margin is met.
+
+        Items may be torrents from the download client API or tuples of size and
+        filesystem path.
+        """
+        session = self.tc.get_session()
+        removed = []
+        for candidate in candidates:
+            if self.free_space_maybe_resume():
+                # There is now sufficient free disk space
+                return removed
+            statvfs = os.statvfs(session.download_dir)
+            current_free_space = statvfs.f_frsize * statvfs.f_bavail
+
+            # Handle actual torrents recognized by the download client
+            if isinstance(candidate, int):
+                candidate = self.tc.get_torrent(int)
+            if isinstance(candidate, transmission_rpc.Torrent):
+                hostname, priority = self.lookup_tracker_priority(candidate)
+                logger.info(
+                    "Deleting seeding %s to free space, "
+                    "%0.2f %s + %0.2f %s: tracker=%s, priority=%s, ratio=%0.2f",
+                    candidate,
+                    *(
+                        utils.format_size(current_free_space)
+                        + utils.format_size(candidate.totalSize)
+                        + (hostname, candidate.bandwidthPriority, candidate.ratio)
+                    ),
+                )
+                download_dir = candidate.downloadDir
+                self.tc.remove_torrent(candidate.id, delete_data=True)
+                self.move_timeout(candidate, download_dir)
+
+            # Handle filesystem paths not recognized by the download client
+            else:
+                size, path = candidate
+                logger.info(
+                    "Deleting %r to free space: " "%0.2f %s + %0.2f %s",
+                    path,
+                    *(utils.format_size(current_free_space) + utils.format_size(size)),
+                )
+                if os.path.isdir(path):
+                    shutil.rmtree(path, onerror=log_rmtree_error)
+                else:
+                    os.remove(path)
+
+            removed.append(candidate)
+        else:
+            if stop_downloading:
+                statvfs = os.statvfs(session.download_dir)
+                current_free_space = statvfs.f_frsize * statvfs.f_bavail
+                logger.error(
+                    "Running out of space but no items can be removed: %0.2f %s",
+                    *utils.format_size(current_free_space),
+                )
+                kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
+                logger.info("Stopping downloading: %s", kwargs)
+                self.tc.set_session(**kwargs)
+
+        if removed:
+            # Update the list of torrents if we removed any
+            self.update()
+        return removed
+
+    def find_unregistered(self):
+        """
+        Filter any torrents that have already been copied and are no longer recognized
+        by their tracker: e.g. when a private tracker removes a
+        duplicate/invalid/unauthorized torrent.
+        """
+        session = self.tc.get_session()
+        return self.sort_torrents_by_tracker(
+            torrent for torrent in self.torrents
             if (
-                (
-                    torrent.status == "downloading"
-                    or torrent.downloadDir.startswith(
-                        self.config["downloaders"].get(
-                            "seeding-dir",
-                            os.path.join(
-                                os.path.dirname(session.download_dir), "seeding"
-                            ),
+                    (
+                        torrent.status == "downloading"
+                        or torrent.downloadDir.startswith(
+                            self.config["downloaders"].get(
+                                "seeding-dir",
+                                os.path.join(
+                                    os.path.dirname(session.download_dir), "seeding"
+                                ),
+                            )
                         )
                     )
-                )
-                and torrent.error == 2
-                and "unregistered torrent" in torrent.errorString.lower()
-            ):
-                logger.error(
-                    "Deleting seeding %s " "no longer registered with tracker", torrent
-                )
-                self.tc.remove_torrent(torrent.id, delete_data=True)
+                    and torrent.error == 2
+                    and "unregistered torrent" in torrent.errorString.lower()
+            )
+        )
 
-        statvfs = os.statvfs(session.download_dir)
-        if (
-            statvfs.f_frsize * statvfs.f_bavail
-            >= self.config["downloaders"]["free-space"]
-        ):
-            return self._resume_down(session)
+    def find_orphans(self):
+        """
+        Find paths in download client directories that don't correspond to an item.
 
-        # First find orphaned files, remove smallest files first
+        Iterate through all the paths managed by each download client in turn, check
+        all paths within those directories against the download items known to the
+        download client, and report all paths that are unknown to the download client.
+
+        Useful to identify paths to delete when freeing disk space.  Returned sorted
+        from paths that use the least disk space to the most.
+        """
         # Update torrent.downloadDir first to identify orphans
         self.update()
         session = self.tc.get_session()
@@ -451,96 +590,8 @@ class Prunerr(object):
             key=lambda orphan: int(orphan[0]),
         )
         du.stdin.close()
-        # Remove orphans, smallest first until enough space is freed
-        # or there are no more orphans
-        statvfs = os.statvfs(session.download_dir)
-        while (
-            statvfs.f_frsize * statvfs.f_bavail
-            < self.config["downloaders"]["free-space"]
-            and orphans
-        ):
-            size, orphan = orphans.pop(0)
-            logger.warn(
-                "Deleting orphaned path %r to free space: " "%0.2f %s + %0.2f %s",
-                orphan,
-                *itertools.chain(
-                    utils.format_size(statvfs.f_frsize * statvfs.f_bavail),
-                    utils.format_size(size),
-                ),
-            )
-            if os.path.isdir(orphan):
-                shutil.rmtree(orphan, onerror=log_rmtree_error)
-            else:
-                os.remove(orphan)
-            session.update()
-            statvfs = os.statvfs(session.download_dir)
-        du.wait()
-        if du.returncode:
-            raise subprocess.CalledProcessError(du.returncode, du_cmd)
-        statvfs = os.statvfs(session.download_dir)
-        if (
-            statvfs.f_frsize * statvfs.f_bavail
-            >= self.config["downloaders"]["free-space"]
-        ):
-            # No need to process seeding torrents
-            # if removing orphans already freed enough space
-            return self._resume_down(session)
 
-        # Next remove seeding and copied torrents
-        by_ratio = sorted(
-            (
-                (index, torrent)
-                for index, torrent in enumerate(self.torrents)
-                # only those previously synced and moved
-                if torrent.status == "seeding"
-                and torrent.downloadDir.startswith(
-                    self.config["downloaders"].get(
-                        "seeding-dir",
-                        os.path.join(os.path.dirname(session.download_dir), "seeding"),
-                    )
-                )
-            ),
-            # remove lowest priority and highest ratio first
-            key=lambda item: self.get_torrent_priority_key(trackers_ordered, item[1]),
-        )
-        removed = []
-        while (
-            statvfs.f_frsize * statvfs.f_bavail
-            < self.config["downloaders"]["free-space"]
-        ):
-            if not by_ratio:
-                logger.error(
-                    "Running out of space but no torrents can be removed: %s",
-                    utils.format_size(statvfs.f_frsize * statvfs.f_bavail),
-                )
-                kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
-                logger.info("Stopping downloading: %s", kwargs)
-                self.tc.set_session(**kwargs)
-                break
-            index, remove = by_ratio.pop(0)
-            hostname, priority = self.lookup_tracker_priority(remove)
-            logger.info(
-                "Deleting seeding %s to free space, "
-                "%0.2f %s + %0.2f %s: tracker=%s, priority=%s, ratio=%0.2f",
-                remove,
-                *(
-                    utils.format_size(statvfs.f_frsize * statvfs.f_bavail)
-                    + utils.format_size(remove.totalSize)
-                    + (hostname, remove.bandwidthPriority, remove.ratio)
-                ),
-            )
-            download_dir = remove.downloadDir
-            self.tc.remove_torrent(remove.id, delete_data=True)
-            self.move_timeout(remove, download_dir)
-            removed.append(remove)
-            session.update()
-            statvfs = os.statvfs(session.download_dir)
-        else:
-            self._resume_down(session)
-
-        if removed:
-            # Update the list of torrents if we removed any
-            self.update()
+        return orphans
 
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
         """Recursively list paths that aren't a part of any torrent."""
@@ -561,6 +612,25 @@ class Prunerr(object):
                     torrent_dirs, torrent_paths, du, entry_path
                 ):
                     yield orphan
+
+    def find_copied(self):
+        """
+        List any torrents that have already been copied and are no longer recognized by
+        their tracker: e.g. when a private tracker removes a
+        duplicate/invalid/unauthorized torrent.
+        """
+        session = self.tc.get_session()
+        return self.sort_torrents_by_tracker(
+            torrent for torrent in self.torrents
+            # only those previously synced and moved
+            if torrent.status == "seeding"
+            and torrent.downloadDir.startswith(
+                self.config["downloaders"].get(
+                    "seeding-dir",
+                    os.path.join(os.path.dirname(session.download_dir), "seeding"),
+                )
+            )
+        )
 
     def _resume_down(self, session):
         """

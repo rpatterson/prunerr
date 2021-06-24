@@ -5,12 +5,18 @@ daemon:
 downloaders:
   ## Connection details for the download client formatted as a URL.
   url: "http://transmission:****************@localhost:9091/transmission/"
-  ## The amount of disk space to keep free when deciding whether to prune download
-  ## items.
-  free-space: 4294967296
-  ## The download speed limit to put back in place when resuming downloads after
-  ## previously stopping.  Defaults to unlimited if unset.
-  # daemon-speed-limit-down: 9600
+  ## Calculate an appropriate margin of disk space to keep free when deciding whether to
+  ## prune download items based the maximum download bandwidth/speed in Mbps and the
+  ## amount of time in seconds at that rate for which download clients should be able to
+  ## continue downloading without exhausting disk space.
+  ## 100 Mb/s, e.g. dedicated ethernet
+  max-download-bandwidth: 100
+  ## 60 seconds * 60 minutes = 1 hour
+  # min-download-time-margin: 3600
+  ## Should the maximum download bandwidth/speed be set in the download client as a
+  ## limit when resuming downloads after previously stopping?  May be useful for QoS to
+  ## optimize real download throughput.
+  # resume-set-download-bandwidth-limit: false
   ## The base directory of items before they are done downloading.
   # download-dir: "/var/lib/transmission-daemon/downloads"
   ## If items are done downloading and are seeding they will be moved to this

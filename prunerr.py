@@ -78,7 +78,15 @@ def log_rmtree_error(function, path, excinfo):
 class Prunerr(object):
 
     def __init__(self, config):
+        """
+        Do any config post processing and set initial state.
+        """
         self.config = config
+        self.config["downloaders"]["min-download-free-space"] = (
+            (self.config["downloaders"]["max-download-bandwidth"] / 8)
+            * self.config["downloaders"].get("min-download-time-margin", 3600)
+        )
+
         self.popen = self.copying = None
         self.corrupt = {}
 
@@ -412,7 +420,7 @@ class Prunerr(object):
         session = self.tc.get_session()
         statvfs = os.statvfs(session.download_dir)
         current_free_space = statvfs.f_frsize * statvfs.f_bavail
-        if current_free_space >= self.config["downloaders"]["free-space"]:
+        if current_free_space >= self.config["downloaders"]["min-download-free-space"]:
             logger.info(
                 "Downloads directory has %0.2f %s free space, no need to remove items",
                 *utils.format_size(current_free_space),
@@ -618,9 +626,16 @@ class Prunerr(object):
         """
         Resume downloading if it's been stopped.
         """
-        speed_limit_down = self.config["downloaders"].get("daemon-speed-limit-down")
-        if session.speed_limit_down_enabled and (
-            not speed_limit_down or speed_limit_down != session.speed_limit_down
+        speed_limit_down = self.config["downloaders"]["max-download-bandwidth"]
+        if (
+                self.config["downloaders"].get(
+                    "resume-set-download-bandwidth-limit",
+                    False,
+                )
+                and session.speed_limit_down_enabled
+                and (
+                    not speed_limit_down or speed_limit_down != session.speed_limit_down
+                )
         ):
             if speed_limit_down:
                 kwargs = dict(speed_limit_down=speed_limit_down)

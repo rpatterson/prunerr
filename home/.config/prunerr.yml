@@ -2,9 +2,20 @@ daemon:
   ## The number of seconds to wait between each execution of the order of operations.
   ## Default: 60
   # poll: 60
+servarrs:
+  ## The Servarr application instances, such as Sonarr or Radarr, whose download client
+  ## items should be pruned.  At least one Servarr instance must be configured.
+  ## Multiple Servarr instances may be given: e.g. prune download client items in both
+  ## Sonarr and Radarr.
+  - name: "Sonarr"
+    type: "sonarr"
+    url: "http://localhost:8989"
+    api-key: "********************************"
+  - name: "Radarr"
+    type: "radarr"
+    url: "http://localhost:7878"
+    api-key: "********************************"
 downloaders:
-  ## Connection details for the download client formatted as a URL.
-  url: "http://transmission:****************@localhost:9091/transmission/"
   ## Calculate an appropriate margin of disk space to keep free when deciding whether to
   ## prune download items based the maximum download bandwidth/speed in Mbps and the
   ## amount of time in seconds at that rate for which download clients should be able to

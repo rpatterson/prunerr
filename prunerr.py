@@ -21,11 +21,18 @@ import yaml
 
 import servicelogging
 
+import pyarr
+
 import transmission_rpc
 from transmission_rpc import utils
 from transmission_rpc import error
 
 logger = logging.getLogger("prunerr")
+
+servarr_client_types = dict(
+    sonarr=pyarr.SonarrAPI,
+    radarr=pyarr.RadarrAPIv3,
+)
 
 
 def yaml_arg_type(arg):
@@ -77,7 +84,7 @@ def log_rmtree_error(function, path, excinfo):
 
 class Prunerr(object):
 
-    def __init__(self, config):
+    def __init__(self, config, client, url):
         """
         Do any config post processing and set initial state.
         """
@@ -87,26 +94,17 @@ class Prunerr(object):
             * self.config["downloaders"].get("min-download-time-margin", 3600)
         )
 
+        self.client = client
+        self.url = url
+
         self.popen = self.copying = None
         self.corrupt = {}
-
-    def connect(self):
-        url_parsed = urllib.parse.urlsplit(self.config["downloaders"]["url"])
-        self.tc = transmission_rpc.client.Client(
-            protocol=url_parsed.scheme,
-            host=url_parsed.hostname,
-            port=url_parsed.port,
-            path=url_parsed.path,
-            username=url_parsed.username,
-            password=url_parsed.password,
-        )
-        self.update()
 
     def exec_(self):
         """
         Prune download client items once.
         """
-        session = self.tc.get_session()
+        session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
 
         if self.config["downloaders"].get("readd-missing-data"):
@@ -210,16 +208,16 @@ class Prunerr(object):
             logger.info(
                 "Enabling upload speed limit during copy: %s", session.speed_limit_up
             )
-            self.tc.set_session(speed_limit_up_enabled=True)
+            self.client.set_session(speed_limit_up_enabled=True)
             logger.info("Copying torrent: %s", to_copy[0])
             self.popen = self.copy(to_copy[0], destination, command)
             self.copying = to_copy[0]
         elif self.popen is None:
             logger.info("Disabling upload speed limit while not copying")
-            self.tc.set_session(speed_limit_up_enabled=False)
+            self.client.set_session(speed_limit_up_enabled=False)
 
     def update(self):
-        self.torrents = self.tc.get_torrents(
+        self.torrents = self.client.get_torrents(
             arguments=(
                 "id",
                 "name",
@@ -258,7 +256,7 @@ class Prunerr(object):
         """Launch the copy subprocess and return the popen object."""
         if self.config["downloaders"].get("copy"):
             raise ValueError("Cannot copy items without appropriate configuration")
-        session = self.tc.get_session()
+        session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
         relative = os.path.relpath(torrent.downloadDir, session.download_dir)
 
@@ -381,7 +379,7 @@ class Prunerr(object):
         """
         # Workaround some issues with leading and trailing characters in the default
         # download directory path
-        session = self.tc.get_session()
+        session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
 
         # Delete any torrents that have already been copied and are no longer
@@ -417,7 +415,7 @@ class Prunerr(object):
         """
         Determine if there's sufficient free disk space, resume downloading if paused.
         """
-        session = self.tc.get_session()
+        session = self.client.get_session()
         statvfs = os.statvfs(session.download_dir)
         current_free_space = statvfs.f_frsize * statvfs.f_bavail
         if current_free_space >= self.config["downloaders"]["min-download-free-space"]:
@@ -436,7 +434,7 @@ class Prunerr(object):
         Items may be torrents from the download client API or tuples of size and
         filesystem path.
         """
-        session = self.tc.get_session()
+        session = self.client.get_session()
         removed = []
         for candidate in candidates:
             if self.free_space_maybe_resume():
@@ -447,7 +445,7 @@ class Prunerr(object):
 
             # Handle actual torrents recognized by the download client
             if isinstance(candidate, int):
-                candidate = self.tc.get_torrent(int)
+                candidate = self.client.get_torrent(int)
             if isinstance(candidate, transmission_rpc.Torrent):
                 hostname, priority = self.lookup_tracker_priority(candidate)
                 logger.info(
@@ -461,7 +459,7 @@ class Prunerr(object):
                     ),
                 )
                 download_dir = candidate.downloadDir
-                self.tc.remove_torrent(candidate.id, delete_data=True)
+                self.client.remove_torrent(candidate.id, delete_data=True)
                 self.move_timeout(candidate, download_dir)
 
             # Handle filesystem paths not recognized by the download client
@@ -488,7 +486,7 @@ class Prunerr(object):
                 )
                 kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
                 logger.info("Stopping downloading: %s", kwargs)
-                self.tc.set_session(**kwargs)
+                self.client.set_session(**kwargs)
 
         if removed:
             # Update the list of torrents if we removed any
@@ -501,7 +499,7 @@ class Prunerr(object):
         by their tracker: e.g. when a private tracker removes a
         duplicate/invalid/unauthorized torrent.
         """
-        session = self.tc.get_session()
+        session = self.client.get_session()
         return self.sort_torrents_by_tracker(
             torrent for torrent in self.torrents
             if (
@@ -534,7 +532,7 @@ class Prunerr(object):
         """
         # Update torrent.downloadDir first to identify orphans
         self.update()
-        session = self.tc.get_session()
+        session = self.client.get_session()
         download_dirs = (
             # Transmission's `incomplete` directory for incomplete, leeching torrents
             session.incomplete_dir,
@@ -613,7 +611,7 @@ class Prunerr(object):
         their tracker: e.g. when a private tracker removes a
         duplicate/invalid/unauthorized torrent.
         """
-        session = self.tc.get_session()
+        session = self.client.get_session()
         return self.sort_torrents_by_tracker(
             torrent for torrent in self.torrents
             # only those previously synced and moved
@@ -646,7 +644,7 @@ class Prunerr(object):
             else:
                 kwargs = dict(speed_limit_down_enabled=False)
             logger.info("Resuming downloading: %s", kwargs)
-            self.tc.set_session(**kwargs)
+            self.client.set_session(**kwargs)
 
     def verify_corrupted(self):
         """
@@ -666,7 +664,7 @@ class Prunerr(object):
             logger.info(
                 "Verifying corrupt torrents:\n%s", "\n".join(map(str, corrupt.values()))
             )
-            self.tc.verify_torrent(list(corrupt.keys()))
+            self.client.verify_torrent(list(corrupt.keys()))
             for torrent in corrupt.values():
                 torrent.update()
 
@@ -701,11 +699,11 @@ class Prunerr(object):
                     and torrent.errorString.lower().startswith("no data found")
             ):
                 continue
-            torrent = self.tc.get_torrent(torrent.id)
+            torrent = self.client.get_torrent(torrent.id)
             logger.error("No data found for %s, re-adding", torrent)
             with open(torrent.torrentFile, mode="r+b") as torrent_opened:
-                self.tc.remove_torrent(ids=[torrent.id])
-                self.tc.add_torrent(
+                self.client.remove_torrent(ids=[torrent.id])
+                self.client.add_torrent(
                     torrent=torrent_opened,
                     # These are the only fields from the `add_torrent()` call signature
                     # in the docs I could see corresponding fields for in the
@@ -749,7 +747,7 @@ class Prunerr(object):
         local.
         """
         self.update()
-        session = self.tc.get_session()
+        session = self.client.get_session()
 
         for torrent in self.torrents:
             if torrent.status != "seeding" or torrent.downloadDir.startswith(
@@ -781,8 +779,57 @@ def get_home():
         return os.path.expanduser("~")
 
 
+def collect_downloaders(config):
+    """
+    Aggregate all download clients from all Servarr instances defined in the config.
+    """
+    servarr_clients = [
+        servarr_client_types[servarr_config["type"]](
+            servarr_config["url"],
+            servarr_config["api-key"],
+        )
+        for servarr_config in config["servarrs"]
+    ]
+
+    # Connect clients to all download clients
+    downloaders = {}
+    for servarr_client in servarr_clients:
+        for download_client in servarr_client.request_get("/api/downloadclient"):
+            if not download_client["enable"]:
+                continue
+            download_client_fields = {
+                download_client_field["name"]: download_client_field["value"]
+                for download_client_field in download_client["fields"]
+                if "value" in download_client_field
+            }
+            downloader_url = urllib.parse.SplitResult(
+                "http" if not download_client_fields["useSsl"] else "https",
+                f"{download_client_fields['host']}:{download_client_fields['port']}",
+                download_client_fields["urlBase"],
+                None,
+                None,
+            )
+            if downloader_url.geturl() not in downloaders:
+                downloaders[
+                    downloader_url.geturl()
+                ] = transmission_rpc.client.Client(
+                    protocol=downloader_url.scheme,
+                    host=downloader_url.hostname,
+                    port=downloader_url.port,
+                    path=downloader_url.path,
+                    username=download_client_fields["username"],
+                    password=download_client_fields["password"],
+                )
+                downloaders[downloader_url.geturl()].servarrs = {}
+            downloaders[downloader_url.geturl()].servarrs[
+                servarr_client.host_url
+            ] = servarr_client
+
+    return downloaders
+
+
 def exec_(prunerr):
-    prunerr.connect()
+    prunerr.update()
     result = prunerr.exec_()
     if prunerr.popen is not None:
         logger.info("Letting running copy finish: %s", prunerr.copying)
@@ -796,7 +843,7 @@ parser_exec.set_defaults(func=exec_)
 
 
 def daemon(prunerr):
-    prunerr.connect()
+    prunerr.update()
     return prunerr.daemon()
 
 
@@ -811,10 +858,20 @@ def main(args=None):
     logger.setLevel(logging.INFO)
 
     parsed_args = parser.parse_args(args)
-    prunerr_kwargs = dict(vars(parsed_args))
-    del prunerr_kwargs["func"]
-    prunerr = Prunerr(**prunerr_kwargs)
-    return parsed_args.func(prunerr)
+    shared_kwargs = dict(vars(parsed_args))
+    del shared_kwargs["func"]
+
+    # Iterate over each of the unique enabled download clients in each Servarr instances
+    # and run the sub-command for each of those.
+    results = []
+    downloaders = collect_downloaders(shared_kwargs["config"])
+    for downloader_url, downloader_client in downloaders.items():
+        prunerr_kwargs = dict(shared_kwargs)
+        prunerr_kwargs["client"] = downloader_client
+        prunerr_kwargs["url"] = downloader_url
+        prunerr = Prunerr(**prunerr_kwargs)
+        results.append(parsed_args.func(prunerr))
+    return results
 
 
 main.__doc__ = __doc__

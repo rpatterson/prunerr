@@ -13,6 +13,8 @@ required = [
     "service-logging",
     # Configuration file format
     "pyyaml",
+    # Servarr API clients/wrappers
+    "pyarr",
 ]
 
 setup(

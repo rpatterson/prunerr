@@ -405,17 +405,27 @@ class Prunerr(object):
         # First find orphaned files, remove smallest files first
         # Update torrent.downloadDir first to identify orphans
         self.update()
+        session = self.tc.get_session()
         download_dirs = (
+            # Transmission's `incomplete` directory for incomplete, leeching torrents
+            session.incomplete_dir,
+            # Transmission's `downloads` directory for complete, seeding torrents
+            session.download_dir,
+            # A Prunerr `seeding` directory that we may move torrents to after
+            # successfully copying them.
             self.config["downloaders"].get(
                 "seeding-dir",
                 os.path.join(os.path.dirname(session.download_dir), "seeding"),
             ),
-            session.download_dir,
         )
+
         # Assemble all directories whose descendants are torrents
         torrent_dirs = set()
         torrent_paths = set()
         for torrent in self.torrents:
+            # Transmission's `incomplete` directory for incomplete, leeching torrents
+            torrent_paths.add(os.path.join(session.incomplete_dir, torrent.name))
+            # Transmission's `downloads` directory for complete, seeding torrents
             torrent_dir, tail = os.path.split(torrent.downloadDir + os.sep)
             # Include the ancestors of the torrent's path
             # so we know what dirs to descend into when looking for orphans
@@ -423,6 +433,7 @@ class Prunerr(object):
                 torrent_dirs.add(torrent_dir)
                 torrent_dir, tail = os.path.split(torrent_dir)
             torrent_paths.add(os.path.join(torrent.downloadDir, torrent.name))
+
         # Sort the orphans by total directory size
         # TODO Windows compatibility
         du_cmd = ["du", "-s", "--block-size=1", "--files0-from=-"]

@@ -445,6 +445,7 @@ class Prunerr(object):
                 *(
                     self._list_orphans(torrent_dirs, torrent_paths, du, download_dir)
                     for download_dir in download_dirs
+                    if pathlib.Path(download_dir).is_dir()
                 )
             ),
             key=lambda orphan: int(orphan[0]),

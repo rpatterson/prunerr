@@ -325,7 +325,6 @@ class Prunerr(object):
         """
         Sort the given torrents based upon tracker priority and other metrics.
         """
-        # Next remove seeding and copied torrents
         trackers_ordered = [
             hostname
             for hostname, priority in reversed(
@@ -403,6 +402,7 @@ class Prunerr(object):
             )
             self.free_space_remove_torrents(orphans)
 
+        # Next remove seeding and copied torrents
         copied_torrents = self.find_copied()
         if copied_torrents:
             logger.error(

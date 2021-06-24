@@ -102,6 +102,8 @@ class Prunerr(object):
         session.download_dir = session.download_dir.strip(" `'\"")
 
         if self.config["downloaders"].get("readd-missing-data"):
+            # Workaround an issue with Transmission when starting torrents with no free
+            # space.
             self.readd_missing_data()
 
         # Keep track of torrents being verified to resume them

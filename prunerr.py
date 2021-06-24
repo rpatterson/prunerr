@@ -132,6 +132,8 @@ class Prunerr(object):
             )
 
         if self.config["downloaders"].get("copy"):
+            # Launch copy of most optimal, fully downloaded torrent in the downloads
+            # dir.
             self._exec_copy(session)
 
         # Free disk space if needed

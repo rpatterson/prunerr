@@ -567,7 +567,11 @@ class Prunerr(object):
         # TODO Windows compatibility
         du_cmd = ["du", "-s", "--block-size=1", "--files0-from=-"]
         du = subprocess.Popen(
-            du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, bufsize=0
+            du_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            bufsize=0,
         )
         orphans = sorted(
             itertools.chain(
@@ -588,9 +592,9 @@ class Prunerr(object):
         for entry in os.listdir(path):
             entry_path = os.path.join(path, entry)
             if entry_path not in torrent_paths and entry_path not in torrent_dirs:
-                du.stdin.write(entry_path.encode("utf-8") + b"\0")
+                du.stdin.write(entry_path + "\0")
                 du_line = du.stdout.readline()
-                size, du_path = du_line[:-1].split(b"\t", 1)[:2]
+                size, du_path = du_line[:-1].split("\t", 1)[:2]
                 size = int(size)
                 logger.error(
                     "Found %0.2f %s orphan path unrecognized by download client: %s",

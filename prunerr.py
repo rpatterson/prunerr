@@ -21,7 +21,7 @@ import yaml
 
 import servicelogging
 
-import pyarr
+import arrapi
 
 import transmission_rpc
 from transmission_rpc import utils
@@ -30,8 +30,8 @@ from transmission_rpc import error
 logger = logging.getLogger("prunerr")
 
 servarr_client_types = dict(
-    sonarr=pyarr.SonarrAPI,
-    radarr=pyarr.RadarrAPIv3,
+    sonarr=arrapi.SonarrAPI,
+    radarr=arrapi.RadarrAPI,
 )
 
 
@@ -794,7 +794,7 @@ def collect_downloaders(config):
     # Connect clients to all download clients
     downloaders = {}
     for servarr_client in servarr_clients:
-        for download_client in servarr_client.request_get("/api/downloadclient"):
+        for download_client in servarr_client._get("downloadclient"):
             if not download_client["enable"]:
                 continue
             download_client_fields = {
@@ -822,7 +822,7 @@ def collect_downloaders(config):
                 )
                 downloaders[downloader_url.geturl()].servarrs = {}
             downloaders[downloader_url.geturl()].servarrs[
-                servarr_client.host_url
+                servarr_client.url
             ] = servarr_client
 
     return downloaders

@@ -30,15 +30,16 @@ downloaders:
   # resume-set-download-bandwidth-limit: false
   ## The base directory of items before they are done downloading.
   # download-dir: "/var/lib/transmission-daemon/downloads"
-  ## If items are done downloading and are seeding they will be moved to this
-  ## directory.  Defaults to the `seeding` setting of the download client.
-  # seeding-dir: "/var/lib/transmission-daemon/seeding"
+  ## If items are done downloading, are seeding, and have been successfully imported (or
+  ## copied) they will be moved to this directory.  Defaults to an `./imported/`
+  ## directory next to the download client's default `./downloads` directory.
+  # imported-dir: "/var/lib/transmission-daemon/imported"
   ## Settings that control copying downloaded items to remote servarr hosts.  If
   ## unset, downloads are left in place such as when download clients are running on
   ## the same host as the servarr instances.
   # copy:
   ## The command to execute to copy competed downloads.  Must accept two arguments: the
-  ## `seeding-dir`, and the corresponding destination path on the remote host.  Must
+  ## `imported-dir`, and the corresponding destination path on the remote host.  Must
   ## also accept relative paths for each file in the download item on `/dev/stdin`.
   ## Expects the same behaviour as the default `$ rsync ...` command.
   # command: "rsync -tSmP --files-from=-"

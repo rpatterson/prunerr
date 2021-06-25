@@ -156,9 +156,9 @@ class Prunerr(object):
         """
         destination = self.config["downloaders"]["copy"]["destination"]
         command = self.config["downloaders"]["copy"]["command"]
-        seeding_dir = self.config["downloaders"].get(
-            "seeding-dir",
-            os.path.join(os.path.dirname(session.download_dir), "seeding"),
+        imported_dir = self.config["downloaders"].get(
+            "imported-dir",
+            os.path.join(os.path.dirname(session.download_dir), "imported"),
         )
         retry_codes = self.config["downloaders"]["copy"].get(
             "daemon-retry-codes", [10, 12, 20, 30, 35, 255],
@@ -190,7 +190,7 @@ class Prunerr(object):
                 # Copy process succeeded
                 # Move a torrent preserving subpath and block until done.
                 self.move_torrent(
-                    self.copying, old_path=session.download_dir, new_path=seeding_dir
+                    self.copying, old_path=session.download_dir, new_path=imported_dir
                 )
                 if to_copy and self.copying.id == to_copy[0].id:
                     to_copy.pop(0)
@@ -513,9 +513,9 @@ class Prunerr(object):
                         torrent.status == "downloading"
                         or torrent.downloadDir.startswith(
                             self.config["downloaders"].get(
-                                "seeding-dir",
+                                "imported-dir",
                                 os.path.join(
-                                    os.path.dirname(session.download_dir), "seeding"
+                                    os.path.dirname(session.download_dir), "imported"
                                 ),
                             )
                         )
@@ -544,11 +544,11 @@ class Prunerr(object):
             session.incomplete_dir,
             # Transmission's `downloads` directory for complete, seeding torrents
             session.download_dir,
-            # A Prunerr `seeding` directory that we may move torrents to after
-            # successfully copying them.
+            # A Prunerr `imported` directory that we may move torrents to after
+            # successfully importing them.
             self.config["downloaders"].get(
-                "seeding-dir",
-                os.path.join(os.path.dirname(session.download_dir), "seeding"),
+                "imported-dir",
+                os.path.join(os.path.dirname(session.download_dir), "imported"),
             ),
         )
 
@@ -741,14 +741,13 @@ class Prunerr(object):
 
         return torrent_location
 
-    def recopy_seeding(self):
+    def reimport_seeding(self):
         """
-        Re-copy all seeding torrents managed by the `daemon` command.
+        Re-import all seeding torrents managed by the `daemon` command.
 
-        Move all seeding torrents back to the downloads directory so that the
-        `daemon` command will re-copy them.  Useful to recover from any remote
-        data loss as much as is still possible with what torrents are still
-        local.
+        Move all imorted torrents back to the downloads directory so they can be
+        re-importied (or re-copied).  Useful to recover from any remote data loss as
+        much as is still possible with what torrents are still local.
         """
         self.update()
         session = self.client.get_session()
@@ -762,8 +761,8 @@ class Prunerr(object):
             self.move_torrent(
                 torrent,
                 old_path=self.config["downloaders"].get(
-                    "seeding-dir",
-                    os.path.join(os.path.dirname(session.download_dir), "seeding"),
+                    "imported-dir",
+                    os.path.join(os.path.dirname(session.download_dir), "imported"),
                 ),
                 new_path=session.download_dir,
             )

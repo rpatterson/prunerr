@@ -494,9 +494,10 @@ class Prunerr(object):
 
     def find_unregistered(self):
         """
-        Filter any torrents that have already been copied and are no longer recognized
-        by their tracker: e.g. when a private tracker removes a
-        duplicate/invalid/unauthorized torrent.
+        Filter already imported torrents that are no longer recognized by their tracker.
+
+        For example, when a private tracker removes a duplicate/invalid/unauthorized
+        torrent.
         """
         session = self.client.get_session()
         return self.sort_torrents_by_tracker(
@@ -606,9 +607,7 @@ class Prunerr(object):
 
     def find_imported(self):
         """
-        List any torrents that have already been copied and are no longer recognized by
-        their tracker: e.g. when a private tracker removes a
-        duplicate/invalid/unauthorized torrent.
+        Filter torrents that have already been successfully imported.
         """
         session = self.client.get_session()
         return self.sort_torrents_by_tracker(

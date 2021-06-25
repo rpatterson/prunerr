@@ -83,19 +83,25 @@ class Prunerr(object):
         radarr=arrapi.RadarrAPI,
     )
 
-    def __init__(self, config, client, url):
+    def __init__(self, config, servarrs, client, url):
         """
-        Do any config post processing and set initial state.
+        Do any config post-processing and set initial state.
         """
+        # Prunerr config processing
         self.config = config
         self.config["downloaders"]["min-download-free-space"] = (
             (self.config["downloaders"]["max-download-bandwidth"] / 8)
             * self.config["downloaders"].get("min-download-time-margin", 3600)
         )
 
+        # Servarr API client and download client settings
+        self.servarrs = servarrs
+
+        # Download client handling
         self.client = client
         self.url = url
 
+        # Initial state
         self.popen = self.copying = None
         self.corrupt = {}
 
@@ -781,47 +787,50 @@ def collect_downloaders(config):
     """
     Aggregate all download clients from all Servarr instances defined in the config.
     """
-    servarr_clients = [
-        Prunerr.SERVARR_CLIENT_TYPES[servarr_config["type"]](
-            servarr_config["url"],
-            servarr_config["api-key"],
-        )
-        for servarr_config in config["servarrs"]
-    ]
 
     # Connect clients to all download clients
     downloaders = {}
-    for servarr_client in servarr_clients:
-        for download_client in servarr_client._get("downloadclient"):
-            if not download_client["enable"]:
+    for servarr_config in config["servarrs"]:
+        servarr_config["client"] = servarr_client = Prunerr.SERVARR_CLIENT_TYPES[
+            servarr_config["type"]
+        ](servarr_config["url"], servarr_config["api-key"],)
+
+        for downloader_config in servarr_client._get("downloadclient"):
+            if not downloader_config["enable"]:
                 continue
-            download_client_fields = {
-                download_client_field["name"]: download_client_field["value"]
-                for download_client_field in download_client["fields"]
-                if "value" in download_client_field
+
+            # Create a copy specific to this download client so we can modify freely
+            servarr_config = dict(servarr_config)
+            servarr_config["downloadclient"] = downloader_config
+
+            downloader_config["fieldValues"] = field_values = {
+                downloader_config_field["name"]: downloader_config_field["value"]
+                for downloader_config_field in downloader_config["fields"]
+                if "value" in downloader_config_field
             }
             downloader_url = urllib.parse.SplitResult(
-                "http" if not download_client_fields["useSsl"] else "https",
-                f"{download_client_fields['host']}:{download_client_fields['port']}",
-                download_client_fields["urlBase"],
+                "http" if not field_values["useSsl"] else "https",
+                f"{field_values['host']}:{field_values['port']}",
+                field_values["urlBase"],
                 None,
                 None,
             )
+            # Aggregate the download clients from all Servarrs so that we run for each
+            # download client once even when used for multiple Servarr instances
             if downloader_url.geturl() not in downloaders:
-                downloaders[
-                    downloader_url.geturl()
-                ] = transmission_rpc.client.Client(
+                downloader_config["client"] = transmission_rpc.client.Client(
                     protocol=downloader_url.scheme,
                     host=downloader_url.hostname,
                     port=downloader_url.port,
                     path=downloader_url.path,
-                    username=download_client_fields["username"],
-                    password=download_client_fields["password"],
+                    username=field_values["username"],
+                    password=field_values["password"],
                 )
-                downloaders[downloader_url.geturl()].servarrs = {}
-            downloaders[downloader_url.geturl()].servarrs[
-                servarr_client.url
-            ] = servarr_client
+                downloader_config["servarrs"] = {}
+                downloaders[downloader_url.geturl()] = downloader_config
+            else:
+                downloader_config = downloaders[downloader_url.geturl()]
+            downloader_config["servarrs"][servarr_config["url"]] = servarr_config
 
     return downloaders
 
@@ -863,9 +872,10 @@ def main(args=None):
     # and run the sub-command for each of those.
     results = []
     downloaders = collect_downloaders(shared_kwargs["config"])
-    for downloader_url, downloader_client in downloaders.items():
+    for downloader_url, downloader_config in downloaders.items():
         prunerr_kwargs = dict(shared_kwargs)
-        prunerr_kwargs["client"] = downloader_client
+        prunerr_kwargs["servarrs"] = downloader_config["servarrs"]
+        prunerr_kwargs["client"] = downloader_config["client"]
         prunerr_kwargs["url"] = downloader_url
         prunerr = Prunerr(**prunerr_kwargs)
         results.append(parsed_args.func(prunerr))

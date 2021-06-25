@@ -28,11 +28,6 @@ from transmission_rpc import error
 
 logger = logging.getLogger("prunerr")
 
-servarr_client_types = dict(
-    sonarr=arrapi.SonarrAPI,
-    radarr=arrapi.RadarrAPI,
-)
-
 
 def yaml_arg_type(arg):
     return yaml.safe_load(argparse.FileType("r")(arg))
@@ -82,6 +77,11 @@ def log_rmtree_error(function, path, excinfo):
 
 
 class Prunerr(object):
+
+    SERVARR_CLIENT_TYPES = dict(
+        sonarr=arrapi.SonarrAPI,
+        radarr=arrapi.RadarrAPI,
+    )
 
     def __init__(self, config, client, url):
         """
@@ -783,7 +783,7 @@ def collect_downloaders(config):
     Aggregate all download clients from all Servarr instances defined in the config.
     """
     servarr_clients = [
-        servarr_client_types[servarr_config["type"]](
+        Prunerr.SERVARR_CLIENT_TYPES[servarr_config["type"]](
             servarr_config["url"],
             servarr_config["api-key"],
         )

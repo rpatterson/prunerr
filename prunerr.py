@@ -4,9 +4,8 @@ Remove Servarr download client items to preserve disk space according to rules.
 """
 
 import os
-import argparse
-
 import os.path
+import argparse
 import itertools
 import socket
 import shutil

@@ -373,14 +373,14 @@ class Prunerr(object):
         Delete from the following groups of torrents in order:
         - torrents no longer registered with the tracker
         - orphaned paths not recognized by the download client or its items
-        - seeding torrents, that have been successfully copied if configured thus
+        - seeding torrents, that have been successfully imported
         """
         # Workaround some issues with leading and trailing characters in the default
         # download directory path
         session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
 
-        # Delete any torrents that have already been copied and are no longer
+        # Delete any torrents that have already been imported and are no longer
         # recognized by their tracker: e.g. when a private tracker removes a
         # duplicate/invalid/unauthorized torrent
         unregistered_torrents = self.find_unregistered()
@@ -401,14 +401,14 @@ class Prunerr(object):
             )
             self.free_space_remove_torrents(orphans)
 
-        # Next remove seeding and copied torrents
-        copied_torrents = self.find_copied()
-        if copied_torrents:
+        # Next remove seeding and imported torrents
+        imported_torrents = self.find_imported()
+        if imported_torrents:
             logger.error(
-                "Deleting from %s seeding torrents that have already been copied",
-                len(copied_torrents),
+                "Deleting from %s seeding torrents that have already been imported",
+                len(imported_torrents),
             )
-            self.free_space_remove_torrents(copied_torrents, stop_downloading=True)
+            self.free_space_remove_torrents(imported_torrents, stop_downloading=True)
 
     def free_space_maybe_resume(self):
         """
@@ -604,7 +604,7 @@ class Prunerr(object):
                 ):
                     yield orphan
 
-    def find_copied(self):
+    def find_imported(self):
         """
         List any torrents that have already been copied and are no longer recognized by
         their tracker: e.g. when a private tracker removes a

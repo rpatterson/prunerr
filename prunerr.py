@@ -80,9 +80,8 @@ def log_rmtree_error(function, path, excinfo):
 
 class Prunerr(object):
 
-    SERVARR_CLIENT_TYPES = dict(
-        sonarr=arrapi.SonarrAPI,
-        radarr=arrapi.RadarrAPI,
+    # Map the different Servarr applications to values that differ between them
+    SERVARR_CLIENT_TYPES = dict(sonarr=arrapi.SonarrAPI, radarr=arrapi.RadarrAPI,)
     )
 
     def __init__(self, config, servarrs, client, url):
@@ -92,8 +91,8 @@ class Prunerr(object):
         # Prunerr config processing
         self.config = config
         self.config["downloaders"]["min-download-free-space"] = (
-            (self.config["downloaders"]["max-download-bandwidth"] / 8)
-            * self.config["downloaders"].get("min-download-time-margin", 3600)
+            self.config["downloaders"]["max-download-bandwidth"] / 8
+        ) * self.config["downloaders"].get("min-download-time-margin", 3600)
         )
 
         # Servarr API client and download client settings
@@ -339,10 +338,7 @@ class Prunerr(object):
             )
         ]
         return sorted(
-            (
-                (index, torrent)
-                for index, torrent in enumerate(torrents)
-            ),
+            ((index, torrent) for index, torrent in enumerate(torrents)),
             # remove lowest priority and highest ratio first
             key=lambda item: self.get_torrent_priority_key(trackers_ordered, item[1]),
         )
@@ -404,8 +400,7 @@ class Prunerr(object):
         orphans = self.find_orphans()
         if orphans:
             logger.error(
-                "Deleting from %s orphans to free space",
-                len(orphans),
+                "Deleting from %s orphans to free space", len(orphans),
             )
             self.free_space_remove_torrents(orphans)
 
@@ -509,21 +504,22 @@ class Prunerr(object):
         """
         session = self.client.get_session()
         return self.sort_torrents_by_tracker(
-            torrent for torrent in self.torrents
+            torrent
+            for torrent in self.torrents
             if (
-                    (
-                        torrent.status == "downloading"
-                        or torrent.downloadDir.startswith(
-                            self.config["downloaders"].get(
-                                "imported-dir",
-                                os.path.join(
-                                    os.path.dirname(session.download_dir), "imported"
-                                ),
-                            )
+                (
+                    torrent.status == "downloading"
+                    or torrent.downloadDir.startswith(
+                        self.config["downloaders"].get(
+                            "imported-dir",
+                            os.path.join(
+                                os.path.dirname(session.download_dir), "imported"
+                            ),
                         )
                     )
-                    and torrent.error == 2
-                    and "unregistered torrent" in torrent.errorString.lower()
+                )
+                and torrent.error == 2
+                and "unregistered torrent" in torrent.errorString.lower()
             )
         )
 
@@ -573,11 +569,7 @@ class Prunerr(object):
         # TODO Windows compatibility
         du_cmd = ["du", "-s", "--block-size=1", "--files0-from=-"]
         du = subprocess.Popen(
-            du_cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            bufsize=0,
+            du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=0,
         )
         orphans = sorted(
             itertools.chain(
@@ -604,7 +596,7 @@ class Prunerr(object):
                 size = int(size)
                 logger.error(
                     "Found %0.2f %s orphan path unrecognized by download client: %s",
-                    *(utils.format_size(int(size)) + (du_path, )),
+                    *(utils.format_size(int(size)) + (du_path,)),
                 )
                 yield (int(size), entry_path)
             elif entry_path in torrent_dirs:
@@ -636,14 +628,9 @@ class Prunerr(object):
         """
         speed_limit_down = self.config["downloaders"]["max-download-bandwidth"]
         if (
-                self.config["downloaders"].get(
-                    "resume-set-download-bandwidth-limit",
-                    False,
-                )
-                and session.speed_limit_down_enabled
-                and (
-                    not speed_limit_down or speed_limit_down != session.speed_limit_down
-                )
+            self.config["downloaders"].get(
+                "resume-set-download-bandwidth-limit", False,
+            )
         ):
             if speed_limit_down:
                 kwargs = dict(speed_limit_down=speed_limit_down)
@@ -700,9 +687,9 @@ class Prunerr(object):
         torrents_were_readded = False
         for torrent in self.torrents:
             if not (
-                    torrent.status == "stopped"
-                    and torrent.error == 3
-                    and torrent.errorString.lower().startswith("no data found")
+                torrent.status == "stopped"
+                and torrent.error == 3
+                and torrent.errorString.lower().startswith("no data found")
             ):
                 continue
             torrent = self.client.get_torrent(torrent.id)

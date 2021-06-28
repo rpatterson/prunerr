@@ -718,7 +718,9 @@ class Prunerr(object):
         split = splitpath(relative)[1:]
         subpath = split and os.path.join(*split) or ""
         torrent_location = os.path.join(new_path, subpath)
-        logger.info("Moving %s to %s", torrent, torrent_location)
+        logger.info(
+            "Moving %r: %r -> %r", torrent, torrent.download_dir, torrent_location
+        )
         torrent.move_data(torrent_location)
         try:
             self.move_timeout(torrent, download_dir)

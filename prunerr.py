@@ -46,7 +46,9 @@ The path to the Prunerr configuration file. Example:
 https://gitlab.com/rpatterson/prunerr/-/blob/master/home/.config/prunerr.yml\
 """,
 )
-subparsers = parser.add_subparsers(help="sub-command help")
+subparsers = parser.add_subparsers(
+    dest='command', required=True,
+    help="sub-command help")
 
 
 class TransmissionTimeout(Exception):
@@ -845,7 +847,7 @@ def exec_(prunerr):
 
 exec_.__doc__ = Prunerr.exec_.__doc__
 parser_exec = subparsers.add_parser("exec", help=exec_.__doc__.strip())
-parser_exec.set_defaults(func=exec_)
+parser_exec.set_defaults(command=exec_)
 
 
 def daemon(prunerr):
@@ -855,7 +857,7 @@ def daemon(prunerr):
 
 daemon.__doc__ = Prunerr.daemon.__doc__
 parser_daemon = subparsers.add_parser("daemon", help=daemon.__doc__.strip())
-parser_daemon.set_defaults(func=daemon)
+parser_daemon.set_defaults(command=daemon)
 
 
 def main(args=None):
@@ -865,7 +867,7 @@ def main(args=None):
 
     parsed_args = parser.parse_args(args)
     shared_kwargs = dict(vars(parsed_args))
-    del shared_kwargs["func"]
+    del shared_kwargs["command"]
 
     # Iterate over each of the unique enabled download clients in each Servarr instances
     # and run the sub-command for each of those.
@@ -877,7 +879,7 @@ def main(args=None):
         prunerr_kwargs["client"] = downloader_config["client"]
         prunerr_kwargs["url"] = downloader_url
         prunerr = Prunerr(**prunerr_kwargs)
-        results.append(parsed_args.func(prunerr))
+        results.append(parsed_args.command(prunerr))
     return results
 
 

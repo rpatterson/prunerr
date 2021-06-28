@@ -383,6 +383,10 @@ class Prunerr(object):
         # download directory path
         session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
+        if self.free_space_maybe_resume():
+            # There is already sufficient free disk space
+            return None
+        removed_torrents = []
 
         # Delete any torrents that have already been imported and are no longer
         # recognized by their tracker: e.g. when a private tracker removes a
@@ -393,7 +397,12 @@ class Prunerr(object):
                 "Deleting from %s seeding torrents no longer registered with tracker",
                 len(unregistered_torrents),
             )
-            self.free_space_remove_torrents(unregistered_torrents)
+            removed_torrents.extend(
+                self.free_space_remove_torrents(unregistered_torrents),
+            )
+            if self.free_space_maybe_resume():
+                # There is now sufficient free disk space
+                return removed_torrents
 
         # Remove orphans, smallest first until enough space is freed
         # or there are no more orphans
@@ -402,7 +411,10 @@ class Prunerr(object):
             logger.error(
                 "Deleting from %s orphans to free space", len(orphans),
             )
-            self.free_space_remove_torrents(orphans)
+            removed_torrents.extend(self.free_space_remove_torrents(orphans),)
+            if self.free_space_maybe_resume():
+                # There is now sufficient free disk space
+                return removed_torrents
 
         # Next remove seeding and imported torrents
         imported_torrents = self.find_imported()
@@ -411,7 +423,21 @@ class Prunerr(object):
                 "Deleting from %s seeding torrents that have already been imported",
                 len(imported_torrents),
             )
-            self.free_space_remove_torrents(imported_torrents, stop_downloading=True)
+            removed_torrents.extend(self.free_space_remove_torrents(imported_torrents),)
+            if self.free_space_maybe_resume():
+                # There is now sufficient free disk space
+                return removed_torrents
+
+        statvfs = os.statvfs(session.download_dir)
+        current_free_space = statvfs.f_frsize * statvfs.f_bavail
+        logger.error(
+            "Running out of space but no items can be removed: %0.2f %s",
+            *utils.format_size(current_free_space),
+        )
+        kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
+        logger.info("Stopping downloading: %s", kwargs)
+        self.client.set_session(**kwargs)
+        return removed_torrents
 
     def free_space_maybe_resume(self):
         """
@@ -429,7 +455,7 @@ class Prunerr(object):
             return True
         return False
 
-    def free_space_remove_torrents(self, candidates, stop_downloading=False):
+    def free_space_remove_torrents(self, candidates):
         """
         Delete items from the candidates until the minimum free space margin is met.
 
@@ -478,17 +504,6 @@ class Prunerr(object):
                     os.remove(path)
 
             removed.append(candidate)
-        else:
-            if stop_downloading:
-                statvfs = os.statvfs(session.download_dir)
-                current_free_space = statvfs.f_frsize * statvfs.f_bavail
-                logger.error(
-                    "Running out of space but no items can be removed: %0.2f %s",
-                    *utils.format_size(current_free_space),
-                )
-                kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
-                logger.info("Stopping downloading: %s", kwargs)
-                self.client.set_session(**kwargs)
 
         if removed:
             # Update the list of torrents if we removed any
@@ -631,6 +646,8 @@ class Prunerr(object):
             self.config["downloaders"].get(
                 "resume-set-download-bandwidth-limit", False,
             )
+            and session.speed_limit_down_enabled
+            and (not speed_limit_down or speed_limit_down != session.speed_limit_down)
         ):
             if speed_limit_down:
                 kwargs = dict(speed_limit_down=speed_limit_down)

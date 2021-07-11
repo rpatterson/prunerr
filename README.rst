@@ -57,6 +57,18 @@ reliably determines disk space margin *as* the downlod clients are downloading.
    happen if disk space is fully exhausted, including corrupted download client state
    and/or data.
 
+*********************
+Servarr Custom Script
+*********************
+
+If the Servarr instance is running in a container, Servarr Custom Scripts must be
+executable inside the same container as the Servarr instance.  Since Prunerr does not
+support `Python 2.x`_, this means the `linuxserver.io`_ containers are incompatible with
+Prunerr.  The `hotio`_ containers are similarly well maintained and do include `Python
+3.x`_ so those images *are* compatible with Prunerr.  This also means that Prunerr must
+be installed into the container.  See `<./docker-compose.yml>`_ for examples of how to
+stitch all this together in a deployment in containers.
+
 ****************
 Other Operations
 ****************

@@ -1,0 +1,1 @@
+# Disable the Servarr instance service when running `$ prunerr daemon`

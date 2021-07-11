@@ -1,0 +1,29 @@
+#!/usr/bin/with-contenv bash
+#
+# Install Prunerr into a Servarr container so it can be used as a custom script.
+#
+# TODO: It is definitely sub-optimal to run this on container start-up but it's also
+# sub-optimal, namely a maintenance headache, to build container images that extend the
+# base image and keep them up to date.  The Right Way (tm) to address this issue is to
+# convert Prunerr from it's current implementation as a Servarr Custom Script to a
+# Servarr Webhook so we can run Prunerr in a separate service container.  Given that
+# it's not worth trying to do this more correctly.
+
+
+set -eu -o pipefail
+PS4='${LINENO}+'
+# set -x
+
+
+main() {
+    apt-get update
+    apt-get install -y "python3-pip"
+    pip3 install "wheel"
+
+    # TODO: Switch to install from PyPI when released
+    checkout=/usr/local/src/prunerr
+    pip3 install -e "${checkout}[transmission]"
+}
+
+
+main "$@"

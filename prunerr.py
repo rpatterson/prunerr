@@ -173,8 +173,16 @@ class Prunerr(object):
         # Prunerr config processing
         self.config = config
         self.config["downloaders"]["min-download-free-space"] = (
-            self.config["downloaders"]["max-download-bandwidth"] / 8
-        ) * self.config["downloaders"].get("min-download-time-margin", 3600)
+            self.config["downloaders"]["max-download-bandwidth"]
+            # Convert bandwidth bits to bytes
+            / 8
+        ) * (
+            # Convert bandwidth MBps to Bps
+            1024 * 1024
+        ) * (
+            # Multiply by seconds of download time margin
+            self.config["downloaders"].get("min-download-time-margin", 3600)
+        )
         # Set any download client config defaults for Prunerr
         self.config["downloaders"]["download-dir"] = self.config["downloaders"].get(
             "download-dir",

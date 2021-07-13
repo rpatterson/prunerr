@@ -356,7 +356,10 @@ class Prunerr(object):
                 "trackers",
                 "bandwidthPriority",
                 "downloadDir",
+                "leftUntilDone",
+                "sizeWhenDone",
                 "totalSize",
+                "progress",
                 "uploadRatio",
                 "priorities",
                 "wanted",
@@ -551,11 +554,9 @@ class Prunerr(object):
                 # There is now sufficient free disk space
                 return removed_torrents
 
-        statvfs = os.statvfs(session.download_dir)
-        current_free_space = statvfs.f_frsize * statvfs.f_bavail
         logger.error(
             "Running out of space but no items can be removed: %0.2f %s",
-            *utils.format_size(current_free_space),
+            *utils.format_size(session.download_dir_free_space),
         )
         kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
         logger.info("Stopping downloading: %s", kwargs)
@@ -567,12 +568,28 @@ class Prunerr(object):
         Determine if there's sufficient free disk space, resume downloading if paused.
         """
         session = self.client.get_session()
-        statvfs = os.statvfs(session.download_dir)
-        current_free_space = statvfs.f_frsize * statvfs.f_bavail
-        if current_free_space >= self.config["downloaders"]["min-download-free-space"]:
-            logger.info(
-                "Downloads directory has %0.2f %s free space, no need to remove items",
-                *utils.format_size(current_free_space),
+        total_remaining_download = sum(
+            torrent.leftUntilDone
+            for torrent in self.torrents if torrent.status == "downloading"
+        )
+        if total_remaining_download > session.download_dir_free_space:
+            logger.debug(
+                "Total size of remaining downloads is greater than the available free "
+                "space: %0.2f %s > %0.2f %s",
+                *(
+                    utils.format_size(total_remaining_download)
+                    + utils.format_size(session.download_dir_free_space)
+                ),
+            )
+        if session.download_dir_free_space >= self.config["downloaders"]["min-download-free-space"]:
+            logger.debug(
+                "Sufficient free space to continue downloading: %0.2f %s >= %0.2f %s",
+                *(
+                    utils.format_size(session.download_dir_free_space)
+                    + utils.format_size(
+                        self.config["downloaders"]["min-download-free-space"],
+                    )
+                ),
             )
             self._resume_down(session)
             return True
@@ -591,8 +608,6 @@ class Prunerr(object):
             if self.free_space_maybe_resume():
                 # There is now sufficient free disk space
                 return removed
-            statvfs = os.statvfs(session.download_dir)
-            current_free_space = statvfs.f_frsize * statvfs.f_bavail
 
             # Handle actual torrents recognized by the download client
             if isinstance(candidate, int):
@@ -604,7 +619,7 @@ class Prunerr(object):
                     "%0.2f %s + %0.2f %s: tracker=%s, priority=%s, ratio=%0.2f",
                     candidate,
                     *(
-                        utils.format_size(current_free_space)
+                        utils.format_size(session.download_dir_free_space)
                         + utils.format_size(candidate.totalSize)
                         + (hostname, candidate.bandwidthPriority, candidate.ratio)
                     ),
@@ -619,7 +634,10 @@ class Prunerr(object):
                 logger.info(
                     "Deleting %r to free space: " "%0.2f %s + %0.2f %s",
                     path,
-                    *(utils.format_size(current_free_space) + utils.format_size(size)),
+                    *(
+                        utils.format_size(session.download_dir_free_space)
+                        + utils.format_size(metric)
+                    ),
                 )
                 if os.path.isdir(path):
                     shutil.rmtree(path, onerror=log_rmtree_error)

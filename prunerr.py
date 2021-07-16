@@ -586,7 +586,10 @@ class Prunerr(object):
                     + utils.format_size(session.download_dir_free_space)
                 ),
             )
-        if session.download_dir_free_space >= self.config["downloaders"]["min-download-free-space"]:
+        if (
+                session.download_dir_free_space
+                >= self.config["downloaders"]["min-download-free-space"]
+        ):
             logger.debug(
                 "Sufficient free space to continue downloading: %0.2f %s >= %0.2f %s",
                 *(
@@ -1042,12 +1045,12 @@ class Prunerr(object):
             )
 
     def handle_imported(
-        self,
-        servarr_config,
-        download_id,
-        dropped_path,
-        imported_path,
-        **pruncustom_script_kwargs,
+            self,
+            servarr_config,
+            download_id,
+            dropped_path,
+            imported_path,
+            **custom_script_kwargs,
     ):
         """
         Handle a Servarr imported event, move the item data to the imported directory.
@@ -1179,9 +1182,12 @@ class Prunerr(object):
             ),
         )
 
-        if import_path is not None and "downloadFolderImported" in servarr_history[
-            "event_types"
-        ]["source_titles"].get(import_path, {}):
+        if (
+                import_path is not None
+                and "downloadFolderImported" in servarr_history["event_types"][
+                    "source_titles"
+                ].get(import_path, {})
+        ):
             # Has previously retrieved history already identified the download item for
             # this imported file?
             torrent = self.client.get_torrent(

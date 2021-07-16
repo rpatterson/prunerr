@@ -1448,6 +1448,9 @@ def main(args=None):
     logging.basicConfig(level=logging.INFO)
     # Want just our logger, not transmission-rpc's to log INFO
     logger.setLevel(logging.INFO)
+    # Avoid logging all JSON responses, particularly the very large history responses
+    # from Servarr APIs
+    logging.getLogger("arrapi.api").setLevel(logging.INFO)
 
     parsed_args = parser.parse_args(args)
     shared_kwargs = dict(vars(parsed_args))

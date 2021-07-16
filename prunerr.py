@@ -649,7 +649,7 @@ class Prunerr(object):
                         + utils.format_size(metric)
                     ),
                 )
-                if os.path.isdir(candidate):
+                if not os.path.islink(candidate) and os.path.isdir(candidate):
                     shutil.rmtree(candidate, onerror=log_rmtree_error)
                 else:
                     os.remove(candidate)

@@ -753,6 +753,14 @@ class Prunerr(object):
         )
         du.stdin.close()
 
+        if orphans:
+            logger.error(
+                "Found orphan paths unrecognized by download client:\n%s",
+                "\n".join(
+                    f"{orphan_size}\t{orphan_path}"
+                    for orphan_size, orphan_path in orphans),
+            )
+
         return orphans
 
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
@@ -764,10 +772,6 @@ class Prunerr(object):
                 du_line = du.stdout.readline()
                 size, du_path = du_line[:-1].split("\t", 1)[:2]
                 size = int(size)
-                logger.error(
-                    "Found %0.2f %s orphan path unrecognized by download client: %s",
-                    *(utils.format_size(int(size)) + (du_path,)),
-                )
                 yield (int(size), entry_path)
             elif entry_path in torrent_dirs:
                 for orphan in self._list_orphans(

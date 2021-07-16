@@ -433,7 +433,10 @@ class Prunerr(object):
 
             # Wait for the next interval
             start = time.time()
-            poll = self.config["daemon"].get("poll", 60)
+            poll = (
+                self.config["daemon"].get("poll", 60,)
+                if self.config["daemon"] else 60
+            )
             # Loop early if the copy process finishes early
             while (
                 self.popen is None or self.popen.poll() is None

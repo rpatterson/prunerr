@@ -21,8 +21,6 @@ import dateutil.parser
 import humps
 import yaml
 
-import servicelogging
-
 import arrapi
 
 import transmission_rpc
@@ -1447,7 +1445,7 @@ parser_sync.set_defaults(command=sync)
 
 
 def main(args=None):
-    servicelogging.basicConfig()
+    logging.basicConfig(level=logging.INFO)
     # Want just our logger, not transmission-rpc's to log INFO
     logger.setLevel(logging.INFO)
 

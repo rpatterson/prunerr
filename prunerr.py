@@ -708,11 +708,15 @@ class Prunerr(object):
             session.incomplete_dir,
             # Transmission's `downloads` directory for complete, seeding torrents
             session.download_dir,
-            # A Prunerr `imported` directory that we may move torrents to after
-            # successfully importing them.
+            # The Prunerr directories that reflect the state of download items in
+            # Servarr.
             self.config["downloaders"].get(
                 "imported-dir",
                 os.path.join(os.path.dirname(session.download_dir), "imported"),
+            ),
+            self.config["downloaders"].get(
+                "deleted-dir",
+                os.path.join(os.path.dirname(session.download_dir), "deleted"),
             ),
         )
 

@@ -616,9 +616,13 @@ class Prunerr(object):
                 # There is now sufficient free disk space
                 return removed
 
-            # Handle actual torrents recognized by the download client
+            # Handle different argument types
+            if isinstance(candidate, (tuple, list)):
+                metric, candidate = candidate
             if isinstance(candidate, int):
                 candidate = self.client.get_torrent(int)
+
+            # Handle actual torrents recognized by the download client
             if isinstance(candidate, transmission_rpc.Torrent):
                 hostname, priority = self.lookup_tracker_priority(candidate)
                 logger.info(
@@ -637,19 +641,18 @@ class Prunerr(object):
 
             # Handle filesystem paths not recognized by the download client
             else:
-                size, path = candidate
                 logger.info(
                     "Deleting %r to free space: " "%0.2f %s + %0.2f %s",
-                    path,
+                    candidate,
                     *(
                         utils.format_size(session.download_dir_free_space)
                         + utils.format_size(metric)
                     ),
                 )
-                if os.path.isdir(path):
-                    shutil.rmtree(path, onerror=log_rmtree_error)
+                if os.path.isdir(candidate):
+                    shutil.rmtree(candidate, onerror=log_rmtree_error)
                 else:
-                    os.remove(path)
+                    os.remove(candidate)
 
             removed.append(candidate)
 

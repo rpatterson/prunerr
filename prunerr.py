@@ -802,13 +802,12 @@ class Prunerr(object):
         """
         speed_limit_down = self.config["downloaders"]["max-download-bandwidth"]
         if (
-            self.config["downloaders"].get(
-                "resume-set-download-bandwidth-limit", False,
-            )
-            and session.speed_limit_down_enabled
+            session.speed_limit_down_enabled
             and (not speed_limit_down or speed_limit_down != session.speed_limit_down)
         ):
-            if speed_limit_down:
+            if self.config["downloaders"].get(
+                    "resume-set-download-bandwidth-limit", False,
+            ) and speed_limit_down:
                 kwargs = dict(speed_limit_down=speed_limit_down)
             else:
                 kwargs = dict(speed_limit_down_enabled=False)

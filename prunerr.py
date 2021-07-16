@@ -548,14 +548,15 @@ class Prunerr(object):
                 # There is now sufficient free disk space
                 return removed_torrents
 
-        # Next remove seeding and imported torrents
-        imported_torrents = self.find_imported()
-        if imported_torrents:
+        # Next remove seeding torrents whose media have been deleted from the Servarr
+        # libraries
+        deleted_torrents = self.find_deleted()
+        if deleted_torrents:
             logger.error(
-                "Deleting from %s seeding torrents that have already been imported",
-                len(imported_torrents),
+                "Deleting from %s seeding torrents deleted from the Servarr library",
+                len(deleted_torrents),
             )
-            removed_torrents.extend(self.free_space_remove_torrents(imported_torrents),)
+            removed_torrents.extend(self.free_space_remove_torrents(deleted_torrents),)
             if self.free_space_maybe_resume():
                 # There is now sufficient free disk space
                 return removed_torrents
@@ -767,9 +768,9 @@ class Prunerr(object):
                 ):
                     yield orphan
 
-    def find_imported(self):
+    def find_deleted(self):
         """
-        Filter torrents that have already been successfully imported.
+        Filter torrents that have been deleted from the Servarr library.
         """
         session = self.client.get_session()
         return self.sort_torrents_by_tracker(
@@ -778,8 +779,8 @@ class Prunerr(object):
             if torrent.status == "seeding"
             and torrent.downloadDir.startswith(
                 self.config["downloaders"].get(
-                    "seeding-dir",
-                    os.path.join(os.path.dirname(session.download_dir), "seeding"),
+                    "deleted-dir",
+                    os.path.join(os.path.dirname(session.download_dir), "deleted"),
                 )
             )
         )

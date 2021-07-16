@@ -416,7 +416,10 @@ class Prunerr(object):
                 try:
                     # Don't loop until we successfully update everything
                     self.update()
-                except (socket.error, error.TransmissionError):
+                except (
+                        socket.error,
+                        error.TransmissionError,
+                        arrapi.exceptions.ConnectionFailure):
                     logger.exception("Connection error while updating from server")
                     pass
                 else:

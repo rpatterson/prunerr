@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import time
 import logging
-import pathlib
+import pathlib  # TODO: replace os.path
 import urllib
 import tempfile
 import glob
@@ -559,11 +559,16 @@ class Prunerr(object):
                 # There is now sufficient free disk space
                 return removed_torrents
 
+        # TODO: Maybe handle multiple downloading torrents for the
+        # same Servarr item such as when trying several to see which
+        # ones actually have decent download speeds?
+
         logger.error(
             "Running out of space but no items can be removed: %0.2f %s",
             *utils.format_size(session.download_dir_free_space),
         )
         kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
+        # TODO: Notification when downloading is paused
         logger.info("Stopping downloading: %s", kwargs)
         self.client.set_session(**kwargs)
         return removed_torrents
@@ -768,6 +773,7 @@ class Prunerr(object):
         """Recursively list paths that aren't a part of any torrent."""
         for entry in os.listdir(path):
             entry_path = os.path.join(path, entry)
+            # TODO: exclude valid import links
             if entry_path not in torrent_paths and entry_path not in torrent_dirs:
                 du.stdin.write(entry_path + "\0")
                 du_line = du.stdout.readline()
@@ -795,6 +801,9 @@ class Prunerr(object):
                     os.path.join(os.path.dirname(session.download_dir), "deleted"),
                 )
             )
+            # TODO: Optionally include imported items for Servarr configurations that
+            # copy items instead of making hard-links, such as when the download client
+            # isn't on the same host as the Servarr instance
         )
 
     def _resume_down(self, session):
@@ -1368,6 +1377,9 @@ def collect_downloaders(config):
     """
     Aggregate all download clients from all Servarr instances defined in the config.
     """
+    # TODO: Cleanup with re-use in mind.  Specifically how to connect the API clients
+    # for Servarr and download client with their configs, both Prunerr config and
+    # settings from Servarr.
 
     # Connect clients to all download clients
     downloaders = {}
@@ -1448,6 +1460,8 @@ def sync(prunerr):
 sync.__doc__ = Prunerr.sync.__doc__
 parser_sync = subparsers.add_parser("sync", help=sync.__doc__.strip())
 parser_sync.set_defaults(command=sync)
+
+# TODO: Delete and blacklist torrents containing archives
 
 
 def main(args=None):

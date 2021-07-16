@@ -16,6 +16,7 @@ servarrs:
     url: "http://localhost:7878"
     api-key: "********************************"
 downloaders:
+  ## TODO: Support multiple download clients
   ## Calculate an appropriate margin of disk space to keep free when deciding whether to
   ## prune download items based the maximum download bandwidth/speed in Mbps and the
   ## amount of time in seconds at that rate for which download clients should be able to

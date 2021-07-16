@@ -13,6 +13,8 @@ criteria that can be defined on a per-indexer basis.  This is mostly useful for
 `BitTorrent`_ download clients in order to maximize ratio on a per-indexer/per-tracker
 basis.
 
+TODO: Download clients on different filesystems, copying
+
 
 *******************
 Order of Operations
@@ -44,6 +46,8 @@ reliably determines disk space margin *as* the downlod clients are downloading.
    of time it should be able to continue downloading for to determine the disk space
    margin we should preserve.
 
+   TODO: Issues with instantaneous download speed?
+
 #. Remove/delete download client items until margin is reached:
 
    Per the order from #3, remove one download client item at a time and delete it's
@@ -56,6 +60,10 @@ reliably determines disk space margin *as* the downlod clients are downloading.
    downloading any further data.  This is useful to avoid a number of issues that can
    happen if disk space is fully exhausted, including corrupted download client state
    and/or data.
+
+   TODO: Notifications?
+
+TODO: Mark stalled torrents as failed in Servarr
 
 *********************
 Servarr Custom Script

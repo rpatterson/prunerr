@@ -1458,7 +1458,6 @@ def main(args=None):
 
     # Iterate over each of the unique enabled download clients in each Servarr instances
     # and run the sub-command for each of those.
-    results = []
     downloaders = collect_downloaders(shared_kwargs["config"])
     for downloader_url, downloader_config in downloaders.items():
         prunerr_kwargs = dict(shared_kwargs)
@@ -1466,8 +1465,16 @@ def main(args=None):
         prunerr_kwargs["client"] = downloader_config["client"]
         prunerr_kwargs["url"] = downloader_url
         prunerr = Prunerr(**prunerr_kwargs)
-        results.append(parsed_args.command(prunerr))
-    return results
+        results = parsed_args.command(prunerr)
+        if results:
+            if isinstance(results, list):
+                results = len(results)
+            logger.info(
+                "%r results for download client %r: %r",
+                parsed_args.command.__name__,
+                downloader_url,
+                results,
+            )
 
 
 main.__doc__ = __doc__

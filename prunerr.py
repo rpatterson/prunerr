@@ -17,6 +17,7 @@ import pathlib  # TODO: replace os.path
 import urllib
 import tempfile
 import glob
+import pprint
 
 import dateutil.parser
 import humps
@@ -1028,11 +1029,29 @@ class Prunerr(object):
         """
         Handle a Servarr event after custom script env vars transformed to kwargs.
         """
-        if eventtype in self.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH:
-            handler = getattr(
-                self, f"handle_{self.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH[eventtype]}"
+        handler_suffix = self.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
+            eventtype,
+            eventtype.lower(),
+        )
+        handler_name = f"handle_{handler_suffix}"
+        logger.debug(
+            "Custom script kwargs:\n%s",
+            pprint.pformat(custom_script_kwargs),
+        )
+        if hasattr(self, handler_name):
+            handler = getattr(self, handler_name)
+            logger.info(
+                "Handling %r Servarr %r event",
+                servarr_config["name"],
+                eventtype,
             )
             return handler(servarr_config, **custom_script_kwargs)
+
+        logger.warning(
+            "No handler found for Servarr %r event type: %s",
+            servarr_config["name"],
+            eventtype,
+        )
 
     def handle_grabbed(self, servarr_config, download_id, **custom_script_kwargs):
         """

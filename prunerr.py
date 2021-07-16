@@ -3,6 +3,7 @@
 Remove Servarr download client items to preserve disk space according to rules.
 """
 
+import sys
 import os
 import os.path
 import argparse
@@ -1015,11 +1016,10 @@ class Prunerr(object):
                             servarr_config, **custom_script_kwargs
                         )
                     except ServarrEventError:
-                        logger.exception(
-                            "Downlaod item %r in wrong state for Servarr %r event",
-                            torrent,
-                            custom_script_kwargs["eventtype"],
-                        )
+                        # Synchronizing events that have previously been handled is the
+                        # expected case here, so capture those exceptions and log them
+                        # as informative messages instead of errors.
+                        logger.info("%s", sys.exc_info()[1])
                     event_results.setdefault(torrent.hashString, {}).setdefault(
                         servarr_config["name"], []
                     ).append(history_record)

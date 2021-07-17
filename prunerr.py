@@ -196,6 +196,8 @@ class Prunerr(object):
 
         # Prunerr config processing
         self.config = config
+
+        # Download client config processing
         self.config["downloaders"]["min-download-free-space"] = (
             self.config["downloaders"]["max-download-bandwidth"]
             # Convert bandwidth bits to bytes
@@ -220,6 +222,13 @@ class Prunerr(object):
             "deleted-dir",
             os.path.join(os.path.dirname(session.download_dir), "deleted"),
         )
+
+        # Indexers config processing
+        self.indexer_configs = {
+            indexer_config["name"]: indexer_config
+            for indexer_config in
+            config.get("indexers", {}).get("priorities-TODO", [])
+        }
 
         # Servarr API client and download client settings
         self.servarrs = servarrs
@@ -376,27 +385,7 @@ class Prunerr(object):
             self.client.set_session(speed_limit_up_enabled=False)
 
     def update(self):
-        self.torrents = self.client.get_torrents(
-            arguments=(
-                "id",
-                "hashString",
-                "name",
-                "status",
-                "error",
-                "errorString",
-                "trackers",
-                "bandwidthPriority",
-                "downloadDir",
-                "leftUntilDone",
-                "sizeWhenDone",
-                "totalSize",
-                "progress",
-                "uploadRatio",
-                "priorities",
-                "wanted",
-                "files",
-            )
-        )
+        self.torrents = self.client.get_torrents()
 
     def list_torrent_files(self, torrent, download_dir=None):
         """
@@ -491,56 +480,14 @@ class Prunerr(object):
 
     def sort_torrents_by_tracker(self, torrents):
         """
-        Sort the given torrents based upon tracker priority and other metrics.
+        Sort the given torrents according to the indexer priority operations.
         """
-        trackers_ordered = [
-            hostname
-            for hostname, priority in reversed(
-                self.config["indexers"]["priorities"],
-            )
-        ]
         return sorted(
             ((index, torrent) for index, torrent in enumerate(torrents)),
             # remove lowest priority and highest ratio first
-            key=lambda item: self.get_torrent_priority_key(trackers_ordered, item[1]),
+            key=lambda item: self.exec_indexer_priorities(item[1])[1],
+            reverse=True,
         )
-
-    def lookup_tracker_priority(self, torrent):
-        """
-        Determine which tracker hostname and priority apply to the torrent if any.
-        """
-        # TODO: abstract tracker to indexer with priorities from servarr API
-        if hasattr(torrent, "prunerr_tracker_priority"):
-            return torrent.prunerr_tracker_priority
-
-        for tracker in torrent.trackers:
-            for action in ("announce", "scrape"):
-                parsed = urllib.parse.urlsplit(tracker[action])
-                for hostname, priority in self.config["indexers"]["priorities"]:
-                    if parsed.hostname and parsed.hostname.endswith(hostname):
-                        torrent.prunerr_tracker_priority = (hostname, priority)
-                        return torrent.prunerr_tracker_priority
-
-        torrent.prunerr_tracker_priority = (None, None)
-        return torrent.prunerr_tracker_priority
-
-    def get_torrent_priority_key(self, trackers_ordered, torrent):
-        """
-        Combine tracker ranking, torrent priority, and ratio into a sort key.
-        """
-        if hasattr(torrent, "prunerr_sort_key"):
-            return torrent.prunerr_sort_key
-
-        hostname, priority = self.lookup_tracker_priority(torrent)
-        traker_rank = -1
-        if hostname in trackers_ordered:
-            traker_rank = trackers_ordered.index(hostname)
-        torrent.prunerr_sort_key = (
-            traker_rank,
-            torrent.bandwidthPriority,
-            -torrent.ratio,
-        )
-        return torrent.prunerr_sort_key
 
     def free_space(self):
         """
@@ -672,15 +619,19 @@ class Prunerr(object):
 
             # Handle actual torrents recognized by the download client
             if isinstance(candidate, transmission_rpc.Torrent):
-                hostname, priority = self.lookup_tracker_priority(candidate)
+                self.exec_indexer_priorities(candidate)
                 logger.info(
                     "Deleting seeding %s to free space, "
-                    "%0.2f %s + %0.2f %s: tracker=%s, priority=%s, ratio=%0.2f",
+                    "%0.2f %s + %0.2f %s: indexer=%s, priority=%s, ratio=%0.2f",
                     candidate,
                     *(
                         utils.format_size(session.download_dir_free_space)
                         + utils.format_size(candidate.totalSize)
-                        + (hostname, candidate.bandwidthPriority, candidate.ratio)
+                        + (
+                            candidate.prunerr_indexer_name,
+                            candidate.bandwidthPriority,
+                            candidate.ratio,
+                        )
                     ),
                 )
                 download_dir = candidate.downloadDir
@@ -844,7 +795,126 @@ class Prunerr(object):
             # TODO: Optionally include imported items for Servarr configurations that
             # copy items instead of making hard-links, such as when the download client
             # isn't on the same host as the Servarr instance
+            and self.exec_indexer_priorities(torrent)[0]
         )
+
+    def exec_indexer_priorities(self, torrent):
+        """
+        Lookup the indexer for this torrent and calculate it's priority.
+        """
+        if hasattr(torrent, "prunerr_indexer_sort_key"):
+            return torrent.prunerr_indexer_include, torrent.prunerr_indexer_sort_key
+
+        indexer_name = None
+        # Try to find an indexer name from the items Servarr history
+        for servarr_config in self.servarrs.values():
+            torrent_history = self.find_item_history(servarr_config, torrent=torrent)
+            if torrent_history:
+                for history_record in torrent_history:
+                    if "indexer" in history_record:
+                        indexer_name = history_record["indexer"]
+                        break
+                else:
+                    logger.warning(
+                        "No indexer found in Servarr history for download item: %r",
+                        torrent,
+                    )
+            else:
+                logger.debug(
+                    "No Servarr history found for download item: %r",
+                    torrent,
+                )
+            if indexer_name is not None:
+                break
+
+        # Lookup the indexer priority configuration
+        if not indexer_name:
+            # Match by indexer URLs when no indexer name is available
+            for possible_name, possible_config in self.indexer_configs.items():
+                if "urls" not in possible_config:
+                    continue
+                for tracker in torrent.trackers:
+                    for action in ("announce", "scrape"):
+                        tracker_url = tracker[action]
+                        for indexer_url in possible_config["urls"]:
+                            if tracker_url.startswith(indexer_url):
+                                indexer_name = possible_name
+                                break
+                        if indexer_name:
+                            break
+                    if indexer_name:
+                        break
+                if indexer_name:
+                    break
+        torrent.prunerr_indexer_name = indexer_name
+        indexer_idx = list(self.indexer_configs.keys()).index(indexer_name)
+        indexer_config = self.indexer_configs[indexer_name]
+
+        include, sort_key = self.exec_operations(indexer_config["operations"], torrent)
+        torrent.prunerr_indexer_include = include
+        torrent.prunerr_indexer_sort_key = (indexer_idx, ) + sort_key
+        return torrent.prunerr_indexer_include, torrent.prunerr_indexer_sort_key
+
+    def exec_operations(self, operation_configs, torrent):
+        """
+        Execute each of the configured indexer priority operations
+        """
+        sort_key = []
+        include = True
+        for operation_config in operation_configs:
+            executor = getattr(self, f"exec_operation_{operation_config['type']}", None)
+            if executor is None:
+                raise NotImplementedError(
+                    f"No indexer priority operation executor found for type "
+                    f"{operation_config['type']!r}"
+                )
+            # Delegate to the executor to get the operation value for this download item
+            sort_value = executor(operation_config, torrent)
+            # Apply any restrictions that can apply across different operation types
+            sort_bool = None
+            if "minimum" in operation_config:
+                sort_bool = sort_value >= operation_config["minimum"]
+            if "maximum" in operation_config and (sort_bool is None or sort_bool):
+                sort_bool = sort_value <= operation_config["maximum"]
+            if sort_bool is not None:
+                sort_value = sort_bool
+            # Should the operation value be used to filter this download item?
+            if operation_config.get("filter", False) and include:
+                include = bool(sort_value)
+            # Should the operation value be reversed when ordering the download items?
+            if operation_config.get("reversed", False):
+                if isinstance(sort_value, (bool, int, float)):
+                    sort_value = -sort_value
+                elif isinstance(sort_value, (tuple, list, str)):
+                    sort_value = reversed(sort_value)
+                else:
+                    raise NotImplementedError(
+                        f"Indexer priority operation value doesn't support `reversed`:"
+                        f"{sort_value!r}"
+                    )
+            sort_key.append(sort_value)
+        return include, tuple(sort_key)
+
+    def exec_operation_value(self, operation_config, torrent):
+        """
+        Return the attribute or key value for the download item.
+        """
+        if hasattr(torrent, operation_config["name"]):
+            return getattr(torrent, operation_config["name"])
+        if callable(getattr(torrent, "get", None)):
+            return torrent.get(operation_config["name"])
+
+    def exec_operation_or(self, operation_config, torrent):
+        """
+        Return `True` if any of the nested operations return `True`.
+        """
+        include, sort_key = self.exec_operations(
+            operation_config["operations"],
+            torrent,
+        )
+        for sort_value in sort_key:
+            if sort_value:
+                return sort_value
 
     def _resume_down(self, session):
         """

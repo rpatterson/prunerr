@@ -44,10 +44,12 @@ reliably determines disk space margin *as* the downlod clients are downloading.
    un-managed or managed by something else.  Note that these items aren't considered for
    deletion.
 
-#. Order download items according to per-indexer rules:
+#. Order download items deleted by Servarr according to per-indexer rules:
 
    Apply the per-indexer/per-tracker rules to each item and use the results to define the
-   order in which to delete items as needed for disk space.
+   order in which to delete items as needed for disk space.  See the ``indexers``
+   section in `the sample Prunerr configuration file <./home/.config/prunerr.yml>`_ for
+   details on how to define these rules.
 
 #. Calculate required disk margin based on download speed:
 

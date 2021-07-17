@@ -30,6 +30,7 @@ setup(
     url="https://gitlab.com/rpatterson/transmissionrpc",
     keywords="servarr sonarr radarr transmission bittorent torrent",
     py_modules=["prunerr"],
+    python_requires='>=3.7',  # `dict` key insertion order
     install_requires=required,
     zip_safe=True,
     classifiers=[

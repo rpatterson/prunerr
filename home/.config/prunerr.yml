@@ -58,6 +58,68 @@ downloaders:
   ## See the Python docstring for `prunerr.Prunerr.readd_missing_data()` for details.
   # readd-missing-data: true
 indexers:
-  # default-priority: 0
-  # priorities:
-  #   - tracker.example.com: 1
+  priorities:
+    # ## Delete download items that are public torrents before those from private trackers
+    # ## by putting the priority definitions of private tackers before the definition for
+    # ## public torrents.
+    - name: "ExamplePrivateTracker"
+      ## Used to match download items with no corresponding Servarr history from which
+      ## the indexer for the item can be found.  Ignored if `name` above does match a
+      ## Servarr indexer name.
+      urls:
+        - "https://tracker.example.com"
+      ## Example for a private tracker with various rules that affect both whether
+      ## download items should be considered for deletion yet and which itmes should be
+      ## deleted first.
+      ## TODO: Use some rule engine library
+      operations:
+        ## Have download items met the private tracker's minimum requirements for
+        ## snatched items.  In this case, until we've either reached a minimum ration
+        ## *or* seeded for a long enough amount of time.
+        - type: "or"
+          ## If download items that haven't meet those minimum requirements, exclude
+          ## them from considering for deletion.  As opposed to just sorting those items
+          ## that haven't met those requirements to be deleted last.
+          filter: true
+          operations:
+            ## The number of hours after the torrent has been completely downloaded when
+            ## it's been available to seed to other leechers.
+            - type: "value"
+              name: "secondsSeeding"
+              ## 10 days * 24 hours * 60 minutes * 60 seconds
+              minimum: 864000
+            - type: "value"
+              name: "ratio"
+              minimum: 1.0
+        ## Maximize private tracker global user ratio, delete last torrents with the
+        ## most bytes uploaded because they may be most likely to keep accruing more
+        ## upload to your ratio. As opposed to sorting by individual download item
+        ## ratio.
+        - type: "value"
+          name: "uploadedEver"
+          reversed: true
+        ## For private trackers with a bonus system for seeding torrents, maximize bonus
+        ## points by deleting last the smallest download item that is also larger than
+        ## the size that qualifies for the maximum bonus rate.
+        - type: "value"
+          name: "size_when_done"
+          ## Max bonus points rate: 10 GB * 1024 MB * 1024 KB * 1024 B
+          minimum: 10737418240
+          ## Items that are smaller than the maximum bonus rate size should be
+          ## considered for deletion before those that are larger.
+          reversed: true
+        ## Items that are much larger than the maximum bonus rate size should be
+        ## considered for deletion before those that are greater than but also closest
+        ## to the maximum bonus rate size.
+        - type: "value"
+          name: "size_when_done"
+    ## Fallback for any download items whose indexer or tracker URLs don't match any
+    ## other priorities above.  For example, public torrents.
+    - name: null
+      operations:
+        ## Delete popular download items with a healthy number of seeders before
+        ## obscure, less popular items to support the health and breadth of items
+        ## available to the community.
+        - type: "value"
+          name: "ratio"
+          reversed: true

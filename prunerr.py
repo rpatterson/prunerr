@@ -708,8 +708,6 @@ class Prunerr(object):
         Useful to identify paths to delete when freeing disk space.  Returned sorted
         from paths that use the least disk space to the most.
         """
-        # Update torrent.downloadDir first to identify orphans
-        self.update()
         session = self.client.get_session()
         download_dirs = (
             # Transmission's `incomplete` directory for incomplete, leeching torrents
@@ -1098,7 +1096,6 @@ class Prunerr(object):
         # Move the download item to the location appropriate for it's Servarr state
         if pathlib.Path(imported_dir) not in torrent_path.parents:
             self.move_torrent(torrent, old_path=downloads_dir, new_path=imported_dir)
-            torrent.update()
         else:
             raise ServarrEventError(
                 f"Imported download item {torrent!r} already in Servarr imported "
@@ -1462,7 +1459,6 @@ parser_exec.set_defaults(command=exec_)
 
 
 def daemon(prunerr):
-    prunerr.update()
     return prunerr.daemon()
 
 

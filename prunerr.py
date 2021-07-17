@@ -1528,7 +1528,7 @@ class Prunerr(object):
         """
         Re-import all seeding torrents managed by the `daemon` command.
 
-        Move all imorted torrents back to the downloads directory so they can be
+        Move all imported torrents back to the downloads directory so they can be
         re-importied (or re-copied).  Useful to recover from any remote data loss as
         much as is still possible with what torrents are still local.
         """

@@ -1161,7 +1161,7 @@ class Prunerr(object):
             logger.info(
                 "Symlinking imported file: %s -> %s", link_path, imported_link_target,
             )
-            if not imported_link_target.is_file():
+            if not (link_path.parent / imported_link_target).is_file():
                 logger.error(
                     "Symlink download file to imported file that doesn't exist: "
                     "%s -> %s",

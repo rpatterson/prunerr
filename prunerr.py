@@ -1268,10 +1268,14 @@ class Prunerr(object):
         """
         Return the first download client item ID from imported events.
         """
-        imported_records = servarr_history["event_types"]["source_titles"][
-            source_title
-        ]["downloadFolderImported"]
-        for imported_record in imported_records:
+        imported_events = servarr_history["event_types"]["source_titles"][source_title]
+        if "downloadFolderImported" not in imported_events:
+            logger.warning(
+                "No Servarr import history found: %s",
+                source_title,
+            )
+            return
+        for imported_record in imported_events["downloadFolderImported"]:
             if "downloadId" in imported_record:
                 return imported_record["downloadId"].lower()
 

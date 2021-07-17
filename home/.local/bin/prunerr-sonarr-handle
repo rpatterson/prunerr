@@ -1,0 +1,18 @@
+#!/bin/bash -eu
+#
+# Handle a Sonarr instance event as a Sonarr Custom Script.
+
+
+set -o pipefail
+PS4='${LINENO}+'
+# set -x
+
+
+main() {
+    servarr_name=Sonarr
+    export HOME=~hotio
+    exec prunerr handle "${servarr_name}" "${@}"
+}
+
+
+main "$@" 1>&2

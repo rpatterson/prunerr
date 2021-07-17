@@ -13,6 +13,11 @@ criteria that can be defined on a per-indexer basis.  This is mostly useful for
 `BitTorrent`_ download clients in order to maximize ratio on a per-indexer/per-tracker
 basis.
 
+The Servarr state of download items (grabbed, downloading, imported, and/or deleted)
+must be reflected in the download client in order to do the above.  Servarr instances
+use the ``$ ./bin/prunerr handle ...`` sub-command as a `Servarr Custom Script`_ under
+the ``Connect`` Servarr settings to accomplish this.
+
 TODO: Download clients on different filesystems, copying
 
 
@@ -69,6 +74,27 @@ TODO: Mark stalled torrents as failed in Servarr
 Servarr Custom Script
 *********************
 
+Prunerr reflects the Servarr state of download items in the state of items in the
+download client, similar to the design principles of Servarr applications, as opposed to
+say a DB or some other external persistent storage because.  This allows the user to
+inspect Prunerr/Servarr state in the native UI for the download client, supports manual
+user intervention, and avoids an additional dependency.
+
+Specifically, Prunerr moves the location of download client items as items proceed
+through the Servarr workflow: ``./downloads/**`` -> ``./imported/**`` ->
+``./deleted/**``.  In order to reflect which individual files have been imported and
+where, Prunerr also creates ``./*-ServarrName-import.ln`` symbolic links next to the
+download client item as individual files are imported by Servarr instances.  This way,
+broken symlinks are an indicator of upgraded files.
+
+Prunerr needs to know which Servarr instance is invoking ``$ prunerr handle`` in order
+to use the correct Prunerr configuration.  Unfortunately, Servarr doesn't support
+passing any arguments to Custom Scripts.  As such, using Prunerr as a Custom Script
+requires a wrapper script that in turn calls ``$ prunerr handle ${servarr_name}``.  This
+wrapper script is what should be used in the ``Path`` field of the Servarr Custom Script
+settings. See `<./home/.local/bin/prunerr-sonarr-handle>`_ and
+`<./home/.local/bin/prunerr-radarr-handle>`_ for examples.
+
 If the Servarr instance is running in a container, Servarr Custom Scripts must be
 executable inside the same container as the Servarr instance.  Since Prunerr does not
 support `Python 2.x`_, this means the `linuxserver.io`_ containers are incompatible with
@@ -76,6 +102,12 @@ Prunerr.  The `hotio`_ containers are similarly well maintained and do include `
 3.x`_ so those images *are* compatible with Prunerr.  This also means that Prunerr must
 be installed into the container.  See `<./docker-compose.yml>`_ for examples of how to
 stitch all this together in a deployment in containers.
+
+Prunerr also provides a ``$ ./bin/prunerr sync`` sub-command to introspect the item
+history from Servarr instances and apply any appropriate state that can be determined
+from the Servarr history to the download client items.  This sub-command can be used to
+get any existing download client items in sync as if they had been processed by the
+``$ prunerr handle ...``.
 
 ****************
 Other Operations

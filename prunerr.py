@@ -993,6 +993,21 @@ class Prunerr(object):
                             history_record["eventType"], history_record["eventType"],
                         ),
                     )
+                    # There may be multiple Sonarr events per torrents if multiple files
+                    # are imported from the same torrent, such as with season packs.
+                    # Avoid reporting false negatives or otherwise duplicating actions
+                    # and report for the same combination of torrent and event type
+                    # once.
+                    if history_record["eventType"] in event_results.get(
+                            torrent.hashString, {},
+                    ).get(servarr_config["name"], {}):
+                        logger.debug(
+                            "Skipping duplicate %r event for %r",
+                            history_record["eventType"],
+                            torrent,
+                        )
+                        continue
+
                     # Reproduuce the Sonarr custom script environment variables from the
                     # Servarr API JSON
                     for history_data in (history_record, history_record["data"]):
@@ -1020,8 +1035,8 @@ class Prunerr(object):
                         # as informative messages instead of errors.
                         logger.info("%s", sys.exc_info()[1])
                     event_results.setdefault(torrent.hashString, {}).setdefault(
-                        servarr_config["name"], []
-                    ).append(history_record)
+                        servarr_config["name"], {}
+                    ).setdefault(history_record["eventType"], []).append(history_record)
 
     def dispatch_event(self, servarr_config, eventtype, **custom_script_kwargs):
         """

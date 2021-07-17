@@ -37,6 +37,11 @@ downloaders:
   ## copied) they will be moved to this directory.  Defaults to an `./imported/`
   ## directory next to the download client's default `./downloads` directory.
   # imported-dir: "/var/lib/transmission-daemon/imported"
+  ## If items have been previously imported and subsequently deleted, such as when an
+  ## item has been upgraded, they will be moved to this directory.  Defaults to a
+  ## `./deleted/` directory next to the download client's default `./downloads`
+  ## directory.
+  # deleted-dir: "/var/lib/transmission-daemon/deleted"
   ## Settings that control copying downloaded items to remote servarr hosts.  If
   ## unset, downloads are left in place such as when download clients are running on
   ## the same host as the servarr instances.

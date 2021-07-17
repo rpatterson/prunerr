@@ -1038,6 +1038,8 @@ class Prunerr(object):
                         servarr_config["name"], {}
                     ).setdefault(history_record["eventType"], []).append(history_record)
 
+        return event_results
+
     def dispatch_event(self, servarr_config, eventtype, **custom_script_kwargs):
         """
         Handle a Servarr event after custom script env vars transformed to kwargs.

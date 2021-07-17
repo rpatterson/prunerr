@@ -123,5 +123,15 @@ system such as events from download clients and/or `Servarr`_ applications.
 
 - Set per-indexer/per-tracker priority for items in download clients
 
+.. _`Python 3.x`: https://docs.python.org/3/
+.. _`Python 2.x`: https://www.python.org/doc/sunset-python-2/
+
+.. _`BitTorrent`: https://en.wikipedia.org/wiki/BitTorrent
 
 .. _`Servarr`: https://wiki.servarr.com
+.. _`Radarr`: https://wiki.servarr.com/en/radarr
+.. _`Sonarr`: https://wiki.servarr.com/en/sonarr
+.. _`download clients`: https://wiki.servarr.com/radarr/settings#download-clients
+
+.. _`linuxserver.io`: https://docs.linuxserver.io/images/docker-radarr
+.. _`hotio`: https://hotio.dev/containers/radarr/

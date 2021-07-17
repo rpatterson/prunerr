@@ -1096,8 +1096,14 @@ class Prunerr(object):
             **custom_script_kwargs,
     ):
         """
-        Handle a Servarr imported event, move the item data to the imported directory.
+        Followup a Servarr imported event, move the item data to the imported directory.
         """
+        if not download_id.strip():
+            raise ServarrEventError(
+                f"No download client item id for imported Servarr item: "
+                f"{imported_path}",
+            )
+
         torrent = self.client.get_torrent(download_id.lower())
         session = self.client.get_session()
         torrent_path = pathlib.Path(torrent.download_dir) / torrent.name

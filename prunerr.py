@@ -1664,7 +1664,7 @@ def handle(prunerr):
     # and subsequent deletion are 2 distinct events.  Workaround this difference by
     # dispatching the deletion events after handling this Custom Script event.
     if handler_suffix != "deleted" and "deletedpaths" in custom_script_kwargs:
-        for deleted_path in custom_script_kwargs["deletedpaths"].split("\n"):
+        for deleted_path in custom_script_kwargs["deletedpaths"].split("|"):
             delete_event_kwargs = dict(
                 custom_script_kwargs,
                 eventtype="deleted",

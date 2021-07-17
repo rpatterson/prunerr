@@ -1140,7 +1140,7 @@ class Prunerr(object):
         imported_link_target = pathlib.Path(
             os.path.relpath(imported_path, link_path.parent)
         )
-        if link_path.exists():
+        if os.path.lexists(link_path):
             if not link_path.is_symlink():
                 logger.error(
                     "Imported file link is not a symlink: %s", link_path,

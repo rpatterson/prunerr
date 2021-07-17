@@ -466,7 +466,7 @@ class Prunerr(object):
         trackers_ordered = [
             hostname
             for hostname, priority in reversed(
-                self.config["indexers"]["tracker-priorities"],
+                self.config["indexers"]["priorities"],
             )
         ]
         return sorted(

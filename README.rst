@@ -18,6 +18,10 @@ must be reflected in the download client in order to do the above.  Servarr inst
 use the ``$ ./bin/prunerr handle ...`` sub-command as a `Servarr Custom Script`_ under
 the ``Connect`` Servarr settings to accomplish this.
 
+Prunerr uses and requires a configuration file which default to
+``~/.config/prunerr.yml``.  See the well-commented sample configuration:
+`<./home/.config/prunerr.yml>`_.
+
 TODO: Download clients on different filesystems, copying
 
 

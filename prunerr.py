@@ -409,10 +409,9 @@ class Prunerr(object):
         assert torrent_files, "Must be able to find torrent files"
 
         return (
-            file_["name"]
-            for file_ in torrent_files.values()
-            if file_.get("selected")
-            and os.path.exists(os.path.join(download_dir, file_["name"]))
+            file_.name for file_ in torrent_files
+            if file_.selected
+            and os.path.exists(os.path.join(download_dir, file_.name))
         )
 
     def copy(self, torrent, destination, command):

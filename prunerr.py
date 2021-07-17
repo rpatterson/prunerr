@@ -1657,7 +1657,10 @@ def handle(prunerr):
             custom_script_kwargs[kwarg_name] = custom_script_kwargs[env_var]
 
     # Handle the main event for this Custom Script execution
-    result = prunerr.dispatch_event(prunerr.servarr_config, **custom_script_kwargs)
+    try:
+        result = prunerr.dispatch_event(prunerr.servarr_config, **custom_script_kwargs)
+    except ServarrEventError as exc:
+        result = exc
 
     # The Servarr Custom Script events seem to combine file deletion events on upgrade
     # which is different from the history records from the Servarr API where the import
@@ -1670,7 +1673,13 @@ def handle(prunerr):
                 eventtype="deleted",
                 source_title=deleted_path,
             )
-            prunerr.dispatch_event(prunerr.servarr_config, **delete_event_kwargs)
+            try:
+                prunerr.dispatch_event(prunerr.servarr_config, **delete_event_kwargs)
+            except ServarrEventError:
+                logger.exception("Error handling nested deleted event")
+
+    if isinstance(result, ServarrEventError):
+        raise result
 
     return result
 

@@ -510,27 +510,37 @@ class Prunerr(object):
         Determine which tracker hostname and priority apply to the torrent if any.
         """
         # TODO: abstract tracker to indexer with priorities from servarr API
+        if hasattr(torrent, "prunerr_tracker_priority"):
+            return torrent.prunerr_tracker_priority
+
         for tracker in torrent.trackers:
             for action in ("announce", "scrape"):
                 parsed = urllib.parse.urlsplit(tracker[action])
                 for hostname, priority in self.config["indexers"]["priorities"]:
                     if parsed.hostname and parsed.hostname.endswith(hostname):
-                        return hostname, priority
-        return None, None
+                        torrent.prunerr_tracker_priority = (hostname, priority)
+                        return torrent.prunerr_tracker_priority
+
+        torrent.prunerr_tracker_priority = (None, None)
+        return torrent.prunerr_tracker_priority
 
     def get_torrent_priority_key(self, trackers_ordered, torrent):
         """
         Combine tracker ranking, torrent priority, and ratio into a sort key.
         """
+        if hasattr(torrent, "prunerr_sort_key"):
+            return torrent.prunerr_sort_key
+
         hostname, priority = self.lookup_tracker_priority(torrent)
         traker_rank = -1
         if hostname in trackers_ordered:
             traker_rank = trackers_ordered.index(hostname)
-        return (
+        torrent.prunerr_sort_key = (
             traker_rank,
             torrent.bandwidthPriority,
             -torrent.ratio,
         )
+        return torrent.prunerr_sort_key
 
     def free_space(self):
         """

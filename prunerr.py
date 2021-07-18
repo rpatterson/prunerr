@@ -110,58 +110,6 @@ class Prunerr(object):
         "MovieDeleted": "deleted",
         "MovieFileDelete": "deleted",
     }
-    # Map any Servarr API JSON keys to the custom script environment variables that
-    # can't be derrived automatically
-    SERVARR_CUSTOM_SCRIPT_KWARGS = dict(
-        # Extracted from https://wiki.servarr.com/en/sonarr/custom-scripts
-        # deletedpaths=None
-        # deletedrelativepaths=None
-        # download_client=None
-        # download_id=None
-        # episodefile_episodeairdates=None
-        # episodefile_episodeairdatesutc=None
-        # episodefile_episodecount=None
-        # episodefile_episodeids=None
-        # episodefile_episodenumbers=None
-        # episodefile_episodetitles=None
-        # episodefile_id=None
-        # episodefile_path=None
-        # episodefile_quality=None
-        # episodefile_qualityversion=None
-        # episodefile_relativepath=None
-        # episodefile_releasegroup=None
-        # episodefile_scenename=None
-        # episodefile_seasonnumber=None
-        # episodefile_sourcefolder=None
-        # episodefile_sourcepath=None
-        # eventtype=None
-        # health_issue_level=None
-        # health_issue_message=None
-        # health_issue_type=None
-        # health_issue_wiki=None
-        # isupgrade=None
-        # release_absoluteepisodenumbers=None
-        # release_episodeairdates=None
-        # release_episodeairdatesutc=None
-        # release_episodecount=None
-        # release_episodenumbers=None
-        # release_episodetitles=None
-        # release_indexer=None
-        # release_quality=None
-        # release_qualityversion=None
-        # release_releasegroup=None
-        # release_seasonnumber=None
-        # release_size=None
-        # release_title=None
-        # series_deletedfiles=None
-        # series_id=None
-        # series_imdbid=None
-        # series_path=None
-        # series_title=None
-        # series_tvdbid=None
-        # series_tvmazeid=None
-        # series_type=None
-    )
     SERVARR_CUSTOM_SCRIPT_ENV_VARS = dict(
         imported=dict(
             moviefile_sourcepath="dropped_path",
@@ -1119,12 +1067,7 @@ class Prunerr(object):
                     # Servarr API JSON
                     for history_data in (history_record, history_record["data"]):
                         custom_script_kwargs.update(
-                            (
-                                self.SERVARR_CUSTOM_SCRIPT_KWARGS.get(
-                                    humps.decamelize(api_key), humps.decamelize(api_key)
-                                ),
-                                api_value,
-                            )
+                            (humps.decamelize(api_key), api_value)
                             for api_key, api_value in history_data.items()
                             if not (
                                 history_data is history_record and api_key == "data"

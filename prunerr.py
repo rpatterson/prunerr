@@ -1347,7 +1347,7 @@ class Prunerr(object):
         try:
             return self.client.get_torrent(download_id)
         except KeyError:
-            # Can happen if the download client item has been manua
+            # Can happen if the download client item has been manually deleted
             logger.exception(
                 "Could not find item in download client "
                 "for Servarr imported event: %s",
@@ -1475,8 +1475,8 @@ class Prunerr(object):
                         "source_titles"
                     ].get(import_path, {})
             ):
-                # Has previously retrieved history already identified the download item for
-                # this imported file?
+                # Has previously retrieved history already identified the download item
+                # for this imported file?
                 download_id = self.select_imported_download_id(
                     servarr_history,
                     import_path,

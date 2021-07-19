@@ -1171,6 +1171,7 @@ class Prunerr(object):
     def handle_imported(
             self,
             servarr_config,
+            dir_id,
             download_id,
             dropped_path,
             imported_path,
@@ -1208,12 +1209,13 @@ class Prunerr(object):
             # The download client item should not be moved until after Servarr has
             # imported all the files.  Try to guess at when import is done by waiting
             # for at least one corresponding imported record to appear in the most
-            # recent history page and for the number of imported records to stop
+            # recent history response and for the number of imported records to stop
             # changing.  From local logs this seems to take ~45 seconds for download
             # items with a single episode/movie file.
             history_start = time.time()
             imported_records = []
             latest_history_record = None
+            servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
             logger.info(
                 "Waiting up to %s seconds for Servarr to finish importing %r",
                 self.SERVARR_HISTORY_TIMEOUT,
@@ -1233,12 +1235,10 @@ class Prunerr(object):
             ):
                 if imported_records:
                     latest_history_record = imported_records[0]
+                params = {f"{servarr_type_map['dir_type']}id": dir_id}
                 history_records = servarr_config["client"]._get(
-                    "history",
-                    # Maximum Servarr page size
-                    pageSize=250,
-                    # Only looking for the latest Servarr event history
-                    page=1,
+                    f"history/{servarr_type_map['dir_type']}",
+                    **params,
                 )["records"]
                 imported_records = [
                     history_record for history_record in history_records
@@ -1406,12 +1406,13 @@ class Prunerr(object):
             pprint.pformat(servarr_config["client"].system_status()._data),
         )
 
-    def find_item_history(self, servarr_config, torrent=None, import_path=None):
+    def find_item_history(
+            self, servarr_config, dir_id, torrent=None, import_path=None,
+    ):
         """
-        Find the most recent Servarr history for the given torrent.
+        Find the most recent Servarr history for the given media item.
 
-        Cache history from the Servarr API endpoint as we page through the history
-        across subsequent calls.
+        Where media item means: movie, series, etc.
         """
         if (torrent is None and import_path is None) or (
             torrent is not None and import_path is not None
@@ -1421,13 +1422,9 @@ class Prunerr(object):
                 "or a filesystem path to a Servarr imported item"
             )
 
-        servarr_history = servarr_config.setdefault(
-            "history",
-            dict(
-                page=1,
-                records=dict(download_ids={}, source_titles={}),
-                event_types=dict(download_ids={}, source_titles={}),
-            ),
+        servarr_history = servarr_config["history"] = dict(
+            records=dict(download_ids={}, source_titles={}),
+            event_types=dict(download_ids={}, source_titles={}),
         )
 
         if (
@@ -1441,49 +1438,21 @@ class Prunerr(object):
             download_id = self.select_imported_download_id(servarr_history, import_path)
             torrent = self.get_download_item(download_id)
 
-        # Page through history until a Servarr import event is found for this download
-        # item.
-        history_page = None
-        while (
-            # Is history for this Servarr instance exhausted?
-            history_page is None
-            or (servarr_history["page"] * 250) <= history_page["totalRecords"]
-        ) and (
-            (
-                torrent is not None
-                and "grabbed"
-                not in servarr_history["event_types"]["download_ids"].get(
-                    torrent.hashString.lower(), {}
-                )
-            )
-            or (
+        self.collate_history_response(servarr_config, dir_id)
+
+        if (
                 import_path is not None
-                and "grabbed"
-                not in servarr_history["event_types"]["source_titles"].get(
-                    import_path, {}
-                )
-            )
+                and "downloadFolderImported" in servarr_history["event_types"][
+                    "source_titles"
+                ].get(import_path, {})
         ):
-            history_page = self.collate_history_page(
-                servarr_config,
-                servarr_history["page"],
+            # Has previously retrieved history already identified the download item
+            # for this imported file?
+            download_id = self.select_imported_download_id(
+                servarr_history,
+                import_path,
             )
-
-            if (
-                    import_path is not None
-                    and "downloadFolderImported" in servarr_history["event_types"][
-                        "source_titles"
-                    ].get(import_path, {})
-            ):
-                # Has previously retrieved history already identified the download item
-                # for this imported file?
-                download_id = self.select_imported_download_id(
-                    servarr_history,
-                    import_path,
-                )
-                torrent = self.get_download_item(download_id)
-
-            servarr_history["page"] += 1
+            torrent = self.get_download_item(download_id)
 
         if torrent is not None:
             return servarr_history["records"]["download_ids"].get(
@@ -1495,18 +1464,19 @@ class Prunerr(object):
                 import_path,
             )
 
-    def collate_history_page(self, servarr_config, page):
+    def collate_history_response(self, servarr_config, dir_id):
         """
-        Collate Servarr history page under best ids for each history record.
+        Collate Servarr history response under best ids for each history record.
         """
+        servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
+        params = {f"{servarr_type_map['dir_type']}id": dir_id}
+        history_response = servarr_config["client"]._get(
+            f"history/{servarr_type_map['dir_type']}",
+            **params,
+        )
+
         servarr_history = servarr_config["history"]
-        history_page = servarr_config["client"]._get(
-                "history",
-                # Maximum Servarr page size
-                pageSize=250,
-                page=servarr_history["page"],
-            )
-        for history_record in history_page["records"]:
+        for history_record in history_response["records"]:
             for history_data in (history_record, history_record["data"]):
                 for key, value in list(history_data.items()):
                     # Perform any data transformations, e.g. to native Python types
@@ -1597,7 +1567,7 @@ class Prunerr(object):
                     history_record["data"]["importedPath"], {},
                 ).setdefault(history_record["eventType"], []).append(history_record)
 
-        return history_page
+        return history_response
 
     def reimport_seeding(self):
         """

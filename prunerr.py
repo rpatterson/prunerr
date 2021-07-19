@@ -1750,6 +1750,7 @@ def handle(prunerr):
                 eventtype="deleted",
                 source_title=deleted_path,
             )
+            logger.info("Dispatching nested Sonarr deleted event: %s", deleted_path)
             try:
                 prunerr.dispatch_event(prunerr.servarr_config, **delete_event_kwargs)
             except ServarrEventError:

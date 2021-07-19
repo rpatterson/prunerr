@@ -89,37 +89,42 @@ class ServarrEventError(ValueError):
 
 class Prunerr(object):
 
-    # Map the different Servarr applications to values that differ between them
-    SERVARR_CLIENT_TYPES = dict(sonarr=arrapi.SonarrAPI, radarr=arrapi.RadarrAPI,)
-    SERVARR_DOWNLOAD_DIR_FIELDS = dict(sonarr="tvDirectory", radarr="movieDirectory",)
+    # Map the different Servarr applications type terminology
+    SERVARR_TYPE_MAPS = dict(
+        sonarr=dict(
+            file_type="episode",
+            dir_type="series",
+            client=arrapi.SonarrAPI,
+            download_dir_field="tvDirectory",
+        ),
+        radarr=dict(
+            file_type="movie",
+            dir_type="movie",
+            client=arrapi.RadarrAPI,
+            download_dir_field="movieDirectory",
+        ),
+    )
     # Map Servarr event types from the API to those used in the custom scripts
     SERVARR_CUSTOM_SCRIPT_EVENT_TYPES = {
         "grabbed": "Grab",
         "downloadFolderImported": "Download",
-        "episodeFileRenamed": "Rename",
-        "movieFileRenamed": "Rename",
-        "episodeFileDeleted": "EpisodeDeleted",
-        "movieFileDeleted": "MovieDeleted",
+        "fileRenamed": "Rename",
+        "fileDeleted": "Deleted",
     }
     SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH = {
         "Grab": "grabbed",
         "Download": "imported",
         "Rename": "renamed",
-        "EpisodeDeleted": "deleted",
-        "EpisodeFileDelete": "deleted",
-        "MovieDeleted": "deleted",
-        "MovieFileDelete": "deleted",
+        "Deleted": "deleted",
+        "FileDelete": "deleted",
     }
     SERVARR_CUSTOM_SCRIPT_ENV_VARS = dict(
         imported=dict(
-            moviefile_sourcepath="dropped_path",
-            moviefile_path="imported_path",
-            episodefile_sourcepath="dropped_path",
-            episodefile_path="imported_path",
+            file_sourcepath="dropped_path",
+            file_path="imported_path",
         ),
         deleted=dict(
-            moviefile_path="source_title",
-            episodefile_path="source_title",
+            file_path="source_title",
         ),
     )
     # Number of seconds to wait for new file import history records to appear in Servarr
@@ -185,7 +190,7 @@ class Prunerr(object):
         for servarr_config in self.servarrs.values():
             servarr_config["downloadDir"] = pathlib.Path(
                 servarr_config["downloadclient"]["fieldValues"][
-                    self.SERVARR_DOWNLOAD_DIR_FIELDS[servarr_config["type"]]
+                    self.SERVARR_TYPE_MAPS[servarr_config["type"]]["download_dir_field"]
                 ]
             ).resolve()
             servarr_config["importedDir"] = (
@@ -208,13 +213,31 @@ class Prunerr(object):
         if servarr_name is not None:
             self.servarr_config = servarr_config = self.servarrs[servarr_name]
             if "client" not in servarr_config:
-                self.servarr_config["client"] = self.SERVARR_CLIENT_TYPES[
+                self.servarr_config["client"] = self.SERVARR_TYPE_MAPS[
                     servarr_config["type"]
-                ](servarr_config["url"], servarr_config["api-key"],)
+                ]["client"](servarr_config["url"], servarr_config["api-key"],)
 
         # Initial state
         self.popen = self.copying = None
         self.corrupt = {}
+
+    def strip_type_prefix(
+            self,
+            servarr_type,
+            prefixed,
+            servarr_term="file_type",
+            normalizer=humps.camelize,
+    ):
+        """
+        Strip the particular Servarr type prefix if present.
+        """
+        # Map the different Servarr applications type terminology
+        servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_type]
+        prefix = servarr_type_map[servarr_term]
+        return (
+            normalizer(prefixed[len(prefix):]) if prefixed.startswith(prefix)
+            else prefixed
+        )
 
     def exec_(self):
         """
@@ -1043,9 +1066,11 @@ class Prunerr(object):
                     break
 
                 for history_record in reversed(torrent_history):
+                    history_event_type = self.strip_type_prefix(
+                        servarr_config["type"], history_record["eventType"])
                     custom_script_kwargs = dict(
                         eventtype=self.SERVARR_CUSTOM_SCRIPT_EVENT_TYPES.get(
-                            history_record["eventType"], history_record["eventType"],
+                            history_event_type, history_event_type,
                         ),
                     )
                     # There may be multiple Sonarr events per torrents if multiple files
@@ -1098,9 +1123,11 @@ class Prunerr(object):
         """
         Handle a Servarr event after custom script env vars transformed to kwargs.
         """
+        eventtype_stripped = self.strip_type_prefix(
+            servarr_config["type"], eventtype, normalizer=humps.pascalize)
         handler_suffix = self.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
-            eventtype,
-            eventtype.lower(),
+            eventtype_stripped,
+            eventtype_stripped,
         )
         handler_name = f"handle_{handler_suffix}"
         logger.debug(
@@ -1466,12 +1493,20 @@ class Prunerr(object):
                 page=servarr_history["page"],
             )
         for history_record in history_page["records"]:
-
-            # Perform any data transformations, e.g. to native Python types
             for history_data in (history_record, history_record["data"]):
-                for key, value in history_data.items():
+                for key, value in list(history_data.items()):
+                    # Perform any data transformations, e.g. to native Python types
                     if key.lower().endswith("date"):
                         history_data[key] = dateutil.parser.parse(value)
+                    # Normalize specific values using Servarr type-specific prefixes
+                    if key == "eventType":
+                        history_data[key] = self.strip_type_prefix(
+                            servarr_config["type"],
+                            value,
+                        )
+                    # Normalize keys using prefixes specific to the Servarr type
+                    key_stripped = self.strip_type_prefix(servarr_config["type"], key)
+                    history_data[key_stripped] = history_data.pop(key)
 
             # Collate history under the best available identifier that may be
             # matched to download client items
@@ -1602,9 +1637,9 @@ def collect_downloaders(config):
     # Connect clients to all download clients
     downloaders = {}
     for servarr_config in config["servarrs"]:
-        servarr_config["client"] = servarr_client = Prunerr.SERVARR_CLIENT_TYPES[
+        servarr_config["client"] = servarr_client = Prunerr.SERVARR_TYPE_MAPS[
             servarr_config["type"]
-        ](servarr_config["url"], servarr_config["api-key"],)
+        ]["client"](servarr_config["url"], servarr_config["api-key"],)
 
         for downloader_config in servarr_client._get("downloadclient"):
             if not downloader_config["enable"]:
@@ -1659,14 +1694,19 @@ def handle(prunerr):
     # Collect all environment variables with the prefix used for Servarr custom scripts
     env_var_prefix = f"{prunerr.servarr_config['type']}_"
     custom_script_kwargs = {
-        env_var[len(env_var_prefix):]: env_value
+        prunerr.strip_type_prefix(
+            prunerr.servarr_config["type"],
+            env_var[len(env_var_prefix):],
+        ).lower(): env_value
         for env_var, env_value in os.environ.items()
         if env_var.startswith(env_var_prefix)
     }
     eventtype = custom_script_kwargs["eventtype"]
+    eventtype_stripped = prunerr.strip_type_prefix(
+        prunerr.servarr_config["type"], eventtype, normalizer=humps.pascalize)
     handler_suffix = prunerr.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
-        eventtype,
-        eventtype.lower(),
+        eventtype_stripped,
+        eventtype_stripped,
     )
     # Copy environment variables to the names that more closely reflect the API JSON
     # keys.  While both the API JSON keys and the custom script environment variable

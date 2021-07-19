@@ -1318,6 +1318,12 @@ class Prunerr(object):
         """
         Return the first download client item ID from imported events.
         """
+        if source_title not in servarr_history["event_types"]["source_titles"]:
+            logger.warning(
+                "Import not found in Servarr history: %s",
+                source_title,
+            )
+            return
         imported_events = servarr_history["event_types"]["source_titles"][source_title]
         if "downloadFolderImported" not in imported_events:
             logger.warning(
@@ -1328,6 +1334,11 @@ class Prunerr(object):
         for imported_record in imported_events["downloadFolderImported"]:
             if "downloadId" in imported_record:
                 return imported_record["downloadId"].lower()
+        logger.warning(
+            "No Servarr grabbed history found, "
+            "could not match to download client item: %s",
+            source_title,
+        )
 
     def get_download_item(self, download_id):
         """
@@ -1356,6 +1367,8 @@ class Prunerr(object):
             servarr_config["history"],
             source_title,
         )
+        if download_id is None:
+            return
         torrent = self.get_download_item(download_id)
         if torrent is None:
             return
@@ -1374,9 +1387,10 @@ class Prunerr(object):
             torrent.update()
             return torrent
         else:
-            raise ServarrEventError(
-                f"Deleted download item {torrent!r} already in Servarr deleted "
-                f"directory: {torrent.download_dir}"
+            logger.warning(
+                "Deleted download item %r already in Servarr deleted directory: %s",
+                torrent,
+                torrent.download_dir,
             )
 
     def handle_test(self, servarr_config, **custom_script_kwargs):

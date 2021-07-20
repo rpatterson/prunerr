@@ -985,6 +985,12 @@ class Prunerr(object):
         Move the given torrent relative to its old path.
         """
         download_dir = torrent.downloadDir
+        if pathlib.Path(old_path) not in pathlib.Path(download_dir).parents:
+            logger.error(
+                "Download item %r not in expected location: %r vs %r",
+                torrent, str(old_path), download_dir,
+            )
+            return
         relative = os.path.relpath(download_dir, os.path.dirname(old_path))
         split = splitpath(relative)[1:]
         subpath = split and os.path.join(*split) or ""
@@ -1285,7 +1291,7 @@ class Prunerr(object):
         # Move the download item to the location appropriate for it's Servarr state
         self.move_torrent(
             torrent,
-            old_path=torrent_path.parents[len(pathlib.Path(downloads_dir).parents)],
+            old_path=pathlib.Path(downloads_dir),
             new_path=imported_dir,
         )
         torrent.update()

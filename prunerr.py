@@ -1259,7 +1259,7 @@ class Prunerr(object):
                 self.SERVARR_HISTORY_TIMEOUT,
                 torrent,
             )
-            time.sleep(1)
+            time.sleep(10)
             while (
                     time.time() - history_start <= self.SERVARR_HISTORY_TIMEOUT
                     and (

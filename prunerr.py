@@ -1181,7 +1181,9 @@ class Prunerr(object):
             eventtype,
         )
 
-    def handle_grabbed(self, servarr_config, download_id, **custom_script_kwargs):
+    def handle_grabbed(
+            self, servarr_config, download_id, **custom_script_kwargs,
+    ):
         """
         Handle a Servarr grabbed event, confirm the item received by download client.
         """

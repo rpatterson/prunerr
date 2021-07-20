@@ -107,9 +107,9 @@ class Prunerr(object):
     # Map Servarr event types from the API to those used in the custom scripts
     SERVARR_CUSTOM_SCRIPT_EVENT_TYPES = {
         "grabbed": "Grab",
-        "downloadFolderImported": "Download",
-        "fileRenamed": "Rename",
-        "fileDeleted": "Deleted",
+        "download_folder_imported": "Download",
+        "file_renamed": "Rename",
+        "file_deleted": "Deleted",
     }
     SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH = {
         "Grab": "grabbed",
@@ -120,11 +120,11 @@ class Prunerr(object):
     }
     SERVARR_CUSTOM_SCRIPT_ENV_VARS = dict(
         imported=dict(
-            file_sourcepath="dropped_path",
-            file_path="imported_path",
+            filesourcepath="dropped_path",
+            filepath="imported_path",
         ),
         deleted=dict(
-            file_path="source_title",
+            filepath="source_title",
         ),
     )
     # Number of seconds to wait for new file import history records to appear in Servarr
@@ -226,6 +226,7 @@ class Prunerr(object):
             servarr_type,
             prefixed,
             servarr_term="file_type",
+            denormalizer=humps.decamelize,
             normalizer=humps.camelize,
     ):
         """
@@ -234,10 +235,14 @@ class Prunerr(object):
         # Map the different Servarr applications type terminology
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_type]
         prefix = servarr_type_map[servarr_term]
-        return (
-            normalizer(prefixed[len(prefix):]) if prefixed.startswith(prefix)
-            else prefixed
-        )
+        if denormalizer is not None:
+            prefixed = denormalizer(prefixed)
+        if prefixed.startswith(prefix):
+            stripped = prefixed[len(prefix):]
+            if not stripped.startswith("_"):
+                return normalizer(stripped)
+
+        return prefixed
 
     def exec_(self):
         """
@@ -1081,7 +1086,7 @@ class Prunerr(object):
 
                 for history_record in reversed(torrent_history):
                     history_event_type = self.strip_type_prefix(
-                        servarr_config["type"], history_record["eventType"])
+                        servarr_config["type"], history_record["event_type"])
                     custom_script_kwargs = dict(
                         eventtype=self.SERVARR_CUSTOM_SCRIPT_EVENT_TYPES.get(
                             history_event_type, history_event_type,
@@ -1092,12 +1097,12 @@ class Prunerr(object):
                     # Avoid reporting false negatives or otherwise duplicating actions
                     # and report for the same combination of torrent and event type
                     # once.
-                    if history_record["eventType"] in event_results.get(
+                    if history_record["event_type"] in event_results.get(
                             torrent.hashString, {},
                     ).get(servarr_config["name"], {}):
                         logger.debug(
                             "Skipping duplicate %r event for %r",
-                            history_record["eventType"],
+                            history_record["event_type"],
                             torrent,
                         )
                         continue
@@ -1143,7 +1148,11 @@ class Prunerr(object):
             f"{servarr_type_map['dir_type']}_id"
         )
         eventtype_stripped = self.strip_type_prefix(
-            servarr_config["type"], eventtype, normalizer=humps.pascalize)
+            servarr_config["type"],
+            eventtype,
+            denormalizer=None,
+            normalizer=humps.pascalize,
+        )
         handler_suffix = self.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
             eventtype_stripped,
             eventtype_stripped,
@@ -1339,15 +1348,15 @@ class Prunerr(object):
             )
             return
         imported_events = servarr_history["event_types"]["source_titles"][source_title]
-        if "downloadFolderImported" not in imported_events:
+        if "download_folder_imported" not in imported_events:
             logger.warning(
                 "No Servarr import history found: %s",
                 source_title,
             )
             return
-        for imported_record in imported_events["downloadFolderImported"]:
-            if "downloadId" in imported_record:
-                return imported_record["downloadId"].lower()
+        for imported_record in imported_events["download_folder_imported"]:
+            if "download_id" in imported_record:
+                return imported_record["download_id"].lower()
         logger.warning(
             "No Servarr grabbed history found, "
             "could not match to download client item: %s",
@@ -1453,7 +1462,7 @@ class Prunerr(object):
 
         if (
                 import_path is not None
-                and "downloadFolderImported" in servarr_history["event_types"][
+                and "download_folder_imported" in servarr_history["event_types"][
                     "source_titles"
                 ].get(import_path, {})
         ):
@@ -1497,7 +1506,7 @@ class Prunerr(object):
 
             if (
                     import_path is not None
-                    and "downloadFolderImported" in servarr_history["event_types"][
+                    and "download_folder_imported" in servarr_history["event_types"][
                         "source_titles"
                     ].get(import_path, {})
             ):
@@ -1545,6 +1554,7 @@ class Prunerr(object):
                         history_data[key] = self.strip_type_prefix(
                             servarr_config["type"],
                             value,
+                            denormalizer=None,
                         )
                     # Normalize keys using prefixes specific to the Servarr type
                     key_stripped = self.strip_type_prefix(servarr_config["type"], key)
@@ -1552,50 +1562,50 @@ class Prunerr(object):
 
             # Collate history under the best available identifier that may be
             # matched to download client items
-            if "downloadId" in history_record:
+            if "download_id" in history_record:
                 # History record can be matched exactly to the download client item
                 servarr_history["records"]["download_ids"].setdefault(
-                    history_record["downloadId"].lower(), [],
+                    history_record["download_id"].lower(), [],
                 ).append(history_record)
                 servarr_history["event_types"]["download_ids"].setdefault(
-                    history_record["downloadId"].lower(), {},
-                ).setdefault(history_record["eventType"], []).append(history_record)
-            if "importedPath" in history_record["data"]:
+                    history_record["download_id"].lower(), {},
+                ).setdefault(history_record["event_type"], []).append(history_record)
+            if "imported_path" in history_record["data"]:
                 # Capture a reference that may match to more recent history record
                 # below, such as deleting upon upgrade
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], [],
+                    history_record["data"]["imported_path"], [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], {},
-                ).setdefault(history_record["eventType"], []).append(history_record)
-            if "sourceTitle" in history_record:
+                    history_record["data"]["imported_path"], {},
+                ).setdefault(history_record["event_type"], []).append(history_record)
+            if "source_title" in history_record:
                 # Can't match exactly to a download client item, capture a reference
                 # that may match to more recent history record below, such as
                 # deleting upon upgrade
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["sourceTitle"], [],
+                    history_record["source_title"], [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["sourceTitle"], {},
-                ).setdefault(history_record["eventType"], []).append(history_record)
+                    history_record["source_title"], {},
+                ).setdefault(history_record["event_type"], []).append(history_record)
 
             # Match this older import history record to previously processed, newer,
             # records that don't match exactly to a download client item, such as
             # deleting upon upgrade
             if (
-                "downloadId" in history_record
-                and "importedPath" in history_record["data"]
-                and history_record["data"]["importedPath"]
+                "download_id" in history_record
+                and "imported_path" in history_record["data"]
+                and history_record["data"]["imported_path"]
                 in servarr_history["records"]["source_titles"]
             ):
                 # Insert previous, newer history records under the download id that
                 # matches the import path for this older record
                 source_titles = servarr_history["records"]["source_titles"][
-                    history_record["data"]["importedPath"]
+                    history_record["data"]["imported_path"]
                 ]
                 download_records = servarr_history["records"]["download_ids"][
-                    history_record["downloadId"].lower()
+                    history_record["download_id"].lower()
                 ]
                 latest_download_record = download_records[0]
                 newer_records = list(
@@ -1610,20 +1620,20 @@ class Prunerr(object):
                 newer_event_types = {}
                 for newer_record in newer_records:
                     newer_event_types.setdefault(
-                        newer_record["eventType"], [],
+                        newer_record["event_type"], [],
                     ).append(newer_record)
                 for (event_type, newer_event_records,) in newer_event_types.items():
                     servarr_history["event_types"]["download_ids"][
-                        history_record["downloadId"].lower()
+                        history_record["download_id"].lower()
                     ].setdefault(event_type, [])[:0] = newer_event_records
 
                 # Also include history records under the imported path
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], [],
+                    history_record["data"]["imported_path"], [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], {},
-                ).setdefault(history_record["eventType"], []).append(history_record)
+                    history_record["data"]["imported_path"], {},
+                ).setdefault(history_record["event_type"], []).append(history_record)
 
         return servarr_history
 
@@ -1745,7 +1755,11 @@ def handle(prunerr):
     }
     eventtype = custom_script_kwargs["eventtype"]
     eventtype_stripped = prunerr.strip_type_prefix(
-        prunerr.servarr_config["type"], eventtype, normalizer=humps.pascalize)
+        prunerr.servarr_config["type"],
+        eventtype,
+        denormalizer=None,
+        normalizer=humps.pascalize,
+    )
     handler_suffix = prunerr.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
         eventtype_stripped,
         eventtype_stripped,

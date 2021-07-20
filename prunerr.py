@@ -1206,22 +1206,27 @@ class Prunerr(object):
             self,
             servarr_config,
             dir_id,
-            download_id,
             dropped_path,
             imported_path,
+            download_id=None,
             history_wait=True,
             **custom_script_kwargs,
     ):
         """
         Followup a Servarr imported event, move the item data to the imported directory.
         """
-        if not download_id.strip():
+        if not download_id:
             raise ServarrEventError(
                 f"No download client item id for imported Servarr item: "
-                f"{imported_path}",
+                f"{dropped_path}",
+            )
+        torrent = self.get_download_item(download_id.lower())
+        if torrent is None:
+            raise ServarrEventError(
+                f"Imported Servarr item no longer present in the download client: "
+                f"{dropped_path}",
             )
 
-        torrent = self.client.get_torrent(download_id.lower())
         session = self.client.get_session()
         torrent_path = pathlib.Path(torrent.download_dir) / torrent.name
         downloads_dir = self.config["downloaders"].get(
@@ -1374,10 +1379,10 @@ class Prunerr(object):
         Get a download client item, tolerate missing items while logging the error.
         """
         try:
-            return self.client.get_torrent(download_id)
+            return self.client.get_torrent(download_id.lower())
         except KeyError:
             # Can happen if the download client item has been manually deleted
-            logger.exception(
+            logger.error(
                 "Could not find item in download client "
                 "for Servarr imported event: %s",
                 download_id,

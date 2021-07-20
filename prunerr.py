@@ -1138,9 +1138,7 @@ class Prunerr(object):
                         # expected case here, so capture those exceptions and log them
                         # as informative messages instead of errors.
                         logger.info("%s", sys.exc_info()[1])
-                    event_results.setdefault(torrent.hashString, {}).setdefault(
-                        servarr_config["name"], {}
-                    ).setdefault(history_record["eventType"], []).append(history_record)
+                    event_results.setdefault(servarr_config["name"], []).append(torrent)
 
         return event_results
 

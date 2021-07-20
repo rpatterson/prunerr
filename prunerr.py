@@ -1897,10 +1897,10 @@ def main(args=None):
             if isinstance(results, list):
                 results = len(results)
             logger.info(
-                "%r results for download client %r: %r",
+                "%r results for download client %r:\n%s",
                 parsed_args.command.__name__,
                 downloader_url,
-                results,
+                pprint.pformat(results),
             )
 
 

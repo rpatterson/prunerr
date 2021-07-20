@@ -1148,9 +1148,9 @@ class Prunerr(object):
         """
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
         # Generalize the series/movie/etc. DB id for looking up history
-        custom_script_kwargs["dir_id"] = custom_script_kwargs.pop(
-            f"{servarr_type_map['dir_type']}_id"
-        )
+        dir_id_key = f"{servarr_type_map['dir_type']}_id"
+        if dir_id_key in custom_script_kwargs:
+            custom_script_kwargs["dir_id"] = custom_script_kwargs.pop(dir_id_key)
         eventtype_stripped = self.strip_type_prefix(
             servarr_config["type"],
             eventtype,

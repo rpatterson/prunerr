@@ -114,6 +114,7 @@ class Prunerr(object):
     SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH = {
         "Grab": "grabbed",
         "Download": "imported",
+        "DownloadFollowup": "imported_followup",
         "Rename": "renamed",
         "Deleted": "deleted",
         "FileDelete": "deleted",
@@ -126,6 +127,9 @@ class Prunerr(object):
         deleted=dict(
             filepath="source_title",
         ),
+    )
+    SERVARR_CUSTOM_SCRIPT_ENV_VARS["imported_followup"] = dict(
+        SERVARR_CUSTOM_SCRIPT_ENV_VARS["imported"],
     )
     # Number of seconds to wait for new file import history records to appear in Servarr
     # history.  This should be the maximum amount of time it might take to import a
@@ -1218,7 +1222,24 @@ class Prunerr(object):
             **custom_script_kwargs,
     ):
         """
-        Followup a Servarr imported event, move the item data to the imported directory.
+        Handle a Servarr imported event, check conditions and trigger the followup.
+
+        Consider the case where a given download client item contains multiple media
+        files for Servarr to import, such as season packs in Sonarr.  If Prunerr moves
+        the download client item in response to the first imported media file, that can
+        and almost always will move the subsequent media files out from under Servarr
+        preventing import of most files in the download client item.  As such we need to
+        wait until Servarr has finished importing all the media files in the download
+        client item.  We can discern when importing is done by waiting for new import
+        records to stop appearing in the Servarr history for the given
+        series/movie/etc. within a given timeout.  It appears, however, that Servarr
+        doesn't actually add the imported history record or proceed with importing
+        subsequent media files until the custom script returns, creating somewhat of a
+        catch 22.
+
+        Workaround this by performing checks on conditions and item state and then
+        launching a detached followup subprocess and exiting the imported custom script.
+        The followup will wait for importing to finish and then perform the actual move.
         """
         if not download_id:
             raise ServarrEventError(
@@ -1234,10 +1255,6 @@ class Prunerr(object):
 
         session = self.client.get_session()
         torrent_path = pathlib.Path(torrent.download_dir) / torrent.name
-        downloads_dir = self.config["downloaders"].get(
-            "download-dir",
-            os.path.join(os.path.dirname(session.download_dir), "downloads"),
-        )
         imported_dir = self.config["downloaders"].get(
             "imported-dir",
             os.path.join(os.path.dirname(session.download_dir), "imported"),
@@ -1248,6 +1265,58 @@ class Prunerr(object):
                 f"Imported download item {torrent!r} already in Servarr imported "
                 f"directory: {torrent.download_dir}"
             )
+
+        if history_wait:
+            # Set the followup event type and launch the detached followup subprocess
+            env = dict(os.environ)
+            env[f"{servarr_config['type']}_eventtype"] += "Followup"
+            env.pop(f"{servarr_config['type']}_deletedpaths", None)
+            args = [servarr_config["notification"][
+                servarr_config.get("connect-name", "Prunerr")
+            ]["fieldValues"]["path"]]
+            followup_popen = subprocess.Popen(
+                args,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+                env=env,
+            )
+            return dict(args=args, pid=followup_popen.pid)
+        else:
+            # If we're not waiting for history, then proceed to move the download item
+            # immediately in this process
+            return self.handle_imported_followup(
+                servarr_config,
+                dir_id,
+                dropped_path,
+                imported_path,
+                download_id=download_id,
+                history_wait=history_wait,
+                **custom_script_kwargs,
+            )
+
+    def handle_imported_followup(
+            self,
+            servarr_config,
+            dir_id,
+            dropped_path,
+            imported_path,
+            download_id=None,
+            history_wait=True,
+            **custom_script_kwargs,
+    ):
+        """
+        Followup a Servarr imported event, move the item data to the imported directory.
+        """
+        session = self.client.get_session()
+        downloads_dir = self.config["downloaders"].get(
+            "download-dir",
+            os.path.join(os.path.dirname(session.download_dir), "downloads"),
+        )
+        imported_dir = self.config["downloaders"].get(
+            "imported-dir",
+            os.path.join(os.path.dirname(session.download_dir), "imported"),
+        )
+        torrent = self.get_download_item(download_id.lower())
 
         if history_wait:
             # The download client item should not be moved until after Servarr has
@@ -1264,7 +1333,6 @@ class Prunerr(object):
                 self.SERVARR_HISTORY_TIMEOUT,
                 torrent,
             )
-            time.sleep(10)
             while (
                     time.time() - history_start <= self.SERVARR_HISTORY_TIMEOUT
                     and (
@@ -1738,6 +1806,18 @@ def collect_downloaders(config):
             downloader_config.setdefault("servarrs", {})[
                 servarr_config["name"]
             ] = servarr_config
+
+        # Collect the settings for the Prunerr custom script connection if present for
+        # the Servarr instance.  Used to lookup the custom script path when dispatching
+        # followup event subprocesses.
+        servarr_config["notification"] = {}
+        for connect_config in servarr_client._get("notification"):
+            connect_config["fieldValues"] = field_values = {
+                connect_config_field["name"]: connect_config_field["value"]
+                for connect_config_field in connect_config["fields"]
+                if "value" in connect_config_field
+            }
+            servarr_config["notification"][connect_config["name"]] = connect_config
 
     # Include any download clients not connected to a Servarr instance
     for downloader_url_str in config.get("downloaders", {}).get("urls", []):

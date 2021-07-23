@@ -1702,9 +1702,9 @@ def collect_downloaders(config):
     # for Servarr and download client with their configs, both Prunerr config and
     # settings from Servarr.
 
-    # Connect clients to all download clients
-    downloaders = {}
-    for servarr_config in config["servarrs"]:
+    # Collect connections information for all unique download clients
+    downloader_urls = {}
+    for servarr_config in config.get("servarrs", []):
         servarr_config["client"] = servarr_client = Prunerr.SERVARR_TYPE_MAPS[
             servarr_config["type"]
         ]["client"](servarr_config["url"], servarr_config["api-key"],)
@@ -1724,27 +1724,41 @@ def collect_downloaders(config):
             }
             downloader_url = urllib.parse.SplitResult(
                 "http" if not field_values["useSsl"] else "https",
+                f"field_values['username']:field_values['password']@"
                 f"{field_values['host']}:{field_values['port']}",
                 field_values["urlBase"],
                 None,
                 None,
             )
-            # Aggregate the download clients from all Servarrs so that we run for each
-            # download client once even when used for multiple Servarr instances
-            if downloader_url.geturl() not in downloaders:
-                downloader_config["client"] = transmission_rpc.client.Client(
-                    protocol=downloader_url.scheme,
-                    host=downloader_url.hostname,
-                    port=downloader_url.port,
-                    path=downloader_url.path,
-                    username=field_values["username"],
-                    password=field_values["password"],
-                )
-                downloader_config["servarrs"] = {}
-                downloaders[downloader_url.geturl()] = downloader_config
-            else:
-                downloader_config = downloaders[downloader_url.geturl()]
-            downloader_config["servarrs"][servarr_config["name"]] = servarr_config
+            # Use the same config dict when a download client is used in multiple
+            # Servarr instances
+            downloader_config = downloader_urls.setdefault(
+                downloader_url, downloader_config,
+            )
+            downloader_config.setdefault("servarrs", {})[
+                servarr_config["name"]
+            ] = servarr_config
+
+    # Include any download clients not connected to a Servarr instance
+    for downloader_url_str in config.get("downloaders", {}).get("urls", []):
+        downloader_url = urllib.parse.urlsplit(downloader_url_str)
+        downloader_urls.setdefault(downloader_url, {})
+
+    # Connect clients to all download clients
+    downloaders = {}
+    for download_url, downloader_config in downloader_urls.items():
+        # Aggregate the download clients from all Servarrs so that we run for each
+        # download client once even when used for multiple Servarr instances
+        if downloader_url.geturl() not in downloaders:
+            downloader_config["client"] = transmission_rpc.client.Client(
+                protocol=downloader_url.scheme,
+                host=downloader_url.hostname,
+                port=downloader_url.port,
+                path=downloader_url.path,
+                username=downloader_url.username,
+                password=downloader_url.password,
+            )
+            downloaders[downloader_url.geturl()] = downloader_config
 
     return downloaders
 
@@ -1893,7 +1907,7 @@ def main(args=None):
     downloaders = collect_downloaders(shared_kwargs["config"])
     for downloader_url, downloader_config in downloaders.items():
         prunerr_kwargs = dict(shared_kwargs)
-        prunerr_kwargs["servarrs"] = downloader_config["servarrs"]
+        prunerr_kwargs["servarrs"] = downloader_config.get("servarrs", {})
         prunerr_kwargs["client"] = downloader_config["client"]
         prunerr_kwargs["url"] = downloader_url
         prunerr = Prunerr(**prunerr_kwargs)

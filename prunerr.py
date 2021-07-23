@@ -1930,6 +1930,8 @@ def handle(prunerr):
                 eventtype="deleted",
                 source_title=deleted_path,
             )
+            # Don't know which download client item the deleted path is for.
+            delete_event_kwargs.pop("download_id", None)
             logger.info("Dispatching nested Sonarr deleted event: %s", deleted_path)
             try:
                 prunerr.dispatch_event(prunerr.servarr_config, **delete_event_kwargs)

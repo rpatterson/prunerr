@@ -986,17 +986,40 @@ class Prunerr(object):
         if torrents_were_readded:
             self.update()
 
-    def move_torrent(self, torrent, old_path, new_path):
+    def move_torrent(self, torrent, old_path, new_path, servarr_config=None):
         """
         Move the given torrent relative to its old path.
         """
         download_dir = torrent.downloadDir
-        if pathlib.Path(old_path) not in pathlib.Path(download_dir).parents:
-            logger.error(
-                "Download item %r not in expected location: %r vs %r",
-                torrent, str(old_path), download_dir,
-            )
-            return
+        torrent_path = pathlib.Path(download_dir) / torrent.name
+        if pathlib.Path(old_path) not in torrent_path.parents:
+            if servarr_config is None:
+                logger.error(
+                    "Download item %r not in expected location: %r vs %r",
+                    torrent, str(old_path), download_dir,
+                )
+                return
+            else:
+                for managed_dir in (
+                        servarr_config["downloadDir"],
+                        servarr_config["importedDir"],
+                        servarr_config["deletedDir"],
+                ):
+                    if managed_dir in torrent_path.parents:
+                        logger.warning(
+                            "Download item %r in wrong managed dir: %r vs %r",
+                            torrent, str(old_path), download_dir,
+                        )
+                        old_path = list(servarr_config["deletedDir"].parents)[
+                            -(len(old_path.parents) + 1)
+                        ]
+                        break
+                else:
+                    logger.error(
+                        "Download item %r not in a managed dir: %r vs %r",
+                        torrent, str(old_path), download_dir,
+                    )
+                    return
         relative = os.path.relpath(download_dir, os.path.dirname(old_path))
         split = splitpath(relative)[1:]
         subpath = split and os.path.join(*split) or ""
@@ -1373,6 +1396,7 @@ class Prunerr(object):
             torrent,
             old_path=pathlib.Path(downloads_dir),
             new_path=imported_dir,
+            servarr_config=servarr_config,
         )
         torrent.update()
 
@@ -1499,7 +1523,12 @@ class Prunerr(object):
             os.path.join(os.path.dirname(session.download_dir), "deleted"),
         )
         if pathlib.Path(deleted_dir) not in torrent_path.parents:
-            self.move_torrent(torrent, old_path=imported_dir, new_path=deleted_dir)
+            self.move_torrent(
+                torrent,
+                old_path=imported_dir,
+                new_path=deleted_dir,
+                servarr_config=servarr_config,
+            )
             torrent.update()
             return torrent
         else:

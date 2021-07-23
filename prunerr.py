@@ -184,7 +184,7 @@ class Prunerr(object):
         self.indexer_configs = {
             indexer_config["name"]: indexer_config
             for indexer_config in
-            config.get("indexers", {}).get("priorities-TODO", [])
+            config.get("indexers", {}).get("priorities", [])
         }
 
         # Servarr API client and download client settings
@@ -791,8 +791,8 @@ class Prunerr(object):
             torrent_history = self.find_item_history(servarr_config, torrent=torrent)
             if torrent_history:
                 for history_record in torrent_history:
-                    if "indexer" in history_record:
-                        indexer_name = history_record["indexer"]
+                    if "indexer" in history_record["data"]:
+                        indexer_name = history_record["data"]["indexer"]
                         break
                 else:
                     logger.warning(
@@ -827,6 +827,8 @@ class Prunerr(object):
                 if indexer_name:
                     break
         torrent.prunerr_indexer_name = indexer_name
+        if indexer_name not in self.indexer_configs:
+            indexer_name = None
         indexer_idx = list(self.indexer_configs.keys()).index(indexer_name)
         indexer_config = self.indexer_configs[indexer_name]
 

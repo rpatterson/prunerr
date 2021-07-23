@@ -1362,11 +1362,8 @@ class Prunerr(object):
                     time.time() - history_start <= self.SERVARR_HISTORY_TIMEOUT
                     and (
                         not imported_records
-                        or (
-                            latest_history_record is not None
-                            and latest_history_record["date"] ==
-                            imported_records[0]["date"]
-                        )
+                        or latest_history_record is None
+                        or latest_history_record["date"] != imported_records[0]["date"]
                     )
             ):
                 if imported_records:

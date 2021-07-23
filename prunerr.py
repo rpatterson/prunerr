@@ -1792,7 +1792,7 @@ def collect_downloaders(config):
             }
             downloader_url = urllib.parse.SplitResult(
                 "http" if not field_values["useSsl"] else "https",
-                f"field_values['username']:field_values['password']@"
+                f"{field_values['username']}:{field_values['password']}@"
                 f"{field_values['host']}:{field_values['port']}",
                 field_values["urlBase"],
                 None,

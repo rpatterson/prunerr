@@ -1061,11 +1061,13 @@ class Prunerr(object):
             f"history/{servarr_type_map['dir_type']}",
             **params,
         )
-        logger.debug(
-            "Received Sonarr history API response for %r:\n%s",
-            dir_id,
-            pprint.pformat(history_response),
-        )
+        # Avoid `pprint` overhead if we're not logging the message
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Received Sonarr history API response for %r:\n%s",
+                dir_id,
+                pprint.pformat(history_response),
+            )
         return self.collate_history_records(
             servarr_config, history_records=history_response,
         )

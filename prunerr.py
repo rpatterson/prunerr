@@ -3,7 +3,6 @@
 Remove Servarr download client items to preserve disk space according to rules.
 """
 
-import sys
 import os
 import os.path
 import argparse
@@ -18,6 +17,8 @@ import urllib
 import tempfile
 import glob
 import pprint
+import json
+import datetime
 
 import ciso8601
 import humps
@@ -104,33 +105,15 @@ class Prunerr(object):
             download_dir_field="movieDirectory",
         ),
     )
-    # Map Servarr event types from the API to those used in the custom scripts
-    SERVARR_CUSTOM_SCRIPT_EVENT_TYPES = {
-        "grabbed": "Grab",
-        "download_folder_imported": "Download",
-        "file_renamed": "Rename",
-        "file_deleted": "Deleted",
-    }
-    SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH = {
-        "Grab": "grabbed",
-        "Download": "imported",
-        "DownloadFollowup": "imported_followup",
-        "Rename": "renamed",
-        "Deleted": "deleted",
-        "FileDelete": "deleted",
-    }
-    SERVARR_CUSTOM_SCRIPT_ENV_VARS = dict(
-        imported=dict(
-            filesourcepath="dropped_path",
-            filepath="imported_path",
-        ),
-        deleted=dict(
-            filepath="source_title",
-        ),
+    # Map Servarr event types to download client location path config
+    SERVARR_EVENT_LOCATIONS = dict(
+        grabbed=dict(src="downloadDir", dst="downloadDir"),
+        downloadFolderImported=dict(src="downloadDir", dst="importedDir"),
+        downloadIgnored=dict(src="downloadDir", dst="deletedDir"),
+        downloadFailed=dict(src="downloadDir", dst="deletedDir"),
+        fileDeleted=dict(src="importedDir", dst="deletedDir"),
     )
-    SERVARR_CUSTOM_SCRIPT_ENV_VARS["imported_followup"] = dict(
-        SERVARR_CUSTOM_SCRIPT_ENV_VARS["imported"],
-    )
+    SERVARR_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
     # Number of seconds to wait for new file import history records to appear in Servarr
     # history.  This should be the maximum amount of time it might take to import a
     # single file in the download client item, not necessarily the entire item.  Imagine
@@ -140,9 +123,26 @@ class Prunerr(object):
     # - the host running Sonarr is under high load
     # - the RAID array is being rebuilt
     # - etc.
-    SERVARR_HISTORY_TIMEOUT = 120
+    # TODO: Move to config
+    SERVARR_HISTORY_WAIT = datetime.timedelta(seconds=120)
+    # Map Servarr event types from the API to the Prunerr suffixes
+    SERVARR_HISTORY_EVENT_TYPES = {
+        "downloadFolderImported": "imported",
+        "fileDeleted": "deleted",
+        "downloadIgnored": "deleted",
+    }
+    # Map Servarr event types from Custom Script environment variables to the Prunerr
+    # suffixes
+    SERVARR_CUSTOM_SCRIPT_EVENT_TYPES = {
+        "Grab": "grabbed",
+        "Download": "imported",
+        "Download": "imported",
+        "Rename": "renamed",
+        "Deleted": "deleted",
+        "FileDelete": "deleted",
+    }
 
-    def __init__(self, config, servarrs, client, url, servarr_name=None):
+    def __init__(self, config, servarrs, client, url, servarr_name=None, replay=False):
         """
         Do any config post-processing and set initial state.
         """
@@ -221,6 +221,9 @@ class Prunerr(object):
                     servarr_config["type"]
                 ]["client"](servarr_config["url"], servarr_config["api-key"],)
 
+        # Should all events be handled again, even if previously processed.
+        self.replay = replay
+
         # Initial state
         self.popen = self.copying = None
         self.corrupt = {}
@@ -289,6 +292,9 @@ class Prunerr(object):
             # Launch copy of most optimal, fully downloaded torrent in the downloads
             # dir.
             self._exec_copy(session)
+
+        # Ensure that download client state matches Servarr state
+        self.sync()
 
         # Free disk space if needed
         self.free_space()
@@ -986,40 +992,17 @@ class Prunerr(object):
         if torrents_were_readded:
             self.update()
 
-    def move_torrent(self, torrent, old_path, new_path, servarr_config=None):
+    def move_torrent(self, torrent, old_path, new_path):
         """
         Move the given torrent relative to its old path.
         """
         download_dir = torrent.downloadDir
-        torrent_path = pathlib.Path(download_dir) / torrent.name
-        if pathlib.Path(old_path) not in torrent_path.parents:
-            if servarr_config is None:
-                logger.error(
-                    "Download item %r not in expected location: %r vs %r",
-                    torrent, str(old_path), download_dir,
-                )
-                return
-            else:
-                for managed_dir in (
-                        servarr_config["downloadDir"],
-                        servarr_config["importedDir"],
-                        servarr_config["deletedDir"],
-                ):
-                    if managed_dir in torrent_path.parents:
-                        logger.warning(
-                            "Download item %r in wrong managed dir: %r vs %r",
-                            torrent, str(old_path), download_dir,
-                        )
-                        old_path = list(servarr_config["deletedDir"].parents)[
-                            -(len(old_path.parents) + 1)
-                        ]
-                        break
-                else:
-                    logger.error(
-                        "Download item %r not in a managed dir: %r vs %r",
-                        torrent, str(old_path), download_dir,
-                    )
-                    return
+        src_torrent_path = self.get_item_path(torrent)
+        if pathlib.Path(old_path) not in src_torrent_path.parents:
+            raise ValueError(
+                f"Download item {torrent!r} not in expected location: "
+                f"{str(old_path)!r} vs {download_dir!r}"
+            )
         relative = os.path.relpath(download_dir, os.path.dirname(old_path))
         split = splitpath(relative)[1:]
         subpath = split and os.path.join(*split) or ""
@@ -1035,26 +1018,36 @@ class Prunerr(object):
             torrent.stop()
         finally:
             torrent.update()
+        dst_torrent_path = self.get_item_path(torrent)
 
         # Move any non-torrent files managed by Prunerr
         # Explicit is better than implicit, specific e.g.: if a user has manually
         # extracted an archive in the old import location we want the orphan logic to
         # find it after Servarr has upgraded it
-        old_download_path = pathlib.Path(download_dir)
-        torrent_stem_path = old_download_path / torrent.name
-        if (pathlib.Path(torrent.downloadDir) / torrent.name).is_file():
-            torrent_stem_path = torrent_stem_path.parent / torrent_stem_path.stem
-        for import_link in glob.glob(
-            f"{glob.escape(torrent_stem_path)}**-servarr-imported.ln", recursive=True,
-        ):
-            import_link_path = pathlib.Path(import_link)
-            import_link_relative = import_link_path.relative_to(old_path)
-            import_link_dest = pathlib.Path(new_path) / import_link_relative
-            shutil.move(import_link, import_link_dest)
-            if import_link_path.parent != pathlib.Path(old_path) and not list(
-                import_link_path.parent.iterdir()
+        if dst_torrent_path.is_file():
+            import_links_pattern = str(src_torrent_path.with_name(
+                f"{glob.escape(src_torrent_path.name)}**-servarr-imported.ln",
+            ))
+            data_path = src_torrent_path.with_suffix(".prunerr.json")
+        else:
+            import_links_pattern = str(src_torrent_path.with_name(
+                f"{glob.escape(src_torrent_path.name)}**-servarr-imported.ln",
+            ))
+            data_path = src_torrent_path.with_name(
+                f"{src_torrent_path.name}.prunerr.json"
+            )
+        prunerr_files = glob.glob(import_links_pattern, recursive=True)
+        if data_path.exists():
+            prunerr_files.append(data_path)
+        for prunerr_file in prunerr_files:
+            prunerr_file_path = pathlib.Path(prunerr_file)
+            prunerr_file_relative = prunerr_file_path.relative_to(old_path)
+            prunerr_file_dest = pathlib.Path(new_path) / prunerr_file_relative
+            shutil.move(prunerr_file, prunerr_file_dest)
+            if prunerr_file_path.parent != pathlib.Path(old_path) and not list(
+                prunerr_file_path.parent.iterdir()
             ):
-                import_link_path.parent.rmdir()  # empty dir
+                prunerr_file_path.parent.rmdir()  # empty dir
 
         return torrent_location
 
@@ -1077,6 +1070,20 @@ class Prunerr(object):
             servarr_config, history_records=history_response,
         )
 
+    def get_item_path(self, download_item):
+        """
+        Return the root path for all items in the download client item.
+
+        Needed because it's not always the same as the item's download directory plus
+        the item's name.
+        """
+        item_files = download_item.files()
+        if item_files:
+            item_root_name = pathlib.Path(item_files[0].name).parts[0]
+        else:
+            item_root_name = download_item.name
+        return (pathlib.Path(download_item.download_dir) / item_root_name).resolve()
+
     def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.
@@ -1084,17 +1091,14 @@ class Prunerr(object):
         Match the state of each current download client item as if they had been
         processed through the `handle` sub-command as a Servarr `Custom Script`.
         """
-        event_results = {}
-        for torrent in self.torrents:
-            if torrent.status != "seeding":
-                # Not finished downloading, no changes needed
-                continue
+        # Ensure we have current history between subsequent `$ prunerr daemon` runs
+        for servarr_config in self.servarrs.values():
+            servarr_config["history"] = {}
+        # TODO: Cache `self.get_dir_history()` per `self.sync()` calls
 
-            # Determine the root path for all files in this torrent
-            download_path = (
-                pathlib.Path(torrent.download_dir)
-                / pathlib.Path(torrent.files()[0].name).parts[0]
-            ).resolve()
+        sync_results = []
+        for torrent in self.torrents:
+            download_path = self.get_item_path(torrent)
 
             # Determine if this download client item is in the download directory of a
             # Servarr instance.
@@ -1111,312 +1115,297 @@ class Prunerr(object):
                     continue
 
                 # This download client item is in the download directory of a Servarr
-                # instance.  Collect the Servarr history for this download client item.
-                torrent_history = self.find_item_history(
-                    servarr_config, torrent=torrent
-                )
+                # instance.  Sync the individual item.
+                item_result = self.sync_item(servarr_config, torrent, is_realtime=False)
+                if item_result is not None:
+                    sync_results.append(item_result)
 
-                if not torrent_history:
-                    logger.error(
-                        "No history found for %r Servarr download item %r",
-                        servarr_config["url"],
-                        torrent,
-                    )
-                    break
+        return sync_results
 
-                for history_record in reversed(torrent_history):
-                    history_event_type = self.strip_type_prefix(
-                        servarr_config["type"], history_record["event_type"])
-                    custom_script_kwargs = dict(
-                        eventtype=self.SERVARR_CUSTOM_SCRIPT_EVENT_TYPES.get(
-                            history_event_type, history_event_type,
-                        ),
-                    )
-                    # There may be multiple Sonarr events per torrents if multiple files
-                    # are imported from the same torrent, such as with season packs.
-                    # Avoid reporting false negatives or otherwise duplicating actions
-                    # and report for the same combination of torrent and event type
-                    # once.
-                    if history_record["event_type"] in event_results.get(
-                            torrent.hashString, {},
-                    ).get(servarr_config["name"], {}):
-                        logger.debug(
-                            "Skipping duplicate %r event for %r",
-                            history_record["event_type"],
-                            torrent,
-                        )
-                        continue
-
-                    # Reproduuce the Sonarr custom script environment variables from the
-                    # Servarr API JSON
-                    for history_data in (history_record, history_record["data"]):
-                        custom_script_kwargs.update(
-                            (humps.decamelize(api_key), api_value)
-                            for api_key, api_value in history_data.items()
-                            if not (
-                                history_data is history_record and api_key == "data"
-                            )
-                        )
-                    # Dispatch to the Servarr custom script handler for this Servarr
-                    # event type
-                    try:
-                        history_record["prunerr_result"] = self.dispatch_event(
-                            servarr_config,
-                            # Don't wait for in-process import events when synchronizing
-                            # old Servarr history
-                            history_wait=False,
-                            **custom_script_kwargs,
-                        )
-                    except ServarrEventError:
-                        # Synchronizing events that have previously been handled is the
-                        # expected case here, so capture those exceptions and log them
-                        # as informative messages instead of errors.
-                        logger.info("%s", sys.exc_info()[1])
-                    event_results.setdefault(servarr_config["name"], []).append(torrent)
-
-        return event_results
-
-    def dispatch_event(self, servarr_config, eventtype=None, **custom_script_kwargs):
+    def dispatch_event(self, servarr_config, **custom_script_kwargs):
         """
         Handle a Servarr event after custom script env vars transformed to kwargs.
         """
-        servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
-        # Generalize the series/movie/etc. DB id for looking up history
+        servarr_type_map = self.SERVARR_TYPE_MAPS[self.servarr_config["type"]]
         dir_id_key = f"{servarr_type_map['dir_type']}_id"
-        if dir_id_key in custom_script_kwargs:
-            custom_script_kwargs["dir_id"] = custom_script_kwargs.pop(dir_id_key)
-        eventtype_stripped = self.strip_type_prefix(
-            servarr_config["type"],
-            eventtype,
-            denormalizer=None,
-            normalizer=humps.pascalize,
-        )
-        handler_suffix = self.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
-            eventtype_stripped,
-            eventtype_stripped,
-        )
-        handler_name = f"handle_{handler_suffix}"
-        logger.debug(
-            "Custom script kwargs:\n%s",
-            pprint.pformat(custom_script_kwargs),
-        )
-        if hasattr(self, handler_name):
-            handler = getattr(self, handler_name)
-            logger.info(
-                "Handling %r Servarr %r event",
-                servarr_config["name"],
-                eventtype,
+        dir_id = custom_script_kwargs[dir_id_key]
+        download_id = custom_script_kwargs.get("download_id")
+        servarr_history = None
+        if not download_id:
+            servarr_history = self.get_dir_history(self.servarr_config, dir_id)
+            download_id = self.select_imported_download_id(
+                servarr_history, custom_script_kwargs["filepath"],
             )
-            return handler(servarr_config, **custom_script_kwargs)
+        if not download_id:
+            logger.warning(
+                "Could not match %r Servarr %r event to a download client item",
+                servarr_config["name"],
+                custom_script_kwargs["eventtype"],
+            )
+            return
+        download_item = self.get_download_item(download_id)
+        return self.sync_item(
+                self.servarr_config,
+                download_item,
+                dir_id=dir_id,
+                servarr_history=servarr_history,
+            )
 
-        logger.warning(
-            "No handler found for Servarr %r event type: %s",
-            servarr_config["name"],
-            eventtype,
-        )
-
-    def handle_grabbed(
-            self, servarr_config, download_id, **custom_script_kwargs,
+    def sync_item(
+            self,
+            servarr_config,
+            download_item,
+            dir_id=None,
+            servarr_history=None,
+            is_realtime=True,
     ):
         """
-        Handle a Servarr grabbed event, confirm the item received by download client.
+        Ensure the download client state is in sync with Servarr state.
         """
-        torrent = self.client.get_torrent(download_id.lower())
-        torrent_path = pathlib.Path(torrent.download_dir) / torrent.name
-        session = self.client.get_session()
-        downloads_dir = self.config["downloaders"].get(
-            "download-dir",
-            os.path.join(os.path.dirname(session.download_dir), "downloads"),
-        )
-        if pathlib.Path(downloads_dir) in torrent_path.parents:
-            return torrent
+        download_id = download_item.hashString.lower()
+        download_path = self.get_item_path(download_item)
+
+        # Load the Prunerr data file
+        download_data = dict(history={})
+        if download_path.is_file():
+            data_path = download_path.with_suffix(".prunerr.json")
         else:
-            raise ServarrEventError(
-                f"Grabbed download item {torrent!r} not in Servarr downloads "
-                f"directory: {torrent.download_dir}"
+            data_path = download_path.with_name(f"{download_path.name}.prunerr.json")
+        if data_path.exists() and data_path.stat().st_size:
+            with data_path.open() as data_opened:
+                try:
+                    download_data = json.load(data_opened)
+                except Exception:
+                    logger.exception("Failed to deserialize JSON file: %s", data_path)
+            if download_data["history"] is None:
+                logger.warning(
+                    "No history previously found for %r Servarr download item, "
+                    "skipping: %r",
+                    servarr_config["name"],
+                    download_item,
+                )
+                return
+            # Convert loaded JSON to native types where possible
+            download_data["history"] = {
+                ciso8601.parse_datetime(history_date):
+                self.deserialize_history(history_record)
+                for history_date, history_record in
+                download_data["history"].items()
+            }
+            if "latest_imported_date" in download_data:
+                download_data["latest_imported_date"] = ciso8601.parse_datetime(
+                    download_data["latest_imported_date"],
+                )
+
+        servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
+        dir_id_key = f"{servarr_type_map['dir_type']}_id"
+        if not self.replay and dir_id is None:
+            # Try to correlate to the Servarr movie/series/etc. using existing Prunerr
+            # data
+            for history_record in download_data["history"].values():
+                if dir_id_key in history_record:
+                    dir_id = history_record.get(dir_id_key)
+                    break
+        if dir_id is None:
+            # Identify the item in the global Servarr history
+            download_record = self.find_latest_item_history(
+                servarr_config, download_item,
             )
+            if download_record is None:
+                logger.error(
+                    "No history found for %r Servarr download item %r",
+                    servarr_config["name"],
+                    download_item,
+                )
+                return self.serialize_download_data(download_data, None, data_path)
+            dir_id = download_record[dir_id_key]
+
+        # Reconcile current Servarr history with the Prunerr data file
+        download_history = {}
+        if servarr_history is None:
+            servarr_history = self.get_dir_history(servarr_config, dir_id)
+        for history_record in reversed(
+                servarr_history["records"]["download_ids"][download_id],
+        ):
+
+            # Preserve existing Prunerr data
+            existing_record = download_data["history"].get(
+                history_record["date"], {},
+            )
+            history_record["prunerr"] = existing_record.get("prunerr", {})
+            # Insert into the new history keyed by time stamp
+            download_history[history_record["date"]] = history_record
+
+            # Synchronize the item's state with this history event/record
+            if not self.replay and history_record["prunerr"].get("synced_date"):
+                logger.debug(
+                    "Previously synced %r event: %r",
+                    history_record["event_type"],
+                    download_item,
+                )
+                continue
+            # Run any handler for this specific event type, if defined
+            handler_suffix = self.SERVARR_HISTORY_EVENT_TYPES.get(
+                history_record["event_type"],
+                history_record["event_type"],
+            )
+            handler_name = f"handle_{handler_suffix}"
+            if hasattr(self, handler_name):
+                handler = getattr(self, handler_name)
+                logger.info(
+                    "Handling %r Servarr %r event",
+                    servarr_config["name"],
+                    history_record["event_type"],
+                )
+                history_record["prunerr"]["handler_result"] = str(handler(
+                    servarr_config,
+                    download_item,
+                    history_record,
+                    download_data=download_data,
+                    is_realtime=is_realtime,
+                ))
+            else:
+                logger.debug(
+                    "No handler found for Servarr %r event type: %s",
+                    servarr_config["name"],
+                    history_record["event_type"],
+                )
+                # Default handler actions
+                # Ensure the download item's location matches the Servarr state
+                history_record["prunerr"]["handler_result"] = str(
+                    self.sync_item_location(
+                        servarr_config,
+                        download_item,
+                        history_record,
+                    )
+                )
+                history_record["prunerr"]["synced_date"] = datetime.datetime.now()
+
+        # Update Prunerr JSON data file, after the handler has run to allow it to update
+        # history record prunerr data.
+        self.serialize_download_data(download_data, download_history, data_path)
+
+        dst_download_path = self.get_item_path(download_item)
+        if dst_download_path != download_path:
+            return str(dst_download_path)
+
+    def sync_item_location(self, servarr_config, download_item, history_record):
+        """
+        Ensure the download item location matches its Servarr state.
+        """
+        download_path = self.get_item_path(download_item)
+        event_locations = self.SERVARR_EVENT_LOCATIONS[history_record["event_type"]]
+
+        src_path = servarr_config[event_locations["src"]]
+        dst_path = servarr_config[event_locations["dst"]]
+        if dst_path in download_path.parents:
+            logger.debug(
+                "Download item %r already in correct location: %r",
+                download_item,
+                str(download_path),
+            )
+            return str(download_path)
+
+        if src_path not in download_path.parents:
+            event_paths = set()
+            for other_event_locations in self.SERVARR_EVENT_LOCATIONS.values():
+                event_paths.update(other_event_locations.values())
+            for event_path in event_paths:
+                if servarr_config[event_path] in download_path.parents:
+                    logger.warning(
+                        "Download item %r not in correct managed dir, %r: %r",
+                        download_item,
+                        str(src_path),
+                        str(download_path),
+                    )
+                    src_path = servarr_config[event_path]
+                    break
+            else:
+                logger.error(
+                    "Download item %r not in a managed dir: %r",
+                    download_item,
+                    str(download_path),
+                )
+                return str(download_path)
+
+        return self.move_torrent(download_item, src_path, dst_path)
 
     def handle_imported(
             self,
             servarr_config,
-            dir_id,
-            dropped_path,
-            imported_path,
-            download_id=None,
-            history_wait=True,
-            **custom_script_kwargs,
+            download_item,
+            history_record,
+            download_data,
+            is_realtime=True,
     ):
         """
-        Handle a Servarr imported event, check conditions and trigger the followup.
-
-        Consider the case where a given download client item contains multiple media
-        files for Servarr to import, such as season packs in Sonarr.  If Prunerr moves
-        the download client item in response to the first imported media file, that can
-        and almost always will move the subsequent media files out from under Servarr
-        preventing import of most files in the download client item.  As such we need to
-        wait until Servarr has finished importing all the media files in the download
-        client item.  We can discern when importing is done by waiting for new import
-        records to stop appearing in the Servarr history for the given
-        series/movie/etc. within a given timeout.  It appears, however, that Servarr
-        doesn't actually add the imported history record or proceed with importing
-        subsequent media files until the custom script returns, creating somewhat of a
-        catch 22.
-
-        Workaround this by performing checks on conditions and item state and then
-        launching a detached followup subprocess and exiting the imported custom script.
-        The followup will wait for importing to finish and then perform the actual move.
+        Handle Servarr imported event, wait for import to complete, then move.
         """
-        if not download_id:
-            raise ServarrEventError(
-                f"No download client item id for imported Servarr item: "
-                f"{dropped_path}",
-            )
-        torrent = self.get_download_item(download_id.lower())
-        if torrent is None:
-            raise ServarrEventError(
-                f"Imported Servarr item no longer present in the download client: "
-                f"{dropped_path}",
-            )
-
-        session = self.client.get_session()
-        torrent_path = pathlib.Path(torrent.download_dir) / torrent.name
-        imported_dir = self.config["downloaders"].get(
-            "imported-dir",
-            os.path.join(os.path.dirname(session.download_dir), "imported"),
-        )
-
-        if pathlib.Path(imported_dir) in torrent_path.parents:
-            raise ServarrEventError(
-                f"Imported download item {torrent!r} already in Servarr imported "
-                f"directory: {torrent.download_dir}"
-            )
-
-        if history_wait:
-            # Set the followup event type and launch the detached followup subprocess
-            env = dict(os.environ)
-            env[f"{servarr_config['type']}_eventtype"] += "Followup"
-            env.pop(f"{servarr_config['type']}_deletedpaths", None)
-            args = [servarr_config["notification"][
-                servarr_config.get("connect-name", "Prunerr")
-            ]["fieldValues"]["path"]]
-            followup_popen = subprocess.Popen(
-                args,
-                stdin=subprocess.DEVNULL,
-                start_new_session=True,
-                env=env,
-            )
-            return dict(args=args, pid=followup_popen.pid)
-        else:
-            # If we're not waiting for history, then proceed to move the download item
-            # immediately in this process
-            return self.handle_imported_followup(
-                servarr_config,
-                dir_id,
-                dropped_path,
-                imported_path,
-                download_id=download_id,
-                history_wait=history_wait,
-                **custom_script_kwargs,
-            )
-
-    def handle_imported_followup(
-            self,
-            servarr_config,
-            dir_id,
-            dropped_path,
-            imported_path,
-            download_id=None,
-            history_wait=True,
-            **custom_script_kwargs,
-    ):
-        """
-        Followup a Servarr imported event, move the item data to the imported directory.
-        """
-        session = self.client.get_session()
-        downloads_dir = self.config["downloaders"].get(
-            "download-dir",
-            os.path.join(os.path.dirname(session.download_dir), "downloads"),
-        )
-        imported_dir = self.config["downloaders"].get(
-            "imported-dir",
-            os.path.join(os.path.dirname(session.download_dir), "imported"),
-        )
-        torrent = self.get_download_item(download_id.lower())
-
-        if history_wait:
-            # The download client item should not be moved until after Servarr has
-            # imported all the files.  Try to guess at when import is done by waiting
-            # for at least one corresponding imported record to appear in the most
-            # recent history response and for the number of imported records to stop
-            # changing.  From local logs this seems to take ~45 seconds for download
-            # items with a single episode/movie file.
-            history_start = time.time()
-            imported_records = []
-            latest_history_record = None
+        if is_realtime:
             logger.info(
-                "Waiting up to %s seconds for Servarr to finish importing %r",
-                self.SERVARR_HISTORY_TIMEOUT,
-                torrent,
+                "Letting running import complete before moving: %r",
+                download_item,
             )
-            while (
-                    time.time() - history_start <= self.SERVARR_HISTORY_TIMEOUT
-                    and (
-                        not imported_records
-                        or latest_history_record is None
-                        or latest_history_record["date"] != imported_records[0]["date"]
-                    )
-            ):
-                if imported_records:
-                    latest_history_record = imported_records[0]
-                servarr_history = self.get_dir_history(
-                    servarr_config, dir_id,
-                )
-                imported_records = servarr_history["event_types"][
-                    "download_ids"].get(download_id.lower(), {}).get(
-                        "download_folder_imported", [],
-                    )
-                time.sleep(2)
-            history_duration = time.time() - history_start
+            download_data["latest_imported_date"] = datetime.datetime.now()
+            return history_record["data"]["imported_path"]
+
+        if "latest_imported_date" not in download_data:
+            download_data["latest_imported_date"] = datetime.datetime.now()
+        wait_duration = datetime.datetime.now(
+            download_data["latest_imported_date"].tzinfo
+        ) - download_data["latest_imported_date"]
+        if wait_duration < self.SERVARR_HISTORY_WAIT:
+            logger.info(
+                "Waiting for import to complete before moving, %r so far: %r",
+                wait_duration,
+                download_item,
+            )
+            return history_record["data"]["imported_path"]
+        else:
+            imported_records = [
+                imported_record for imported_record in download_data["history"].values()
+                if imported_record["event_type"] == "downloadFolderImported"
+            ]
             if imported_records:
-                logger_level = logger.info
+                logger_level = logger.debug
             else:
                 logger_level = logger.error
             logger_level(
-                "Found %s imported history records after %s seconds for %r",
+                "Found %s imported history records after %s for %r",
                 len(imported_records),
-                history_duration,
-                torrent,
+                wait_duration,
+                download_item,
             )
 
-        # Move the download item to the location appropriate for it's Servarr state
-        self.move_torrent(
-            torrent,
-            old_path=pathlib.Path(downloads_dir),
-            new_path=imported_dir,
-            servarr_config=servarr_config,
-        )
-        torrent.update()
+        # If we're not waiting for history, then proceed to move the download item.
+        # Ensure the download item's location matches the Servarr state
+        history_record["prunerr"]["handler_result"] = str(self.sync_item_location(
+            servarr_config,
+            download_item,
+            history_record,
+        ))
+        download_item.update()
 
         # Reflect imported files in the download client item using symbolic links
-        old_dropped_path = pathlib.Path(dropped_path)
+        old_dropped_path = pathlib.Path(history_record["data"]["dropped_path"])
         if servarr_config["downloadDir"] not in old_dropped_path.parents:
-            logger.error(
+            logger.warning(
                 "Servarr dropped path %r not in download client's download directory %r"
                 "for %r",
-                dropped_path,
+                history_record["data"]["dropped_path"],
                 servarr_config["downloadDir"],
-                torrent,
+                download_item,
             )
-            return torrent
+            return download_item
         relative_to_download_dir = old_dropped_path.relative_to(
             servarr_config["downloadDir"],
         )
-        new_dropped_path = torrent.downloadDir / relative_to_download_dir
+        new_dropped_path = download_item.downloadDir / relative_to_download_dir
         link_path = (
             new_dropped_path.parent / f"{new_dropped_path.stem}-servarr-imported.ln"
         )
         imported_link_target = pathlib.Path(
-            os.path.relpath(imported_path, link_path.parent)
+            os.path.relpath(history_record["data"]["imported_path"], link_path.parent)
         )
         if os.path.lexists(link_path):
             if not link_path.is_symlink():
@@ -1442,7 +1431,7 @@ class Prunerr(object):
                 )
             link_path.symlink_to(imported_link_target)
 
-        return torrent
+        return download_item
 
     def select_imported_download_id(self, servarr_history, source_title):
         """
@@ -1484,57 +1473,6 @@ class Prunerr(object):
                 download_id,
             )
 
-    def handle_deleted(
-            self,
-            servarr_config,
-            dir_id,
-            source_title,
-            download_id=None,
-            **custom_script_kwargs,
-    ):
-        """
-        Handle a Servarr deleted event, move the item data to the deleted directory.
-
-        Leave import symlinks in place so that broken symlinks can be used as an
-        indicator of which imported files have been upgraded for items that contain
-        multiple imported files.
-        """
-        servarr_history = self.get_dir_history(servarr_config, dir_id)
-        if not download_id:
-            download_id = self.select_imported_download_id(
-                servarr_history, source_title,
-            )
-        if not download_id:
-            return
-        torrent = self.get_download_item(download_id)
-        if torrent is None:
-            return
-        torrent_path = pathlib.Path(torrent.download_dir) / torrent.name
-        session = self.client.get_session()
-        imported_dir = self.config["downloaders"].get(
-            "imported-dir",
-            os.path.join(os.path.dirname(session.download_dir), "imported"),
-        )
-        deleted_dir = self.config["downloaders"].get(
-            "deleted-dir",
-            os.path.join(os.path.dirname(session.download_dir), "deleted"),
-        )
-        if pathlib.Path(deleted_dir) not in torrent_path.parents:
-            self.move_torrent(
-                torrent,
-                old_path=imported_dir,
-                new_path=deleted_dir,
-                servarr_config=servarr_config,
-            )
-            torrent.update()
-            return torrent
-        else:
-            logger.warning(
-                "Deleted download item %r already in Servarr deleted directory: %s",
-                torrent,
-                torrent.download_dir,
-            )
-
     def handle_test(self, servarr_config, **custom_script_kwargs):
         """
         Handle a Servarr `Test` event, exercise as much as possible w/o making changes.
@@ -1548,99 +1486,104 @@ class Prunerr(object):
             pprint.pformat(servarr_config["client"].system_status()._data),
         )
 
-    def find_item_history(self, servarr_config, torrent=None, import_path=None):
+    def find_latest_item_history(self, servarr_config, torrent):
         """
-        Find the most recent Servarr history for the given torrent.
+        Find the most recent Servarr history record for the given torrent if any.
 
-        Cache history from the Servarr API endpoint as we page through the history
-        across subsequent calls.
+        Cache these lookups as we page through the history across subsequent calls.
         """
-        if (torrent is None and import_path is None) or (
-            torrent is not None and import_path is not None
-        ):
-            raise ValueError(
-                "Must provide one of a download client item torrent object "
-                "or a filesystem path to a Servarr imported item"
-            )
-
-        servarr_history = servarr_config.setdefault(
-            "history",
-            dict(
-                page=1,
-                records=dict(download_ids={}, source_titles={}),
-                event_types=dict(download_ids={}, source_titles={}),
-            ),
-        )
-
-        if (
-                import_path is not None
-                and "download_folder_imported" in servarr_history["event_types"][
-                    "source_titles"
-                ].get(import_path, {})
-        ):
-            # Has previously retrieved history already identified the download item for
-            # this imported file?
-            download_id = self.select_imported_download_id(servarr_history, import_path)
-            torrent = self.get_download_item(download_id)
+        servarr_history = servarr_config.setdefault("history", {})
+        servarr_history.setdefault("page", 1)
+        download_id = torrent.hashString.lower()
 
         # Page through history until a Servarr import event is found for this download
         # item.
         history_page = None
+        download_record = None
         while (
             # Is history for this Servarr instance exhausted?
             history_page is None
             or (servarr_history["page"] * 250) <= history_page["totalRecords"]
-        ) and (
-            (
-                torrent is not None
-                and "grabbed"
-                not in servarr_history["event_types"]["download_ids"].get(
-                    torrent.hashString.lower(), {}
-                )
-            )
-            or (
-                import_path is not None
-                and "grabbed"
-                not in servarr_history["event_types"]["source_titles"].get(
-                    import_path, {}
-                )
-            )
-        ):
+        ) and download_record is None:
             history_page = servarr_config["client"]._get(
                 "history",
                 # Maximum Servarr page size
                 pageSize=250,
                 page=servarr_history["page"],
             )
-            self.collate_history_records(
-                servarr_config, history_page["records"], servarr_history,
+            collated_history = self.collate_history_records(
+                servarr_config,
+                history_records=history_page["records"],
+                servarr_history=servarr_history,
             )
-
-            if (
-                    import_path is not None
-                    and "download_folder_imported" in servarr_history["event_types"][
-                        "source_titles"
-                    ].get(import_path, {})
+            for history_record in collated_history["records"]["download_ids"].get(
+                    download_id, [],
             ):
-                # Has previously retrieved history already identified the download item
-                # for this imported file?
-                download_id = self.select_imported_download_id(
-                    servarr_history,
-                    import_path,
-                )
-                torrent = self.get_download_item(download_id)
-
+                if "download_id" in history_record:
+                    download_record = history_record
+                    break
             servarr_history["page"] += 1
 
-        if torrent is not None:
-            return servarr_history["records"]["download_ids"].get(
-                torrent.hashString.lower()
-            )
-        else:
-            logger.warning(
-                "Could not find a download client item for Servarr file: %s",
-                import_path,
-            )
+        return download_record
+
+    def deserialize_history(self, history_record):
+        """
+        Convert Servarr history values to native Python types when possible.
+        """
+        for history_data in (
+                history_record,
+                history_record["data"],
+                history_record.get("prunerr", {}),
+        ):
+            for key, value in list(history_data.items()):
+                # Perform any data transformations, e.g. to native Python types
+                if key.lower().endswith("date"):
+                    # More efficient than dateutil.parser.parse(value)
+                    history_data[key] = ciso8601.parse_datetime(value)
+        return history_record
+
+    def serialize_history(self, history_record):
+        """
+        Convert Servarr history values to native Python types when possible.
+        """
+        for history_data in (
+                history_record,
+                history_record["data"],
+                history_record.get("prunerr", {}),
+        ):
+            for key, value in list(history_data.items()):
+                # Perform any data transformations, e.g. to native Python types
+                if key.lower().endswith("date"):
+                    history_data[key] = value.strftime(self.SERVARR_DATETIME_FORMAT)
+        return history_record
+
+    def serialize_download_data(self, download_data, download_history, data_path):
+        """
+        Serialize an item's Prunerr data and write to the Prunerr data file.
+        """
+        # Convert loaded JSON to native types where possible
+        if download_history is not None:
+            download_history = {
+                history_date.strftime(self.SERVARR_DATETIME_FORMAT):
+                self.serialize_history(history_record)
+                for history_date, history_record in
+                download_history.items()
+            }
+        download_data["history"] = download_history
+        if "latest_imported_date" in download_data:
+            download_data["latest_imported_date"] = download_data[
+                "latest_imported_date"
+            ].strftime(self.SERVARR_DATETIME_FORMAT)
+        with data_path.open("w") as data_opened:
+            logger.debug("Writing Prunerr download item data: %s", data_path)
+            try:
+                return json.dump(download_data, data_opened, indent=2)
+            except Exception:
+                logger.exception(
+                    "Failed to serialize to JSON file, %r:\n%s",
+                    str(data_path),
+                    pprint.pformat(download_data),
+                )
 
     def collate_history_records(
             self, servarr_config, history_records, servarr_history=None,
@@ -1650,17 +1593,16 @@ class Prunerr(object):
         """
         if servarr_history is None:
             # Start fresh by default
-            servarr_history = dict(
-                records=dict(download_ids={}, source_titles={}),
-                event_types=dict(download_ids={}, source_titles={}),
-            )
+            servarr_history = {}
+        servarr_history.setdefault(
+            "records", dict(download_ids={}, source_titles={}))
+        servarr_history.setdefault(
+            "event_types", dict(download_ids={}, source_titles={}))
 
         for history_record in history_records:
+            self.deserialize_history(history_record)
             for history_data in (history_record, history_record["data"]):
                 for key, value in list(history_data.items()):
-                    # Perform any data transformations, e.g. to native Python types
-                    if key.lower().endswith("date"):
-                        history_data[key] = ciso8601.parse_datetime(value)
                     # Normalize specific values using Servarr type-specific prefixes
                     if key == "eventType":
                         history_data[key] = self.strip_type_prefix(
@@ -1879,6 +1821,7 @@ def handle(prunerr):
     import symbolic links are added, and deleted items are moved to `./deleted`.
     """
     # TODO: Covert to webhook
+
     prunerr.update()
 
     # Collect all environment variables with the prefix used for Servarr custom scripts
@@ -1891,29 +1834,7 @@ def handle(prunerr):
         for env_var, env_value in os.environ.items()
         if env_var.startswith(env_var_prefix)
     }
-    eventtype = custom_script_kwargs["eventtype"]
-    eventtype_stripped = prunerr.strip_type_prefix(
-        prunerr.servarr_config["type"],
-        eventtype,
-        denormalizer=None,
-        normalizer=humps.pascalize,
-    )
-    handler_suffix = prunerr.SERVARR_SCRIPT_CUSTOM_EVENT_DISPATCH.get(
-        eventtype_stripped,
-        eventtype_stripped,
-    )
-    # Copy environment variables to the names that more closely reflect the API JSON
-    # keys.  While both the API JSON keys and the custom script environment variable
-    # names are a bit of a mess, the API JSON seems a bit more sensible to better to
-    # follow that lead.
-    for env_var, kwarg_name in prunerr.SERVARR_CUSTOM_SCRIPT_ENV_VARS.get(
-        handler_suffix,
-        {},
-    ).items():
-        if kwarg_name not in custom_script_kwargs and env_var in custom_script_kwargs:
-            custom_script_kwargs[kwarg_name] = custom_script_kwargs[env_var]
 
-    # Handle the main event for this Custom Script execution
     try:
         result = prunerr.dispatch_event(prunerr.servarr_config, **custom_script_kwargs)
     except ServarrEventError as exc:
@@ -1923,12 +1844,23 @@ def handle(prunerr):
     # which is different from the history records from the Servarr API where the import
     # and subsequent deletion are 2 distinct events.  Workaround this difference by
     # dispatching the deletion events after handling this Custom Script event.
+    eventtype = custom_script_kwargs["eventtype"]
+    eventtype_stripped = prunerr.strip_type_prefix(
+        prunerr.servarr_config["type"],
+        eventtype,
+        denormalizer=None,
+        normalizer=humps.pascalize,
+    )
+    handler_suffix = prunerr.SERVARR_CUSTOM_SCRIPT_EVENT_TYPES.get(
+        eventtype_stripped,
+        eventtype_stripped,
+    )
     if handler_suffix != "deleted" and "deletedpaths" in custom_script_kwargs:
         for deleted_path in custom_script_kwargs["deletedpaths"].split("|"):
             delete_event_kwargs = dict(
                 custom_script_kwargs,
                 eventtype="deleted",
-                source_title=deleted_path,
+                filepath=deleted_path,
             )
             # Don't know which download client item the deleted path is for.
             delete_event_kwargs.pop("download_id", None)
@@ -1995,6 +1927,14 @@ def sync(prunerr):
 
 sync.__doc__ = Prunerr.sync.__doc__
 parser_sync = subparsers.add_parser("sync", help=sync.__doc__.strip())
+parser_sync.add_argument(
+    "--replay",
+    "-r",
+    action="store_true",
+    help="""\
+Also run operations for Servarr events/history that have previously been run.
+""",
+)
 parser_sync.set_defaults(command=sync)
 
 # TODO: Delete and blacklist torrents containing archives
@@ -2002,8 +1942,8 @@ parser_sync.set_defaults(command=sync)
 
 def main(args=None):
     logging.basicConfig(level=logging.INFO)
-    # Want just our logger, not transmission-rpc's to log INFO
-    logger.setLevel(logging.INFO)
+    # Want just our logger, not transmission-rpc's to log DEBUG
+    # logger.setLevel(logging.DEBUG)
     # Avoid logging all JSON responses, particularly the very large history responses
     # from Servarr APIs
     logging.getLogger("arrapi.api").setLevel(logging.INFO)

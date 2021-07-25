@@ -17,17 +17,17 @@ Prefix=.
 ## Top level targets
 
 .PHONY: all
-all: $(PREFIX)/.venv/bin/prunerr
+all: $(PREFIX).venv/bin/prunerr
 
 .PHONY: clean
 clean:
-	test -e "$(PREFIX)/.venv/" && rm -r "$(PREFIX)/.venv/"
+	test -e "$(PREFIX).venv/" && rm -r "$(PREFIX).venv/"
 
 ## Real targets
 
-$(PREFIX)/.venv/bin/prunerr: ./setup.py $(PREFIX)/.venv/bin/activate
+$(PREFIX).venv/bin/prunerr: ./setup.py $(PREFIX).venv/bin/activate
 	"$(@:%/prunerr=%/pip)" install wheel
 	"$(@:%/prunerr=%/pip)" install -e ".[transmission]"
 
-$(PREFIX)/.venv/bin/activate:
+$(PREFIX).venv/bin/activate:
 	python3 -m venv "$(@:%/bin/activate=%/)"

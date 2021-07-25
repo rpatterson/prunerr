@@ -1255,9 +1255,10 @@ class Prunerr(object):
             if hasattr(self, handler_name):
                 handler = getattr(self, handler_name)
                 logger.info(
-                    "Handling %r Servarr %r event",
+                    "Handling %r Servarr %r event: %r",
                     servarr_config["name"],
                     history_record["event_type"],
+                    download_item,
                 )
                 history_record["prunerr"]["handler_result"] = str(handler(
                     servarr_config,
@@ -1358,7 +1359,7 @@ class Prunerr(object):
         ) - download_data["latest_imported_date"]
         if wait_duration < self.SERVARR_HISTORY_WAIT:
             logger.info(
-                "Waiting for import to complete before moving, %r so far: %r",
+                "Waiting for import to complete before moving, %s so far: %r",
                 wait_duration,
                 download_item,
             )

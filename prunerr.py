@@ -19,7 +19,7 @@ import tempfile
 import glob
 import pprint
 
-import dateutil.parser
+import ciso8601
 import humps
 import yaml
 
@@ -1660,7 +1660,7 @@ class Prunerr(object):
                 for key, value in list(history_data.items()):
                     # Perform any data transformations, e.g. to native Python types
                     if key.lower().endswith("date"):
-                        history_data[key] = dateutil.parser.parse(value)
+                        history_data[key] = ciso8601.parse_datetime(value)
                     # Normalize specific values using Servarr type-specific prefixes
                     if key == "eventType":
                         history_data[key] = self.strip_type_prefix(

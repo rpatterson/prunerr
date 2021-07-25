@@ -1282,7 +1282,7 @@ class Prunerr(object):
                         history_record,
                     )
                 )
-                history_record["prunerr"]["synced_date"] = datetime.datetime.now()
+            history_record["prunerr"]["synced_date"] = datetime.datetime.now()
 
         # Update Prunerr JSON data file, after the handler has run to allow it to update
         # history record prunerr data.

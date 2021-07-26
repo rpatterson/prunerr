@@ -1425,6 +1425,10 @@ class Prunerr(object):
                     link_path,
                     imported_link_target,
                 )
+        elif not link_path.parent.exists():
+            logger.error(
+                "Imported file link directory no longer exists: %s", link_path,
+            )
         else:
             logger.info(
                 "Symlinking imported file: %s -> %s", link_path, imported_link_target,

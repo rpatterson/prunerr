@@ -1267,13 +1267,13 @@ class Prunerr(object):
                     history_record["eventType"],
                     download_item,
                 )
-                history_record["prunerr"]["handlerResult"] = str(handler(
+                handler_result = handler(
                     servarr_config,
                     download_item,
                     history_record,
                     download_data=download_data,
                     is_realtime=is_realtime,
-                ))
+                )
             else:
                 logger.debug(
                     "No handler found for Servarr %r event type: %s",
@@ -1282,14 +1282,14 @@ class Prunerr(object):
                 )
                 # Default handler actions
                 # Ensure the download item's location matches the Servarr state
-                history_record["prunerr"]["handlerResult"] = str(
-                    self.sync_item_location(
-                        servarr_config,
-                        download_item,
-                        history_record,
-                    )
+                handler_result = self.sync_item_location(
+                    servarr_config,
+                    download_item,
+                    history_record,
                 )
-            history_record["prunerr"]["syncedDate"] = datetime.datetime.now()
+            if handler_result is not None:
+                history_record["prunerr"]["handlerResult"] = str(handler_result)
+                history_record["prunerr"]["syncedDate"] = datetime.datetime.now()
 
         # Update Prunerr JSON data file, after the handler has run to allow it to update
         # history record prunerr data.
@@ -1357,7 +1357,7 @@ class Prunerr(object):
                 download_item,
             )
             download_data["latestImportedDate"] = history_record["date"]
-            return history_record["data"]["importedPath"]
+            return
 
         if "latestImportedDate" not in download_data:
             download_data["latestImportedDate"] = history_record["date"]
@@ -1370,7 +1370,7 @@ class Prunerr(object):
                 wait_duration,
                 download_item,
             )
-            return history_record["data"]["importedPath"]
+            return
         elif not self.replay:
             imported_records = [
                 imported_record for imported_record in download_data["history"].values()

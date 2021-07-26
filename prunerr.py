@@ -429,6 +429,7 @@ class Prunerr(object):
                 else:
                     break
 
+            start = time.time()
             try:
                 self.exec_()
             except socket.error:
@@ -436,7 +437,6 @@ class Prunerr(object):
                 pass
 
             # Wait for the next interval
-            start = time.time()
             poll = (
                 self.config["daemon"].get("poll", 60,)
                 if self.config["daemon"] else 60

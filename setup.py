@@ -11,8 +11,6 @@ required = [
     "transmission-rpc",
     # Parse date+time strings from Servarr API JSON
     "ciso8601",
-    # Convert between Python and JavaScript/JSON conventions
-    "pyhumps",
     # Graceful handling of logging when run on the console or as a daemon
     "service-logging",
     # Configuration file format

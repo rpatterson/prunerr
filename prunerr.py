@@ -21,7 +21,6 @@ import json
 import datetime
 
 import ciso8601
-import humps
 import yaml
 
 import arrapi
@@ -233,8 +232,6 @@ class Prunerr(object):
             servarr_type,
             prefixed,
             servarr_term="file_type",
-            denormalizer=humps.decamelize,
-            normalizer=humps.camelize,
     ):
         """
         Strip the particular Servarr type prefix if present.
@@ -242,12 +239,14 @@ class Prunerr(object):
         # Map the different Servarr applications type terminology
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_type]
         prefix = servarr_type_map[servarr_term]
-        if denormalizer is not None:
-            prefixed = denormalizer(prefixed)
         if prefixed.startswith(prefix):
             stripped = prefixed[len(prefix):]
-            if not stripped.startswith("_"):
-                return normalizer(stripped)
+            stripped = f"{stripped[0].lower()}{stripped[1:]}"
+            # Don't strip the names of custom script environment variables that are
+            # actually type-specific, e.g.: `sonarr_series_tvdbid`.  Neither strip the
+            # prefix for DB IDs in the Servarr API JSON, e.g.: `movieId`.
+            if not stripped.startswith("_") and stripped != "id":
+                return stripped
 
         return prefixed
 
@@ -1194,13 +1193,13 @@ class Prunerr(object):
                 for history_date, history_record in
                 download_data["history"].items()
             }
-            if "latest_imported_date" in download_data:
-                download_data["latest_imported_date"] = ciso8601.parse_datetime(
-                    download_data["latest_imported_date"],
+            if "latestImportedDate" in download_data:
+                download_data["latestImportedDate"] = ciso8601.parse_datetime(
+                    download_data["latestImportedDate"],
                 )
 
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
-        dir_id_key = f"{servarr_type_map['dir_type']}_id"
+        dir_id_key = f"{servarr_type_map['dir_type']}Id"
         if not self.replay and dir_id is None:
             # Try to correlate to the Servarr movie/series/etc. using existing Prunerr
             # data
@@ -1239,17 +1238,17 @@ class Prunerr(object):
             download_history[history_record["date"]] = history_record
 
             # Synchronize the item's state with this history event/record
-            if not self.replay and history_record["prunerr"].get("synced_date"):
+            if not self.replay and history_record["prunerr"].get("syncedDate"):
                 logger.debug(
                     "Previously synced %r event: %r",
-                    history_record["event_type"],
+                    history_record["eventType"],
                     download_item,
                 )
                 continue
             # Run any handler for this specific event type, if defined
             handler_suffix = self.SERVARR_HISTORY_EVENT_TYPES.get(
-                history_record["event_type"],
-                history_record["event_type"],
+                history_record["eventType"],
+                history_record["eventType"],
             )
             handler_name = f"handle_{handler_suffix}"
             if hasattr(self, handler_name):
@@ -1257,10 +1256,10 @@ class Prunerr(object):
                 logger.info(
                     "Handling %r Servarr %r event: %r",
                     servarr_config["name"],
-                    history_record["event_type"],
+                    history_record["eventType"],
                     download_item,
                 )
-                history_record["prunerr"]["handler_result"] = str(handler(
+                history_record["prunerr"]["handlerResult"] = str(handler(
                     servarr_config,
                     download_item,
                     history_record,
@@ -1271,18 +1270,18 @@ class Prunerr(object):
                 logger.debug(
                     "No handler found for Servarr %r event type: %s",
                     servarr_config["name"],
-                    history_record["event_type"],
+                    history_record["eventType"],
                 )
                 # Default handler actions
                 # Ensure the download item's location matches the Servarr state
-                history_record["prunerr"]["handler_result"] = str(
+                history_record["prunerr"]["handlerResult"] = str(
                     self.sync_item_location(
                         servarr_config,
                         download_item,
                         history_record,
                     )
                 )
-            history_record["prunerr"]["synced_date"] = datetime.datetime.now()
+            history_record["prunerr"]["syncedDate"] = datetime.datetime.now()
 
         # Update Prunerr JSON data file, after the handler has run to allow it to update
         # history record prunerr data.
@@ -1297,7 +1296,7 @@ class Prunerr(object):
         Ensure the download item location matches its Servarr state.
         """
         download_path = self.get_item_path(download_item)
-        event_locations = self.SERVARR_EVENT_LOCATIONS[history_record["event_type"]]
+        event_locations = self.SERVARR_EVENT_LOCATIONS[history_record["eventType"]]
 
         src_path = servarr_config[event_locations["src"]]
         dst_path = servarr_config[event_locations["dst"]]
@@ -1349,25 +1348,25 @@ class Prunerr(object):
                 "Letting running import complete before moving: %r",
                 download_item,
             )
-            download_data["latest_imported_date"] = datetime.datetime.now()
-            return history_record["data"]["imported_path"]
+            download_data["latestImportedDate"] = history_record["date"]
+            return history_record["data"]["importedPath"]
 
-        if "latest_imported_date" not in download_data:
-            download_data["latest_imported_date"] = datetime.datetime.now()
+        if "latestImportedDate" not in download_data:
+            download_data["latestImportedDate"] = history_record["date"]
         wait_duration = datetime.datetime.now(
-            download_data["latest_imported_date"].tzinfo
-        ) - download_data["latest_imported_date"]
+            download_data["latestImportedDate"].tzinfo
+        ) - download_data["latestImportedDate"]
         if wait_duration < self.SERVARR_HISTORY_WAIT:
             logger.info(
                 "Waiting for import to complete before moving, %s so far: %r",
                 wait_duration,
                 download_item,
             )
-            return history_record["data"]["imported_path"]
-        else:
+            return history_record["data"]["importedPath"]
+        elif not self.replay:
             imported_records = [
                 imported_record for imported_record in download_data["history"].values()
-                if imported_record["event_type"] == "downloadFolderImported"
+                if imported_record["eventType"] == "downloadFolderImported"
             ]
             if imported_records:
                 logger_level = logger.debug
@@ -1382,7 +1381,7 @@ class Prunerr(object):
 
         # If we're not waiting for history, then proceed to move the download item.
         # Ensure the download item's location matches the Servarr state
-        history_record["prunerr"]["handler_result"] = str(self.sync_item_location(
+        history_record["prunerr"]["handlerResult"] = str(self.sync_item_location(
             servarr_config,
             download_item,
             history_record,
@@ -1390,12 +1389,12 @@ class Prunerr(object):
         download_item.update()
 
         # Reflect imported files in the download client item using symbolic links
-        old_dropped_path = pathlib.Path(history_record["data"]["dropped_path"])
+        old_dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
         if servarr_config["downloadDir"] not in old_dropped_path.parents:
             logger.warning(
                 "Servarr dropped path %r not in download client's download directory %r"
                 "for %r",
-                history_record["data"]["dropped_path"],
+                history_record["data"]["droppedPath"],
                 servarr_config["downloadDir"],
                 download_item,
             )
@@ -1408,7 +1407,7 @@ class Prunerr(object):
             new_dropped_path.parent / f"{new_dropped_path.stem}-servarr-imported.ln"
         )
         imported_link_target = pathlib.Path(
-            os.path.relpath(history_record["data"]["imported_path"], link_path.parent)
+            os.path.relpath(history_record["data"]["importedPath"], link_path.parent)
         )
         if os.path.lexists(link_path):
             if not link_path.is_symlink():
@@ -1447,15 +1446,15 @@ class Prunerr(object):
             )
             return
         imported_events = servarr_history["event_types"]["source_titles"][source_title]
-        if "download_folder_imported" not in imported_events:
+        if "downloadFolder_imported" not in imported_events:
             logger.warning(
                 "No Servarr import history found: %s",
                 source_title,
             )
             return
-        for imported_record in imported_events["download_folder_imported"]:
-            if "download_id" in imported_record:
-                return imported_record["download_id"].lower()
+        for imported_record in imported_events["downloadFolder_imported"]:
+            if "downloadId" in imported_record:
+                return imported_record["downloadId"].lower()
         logger.warning(
             "No Servarr grabbed history found, "
             "could not match to download client item: %s",
@@ -1522,7 +1521,7 @@ class Prunerr(object):
             for history_record in collated_history["records"]["download_ids"].get(
                     download_id, [],
             ):
-                if "download_id" in history_record:
+                if "downloadId" in history_record:
                     download_record = history_record
                     break
             servarr_history["page"] += 1
@@ -1540,7 +1539,7 @@ class Prunerr(object):
         ):
             for key, value in list(history_data.items()):
                 # Perform any data transformations, e.g. to native Python types
-                if key.lower().endswith("date"):
+                if key == "date" or key.endswith("Date"):
                     # More efficient than dateutil.parser.parse(value)
                     history_data[key] = ciso8601.parse_datetime(value)
         return history_record
@@ -1556,7 +1555,7 @@ class Prunerr(object):
         ):
             for key, value in list(history_data.items()):
                 # Perform any data transformations, e.g. to native Python types
-                if key.lower().endswith("date"):
+                if key == "date" or key.endswith("Date"):
                     history_data[key] = value.strftime(self.SERVARR_DATETIME_FORMAT)
         return history_record
 
@@ -1573,9 +1572,9 @@ class Prunerr(object):
                 download_history.items()
             }
         download_data["history"] = download_history
-        if "latest_imported_date" in download_data:
-            download_data["latest_imported_date"] = download_data[
-                "latest_imported_date"
+        if "latestImportedDate" in download_data:
+            download_data["latestImportedDate"] = download_data[
+                "latestImportedDate"
             ].strftime(self.SERVARR_DATETIME_FORMAT)
         with data_path.open("w") as data_opened:
             logger.debug("Writing Prunerr download item data: %s", data_path)
@@ -1611,7 +1610,6 @@ class Prunerr(object):
                         history_data[key] = self.strip_type_prefix(
                             servarr_config["type"],
                             value,
-                            denormalizer=None,
                         )
                     # Normalize keys using prefixes specific to the Servarr type
                     key_stripped = self.strip_type_prefix(servarr_config["type"], key)
@@ -1619,50 +1617,50 @@ class Prunerr(object):
 
             # Collate history under the best available identifier that may be
             # matched to download client items
-            if "download_id" in history_record:
+            if "downloadId" in history_record:
                 # History record can be matched exactly to the download client item
                 servarr_history["records"]["download_ids"].setdefault(
-                    history_record["download_id"].lower(), [],
+                    history_record["downloadId"].lower(), [],
                 ).append(history_record)
                 servarr_history["event_types"]["download_ids"].setdefault(
-                    history_record["download_id"].lower(), {},
-                ).setdefault(history_record["event_type"], []).append(history_record)
-            if "imported_path" in history_record["data"]:
+                    history_record["downloadId"].lower(), {},
+                ).setdefault(history_record["eventType"], []).append(history_record)
+            if "importedPath" in history_record["data"]:
                 # Capture a reference that may match to more recent history record
                 # below, such as deleting upon upgrade
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["data"]["imported_path"], [],
+                    history_record["data"]["importedPath"], [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["data"]["imported_path"], {},
-                ).setdefault(history_record["event_type"], []).append(history_record)
-            if "source_title" in history_record:
+                    history_record["data"]["importedPath"], {},
+                ).setdefault(history_record["eventType"], []).append(history_record)
+            if "sourceTitle" in history_record:
                 # Can't match exactly to a download client item, capture a reference
                 # that may match to more recent history record below, such as
                 # deleting upon upgrade
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["source_title"], [],
+                    history_record["sourceTitle"], [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["source_title"], {},
-                ).setdefault(history_record["event_type"], []).append(history_record)
+                    history_record["sourceTitle"], {},
+                ).setdefault(history_record["eventType"], []).append(history_record)
 
             # Match this older import history record to previously processed, newer,
             # records that don't match exactly to a download client item, such as
             # deleting upon upgrade
             if (
-                "download_id" in history_record
-                and "imported_path" in history_record["data"]
-                and history_record["data"]["imported_path"]
+                "downloadId" in history_record
+                and "importedPath" in history_record["data"]
+                and history_record["data"]["importedPath"]
                 in servarr_history["records"]["source_titles"]
             ):
                 # Insert previous, newer history records under the download id that
                 # matches the import path for this older record
                 source_titles = servarr_history["records"]["source_titles"][
-                    history_record["data"]["imported_path"]
+                    history_record["data"]["importedPath"]
                 ]
                 download_records = servarr_history["records"]["download_ids"][
-                    history_record["download_id"].lower()
+                    history_record["downloadId"].lower()
                 ]
                 latest_download_record = download_records[0]
                 newer_records = list(
@@ -1677,20 +1675,20 @@ class Prunerr(object):
                 newer_event_types = {}
                 for newer_record in newer_records:
                     newer_event_types.setdefault(
-                        newer_record["event_type"], [],
+                        newer_record["eventType"], [],
                     ).append(newer_record)
                 for (event_type, newer_event_records,) in newer_event_types.items():
                     servarr_history["event_types"]["download_ids"][
-                        history_record["download_id"].lower()
+                        history_record["downloadId"].lower()
                     ].setdefault(event_type, [])[:0] = newer_event_records
 
                 # Also include history records under the imported path
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["data"]["imported_path"], [],
+                    history_record["data"]["importedPath"], [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["data"]["imported_path"], {},
-                ).setdefault(history_record["event_type"], []).append(history_record)
+                    history_record["data"]["importedPath"], {},
+                ).setdefault(history_record["eventType"], []).append(history_record)
 
         return servarr_history
 
@@ -1851,8 +1849,6 @@ def handle(prunerr):
     eventtype_stripped = prunerr.strip_type_prefix(
         prunerr.servarr_config["type"],
         eventtype,
-        denormalizer=None,
-        normalizer=humps.pascalize,
     )
     handler_suffix = prunerr.SERVARR_CUSTOM_SCRIPT_EVENT_TYPES.get(
         eventtype_stripped,

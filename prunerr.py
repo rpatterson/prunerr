@@ -747,16 +747,19 @@ class Prunerr(object):
 
     def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
         """Recursively list paths that aren't a part of any torrent."""
-        for entry in os.listdir(path):
-            entry_path = os.path.join(path, entry)
-            # TODO: exclude valid import links
-            if entry_path not in torrent_paths and entry_path not in torrent_dirs:
-                du.stdin.write(entry_path + "\0")
+        path = pathlib.Path(path)
+        for entry_path in pathlib.Path(path).iterdir():
+            # TODO: exclude valid Prunerrr JSON data file and import links
+            if (
+                    str(entry_path) not in torrent_paths
+                    and str(entry_path) not in torrent_dirs
+            ):
+                du.stdin.write(f"{entry_path}\0")
                 du_line = du.stdout.readline()
                 size, du_path = du_line[:-1].split("\t", 1)[:2]
                 size = int(size)
-                yield (int(size), entry_path)
-            elif entry_path in torrent_dirs:
+                yield (int(size), str(entry_path))
+            elif str(entry_path) in torrent_dirs:
                 for orphan in self._list_orphans(
                     torrent_dirs, torrent_paths, du, entry_path
                 ):

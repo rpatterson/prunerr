@@ -4,6 +4,26 @@ Prunerr
 Remove Servarr download client items to preserve disk space according to rules.
 *******************************************************************************
 
+**CAUTION**: Prunerr is currently in pre-alpha status and the risk of doing harm to the
+media libraries and download clients managed by Servarr is higher than it will be as it
+gets more testing.  Bugs in Prunerr may result in, but are not limited to, the following
+issues with download client items:
+
+- being deleted before they've met your seeding requirements
+- being moved out from under Servarr breaking file imports
+- stopping downloading when it shouldn't be stopped
+
+Please do use Prunerr, but use at your own risk and report all issues you encounter with
+full details.  Set up a small sandbox with copies of media that can be safely deleted,
+make sure Prunerr is working smoothly for you for some time throughout the
+Servarr/Prunerr lifecycle before using it with your real library and even then
+understand the risks.
+
+
+*******
+Summary
+*******
+
 The ``$ prunerr`` command is intended to server as a companion service to the `Servarr`_
 suite of applications and services.  It periodically polls the `download clients`_ of
 `Sonarr`_, `Radarr`_, etc..  For each client it checks disk space compared to download

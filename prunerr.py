@@ -1054,6 +1054,10 @@ class Prunerr(object):
         """
         Retreive and collate the history for the given series/movie/etc..
         """
+        dirs_history = servarr_config.setdefault("history", {}).setdefault("dirs", {})
+        if dir_id in dirs_history:
+            return dirs_history[dir_id]
+
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
         params = {f"{servarr_type_map['dir_type']}id": dir_id}
         history_response = servarr_config["client"]._get(
@@ -1067,9 +1071,10 @@ class Prunerr(object):
                 dir_id,
                 pprint.pformat(history_response),
             )
-        return self.collate_history_records(
+        dirs_history[dir_id] = self.collate_history_records(
             servarr_config, history_records=history_response,
         )
+        return dirs_history[dir_id]
 
     def get_item_path(self, download_item):
         """

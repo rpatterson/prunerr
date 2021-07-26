@@ -1177,7 +1177,7 @@ class Prunerr(object):
             data_path = download_path.with_suffix(".prunerr.json")
         else:
             data_path = download_path.with_name(f"{download_path.name}.prunerr.json")
-        if data_path.exists() and data_path.stat().st_size:
+        if not self.replay and data_path.exists() and data_path.stat().st_size:
             with data_path.open() as data_opened:
                 try:
                     download_data = json.load(data_opened)

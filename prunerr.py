@@ -1265,6 +1265,7 @@ class Prunerr(object):
         for history_record in reversed(
                 servarr_history["records"]["download_ids"][download_id],
         ):
+            # TODO: Skip duplicate events for multi-file items
 
             # Preserve existing Prunerr data
             existing_record = download_data["history"].get(

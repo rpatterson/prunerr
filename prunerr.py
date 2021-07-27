@@ -139,6 +139,7 @@ class Prunerr(object):
         "Rename": "renamed",
         "Deleted": "deleted",
         "FileDelete": "deleted",
+        "HealthIssue": "test",
     }
 
     # Prunerr constants
@@ -1160,6 +1161,11 @@ class Prunerr(object):
         """
         servarr_type_map = self.SERVARR_TYPE_MAPS[self.servarr_config["type"]]
         dir_id_key = f"{servarr_type_map['dir_type']}_id"
+        if dir_id_key in custom_script_kwargs:
+            raise ServarrEventError(
+                f"No {servarr_config['name']!r} Sonarr media directory DB id "
+                f"passed to {custom_script_kwargs['eventtype']!r} event handler",
+            )
         dir_id = custom_script_kwargs[dir_id_key]
         download_id = custom_script_kwargs.get("download_id")
         servarr_history = None

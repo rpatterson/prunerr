@@ -141,6 +141,9 @@ class Prunerr(object):
         "FileDelete": "deleted",
     }
 
+    # Prunerr constants
+    PRUNERR_FILE_SUFFIXES = {".prunerr.json", "-servarr-imported.ln"}
+
     def __init__(self, config, servarrs, client, url, servarr_name=None, replay=False):
         """
         Do any config post-processing and set initial state.
@@ -749,7 +752,27 @@ class Prunerr(object):
         """Recursively list paths that aren't a part of any torrent."""
         path = pathlib.Path(path)
         for entry_path in pathlib.Path(path).iterdir():
-            # TODO: exclude valid Prunerrr JSON data file and import links
+            # Don't consider Prunerr files with any other corresponding
+            # files present to be orphans.
+            non_orphans = None
+            for prunerr_suffix in self.PRUNERR_FILE_SUFFIXES:
+                if entry_path.name.endswith(prunerr_suffix):
+                    entry_base = entry_path.name[:-len(prunerr_suffix)]
+                    non_orphans = {
+                        match_path for match_path in entry_path.parent.glob(
+                            f"{glob.escape(entry_base)}*"
+                        )
+                        if not {
+                                match_path
+                                for prunerr_suffix in self.PRUNERR_FILE_SUFFIXES
+                                if match_path.name.endswith(prunerr_suffix)
+                        }
+                    }
+                    if non_orphans:
+                        break
+            if non_orphans:
+                continue
+
             if (
                     str(entry_path) not in torrent_paths
                     and str(entry_path) not in torrent_dirs

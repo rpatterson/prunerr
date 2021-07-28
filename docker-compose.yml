@@ -40,6 +40,8 @@ services:
       # on start-up
       - "./prunerr/:/usr/local/src/prunerr/"
       - "./prunerr/etc/cont-init.d/50-prunerr-install:/etc/cont-init.d/50-prunerr-install"
+      # Grant access to the download clients torrent files for `readd_missing_data()`
+      - "./transmission/config/:/config/"
       # Use the Prunerr config from the Prunerr checkout
       - "./prunerr/home/.config/:/config/.config/"
       # Disable the Servarr instance S6 service

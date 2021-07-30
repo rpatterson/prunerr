@@ -19,6 +19,7 @@ import glob
 import pprint
 import json
 import datetime
+import copy
 
 import ciso8601
 import yaml
@@ -1594,6 +1595,8 @@ class Prunerr(object):
         """
         Convert Servarr history values to native Python types when possible.
         """
+        # Prevent serialized values from leaking into cached Servarr history
+        history_record = copy.deepcopy(history_record)
         for history_data in (
                 history_record,
                 history_record["data"],

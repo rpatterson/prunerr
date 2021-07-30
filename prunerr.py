@@ -1129,6 +1129,7 @@ class Prunerr(object):
         # TODO: Cache `self.get_dir_history()` per `self.sync()` calls
 
         sync_results = []
+        self.update()
         for torrent in self.torrents:
             download_path = self.get_item_path(torrent)
 
@@ -1867,8 +1868,6 @@ def handle(prunerr):
     import symbolic links are added, and deleted items are moved to `./deleted`.
     """
     # TODO: Covert to webhook
-
-    prunerr.update()
 
     # Collect all environment variables with the prefix used for Servarr custom scripts
     env_var_prefix = f"{prunerr.servarr_config['type']}_"

@@ -1267,8 +1267,15 @@ class Prunerr(object):
         download_history = {}
         if servarr_history is None:
             servarr_history = self.get_dir_history(servarr_config, dir_id)
+        if download_id not in servarr_history["records"]["download_ids"]:
+            logger.error(
+                "Download item %r not found in %r Servarr history for %r",
+                download_item,
+                servarr_config["name"],
+                dir_id_key,
+            )
         for history_record in reversed(
-                servarr_history["records"]["download_ids"][download_id],
+                servarr_history["records"]["download_ids"].get(download_id, []),
         ):
             # TODO: Skip duplicate events for multi-file items
 

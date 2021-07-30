@@ -139,7 +139,6 @@ class Prunerr(object):
         "Rename": "renamed",
         "Deleted": "deleted",
         "FileDelete": "deleted",
-        "HealthIssue": "test",
     }
 
     # Prunerr constants
@@ -1160,10 +1159,14 @@ class Prunerr(object):
         Handle a Servarr event after custom script env vars transformed to kwargs.
         """
         servarr_type_map = self.SERVARR_TYPE_MAPS[self.servarr_config["type"]]
+        if custom_script_kwargs["eventtype"].lower() == "test":
+            return self.handle_test(servarr_config, **custom_script_kwargs)
+        elif custom_script_kwargs["eventtype"].lower() == "HealthIssue":
+            return
         dir_id_key = f"{servarr_type_map['dir_type']}_id"
-        if dir_id_key in custom_script_kwargs:
+        if dir_id_key not in custom_script_kwargs:
             raise ServarrEventError(
-                f"No {servarr_config['name']!r} Sonarr media directory DB id "
+                f"No {servarr_config['name']!r} Sonarr {dir_id_key!r} DB id "
                 f"passed to {custom_script_kwargs['eventtype']!r} event handler",
             )
         dir_id = custom_script_kwargs[dir_id_key]

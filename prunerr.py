@@ -1177,7 +1177,7 @@ class Prunerr(object):
         if not download_id:
             servarr_history = self.get_dir_history(self.servarr_config, dir_id)
             download_id = self.select_imported_download_id(
-                servarr_history, custom_script_kwargs["filepath"],
+                servarr_history, custom_script_kwargs["file_path"],
             )
         if not download_id:
             logger.warning(
@@ -1906,7 +1906,7 @@ def handle(prunerr):
             delete_event_kwargs = dict(
                 custom_script_kwargs,
                 eventtype="deleted",
-                filepath=deleted_path,
+                file_path=deleted_path,
             )
             # Don't know which download client item the deleted path is for.
             delete_event_kwargs.pop("download_id", None)

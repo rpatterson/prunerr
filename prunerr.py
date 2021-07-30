@@ -1889,6 +1889,10 @@ def handle(prunerr):
         for env_var, env_value in os.environ.items()
         if env_var.startswith(env_var_prefix)
     }
+    logger.debug(
+        "Custom script kwargs:\n%s",
+        pprint.pformat(custom_script_kwargs),
+    )
 
     try:
         result = prunerr.dispatch_event(prunerr.servarr_config, **custom_script_kwargs)

@@ -62,7 +62,7 @@ reliably determines disk space margin *as* the download clients are downloading.
    Compare all download client items against those added by each `Servarr`_ application
    to identify those that weren't added by a `Servarr`_ application and are therefor
    un-managed or managed by something else.  Note that these items aren't considered for
-   deletion.
+   deletion.  Not reported under ``$ prunerr deamon`` to reduce logging noise.
 
 #. Order download items deleted by Servarr according to per-indexer rules:
 

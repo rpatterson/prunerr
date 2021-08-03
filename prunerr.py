@@ -254,7 +254,7 @@ class Prunerr(object):
 
         return prefixed
 
-    def exec_(self):
+    def exec_(self, quiet=False):
         """
         Prune download client items once.
         """
@@ -297,7 +297,7 @@ class Prunerr(object):
             self._exec_copy(session)
 
         # Ensure that download client state matches Servarr state
-        self.sync()
+        self.sync(quiet=quiet)
 
         # Free disk space if needed
         self.free_space()
@@ -419,6 +419,9 @@ class Prunerr(object):
         """
         Prune download client items continuously.
         """
+        # Log only once at the start messages that would be noisy if repeated for every
+        # daemon poll loop.
+        quiet = False
         while True:
             while True:
                 try:
@@ -435,10 +438,12 @@ class Prunerr(object):
 
             start = time.time()
             try:
-                self.exec_()
+                self.exec_(quiet=quiet)
             except socket.error:
                 logger.exception("Connection error while running daemon")
                 pass
+            # Don't repeat noisy messages from now on.
+            quiet = True
 
             # Wait for the next interval
             poll = (
@@ -1117,7 +1122,7 @@ class Prunerr(object):
             item_root_name = download_item.name
         return (pathlib.Path(download_item.download_dir) / item_root_name).resolve()
 
-    def sync(self):
+    def sync(self, quiet=False):
         """
         Synchronize the state of download client items with Servarr event history.
 
@@ -1152,6 +1157,14 @@ class Prunerr(object):
                 item_result = self.sync_item(servarr_config, torrent, is_realtime=False)
                 if item_result is not None:
                     sync_results.append(item_result)
+                break
+
+            else:
+                if not quiet:
+                    logger.warning(
+                        "Download item not managed by Servarr: %r",
+                        torrent,
+                    )
 
         return sync_results
 

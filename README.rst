@@ -12,6 +12,7 @@ issues with download client items:
 - being deleted before they've met your seeding requirements
 - being moved out from under Servarr breaking file imports
 - stopping downloading when it shouldn't be stopped
+- misidentified as orphans and deleted early
 
 Please do use Prunerr, but use at your own risk and report all issues you encounter with
 full details.  Set up a small sandbox with copies of media that can be safely deleted,

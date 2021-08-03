@@ -26,21 +26,21 @@ real library and even then understand the risks.
 Summary
 *******
 
-The ``$ prunerr`` command is intended to server as a companion service to the `Servarr`_
-suite of applications and services.  It periodically polls the `download clients`_ of
-`Sonarr`_, `Radarr`_, etc..  For each client it checks disk space compared to download
-rate and selectively removes items and deletes item data to maintain a healthy margin of
-disk space.  Download items are deleted in an order determined by a set of rules and
-criteria that can be defined on a per-indexer basis.  This is mostly useful for
-`BitTorrent`_ download clients in order to maximize ratio on a per-indexer/per-tracker
-basis.
+The ``$ prunerr`` command is intended to serve as a companion to the `Servarr`_ suite of
+applications and services.  It periodically polls the `download clients`_ of `Sonarr`_,
+`Radarr`_, etc..  For each client it "prunes" download items by checking disk space
+compared to download rate and selectively removing items and deleting item data to
+maintain a healthy margin of disk space.  Download items are deleted in an order
+determined by a set of rules and criteria that can be defined on a per-indexer basis.
+This is mostly useful for `BitTorrent`_ download clients in order to maximize ratio on a
+per-indexer/per-tracker basis.
 
 The Servarr state of download items (grabbed, downloading, imported, and/or deleted)
 must be reflected in the download client in order to do the above.  Servarr instances
 use the ``$ ./bin/prunerr handle ...`` sub-command as a `Servarr Custom Script`_ under
 the ``Connect`` Servarr settings to accomplish this.
 
-Prunerr uses and requires a configuration file which default to
+Prunerr uses and requires a configuration file which defaults to
 ``~/.config/prunerr.yml``.  See the well-commented sample configuration:
 `<./home/.config/prunerr.yml>`_.
 
@@ -49,8 +49,8 @@ Prunerr uses and requires a configuration file which default to
 Order of Operations
 *******************
 
-Note that polling is required because there is no reliable event we can respond to that
-reliably determines disk space margin *as* the downlod clients are downloading.
+Note that polling is required because there is no event we can subscribe to that
+reliably determines disk space margin *as* the download clients are downloading.
 
 #. Identify and report orphan files and directories:
 
@@ -73,9 +73,10 @@ reliably determines disk space margin *as* the downlod clients are downloading.
 
 #. Calculate required disk margin based on download speed:
 
-   Get the average download speed for each download client and multiply it by an amount
-   of time it should be able to continue downloading for to determine the disk space
-   margin we should preserve.
+   Calculate an appropriate margin of disk space to keep free when deciding whether to
+   prune download items based the maximum download bandwidth/speed in Mbps and the
+   amount of time in seconds at that rate for which download clients should be able to
+   continue downloading without exhausting disk space.
 
 #. Remove/delete download client items until margin is reached:
 
@@ -96,10 +97,11 @@ Servarr Custom Script
 *********************
 
 Prunerr reflects the Servarr state of download items in the state of items in the
-download client, similar to the design principles of Servarr applications, as opposed to
-say a DB or some other external persistent storage because.  This allows the user to
-inspect Prunerr/Servarr state in the native UI for the download client, supports manual
-user intervention, and avoids an additional dependency.
+download client.  This is in keeping with the design principles of Servarr applications
+which interpret the external state of download items, media files, etc. rather than rely
+on a representation in a DB or some other external persistent storage.  This allows the
+user to inspect Prunerr/Servarr state in the native UI for the download client, supports
+manual user intervention, and avoids an additional dependency.
 
 Specifically, Prunerr moves the location of download client items as items proceed
 through the Servarr workflow: ``./downloads/**`` -> ``./imported/**`` ->
@@ -128,7 +130,8 @@ Prunerr also provides a ``$ ./bin/prunerr sync`` sub-command to introspect the i
 history from Servarr instances and apply any appropriate state that can be determined
 from the Servarr history to the download client items.  This sub-command can be used to
 get any existing download client items in sync as if they had been processed by the
-``$ prunerr handle ...``.
+``$ prunerr handle ...`` and ``$ prunerr exec`` subcommands.
+
 
 ****************
 Other Operations

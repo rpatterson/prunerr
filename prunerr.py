@@ -1127,7 +1127,6 @@ class Prunerr(object):
         # Ensure we have current history between subsequent `$ prunerr daemon` runs
         for servarr_config in self.servarrs.values():
             servarr_config["history"] = {}
-        # TODO: Cache `self.get_dir_history()` per `self.sync()` calls
 
         sync_results = []
         self.update()
@@ -1277,7 +1276,7 @@ class Prunerr(object):
         for history_record in reversed(
                 servarr_history["records"]["download_ids"].get(download_id, []),
         ):
-            # TODO: Skip duplicate events for multi-file items
+            # TODO: Skip duplicate events for multi-file items such as season packs
 
             # Preserve existing Prunerr data
             existing_record = download_data["history"].get(
@@ -1877,8 +1876,6 @@ def handle(prunerr):
     For example, depending on config, imported items are moved to `./imported/`, the
     import symbolic links are added, and deleted items are moved to `./deleted`.
     """
-    # TODO: Covert to webhook
-
     # Collect all environment variables with the prefix used for Servarr custom scripts
     env_var_prefix = f"{prunerr.servarr_config['type']}_"
     custom_script_kwargs = {
@@ -1993,8 +1990,6 @@ Also run operations for Servarr events/history that have previously been run.
 """,
 )
 parser_sync.set_defaults(command=sync)
-
-# TODO: Delete and blacklist torrents containing archives
 
 
 def main(args=None):

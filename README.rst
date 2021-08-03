@@ -15,10 +15,11 @@ issues with download client items:
 - misidentified as orphans and deleted early
 
 Please do use Prunerr, but use at your own risk and report all issues you encounter with
-full details.  Set up a small sandbox with copies of media that can be safely deleted,
-make sure Prunerr is working smoothly for you for some time throughout the
-Servarr/Prunerr lifecycle before using it with your real library and even then
-understand the risks.
+full details.  Better yet, debug the issue, fix it, and submit a PR.  It's often
+impractical to keep a full backup of our media libraries, so set up a small sandbox with
+copies of media that can be safely deleted, make sure Prunerr is working smoothly for
+you for some time throughout the Servarr/Prunerr lifecycle before using it with your
+real library and even then understand the risks.
 
 
 *******
@@ -42,8 +43,6 @@ the ``Connect`` Servarr settings to accomplish this.
 Prunerr uses and requires a configuration file which default to
 ``~/.config/prunerr.yml``.  See the well-commented sample configuration:
 `<./home/.config/prunerr.yml>`_.
-
-TODO: Download clients on different filesystems, copying
 
 
 *******************
@@ -78,8 +77,6 @@ reliably determines disk space margin *as* the downlod clients are downloading.
    of time it should be able to continue downloading for to determine the disk space
    margin we should preserve.
 
-   TODO: Issues with instantaneous download speed?
-
 #. Remove/delete download client items until margin is reached:
 
    Per the order from #3, remove one download client item at a time and delete it's
@@ -93,9 +90,6 @@ reliably determines disk space margin *as* the downlod clients are downloading.
    happen if disk space is fully exhausted, including corrupted download client state
    and/or data.
 
-   TODO: Notifications?
-
-TODO: Mark stalled torrents as failed in Servarr
 
 *********************
 Servarr Custom Script
@@ -146,10 +140,86 @@ system such as events from download clients and/or `Servarr`_ applications.
 
 - Set per-indexer/per-tracker priority for items in download clients
 
+
+****
+TODO
+****
+
+The following are known issues with Prunerr or features that are particularly desirable
+to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
+
+- Support download clients on different file-systems, copy completed items:
+
+  There is existing support for copying finished torrents via an arbitrary command, but
+  it's currently unused and thus untested and it's very likely that there are
+  regressions that need fixing.
+
+  This also involves changing ``$ prunerr daemon`` behavior such that it also considers
+  successfully *copied* items as candidates for deletions, not just items whose imported
+  files have been deleted by Servarr, such as when upgrading.
+
+- Support other download client software, not just `Transmission`_:
+
+  This would almost certainly require discussion before implementing, because how this
+  is down will be important for maintainability.  So open an issue and start the
+  discussion before you start implementing lest your work go to waste.  Currently,
+  Prunerr is way to tightly coupled with Transmission and the `Python RPC client
+  library`_ used to interface with it.  I suspect the best way to abstract it will be to
+  use that client library as a de facto abstract interface and then wrap other client
+  libraries to fulfill that interface, but that's one of the things to discuss.
+
+- Convert from a Servarr Custom Script to a WebHook:
+
+  This is definitely the better way to do this and addresses a number of issues.
+
+- Optionally delete and blacklist download items containing archives:
+
+  There's no existing way to filter download items based on what's in the corresponding
+  torrent.  Specifically, only the download client knows what files are in the download
+  item while it's downloading.  Servarr only identifies contents when it's finished
+  downloading and it scans it for import.  Add a check to ``$ prunerr exec`` to identify
+  if the bulk of a torrent's size is in archives, such as ``*.rar``, and if so mark that
+  item as failed in Servarr and trigger a search to replace it.
+
+- Resurrect support for setting per-indexer download item priority:
+
+  There is existing but abandoned support for setting download item priority based on
+  which tracker it is from, e.g.: private tracker -> high priority, public tracker ->
+  low priority.  It needs to be updated for the Servarr changes and the new indexer
+  sort/filter operations approach.  Set priorities only when handling the ``grabbed``
+  event to support manual intervention without overwriting later in the Servarr
+  life-cycle.
+
+- Send a notification when no download item can be deleted and downloading is paused:
+
+  Perhaps we can use the Servarr "Connect" API?
+
+- Mark stalled torrents as failed in Servarr:
+
+  Identify which torrents are taking too long to download and should be considered
+  stalled.  Mark them as failed in Servarr and optionally trigger a search.
+
+- **TESTING**!!!!!
+
+  I am embarrassed by this "software".  It grew from ad-hoc maintenance scripts and I
+  know that much of the edge case handling in this code is still needed so I'm not
+  convinced starting from scratch and running into those edge cases again one-by-one
+  would actually result in a net savings of effort.  It's still very much lacking in
+  software best practices.  Testing would the best start and would point the direction
+  to the best places to start refactoring and cleaning up.
+
+- ``$ git grep -i -e todo``:
+
+  The above are the most important improvements that Prunerr definitely needs.  See ``#
+  TODO: ...`` comments throughout the source for other smaller, potential improvements.
+
+
 .. _`Python 3.x`: https://docs.python.org/3/
 .. _`Python 2.x`: https://www.python.org/doc/sunset-python-2/
 
 .. _`BitTorrent`: https://en.wikipedia.org/wiki/BitTorrent
+.. _`Transmission`: https://transmissionbt.com/
+.. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/
 
 .. _`Servarr`: https://wiki.servarr.com
 .. _`Radarr`: https://wiki.servarr.com/en/radarr

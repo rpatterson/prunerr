@@ -714,6 +714,7 @@ class Prunerr(object):
         # Assemble all directories whose descendants are torrents
         torrent_dirs = set()
         torrent_paths = set()
+        unstarted_names = set()
         for torrent in self.torrents:
             # Transmission's `incomplete` directory for incomplete, leeching torrents
             torrent_paths.add(os.path.join(session.incomplete_dir, torrent.name))
@@ -725,6 +726,8 @@ class Prunerr(object):
                 torrent_dirs.add(torrent_dir)
                 torrent_dir, tail = os.path.split(torrent_dir)
             torrent_paths.add(os.path.join(torrent.downloadDir, torrent.name))
+            if torrent.progress == 0.0:
+                unstarted_names.add(torrent.name)
 
         # Sort the orphans by total directory size
         # TODO Windows compatibility
@@ -735,7 +738,10 @@ class Prunerr(object):
         orphans = sorted(
             itertools.chain(
                 *(
-                    self._list_orphans(torrent_dirs, torrent_paths, du, download_dir)
+                    self._list_orphans(
+                        session, torrent_dirs, torrent_paths, unstarted_names,
+                        du, download_dir,
+                    )
                     for download_dir in download_dirs
                     if pathlib.Path(download_dir).is_dir()
                 )
@@ -754,19 +760,28 @@ class Prunerr(object):
 
         return orphans
 
-    def _list_orphans(self, torrent_dirs, torrent_paths, du, path):
+    def _list_orphans(
+            self, session, torrent_dirs, torrent_paths, unstarted_names,
+            du, path,
+    ):
         """Recursively list paths that aren't a part of any torrent."""
         path = pathlib.Path(path)
         for entry_path in pathlib.Path(path).iterdir():
             # Don't consider Prunerr files with any other corresponding
             # files present to be orphans.
-            non_orphans = None
+            is_prunerr_file = False
             for prunerr_suffix in self.PRUNERR_FILE_SUFFIXES:
                 if entry_path.name.endswith(prunerr_suffix):
                     entry_base = entry_path.name[:-len(prunerr_suffix)]
+                    for unstarted_name in unstarted_names:
+                        if unstarted_name.startswith(entry_base):
+                            is_prunerr_file = True
+                            break
+                    entry_glob = f"{glob.escape(entry_base)}*"
                     non_orphans = {
-                        match_path for match_path in entry_path.parent.glob(
-                            f"{glob.escape(entry_base)}*"
+                        match_path for match_path in itertools.chain(
+                            pathlib.Path(session.incomplete_dir).glob(entry_glob),
+                            entry_path.parent.glob(entry_glob)
                         )
                         if not {
                                 match_path
@@ -775,8 +790,9 @@ class Prunerr(object):
                         }
                     }
                     if non_orphans:
+                        is_prunerr_file = True
                         break
-            if non_orphans:
+            if is_prunerr_file:
                 continue
 
             if (
@@ -790,7 +806,8 @@ class Prunerr(object):
                 yield (int(size), str(entry_path))
             elif str(entry_path) in torrent_dirs:
                 for orphan in self._list_orphans(
-                    torrent_dirs, torrent_paths, du, entry_path
+                        session, torrent_dirs, torrent_paths, unstarted_names,
+                        du, entry_path,
                 ):
                     yield orphan
 

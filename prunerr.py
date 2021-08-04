@@ -842,12 +842,12 @@ class Prunerr(object):
         indexer_name = None
         # Try to find an indexer name from the items Servarr history
         for servarr_config in self.servarrs.values():
-            torrent_history = self.find_item_history(servarr_config, torrent=torrent)
-            if torrent_history:
-                for history_record in torrent_history:
-                    if "indexer" in history_record["data"]:
-                        indexer_name = history_record["data"]["indexer"]
-                        break
+            download_record = self.find_latest_item_history(
+                servarr_config, torrent=torrent,
+            )
+            if download_record:
+                if "indexer" in download_record["data"]:
+                    indexer_name = download_record["data"]["indexer"]
                 else:
                     logger.warning(
                         "No indexer found in Servarr history for download item: %r",
@@ -1584,12 +1584,12 @@ class Prunerr(object):
         # Page through history until a Servarr import event is found for this download
         # item.
         history_page = None
-        download_record = None
+        download_record = indexer_record = None
         while (
             # Is history for this Servarr instance exhausted?
             history_page is None
             or (servarr_history["page"] * 250) <= history_page["totalRecords"]
-        ) and download_record is None:
+        ) and indexer_record is None:
             history_page = servarr_config["client"]._get(
                 "history",
                 # Maximum Servarr page size
@@ -1605,11 +1605,16 @@ class Prunerr(object):
                     download_id, [],
             ):
                 if "downloadId" in history_record:
-                    download_record = history_record
-                    break
+                    if download_record is None:
+                        # Sufficient to identify download client item, fallback
+                        download_record = history_record
+                    if "indexer" in history_record["data"]:
+                        # Can also identify the indexer, optimal
+                        indexer_record = history_record
+                        break
             servarr_history["page"] += 1
 
-        return download_record
+        return indexer_record if indexer_record is not None else download_record
 
     def deserialize_history(self, history_record):
         """

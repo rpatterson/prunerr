@@ -1290,11 +1290,11 @@ class Prunerr(object):
         if servarr_history is None:
             servarr_history = self.get_dir_history(servarr_config, dir_id)
         if download_id not in servarr_history["records"]["download_ids"]:
-            logger.error(
-                "Download item %r not found in %r Servarr history for %r",
-                download_item,
+            logger.info(
+                "Waiting for %r Servarr history for %r:  %r",
                 servarr_config["name"],
                 dir_id_key,
+                download_item,
             )
         for history_record in reversed(
                 servarr_history["records"]["download_ids"].get(download_id, []),

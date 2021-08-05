@@ -63,9 +63,9 @@ downloaders:
   # readd-missing-data: true
 indexers:
   priorities:
-    # ## Delete download items that are public torrents before those from private trackers
-    # ## by putting the priority definitions of private tackers before the definition for
-    # ## public torrents.
+    ## Delete download items that are public torrents before those from private trackers
+    ## by putting the priority definitions of private tackers before the definition for
+    ## public torrents.
     - name: "ExamplePrivateTracker"
       ## Used to match download items with no corresponding Servarr history from which
       ## the indexer for the item can be found.  Ignored if `name` above does match a

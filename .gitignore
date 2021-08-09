@@ -1,2 +1,11 @@
-/var
+# Editor artifacts
+*~
+*.rej
+
+# Python artifacts
 /.venv
+__pycache__
+*.egg-info
+
+# Project data
+/var

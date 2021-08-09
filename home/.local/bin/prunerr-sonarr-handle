@@ -5,7 +5,7 @@
 
 set -o pipefail
 PS4='${LINENO}+'
-# set -x
+test -z "${DEBUG:-}" || set -x
 
 
 main() {

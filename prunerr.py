@@ -2027,7 +2027,11 @@ parser_sync.set_defaults(command=sync)
 def main(args=None):
     logging.basicConfig(level=logging.INFO)
     # Want just our logger, not transmission-rpc's to log DEBUG
-    # logger.setLevel(logging.DEBUG)
+    if "DEBUG" in os.environ:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    logger.setLevel(level)
     # Avoid logging all JSON responses, particularly the very large history responses
     # from Servarr APIs
     logging.getLogger("arrapi.api").setLevel(logging.INFO)

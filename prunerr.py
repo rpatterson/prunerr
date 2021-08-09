@@ -431,9 +431,13 @@ class Prunerr(object):
                         socket.error,
                         error.TransmissionError,
                         arrapi.exceptions.ConnectionFailure):
-                    logger.exception("Connection error while updating from server")
+                    logger.error(
+                        "Connection error while updating from server: %s",
+                        exc,
+                    )
                     pass
                 else:
+                    time.sleep(1)
                     break
 
             start = time.time()

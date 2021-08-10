@@ -1203,7 +1203,7 @@ class Prunerr(object):
                 break
 
             else:
-                if not quiet:
+                if self.servarrs and not quiet:
                     logger.warning(
                         "Download item not managed by Servarr: %r",
                         torrent,

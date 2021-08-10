@@ -88,6 +88,32 @@ class ServarrEventError(ValueError):
     """
 
 
+class DownloadItem(transmission_rpc.Torrent):
+    """
+    Enrich download item data from the download client API.
+    """
+
+    def __init__(self, client, torrent):
+        """
+        Reconstitute the native Python representation.
+        """
+        fields = {
+            field_name: field.value for field_name, field in torrent._fields.items()
+        }
+        super().__init__(client, fields)
+
+    @property
+    def seconds_since_done(self):
+        """
+        Number of seconds elapsed since the torrent was completely downloaded.
+
+        Best available estimation of total seeding time.
+        """
+        done_date = self._fields["doneDate"].value
+        if done_date and done_date > 0:
+            return time.time() - done_date
+
+
 class Prunerr(object):
 
     # Map the different Servarr applications type terminology
@@ -374,7 +400,10 @@ class Prunerr(object):
             self.client.set_session(speed_limit_up_enabled=False)
 
     def update(self):
-        self.torrents = self.client.get_torrents()
+        self.torrents = [
+            DownloadItem(torrent._client, torrent)
+            for torrent in self.client.get_torrents()
+        ]
 
     def list_torrent_files(self, torrent, download_dir=None):
         """
@@ -613,7 +642,7 @@ class Prunerr(object):
             if isinstance(candidate, (tuple, list)):
                 metric, candidate = candidate
             if isinstance(candidate, int):
-                candidate = self.client.get_torrent(int)
+                candidate = self.get_download_item(int)
 
             # Handle actual torrents recognized by the download client
             if isinstance(candidate, transmission_rpc.Torrent):
@@ -1027,7 +1056,7 @@ class Prunerr(object):
                 and torrent.errorString.lower().startswith("no data found")
             ):
                 continue
-            torrent = self.client.get_torrent(torrent.id)
+            torrent = self.get_download_item(torrent.id)
             logger.error("No data found for %s, re-adding", torrent)
             with open(torrent.torrentFile, mode="r+b") as torrent_opened:
                 self.client.remove_torrent(ids=[torrent.id])
@@ -1545,8 +1574,11 @@ class Prunerr(object):
         """
         Get a download client item, tolerate missing items while logging the error.
         """
+        if isinstance(download_id, str):
+            download_id = download_id.lower()
         try:
-            return self.client.get_torrent(download_id.lower())
+            torrent = self.client.get_torrent(download_id)
+            return DownloadItem(torrent._client, torrent)
         except KeyError:
             # Can happen if the download client item has been manually deleted
             logger.error(

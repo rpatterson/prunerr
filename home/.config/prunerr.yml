@@ -86,10 +86,17 @@ indexers:
           ## that haven't met those requirements to be deleted last.
           filter: true
           operations:
-            ## The number of hours after the torrent has been completely downloaded when
-            ## it's been available to seed to other leechers.
             - type: "value"
-              name: "secondsSeeding"
+              ## The amount of time that has passed since the item has been
+              ## completely downloaded.  Beware that this is not necessarily
+              ## the total sum of actively seeding time as seen by the
+              ## tracker.  For example:
+              ## 1. private tracker torrent is downloaded and seeds all of day 1
+              ## 2. you go on vacation and your client crashes on day 2
+              ## 3. you return from vacation and restart your client on day 10
+              ## Then `seconds_since_done` is 10 days while the private
+              ## tracker only sees you as seeding for 1 day.
+              name: "seconds_since_done"
               ## 10 days * 24 hours * 60 minutes * 60 seconds
               minimum: 864000
             - type: "value"

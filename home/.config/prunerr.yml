@@ -29,8 +29,8 @@ downloaders:
   max-download-bandwidth: 100
   ## 60 seconds * 60 minutes = 1 hour, default
   # min-download-time-margin: 3600
-  ## 60 seconds * 2 daemon poll margin = 2 minutes
-  # min-download-time-margin: 120
+  ## 60 seconds * 10 daemon poll margin = 10 minutes
+  min-download-time-margin: 600
   ## Should the maximum download bandwidth/speed be set in the download client as a
   ## limit when resuming downloads after previously stopping?  May be useful for QoS to
   ## optimize real download throughput.

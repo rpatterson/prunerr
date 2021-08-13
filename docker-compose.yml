@@ -16,6 +16,12 @@ services:
       # - "./prunerr/home/.config/:/config/.config/"
     ports:
       - "8989:8989"
+    restart: "unless-stopped"
+    healthcheck:
+      test: >-
+        curl -Lv
+        "http://sonarr:8989/api/system/status?apikey=${SONARR_API_KEY}" |
+        grep '"appData": *"/config"'
 
   radarr:
     image: "ghcr.io/hotio/radarr"
@@ -29,6 +35,12 @@ services:
       # - "./prunerr/home/.config/:/config/.config/"
     ports:
       - "7878:7878"
+    restart: "unless-stopped"
+    healthcheck:
+      test: >-
+        curl -Lv
+        "http://radarr:7878/api/system/status?apikey=${RADARR_API_KEY}" |
+        grep '"appData": *"/config"'
 
   prunerr-daemon:
     image: "ghcr.io/hotio/sonarr"

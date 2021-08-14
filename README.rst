@@ -52,6 +52,13 @@ Order of Operations
 Note that polling is required because there is no event we can subscribe to that
 reliably determines disk space margin *as* the download clients are downloading.
 
+#. Review download items:
+
+   Apply per-indexer operations to all download items.  Useful, for example, to:
+   - adjust priorities
+   - remove torrents containing archives (`*.rar`, `*.zip`, `*.tar.gz`, etc.)
+   - etc.
+
 #. Identify and report orphan files and directories:
 
    Walk all the top-level directories used by each download client and identify which
@@ -174,24 +181,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 - Convert from a Servarr Custom Script to a WebHook:
 
   This is definitely the better way to do this and addresses a number of issues.
-
-- Optionally delete and blacklist download items containing archives:
-
-  There's no existing way to filter download items based on what's in the corresponding
-  torrent.  Specifically, only the download client knows what files are in the download
-  item while it's downloading.  Servarr only identifies contents when it's finished
-  downloading and it scans it for import.  Add a check to ``$ prunerr exec`` to identify
-  if the bulk of a torrent's size is in archives, such as ``*.rar``, and if so mark that
-  item as failed in Servarr and trigger a search to replace it.
-
-- Resurrect support for setting per-indexer download item priority:
-
-  There is existing but abandoned support for setting download item priority based on
-  which tracker it is from, e.g.: private tracker -> high priority, public tracker ->
-  low priority.  It needs to be updated for the Servarr changes and the new indexer
-  sort/filter operations approach.  Set priorities only when handling the ``grabbed``
-  event to support manual intervention without overwriting later in the Servarr
-  life-cycle.
 
 - Send a notification when no download item can be deleted and downloading is paused:
 

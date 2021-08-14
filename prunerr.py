@@ -290,6 +290,9 @@ class Prunerr(object):
         session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
 
+        if "reviews" in self.indexer_operations:
+            self.review_items(quiet=quiet)
+
         if self.config["downloaders"].get("readd-missing-data"):
             # Workaround an issue with Transmission when starting torrents with no free
             # space.
@@ -329,6 +332,7 @@ class Prunerr(object):
         self.sync(quiet=quiet)
 
         # Free disk space if needed
+        # TODO: Unify with `self.review_items()`?
         self.free_space()
 
     def _exec_copy(self, session):
@@ -518,6 +522,97 @@ class Prunerr(object):
             key=lambda item: self.exec_indexer_operations(item[1])[1],
             reverse=True,
         )
+
+    def review_items(self, quiet=False):
+        """
+        Apply review operations to all download items.
+        """
+        # Collect all Servarr API download queue records
+        queue_records = {}
+        queue_page = None
+        page_num = 1
+        for servarr_config in self.servarrs.values():
+            while (
+                queue_page is None
+                or (page_num * 250) <= queue_page["totalRecords"]
+            ):
+                queue_page = servarr_config["client"]._get(
+                    "queue",
+                    # Maximum Servarr page size
+                    pageSize=250,
+                    page=page_num,
+                )
+                for record in queue_page["records"]:
+                    if record["downloadId"] in queue_records:
+                        # Let config order dictate which queue record should win
+                        continue
+                    record["servarr_config"] = servarr_config
+                    queue_records[record["downloadId"]] = record
+                page_num += 1
+
+        for download_item in self.torrents:
+            self.review_item(queue_records, download_item, quiet=quiet)
+
+    def review_item(self, queue_records, download_item, quiet=False):
+        """
+        Apply review operations to this download item.
+        """
+        include, sort_key = self.exec_indexer_operations(
+            download_item, operations_type="reviews",
+        )
+        indexer_idx = sort_key[0]
+        sort_values = sort_key[1:]
+        reviews_indxers = self.config.get("indexers", {}).get("reviews", [])
+        indexer_config = reviews_indxers[indexer_idx]
+        operation_configs = indexer_config.get("operations", [])
+
+        download_id = download_item.hashString.upper()
+        queue_record = queue_records.get(download_id, {})
+        queue_id = queue_record.get("id")
+
+        for operation_config, sort_value in zip(operation_configs, sort_values):
+            if sort_value:
+                # Sort value didn't match review operation requirements
+                continue
+
+            if operation_config.get("remove", False):
+                logger.info(
+                    "Removing download item per %r review: %r",
+                    operation_config["type"],
+                    download_item,
+                )
+                if queue_id is None:
+                    if self.servarrs and not quiet:
+                        logger.warning(
+                            "Download item not in any Servarr queue: %r",
+                            download_item,
+                        )
+                    self.client.remove_torrent(
+                        download_item.hashString, delete_data=True,
+                    )
+                else:
+                    delete_params = dict(removeFromClient="true")
+                    if operation_config.get("blacklist", False):
+                        delete_params["blacklist"] = "true"
+                    queue_record["servarr_config"]["client"]._delete(
+                        f"queue/{queue_id}", **delete_params,
+                    )
+                self.move_timeout(download_item, download_item.downloadDir)
+                # Avoid race conditions, perform no further operations on removed items
+                continue
+
+            if "change" in operation_config:
+                logger.info(
+                    "Changing download item per %r review for %r: %s",
+                    operation_config["type"],
+                    download_item,
+                    json.dumps(operation_config["change"]),
+                )
+                self.client.change_torrent(
+                    [download_item.hashString], **operation_config["change"],
+                )
+
+        return include, sort_key
 
     def free_space(self):
         """
@@ -998,6 +1093,43 @@ class Prunerr(object):
         for sort_value in sort_key:
             if sort_value:
                 return sort_value
+
+    def exec_operation_files(self, operation_config, download_item):
+        """
+        Return aggregated values from item files.
+        """
+        file_attr = operation_config.get("name", "size")
+        aggregation = operation_config.get("aggregation", "portion")
+
+        item_files = download_item.files()
+        if not item_files:
+            # Can't do calculations until the actual `*.torrent` file is fully
+            # downloaded.  IOW, skip items that are still magnetized.
+            return False
+
+        suffixes = operation_config.get("suffixes", [])
+        if suffixes:
+            matching_files = []
+            for suffix in suffixes:
+                matching_files.extend(
+                    item_file for item_file in item_files
+                    if item_file.name.endswith(suffix)
+                )
+        else:
+            matching_files = item_files
+
+        if aggregation == "count":
+            sort_value = len(matching_files)
+        elif aggregation in {"sum", "portion"}:
+            sort_value = sum(
+                getattr(matching_file, file_attr) for matching_file in matching_files
+            )
+            if aggregation == "portion":
+                sort_value = sort_value / download_item.size_when_done
+        else:
+            raise ValueError(f"Unknown item files aggregation {aggregation!r}")
+
+        return sort_value
 
     def _resume_down(self, session):
         """

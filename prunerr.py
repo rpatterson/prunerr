@@ -2070,18 +2070,6 @@ def collect_downloaders(config):
                 servarr_config["name"]
             ] = servarr_config
 
-        # Collect the settings for the Prunerr custom script connection if present for
-        # the Servarr instance.  Used to lookup the custom script path when dispatching
-        # followup event subprocesses.
-        servarr_config["notification"] = {}
-        for connect_config in servarr_client._get("notification"):
-            connect_config["fieldValues"] = field_values = {
-                connect_config_field["name"]: connect_config_field["value"]
-                for connect_config_field in connect_config["fields"]
-                if "value" in connect_config_field
-            }
-            servarr_config["notification"][connect_config["name"]] = connect_config
-
     # Include any download clients not connected to a Servarr instance
     for downloader_url_str in config.get("downloaders", {}).get("urls", []):
         downloader_url = urllib.parse.urlsplit(downloader_url_str)

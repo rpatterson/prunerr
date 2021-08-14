@@ -655,7 +655,7 @@ class Prunerr(object):
                         utils.format_size(session.download_dir_free_space)
                         + utils.format_size(candidate.totalSize)
                         + (
-                            candidate.prunerr_indexer_name,
+                            self.lookup_item_indexer(candidate),
                             candidate.bandwidthPriority,
                             candidate.ratio,
                         )
@@ -865,12 +865,12 @@ class Prunerr(object):
             and self.exec_indexer_priorities(torrent)[0]
         )
 
-    def exec_indexer_priorities(self, torrent):
+    def lookup_item_indexer(self, torrent):
         """
-        Lookup the indexer for this torrent and calculate it's priority.
+        Lookup the indexer for this torrent and cache.
         """
-        if hasattr(torrent, "prunerr_indexer_sort_key"):
-            return torrent.prunerr_indexer_include, torrent.prunerr_indexer_sort_key
+        if hasattr(torrent, "prunerr_indexer_name"):
+            return torrent.prunerr_indexer_name
 
         indexer_name = None
         # Try to find an indexer name from the items Servarr history
@@ -894,16 +894,15 @@ class Prunerr(object):
             if indexer_name is not None:
                 break
 
-        # Lookup the indexer priority configuration
+        # Match by indexer URLs when no indexer name is available
         if not indexer_name:
-            # Match by indexer URLs when no indexer name is available
-            for possible_name, possible_config in self.indexer_configs.items():
-                if "urls" not in possible_config:
-                    continue
+            for possible_name, possible_urls in config.get(
+                    "indexers", {},
+            ).get("urls", {}).items():
                 for tracker in torrent.trackers:
                     for action in ("announce", "scrape"):
                         tracker_url = tracker[action]
-                        for indexer_url in possible_config["urls"]:
+                        for indexer_url in possible_urls:
                             if tracker_url.startswith(indexer_url):
                                 indexer_name = possible_name
                                 break
@@ -913,7 +912,18 @@ class Prunerr(object):
                         break
                 if indexer_name:
                     break
+
         torrent.prunerr_indexer_name = indexer_name
+        return indexer_name
+
+    def exec_indexer_priorities(self, torrent, operations_type="priorities"):
+        """
+        Run indexer operations for the download item and return results.
+        """
+        if hasattr(torrent, "prunerr_indexer_sort_key"):
+            return torrent.prunerr_indexer_include, torrent.prunerr_indexer_sort_key
+
+        indexer_name = self.lookup_item_indexer(torrent)
         if indexer_name not in self.indexer_configs:
             indexer_name = None
         indexer_idx = list(self.indexer_configs.keys()).index(indexer_name)

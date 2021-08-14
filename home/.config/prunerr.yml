@@ -62,16 +62,16 @@ downloaders:
   ## See the Python docstring for `prunerr.Prunerr.readd_missing_data()` for details.
   # readd-missing-data: true
 indexers:
+  ## Used to match download items with no corresponding Servarr history from which
+  ## the indexer for the item can be found.
+  urls:
+    ExamplePrivateTracker:
+      - "https://tracker.example.com"
   priorities:
     ## Delete download items that are public torrents before those from private trackers
     ## by putting the priority definitions of private tackers before the definition for
     ## public torrents.
     - name: "ExamplePrivateTracker"
-      ## Used to match download items with no corresponding Servarr history from which
-      ## the indexer for the item can be found.  Ignored if `name` above does match a
-      ## Servarr indexer name.
-      urls:
-        - "https://tracker.example.com"
       ## Example for a private tracker with various rules that affect both whether
       ## download items should be considered for deletion yet and which itmes should be
       ## deleted first.

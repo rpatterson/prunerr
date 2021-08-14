@@ -514,7 +514,7 @@ class Prunerr(object):
                 except (
                         socket.error,
                         error.TransmissionError,
-                        arrapi.exceptions.ConnectionFailure):
+                        arrapi.exceptions.ConnectionFailure) as exc:
                     logger.error(
                         "Connection error while updating from server: %s",
                         exc,

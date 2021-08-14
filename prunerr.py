@@ -93,14 +93,61 @@ class DownloadItem(transmission_rpc.Torrent):
     Enrich download item data from the download client API.
     """
 
-    def __init__(self, client, torrent):
+    def __init__(self, prunerr, client, torrent):
         """
         Reconstitute the native Python representation.
         """
+        self.prunerr = prunerr
+
         fields = {
             field_name: field.value for field_name, field in torrent._fields.items()
         }
         super().__init__(client, fields)
+
+    @property
+    def prunerr_data(self):
+        """
+        Load the prunerr data file.
+        """
+        if "prunerr_data" in vars(self):
+            return vars(self)["prunerr_data"]
+
+        # Load the Prunerr data file
+        download_path = self.prunerr.get_item_path(self)
+        download_data = dict(history={})
+        if download_path.is_file():
+            data_path = download_path.with_suffix(".prunerr.json")
+        else:
+            data_path = download_path.with_name(f"{download_path.name}.prunerr.json")
+        if not self.prunerr.replay and data_path.exists() and data_path.stat().st_size:
+            with data_path.open() as data_opened:
+                try:
+                    download_data = json.load(data_opened)
+                except Exception:
+                    logger.exception("Failed to deserialize JSON file: %s", data_path)
+            download_data["path"] = data_path
+            if download_data["history"] is None:
+                logger.warning(
+                    "No history previously found for download item, "
+                    "skipping: %r",
+                    self,
+                )
+                return
+            # Convert loaded JSON to native types where possible
+            download_data["history"] = {
+                ciso8601.parse_datetime(history_date):
+                self.prunerr.deserialize_history(history_record)
+                for history_date, history_record in
+                download_data["history"].items()
+            }
+            if "latestImportedDate" in download_data:
+                download_data["latestImportedDate"] = ciso8601.parse_datetime(
+                    download_data["latestImportedDate"],
+                )
+
+        # Cache the deserialized and normalized data
+        vars(self)["prunerr_data"] = download_data
+        return download_data
 
     @property
     def seconds_since_done(self):
@@ -290,9 +337,6 @@ class Prunerr(object):
         session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
 
-        if "reviews" in self.indexer_operations:
-            self.review_items(quiet=quiet)
-
         if self.config["downloaders"].get("readd-missing-data"):
             # Workaround an issue with Transmission when starting torrents with no free
             # space.
@@ -330,6 +374,10 @@ class Prunerr(object):
 
         # Ensure that download client state matches Servarr state
         self.sync(quiet=quiet)
+
+        if "reviews" in self.indexer_operations:
+            # Perform any review operations
+            self.review_items(quiet=quiet)
 
         # Free disk space if needed
         # TODO: Unify with `self.review_items()`?
@@ -408,7 +456,7 @@ class Prunerr(object):
 
     def update(self):
         self.torrents = [
-            DownloadItem(torrent._client, torrent)
+            DownloadItem(self, torrent._client, torrent)
             for torrent in self.client.get_torrents()
         ]
 
@@ -967,8 +1015,9 @@ class Prunerr(object):
         """
         Lookup the indexer for this torrent and cache.
         """
-        if hasattr(torrent, "prunerr_indexer_name"):
-            return torrent.prunerr_indexer_name
+        download_data = torrent.prunerr_data
+        if "indexer" in download_data:
+            return download_data["indexer"]
 
         indexer_name = None
         # Try to find an indexer name from the items Servarr history
@@ -1011,7 +1060,7 @@ class Prunerr(object):
                 if indexer_name:
                     break
 
-        torrent.prunerr_indexer_name = indexer_name
+        download_data["indexer"] = indexer_name
         return indexer_name
 
     def exec_indexer_operations(self, torrent, operations_type="priorities"):
@@ -1408,38 +1457,12 @@ class Prunerr(object):
         """
         download_id = download_item.hashString.lower()
         download_path = self.get_item_path(download_item)
-
-        # Load the Prunerr data file
-        download_data = dict(history={})
-        if download_path.is_file():
-            data_path = download_path.with_suffix(".prunerr.json")
-        else:
-            data_path = download_path.with_name(f"{download_path.name}.prunerr.json")
-        if not self.replay and data_path.exists() and data_path.stat().st_size:
-            with data_path.open() as data_opened:
-                try:
-                    download_data = json.load(data_opened)
-                except Exception:
-                    logger.exception("Failed to deserialize JSON file: %s", data_path)
-            if download_data["history"] is None:
-                logger.warning(
-                    "No history previously found for %r Servarr download item, "
-                    "skipping: %r",
-                    servarr_config["name"],
-                    download_item,
-                )
-                return
-            # Convert loaded JSON to native types where possible
-            download_data["history"] = {
-                ciso8601.parse_datetime(history_date):
-                self.deserialize_history(history_record)
-                for history_date, history_record in
-                download_data["history"].items()
-            }
-            if "latestImportedDate" in download_data:
-                download_data["latestImportedDate"] = ciso8601.parse_datetime(
-                    download_data["latestImportedDate"],
-                )
+        download_data = download_item.prunerr_data
+        for servarr_key in ("type", "name"):
+            download_data.setdefault("servarr", {}).setdefault(
+                servarr_key, servarr_config[servarr_key],
+            )
+        data_path = download_data["path"]
 
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
         dir_id_key = f"{servarr_type_map['dir_type']}Id"
@@ -1487,6 +1510,9 @@ class Prunerr(object):
             history_record["prunerr"] = existing_record.get("prunerr", {})
             # Insert into the new history keyed by time stamp
             download_history[history_record["date"]] = history_record
+            if "indexer" not in download_data and "indexer" in history_record["data"]:
+                # Cache indexer name for faster lookup
+                download_data["indexer"] = history_record["data"]["indexer"]
 
             # Synchronize the item's state with this history event/record
             if not self.replay and history_record["prunerr"].get("syncedDate"):
@@ -1514,7 +1540,6 @@ class Prunerr(object):
                     servarr_config,
                     download_item,
                     history_record,
-                    download_data=download_data,
                     is_realtime=is_realtime,
                 )
             else:
@@ -1588,12 +1613,12 @@ class Prunerr(object):
             servarr_config,
             download_item,
             history_record,
-            download_data,
             is_realtime=True,
     ):
         """
         Handle Servarr imported event, wait for import to complete, then move.
         """
+        download_data = download_item.prunerr_data
         if is_realtime:
             logger.info(
                 "Letting running import complete before moving: %r",
@@ -1724,7 +1749,7 @@ class Prunerr(object):
             download_id = download_id.lower()
         try:
             torrent = self.client.get_torrent(download_id)
-            return DownloadItem(torrent._client, torrent)
+            return DownloadItem(self, torrent._client, torrent)
         except KeyError:
             # Can happen if the download client item has been manually deleted
             logger.error(
@@ -1841,6 +1866,8 @@ class Prunerr(object):
             download_data["latestImportedDate"] = download_data[
                 "latestImportedDate"
             ].strftime(self.SERVARR_DATETIME_FORMAT)
+        if "path" in download_data:
+            download_data["path"] = str(download_data["path"])
         with data_path.open("w") as data_opened:
             logger.debug("Writing Prunerr download item data: %s", data_path)
             try:

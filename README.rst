@@ -168,16 +168,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   successfully *copied* items as candidates for deletions, not just items whose imported
   files have been deleted by Servarr, such as when upgrading.
 
-- Support other download client software, not just `Transmission`_:
-
-  This would almost certainly require discussion before implementing, because how this
-  is down will be important for maintainability.  So open an issue and start the
-  discussion before you start implementing lest your work go to waste.  Currently,
-  Prunerr is way to tightly coupled with Transmission and the `Python RPC client
-  library`_ used to interface with it.  I suspect the best way to abstract it will be to
-  use that client library as a de facto abstract interface and then wrap other client
-  libraries to fulfill that interface, but that's one of the things to discuss.
-
 - Convert from a Servarr Custom Script to a WebHook:
 
   This is definitely the better way to do this and addresses a number of issues.
@@ -200,6 +190,22 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   software best practices.  Testing would the best start and would point the direction
   to the best places to start refactoring and cleaning up.
 
+- Support other download client software, not just `Transmission`_:
+
+  This would almost certainly require discussion before implementing, because how this
+  is down will be important for maintainability.  So open an issue and start the
+  discussion before you start implementing lest your work go to waste.  Currently,
+  Prunerr is way to tightly coupled with Transmission and the `Python RPC client
+  library`_ used to interface with it.  I suspect the best way to abstract it will be to
+  use that client library as a de facto abstract interface and then wrap other client
+  libraries to fulfill that interface, but that's one of the things to discuss.
+
+  It's also worth noting that the reason Transmission is the first supported download
+  client is because `it seems to be the best`_ at `managing large numbers of torrents
+  efficiently`_.  This is the most important download client quality given that the
+  primary purpose of Prunerr is to perma-seed whole media libraries and the number of
+  managed torrents will grow over time.
+
 - ``$ git grep -i -e todo``:
 
   The above are the most important improvements that Prunerr definitely needs.  See ``#
@@ -212,6 +218,8 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 .. _`BitTorrent`: https://en.wikipedia.org/wiki/BitTorrent
 .. _`Transmission`: https://transmissionbt.com/
 .. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/
+.. _`it seems to be the best`: https://www.reddit.com/r/DataHoarder/comments/3ve1oz/torrent_client_that_can_handle_lots_of_torrents/
+.. _`managing large numbers of torrents efficiently`: https://www.reddit.com/r/trackers/comments/3hiey5/does_anyone_here_seed_large_amounts_10000_of/
 
 .. _`Servarr`: https://wiki.servarr.com
 .. _`Radarr`: https://wiki.servarr.com/en/radarr

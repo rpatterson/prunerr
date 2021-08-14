@@ -210,10 +210,13 @@ class Prunerr(object):
         )
 
         # Indexers config processing
-        self.indexer_configs = {
-            indexer_config["name"]: indexer_config
-            for indexer_config in
-            config.get("indexers", {}).get("priorities", [])
+        self.indexer_operations = {
+            operations_type: {
+                indexer_config["name"]: indexer_config
+                for indexer_config in indexer_configs
+            }
+            for operations_type, indexer_configs in config.get("indexers", {}).items()
+            if operations_type != "urls"
         }
 
         # Servarr API client and download client settings
@@ -512,7 +515,7 @@ class Prunerr(object):
         return sorted(
             ((index, torrent) for index, torrent in enumerate(torrents)),
             # remove lowest priority and highest ratio first
-            key=lambda item: self.exec_indexer_priorities(item[1])[1],
+            key=lambda item: self.exec_indexer_operations(item[1])[1],
             reverse=True,
         )
 
@@ -646,7 +649,7 @@ class Prunerr(object):
 
             # Handle actual torrents recognized by the download client
             if isinstance(candidate, transmission_rpc.Torrent):
-                self.exec_indexer_priorities(candidate)
+                self.exec_indexer_operations(candidate)
                 logger.info(
                     "Deleting seeding %s to free space, "
                     "%0.2f %s + %0.2f %s: indexer=%s, priority=%s, ratio=%0.2f",
@@ -862,7 +865,7 @@ class Prunerr(object):
             # TODO: Optionally include imported items for Servarr configurations that
             # copy items instead of making hard-links, such as when the download client
             # isn't on the same host as the Servarr instance
-            and self.exec_indexer_priorities(torrent)[0]
+            and self.exec_indexer_operations(torrent)[0]
         )
 
     def lookup_item_indexer(self, torrent):
@@ -916,23 +919,24 @@ class Prunerr(object):
         torrent.prunerr_indexer_name = indexer_name
         return indexer_name
 
-    def exec_indexer_priorities(self, torrent, operations_type="priorities"):
+    def exec_indexer_operations(self, torrent, operations_type="priorities"):
         """
         Run indexer operations for the download item and return results.
         """
-        if hasattr(torrent, "prunerr_indexer_sort_key"):
-            return torrent.prunerr_indexer_include, torrent.prunerr_indexer_sort_key
+        cached_results = vars(torrent).setdefault("prunerr_operations_results", {})
+        if operations_type in cached_results:
+            return cached_results[operations_type]
 
+        indexer_configs = self.indexer_operations.get(operations_type, {})
         indexer_name = self.lookup_item_indexer(torrent)
-        if indexer_name not in self.indexer_configs:
+        if indexer_name not in indexer_configs:
             indexer_name = None
-        indexer_idx = list(self.indexer_configs.keys()).index(indexer_name)
-        indexer_config = self.indexer_configs[indexer_name]
+        indexer_idx = list(indexer_configs.keys()).index(indexer_name)
+        indexer_config = indexer_configs[indexer_name]
 
         include, sort_key = self.exec_operations(indexer_config["operations"], torrent)
-        torrent.prunerr_indexer_include = include
-        torrent.prunerr_indexer_sort_key = (indexer_idx, ) + sort_key
-        return torrent.prunerr_indexer_include, torrent.prunerr_indexer_sort_key
+        cached_results[operations_type] = (include, (indexer_idx, ) + sort_key)
+        return cached_results[operations_type]
 
     def exec_operations(self, operation_configs, torrent):
         """

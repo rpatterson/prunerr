@@ -1151,9 +1151,14 @@ class Prunerr(object):
         aggregation = operation_config.get("aggregation", "portion")
 
         item_files = download_item.files()
+        self.seen_empty_files = getattr(self, "seen_empty_files", set())
         if not item_files:
-            # Can't do calculations until the actual `*.torrent` file is fully
-            # downloaded.  IOW, skip items that are still magnetized.
+            if download_item.hashString.upper() not in self.seen_empty_files:
+                logger.debug(
+                    "Download item contains no files: %r",
+                    download_item,
+                )
+                self.seen_empty_files.add(download_item.hashString.upper())
             return False
 
         suffixes = operation_config.get("suffixes", [])
@@ -1430,11 +1435,6 @@ class Prunerr(object):
                 servarr_history, custom_script_kwargs["file_path"],
             )
         if not download_id:
-            logger.warning(
-                "Could not match %r Servarr %r event to a download client item",
-                servarr_config["name"],
-                custom_script_kwargs["eventtype"],
-            )
             return
         download_item = self.get_download_item(download_id)
         return self.sync_item(
@@ -1498,6 +1498,8 @@ class Prunerr(object):
                 dir_id_key,
                 download_item,
             )
+            # Continue to below to write item Prunerr data
+        seen_event_types = set()
         for history_record in reversed(
                 servarr_history["records"]["download_ids"].get(download_id, []),
         ):
@@ -1516,11 +1518,13 @@ class Prunerr(object):
 
             # Synchronize the item's state with this history event/record
             if not self.replay and history_record["prunerr"].get("syncedDate"):
-                logger.debug(
-                    "Previously synced %r event: %r",
-                    history_record["eventType"],
-                    download_item,
-                )
+                if history_record["eventType"] not in seen_event_types:
+                    seen_event_types.add(history_record["eventType"])
+                    logger.debug(
+                        "Previously synced %r event: %r",
+                        history_record["eventType"],
+                        download_item,
+                    )
                 continue
             # Run any handler for this specific event type, if defined
             handler_suffix = self.SERVARR_HISTORY_EVENT_TYPES.get(
@@ -1530,7 +1534,7 @@ class Prunerr(object):
             handler_name = f"handle_{handler_suffix}"
             if hasattr(self, handler_name):
                 handler = getattr(self, handler_name)
-                logger.info(
+                logger.debug(
                     "Handling %r Servarr %r event: %r",
                     servarr_config["name"],
                     history_record["eventType"],
@@ -2143,7 +2147,7 @@ def handle(prunerr):
             )
             # Don't know which download client item the deleted path is for.
             delete_event_kwargs.pop("download_id", None)
-            logger.info("Dispatching nested Sonarr deleted event: %s", deleted_path)
+            logger.debug("Dispatching nested Sonarr deleted event: %s", deleted_path)
             try:
                 prunerr.dispatch_event(prunerr.servarr_config, **delete_event_kwargs)
             except ServarrEventError:

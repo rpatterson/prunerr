@@ -586,6 +586,11 @@ class Prunerr(object):
                 queue_page is None
                 or (page_num * 250) <= queue_page["totalRecords"]
             ):
+                logger.debug(
+                    "Requesting %r Servarr queue page: %s",
+                    servarr_config["name"],
+                    page_num,
+                )
                 queue_page = servarr_config["client"]._get(
                     "queue",
                     # Maximum Servarr page size
@@ -1344,6 +1349,11 @@ class Prunerr(object):
 
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
         params = {f"{servarr_type_map['dir_type']}id": dir_id}
+        logger.debug(
+            "Requesting %r Servarr media directory history: %s",
+            servarr_config["name"],
+            json.dumps(params),
+        )
         history_response = servarr_config["client"]._get(
             f"history/{servarr_type_map['dir_type']}",
             **params,
@@ -1796,6 +1806,11 @@ class Prunerr(object):
             history_page is None
             or (servarr_history["page"] * 250) <= history_page["totalRecords"]
         ) and indexer_record is None:
+            logger.debug(
+                "Requesting %r Servarr history page: %s",
+                servarr_config["name"],
+                servarr_history["page"],
+            )
             history_page = servarr_config["client"]._get(
                 "history",
                 # Maximum Servarr page size
@@ -2046,6 +2061,10 @@ def collect_downloaders(config):
             servarr_config["type"]
         ]["client"](servarr_config["url"], servarr_config["api-key"],)
 
+        logger.debug(
+            "Requesting %r Servarr download clients settings",
+            servarr_config["name"],
+        )
         for downloader_config in servarr_client._get("downloadclient"):
             if not downloader_config["enable"]:
                 continue

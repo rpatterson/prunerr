@@ -57,6 +57,7 @@ reliably determines disk space margin *as* the download clients are downloading.
    Apply per-indexer operations to all download items.  Useful, for example, to:
    - adjust priorities
    - remove torrents containing archives (`*.rar`, `*.zip`, `*.tar.gz`, etc.)
+   - remove stalled torrents and trigger a search
    - etc.
 
 #. Identify and report orphan files and directories:
@@ -175,11 +176,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 - Send a notification when no download item can be deleted and downloading is paused:
 
   Perhaps we can use the Servarr "Connect" API?
-
-- Mark stalled torrents as failed in Servarr:
-
-  Identify which torrents are taking too long to download and should be considered
-  stalled.  Mark them as failed in Servarr and optionally trigger a search.
 
 - **TESTING**!!!!!
 

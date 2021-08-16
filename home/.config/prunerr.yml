@@ -74,6 +74,29 @@ indexers:
   reviews:
     - name: "ExamplePrivateTracker"
       operations:
+        ## Reject stalled download items whose progress is too slow.
+        ## Strike a balance between giving difficult to find items time to download
+        ## while also pruning items that will never be completed.
+        - type: "or"
+          operations:
+            - type: "value"
+              ## Don't consider completed torrents to be stalled.
+              ## If an item seems to be completely downloaded to the client but then
+              ## later it's verified and some last corrupted bits are re-downloaded,
+              ## it's `doneDate` will be updated.  This can really throw off the total
+              ## download rate, especially for small torrents.
+              name: "status"
+              equals: "seeding"
+            - type: "value"
+              name: "age"
+              # 1 week * 7 days * 24 hours * 60 minutes * 60 seconds
+              maximum: 604800
+            - type: "value"
+              name: "rate_total"
+              # Minimum Bps of total throughput before an item is considered stalled
+              minimum: 50
+          remove: true
+          blacklist: true
         ## Reject download items containing archives to optimize seeding per disk space.
         - type: "files"
           suffixes:

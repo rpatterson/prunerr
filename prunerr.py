@@ -151,6 +151,13 @@ class DownloadItem(transmission_rpc.Torrent):
         return download_data
 
     @property
+    def age(self):
+        """
+        The total time since the item was added.
+        """
+        return time.time() - self._fields["addedDate"].value
+
+    @property
     def seconds_since_done(self):
         """
         Number of seconds elapsed since the torrent was completely downloaded.
@@ -160,6 +167,20 @@ class DownloadItem(transmission_rpc.Torrent):
         done_date = self._fields["doneDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date
+
+    @property
+    def rate_total(self):
+        """
+        The total download rate across the whole download time.
+        """
+        done_date = self._fields["doneDate"].value
+        if not done_date:
+            done_date = time.time()
+        return (
+            self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
+        ) / (
+            done_date - self._fields["addedDate"].value
+        )
 
 
 class Prunerr(object):

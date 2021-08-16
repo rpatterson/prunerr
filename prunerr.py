@@ -598,7 +598,10 @@ class Prunerr(object):
                     page=page_num,
                 )
                 for record in queue_page["records"]:
-                    if record["downloadId"] in queue_records:
+                    if "downloadId" not in record:
+                        # Pending downloads
+                        continue
+                    elif record["downloadId"] in queue_records:
                         # Let config order dictate which queue record should win
                         continue
                     record["servarr_config"] = servarr_config

@@ -1162,6 +1162,7 @@ class Prunerr(object):
         for sort_value in sort_key:
             if sort_value:
                 return sort_value
+        return sort_key[-1]
 
     def exec_operation_files(self, operation_config, download_item):
         """

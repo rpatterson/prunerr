@@ -114,11 +114,11 @@ class DownloadItem(transmission_rpc.Torrent):
 
         # Load the Prunerr data file
         download_path = self.prunerr.get_item_path(self)
-        download_data = dict(history={})
         if download_path.is_file():
             data_path = download_path.with_suffix(".prunerr.json")
         else:
             data_path = download_path.with_name(f"{download_path.name}.prunerr.json")
+        download_data = dict(path=data_path, history={})
         if not self.prunerr.replay and data_path.exists() and data_path.stat().st_size:
             with data_path.open() as data_opened:
                 try:
@@ -132,7 +132,8 @@ class DownloadItem(transmission_rpc.Torrent):
                     "skipping: %r",
                     self,
                 )
-                return
+                vars(self)["prunerr_data"] = download_data
+                return download_data
             # Convert loaded JSON to native types where possible
             download_data["history"] = {
                 ciso8601.parse_datetime(history_date):
@@ -1466,7 +1467,7 @@ class Prunerr(object):
 
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_config["type"]]
         dir_id_key = f"{servarr_type_map['dir_type']}Id"
-        if not self.replay and dir_id is None:
+        if not self.replay and dir_id is None and download_data.get("history"):
             # Try to correlate to the Servarr movie/series/etc. using existing Prunerr
             # data
             for history_record in download_data["history"].values():

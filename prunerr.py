@@ -1028,28 +1028,38 @@ class Prunerr(object):
         download_data = torrent.prunerr_data
         if "indexer" in download_data:
             return download_data["indexer"]
+        download_path = self.get_item_path(torrent)
 
         indexer_name = None
         # Try to find an indexer name from the items Servarr history
         for servarr_config in self.servarrs.values():
+            for servarr_dir in (
+                    servarr_config["downloadDir"],
+                    servarr_config["importedDir"],
+                    servarr_config["deletedDir"],
+            ):
+                if servarr_dir in download_path.parents:
+                    break
+            else:
+                # Not managed by this servarr instance
+                continue
             download_record = self.find_latest_item_history(
                 servarr_config, torrent=torrent,
             )
             if download_record:
                 if "indexer" in download_record["data"]:
                     indexer_name = download_record["data"]["indexer"]
+                    break
                 else:
                     logger.warning(
                         "No indexer found in Servarr history for download item: %r",
                         torrent,
                     )
-            else:
-                logger.debug(
-                    "No Servarr history found for download item: %r",
-                    torrent,
-                )
-            if indexer_name is not None:
-                break
+        else:
+            logger.debug(
+                "No Servarr history found for download item: %r",
+                torrent,
+            )
 
         # Match by indexer URLs when no indexer name is available
         if not indexer_name:

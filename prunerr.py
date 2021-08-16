@@ -1117,6 +1117,11 @@ class Prunerr(object):
                 )
             # Delegate to the executor to get the operation value for this download item
             sort_value = executor(operation_config, torrent)
+            if sort_value is None:
+                # If an executor returns None, all other handling should be skipped
+                sort_key.append(None)
+                continue
+
             # Apply any restrictions that can apply across different operation types
             sort_bool = None
             if "equals" in operation_config:

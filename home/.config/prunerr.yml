@@ -198,7 +198,7 @@ indexers:
           name: "size_when_done"
     ## Fallback for any download items whose indexer or tracker URLs don't match any
     ## other priorities above.  For example, public torrents.
-    - name: null
+    - name: null  # `null` matches all other indexers not specified in `operations`
       operations:
         ## Delete popular download items with a healthy number of seeders before
         ## obscure, less popular items to support the health and breadth of items

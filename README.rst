@@ -159,6 +159,12 @@ TODO
 The following are known issues with Prunerr or features that are particularly desirable
 to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
 
+- Convert from a Servarr Custom Script to a WebHook:
+
+  This is definitely the better way to do this and addresses a number of issues,
+  particularly the issue of having to install Prunerr into the Servarr containers at
+  container startup.
+
 - Support download clients on different file-systems, copy completed items:
 
   There is existing support for copying finished torrents via an arbitrary command, but
@@ -168,10 +174,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   This also involves changing ``$ prunerr daemon`` behavior such that it also considers
   successfully *copied* items as candidates for deletions, not just items whose imported
   files have been deleted by Servarr, such as when upgrading.
-
-- Convert from a Servarr Custom Script to a WebHook:
-
-  This is definitely the better way to do this and addresses a number of issues.
 
 - Send a notification when no download item can be deleted and downloading is paused:
 

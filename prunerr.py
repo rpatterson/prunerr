@@ -307,6 +307,7 @@ class Prunerr(object):
         # Initial state
         self.popen = self.copying = None
         self.corrupt = {}
+        self.quiet = False
 
     def strip_type_prefix(
             self,
@@ -331,7 +332,7 @@ class Prunerr(object):
 
         return prefixed
 
-    def exec_(self, quiet=False):
+    def exec_(self):
         """
         Prune download client items once.
         """
@@ -374,11 +375,11 @@ class Prunerr(object):
             self._exec_copy(session)
 
         # Ensure that download client state matches Servarr state
-        self.sync(quiet=quiet)
+        self.sync()
 
         if "reviews" in self.indexer_operations:
             # Perform any review operations
-            self.review_items(quiet=quiet)
+            self.review_items()
 
         # Free disk space if needed
         # TODO: Unify with `self.review_items()`?
@@ -506,7 +507,7 @@ class Prunerr(object):
         """
         # Log only once at the start messages that would be noisy if repeated for every
         # daemon poll loop.
-        quiet = False
+        self.quiet = False
         while True:
             while True:
                 try:
@@ -527,12 +528,12 @@ class Prunerr(object):
 
             start = time.time()
             try:
-                self.exec_(quiet=quiet)
+                self.exec_()
             except socket.error:
                 logger.exception("Connection error while running daemon")
                 pass
             # Don't repeat noisy messages from now on.
-            quiet = True
+            self.quiet = True
 
             # Wait for the next interval
             poll = (
@@ -572,7 +573,7 @@ class Prunerr(object):
             reverse=True,
         )
 
-    def review_items(self, quiet=False):
+    def review_items(self):
         """
         Apply review operations to all download items.
         """
@@ -600,9 +601,9 @@ class Prunerr(object):
                 page_num += 1
 
         for download_item in self.torrents:
-            self.review_item(queue_records, download_item, quiet=quiet)
+            self.review_item(queue_records, download_item)
 
-    def review_item(self, queue_records, download_item, quiet=False):
+    def review_item(self, queue_records, download_item):
         """
         Apply review operations to this download item.
         """
@@ -631,7 +632,7 @@ class Prunerr(object):
                     download_item,
                 )
                 if queue_id is None:
-                    if self.servarrs and not quiet:
+                    if self.servarrs and not self.quiet:
                         logger.warning(
                             "Download item not in any Servarr queue: %r",
                             download_item,
@@ -1366,7 +1367,7 @@ class Prunerr(object):
             item_root_name = download_item.name
         return (pathlib.Path(download_item.download_dir) / item_root_name).resolve()
 
-    def sync(self, quiet=False):
+    def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.
 
@@ -1404,7 +1405,7 @@ class Prunerr(object):
                 break
 
             else:
-                if self.servarrs and not quiet:
+                if self.servarrs and not self.quiet:
                     logger.warning(
                         "Download item not managed by Servarr: %r",
                         torrent,

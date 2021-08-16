@@ -1063,25 +1063,25 @@ class Prunerr(object):
 
         # Match by indexer URLs when no indexer name is available
         if not indexer_name:
-            for possible_name, possible_urls in config.get(
-                    "indexers", {},
-            ).get("urls", {}).items():
-                for tracker in torrent.trackers:
-                    for action in ("announce", "scrape"):
-                        tracker_url = tracker[action]
-                        for indexer_url in possible_urls:
-                            if tracker_url.startswith(indexer_url):
-                                indexer_name = possible_name
-                                break
-                        if indexer_name:
-                            break
-                    if indexer_name:
-                        break
-                if indexer_name:
-                    break
+            indexer_name = self.match_item_indexer_urls(torrent)
 
         download_data["indexer"] = indexer_name
         return indexer_name
+
+    def match_item_indexer_urls(self, torrent):
+        """
+        Return the indexer name if the download item matches a configured tracker URL.
+        """
+        for possible_name, possible_urls in self.config.get(
+                "indexers", {},
+        ).get("urls", {}).items():
+            for tracker in torrent.trackers:
+                for action in ("announce", "scrape"):
+                    tracker_url = tracker[action]
+                    for indexer_url in possible_urls:
+                        if tracker_url.startswith(indexer_url):
+                            return possible_name
+                            break
 
     def exec_indexer_operations(self, torrent, operations_type="priorities"):
         """
@@ -1537,9 +1537,9 @@ class Prunerr(object):
             history_record["prunerr"] = existing_record.get("prunerr", {})
             # Insert into the new history keyed by time stamp
             download_history[history_record["date"]] = history_record
-            if "indexer" not in download_data and "indexer" in history_record["data"]:
+            if "indexer" in history_record["data"]:
                 # Cache indexer name for faster lookup
-                download_data["indexer"] = history_record["data"]["indexer"]
+                download_data.setdefault("indexer", history_record["data"]["indexer"])
 
             # Synchronize the item's state with this history event/record
             if not self.replay and history_record["prunerr"].get("syncedDate"):
@@ -1587,6 +1587,11 @@ class Prunerr(object):
             if handler_result is not None:
                 history_record["prunerr"]["handlerResult"] = str(handler_result)
                 history_record["prunerr"]["syncedDate"] = datetime.datetime.now()
+
+        # If no indexer was found in the Servarr history,
+        # try to match by the tracker URLs
+        if "indexer" not in download_data:
+            download_data["indexer"] = self.match_item_indexer_urls(download_item)
 
         # Update Prunerr JSON data file, after the handler has run to allow it to update
         # history record prunerr data.

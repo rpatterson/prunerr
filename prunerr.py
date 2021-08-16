@@ -1164,6 +1164,19 @@ class Prunerr(object):
                 return sort_value
         return sort_key[-1]
 
+    def exec_operation_and(self, operation_config, download_item):
+        """
+        Return `False` if any of the nested operations return `False`.
+        """
+        include, sort_key = self.exec_operations(
+            operation_config["operations"],
+            download_item,
+        )
+        for sort_value in sort_key:
+            if not sort_value:
+                return sort_value
+        return sort_key[-1]
+
     def exec_operation_files(self, operation_config, download_item):
         """
         Return aggregated values from item files.

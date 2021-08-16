@@ -95,8 +95,7 @@ indexers:
         ## Set download items from private indexers/trackers to high priority.
         - type: "value"
           name: "bandwidthPriority"
-          minimum: 1
-          maximum: 1
+          equals: 1
           change:
             bandwidthPriority: 1
     - name: null  # `null` matches all other indexers not specified in `operations`
@@ -114,8 +113,7 @@ indexers:
         ## Set download items from public indexers/trackers to low priority.
         - type: "value"
           name: "bandwidthPriority"
-          minimum: -1
-          maximum: -1
+          equals: -1
           change:
             bandwidthPriority: -1
   priorities:

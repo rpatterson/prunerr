@@ -1119,10 +1119,18 @@ class Prunerr(object):
             sort_value = executor(operation_config, torrent)
             # Apply any restrictions that can apply across different operation types
             sort_bool = None
-            if "minimum" in operation_config:
-                sort_bool = sort_value >= operation_config["minimum"]
-            if "maximum" in operation_config and (sort_bool is None or sort_bool):
-                sort_bool = sort_value <= operation_config["maximum"]
+            if "equals" in operation_config:
+                sort_bool = sort_value == operation_config["equals"]
+                if "minimum" in operation_config or "maximum" in operation_config:
+                    raise ValueError(
+                        f"Operation {operation_config['type']!r} "
+                        f"includes both `equals` and `minimum` or `maximum`"
+                    )
+            else:
+                if "minimum" in operation_config:
+                    sort_bool = sort_value >= operation_config["minimum"]
+                if "maximum" in operation_config and (sort_bool is None or sort_bool):
+                    sort_bool = sort_value <= operation_config["maximum"]
             if sort_bool is not None:
                 sort_value = sort_bool
             # Should the operation value be used to filter this download item?

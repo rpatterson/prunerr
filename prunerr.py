@@ -629,7 +629,17 @@ class Prunerr(object):
                     queue_records[record["downloadId"]] = record
                 page_num += 1
 
+        session = self.client.get_session()
         for download_item in self.torrents:
+            item_path = self.get_item_path(download_item)
+            if pathlib.Path(session.download_dir) not in item_path.parents:
+                # Support exempting items from review, put them in a different location.
+                # Only review items in the client's default download directory.
+                logger.debug(
+                    "Ignoring item not in default download dir: %r",
+                    download_item,
+                )
+                continue
             self.review_item(queue_records, download_item)
 
     def review_item(self, queue_records, download_item):

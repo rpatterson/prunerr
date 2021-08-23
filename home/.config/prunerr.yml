@@ -167,7 +167,10 @@ indexers:
               ## 2. you go on vacation and your client crashes on day 2
               ## 3. you return from vacation and restart your client on day 10
               ## Then `seconds_since_done` is 10 days while the private
-              ## tracker only sees you as seeding for 1 day.
+              ## tracker only sees you as seeding for 1 day.  As such, be sure
+              ## to add a healthy margin for downtime lest Prunerr delete
+              ## torrents that haven't actually met the private trackers
+              ## seeding requirements.
               name: "seconds_since_done"
               ## 10 days * 24 hours * 60 minutes * 60 seconds
               minimum: 864000

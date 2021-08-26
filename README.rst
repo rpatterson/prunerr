@@ -122,8 +122,12 @@ broken symlinks are an indicator of upgraded files.
 Prunerr also provides a ``$ ./bin/prunerr sync`` sub-command to introspect the item
 history from Servarr instances and apply any appropriate state that can be determined
 from the Servarr history to the download client items.  This sub-command can be used to
-get any existing download client items in sync as if they had been processed by the
-``$ prunerr handle ...`` and ``$ prunerr exec`` subcommands.
+get any existing download client items in sync as if they had been processed by the ``$
+prunerr daemon ...`` or ``$ prunerr exec`` subcommands.  The ``sync`` sub-command also
+accepts a ``--replay`` option to ignore state already reflected in the download client
+and re-apply the changes that would have been applied from the beginning of the download
+item's Servarr history if any.  This option is useful to re-synchronize downlaod client
+state with Servarr state when the way Prunerr handles Servarr events changes.
 
 
 ****************

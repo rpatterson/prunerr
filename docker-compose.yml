@@ -31,20 +31,14 @@ services:
         grep '"appData": *"/config"'
 
   prunerr-daemon:
-    image: "ghcr.io/hotio/sonarr"
+    image: "prunerr"
+    build: "./prunerr/"
     depends_on:
       - sonarr
       - radarr
     volumes:
-      # Prunerr checkout installed as a Python pip editable source installation
-      # on start-up
-      - "./prunerr/:/usr/local/src/prunerr/"
-      - "./prunerr/etc/cont-init.d/50-prunerr-install:/etc/cont-init.d/50-prunerr-install"
       # Grant access to the download clients torrent files for `readd_missing_data()`
       - "./transmission/config/:/config/"
       # Use the Prunerr config from the Prunerr checkout
-      # - "./prunerr/home/.config/:/config/.config/"
-      # Disable the Servarr instance S6 service
-      - "./prunerr/etc/services.d/servarr/down:/etc/services.d/sonarr/down"
-      # Run `$ prunerr daemon` as an S6 service
-      - "./prunerr/etc/services.d/prunerr/:/etc/services.d/prunerr/"
+      - "./prunerr/home/.config/:/home/prunerr/.config/"
+    restart: "unless-stopped"

@@ -226,16 +226,6 @@ class Prunerr(object):
         "fileDeleted": "deleted",
         "downloadIgnored": "deleted",
     }
-    # Map Servarr event types from Custom Script environment variables to the Prunerr
-    # suffixes
-    SERVARR_CUSTOM_SCRIPT_EVENT_TYPES = {
-        "Grab": "grabbed",
-        "Download": "imported",
-        "Download": "imported",
-        "Rename": "renamed",
-        "Deleted": "deleted",
-        "FileDelete": "deleted",
-    }
 
     # Prunerr constants
     PRUNERR_FILE_SUFFIXES = {".prunerr.json", "-servarr-imported.ln"}
@@ -345,10 +335,9 @@ class Prunerr(object):
         if prefixed.startswith(prefix):
             stripped = prefixed[len(prefix):]
             stripped = f"{stripped[0].lower()}{stripped[1:]}"
-            # Don't strip the names of custom script environment variables that are
-            # actually type-specific, e.g.: `sonarr_series_tvdbid`.  Neither strip the
-            # prefix for DB IDs in the Servarr API JSON, e.g.: `movieId`.
-            if not stripped.startswith("_") and stripped != "id":
+            # Don't strip the prefix for DB IDs in the Servarr API JSON, e.g.:
+            # `movieId`.
+            if stripped != "id":
                 return stripped
 
         return prefixed
@@ -1451,9 +1440,6 @@ class Prunerr(object):
     def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.
-
-        Match the state of each current download client item as if they had been
-        processed through the `handle` sub-command as a Servarr `Custom Script`.
         """
         # Ensure we have current history between subsequent `$ prunerr daemon` runs
         for servarr_config in self.servarrs.values():
@@ -1480,7 +1466,7 @@ class Prunerr(object):
 
                 # This download client item is in the download directory of a Servarr
                 # instance.  Sync the individual item.
-                item_result = self.sync_item(servarr_config, torrent, is_realtime=False)
+                item_result = self.sync_item(servarr_config, torrent)
                 if item_result is not None:
                     sync_results.append(item_result)
                 break
@@ -1494,46 +1480,12 @@ class Prunerr(object):
 
         return sync_results
 
-    def dispatch_event(self, servarr_config, **custom_script_kwargs):
-        """
-        Handle a Servarr event after custom script env vars transformed to kwargs.
-        """
-        servarr_type_map = self.SERVARR_TYPE_MAPS[self.servarr_config["type"]]
-        if custom_script_kwargs["eventtype"].lower() == "test":
-            return self.handle_test(servarr_config, **custom_script_kwargs)
-        elif custom_script_kwargs["eventtype"].lower() == "HealthIssue":
-            return
-        dir_id_key = f"{servarr_type_map['dir_type']}_id"
-        if dir_id_key not in custom_script_kwargs:
-            raise ServarrEventError(
-                f"No {servarr_config['name']!r} Sonarr {dir_id_key!r} DB id "
-                f"passed to {custom_script_kwargs['eventtype']!r} event handler",
-            )
-        dir_id = custom_script_kwargs[dir_id_key]
-        download_id = custom_script_kwargs.get("download_id")
-        servarr_history = None
-        if not download_id:
-            servarr_history = self.get_dir_history(self.servarr_config, dir_id)
-            download_id = self.select_imported_download_id(
-                servarr_history, custom_script_kwargs["file_path"],
-            )
-        if not download_id:
-            return
-        download_item = self.get_download_item(download_id)
-        return self.sync_item(
-                self.servarr_config,
-                download_item,
-                dir_id=dir_id,
-                servarr_history=servarr_history,
-            )
-
     def sync_item(
             self,
             servarr_config,
             download_item,
             dir_id=None,
             servarr_history=None,
-            is_realtime=True,
     ):
         """
         Ensure the download client state is in sync with Servarr state.
@@ -1627,7 +1579,6 @@ class Prunerr(object):
                     servarr_config,
                     download_item,
                     history_record,
-                    is_realtime=is_realtime,
                 )
             else:
                 logger.debug(
@@ -1705,20 +1656,11 @@ class Prunerr(object):
             servarr_config,
             download_item,
             history_record,
-            is_realtime=True,
     ):
         """
         Handle Servarr imported event, wait for import to complete, then move.
         """
         download_data = download_item.prunerr_data
-        if is_realtime:
-            logger.info(
-                "Letting running import complete before moving: %r",
-                download_item,
-            )
-            download_data["latestImportedDate"] = history_record["date"]
-            return
-
         if "latestImportedDate" not in download_data:
             download_data["latestImportedDate"] = history_record["date"]
         wait_duration = datetime.datetime.now(
@@ -1849,19 +1791,6 @@ class Prunerr(object):
                 "for Servarr imported event: %s",
                 download_id,
             )
-
-    def handle_test(self, servarr_config, **custom_script_kwargs):
-        """
-        Handle a Servarr `Test` event, exercise as much as possible w/o making changes.
-        """
-        logger.info(
-            "Download client session statistics:\n%s",
-            pprint.pformat(self.client.session_stats()._fields),
-        )
-        logger.info(
-            "Servarr instance system status:\n%s",
-            pprint.pformat(servarr_config["client"].system_status()._data),
-        )
 
     def find_latest_item_history(self, servarr_config, torrent):
         """
@@ -2193,78 +2122,6 @@ def collect_downloaders(config):
             downloaders[downloader_url.geturl()] = downloader_config
 
     return downloaders
-
-
-def handle(prunerr):
-    """
-    Change download item state per a Servarr instance event as a `Custom Script`.
-
-    For example, depending on config, imported items are moved to `./imported/`, the
-    import symbolic links are added, and deleted items are moved to `./deleted`.
-    """
-    # Collect all environment variables with the prefix used for Servarr custom scripts
-    env_var_prefix = f"{prunerr.servarr_config['type']}_"
-    custom_script_kwargs = {
-        prunerr.strip_type_prefix(
-            prunerr.servarr_config["type"],
-            env_var[len(env_var_prefix):],
-        ).lower(): env_value
-        for env_var, env_value in os.environ.items()
-        if env_var.startswith(env_var_prefix)
-    }
-    logger.debug(
-        "Custom script kwargs:\n%s",
-        pprint.pformat(custom_script_kwargs),
-    )
-
-    try:
-        result = prunerr.dispatch_event(prunerr.servarr_config, **custom_script_kwargs)
-    except ServarrEventError as exc:
-        result = exc
-
-    # The Servarr Custom Script events seem to combine file deletion events on upgrade
-    # which is different from the history records from the Servarr API where the import
-    # and subsequent deletion are 2 distinct events.  Workaround this difference by
-    # dispatching the deletion events after handling this Custom Script event.
-    eventtype = custom_script_kwargs["eventtype"]
-    eventtype_stripped = prunerr.strip_type_prefix(
-        prunerr.servarr_config["type"],
-        eventtype,
-    )
-    handler_suffix = prunerr.SERVARR_CUSTOM_SCRIPT_EVENT_TYPES.get(
-        eventtype_stripped,
-        eventtype_stripped,
-    )
-    if handler_suffix != "deleted" and "deletedpaths" in custom_script_kwargs:
-        for deleted_path in custom_script_kwargs["deletedpaths"].split("|"):
-            delete_event_kwargs = dict(
-                custom_script_kwargs,
-                eventtype="deleted",
-                file_path=deleted_path,
-            )
-            # Don't know which download client item the deleted path is for.
-            delete_event_kwargs.pop("download_id", None)
-            logger.debug("Dispatching nested Sonarr deleted event: %s", deleted_path)
-            try:
-                prunerr.dispatch_event(prunerr.servarr_config, **delete_event_kwargs)
-            except ServarrEventError:
-                logger.exception("Error handling nested deleted event")
-
-    if isinstance(result, ServarrEventError):
-        raise result
-
-    return result
-
-
-parser_handle = subparsers.add_parser("handle", help=handle.__doc__.strip())
-parser_handle.add_argument(
-    "servarr_name",
-    help="""\
-The name of the Servarr instance in the `~/.config/prunerr.yml` configuration from which
-the event to handle has been dispatched.
-""",
-)
-parser_handle.set_defaults(command=handle)
 
 
 def sync(prunerr):

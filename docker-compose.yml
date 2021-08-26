@@ -8,12 +8,6 @@ services:
     image: "ghcr.io/hotio/sonarr"
     volumes:
       - "./sonarr/config/:/config/"
-      # Prunerr checkout installed as a Python pip editable source installation
-      # on start-up
-      - "./prunerr/:/usr/local/src/prunerr/"
-      - "./prunerr/etc/cont-init.d/50-prunerr-install:/etc/cont-init.d/50-prunerr-install"
-      # Use the Prunerr config from the Prunerr checkout
-      # - "./prunerr/home/.config/:/config/.config/"
     ports:
       - "8989:8989"
     restart: "unless-stopped"
@@ -27,12 +21,6 @@ services:
     image: "ghcr.io/hotio/radarr"
     volumes:
       - "./radarr/config/:/config/"
-      # Prunerr checkout installed as a Python pip editable source installation
-      # on start-up
-      - "./prunerr/:/usr/local/src/prunerr/"
-      - "./prunerr/etc/cont-init.d/50-prunerr-install:/etc/cont-init.d/50-prunerr-install"
-      # Use the Prunerr config from the Prunerr checkout
-      # - "./prunerr/home/.config/:/config/.config/"
     ports:
       - "7878:7878"
     restart: "unless-stopped"

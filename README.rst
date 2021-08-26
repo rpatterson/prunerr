@@ -158,6 +158,12 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 
   Perhaps we can use the Servarr "Connect" API?
 
+- Improve configur-ability, particularly the various download client paths:
+
+  Currently, Prunerr strongly depends on using the ``.../incomplete/``,
+  ``.../downloads/``, ``.../imported/``,  and ``.../deleted/`` paths.  In theory, these
+  paths are all configurable, but that's untested.
+
 - **TESTING**!!!!!
 
   I am embarrassed by this "software".  It grew from ad-hoc maintenance scripts and I

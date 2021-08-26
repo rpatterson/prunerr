@@ -255,17 +255,19 @@ class Prunerr(object):
             self.config["downloaders"].get("min-download-time-margin", 3600)
         )
         # Set any download client config defaults for Prunerr
-        self.config["downloaders"]["download-dir"] = self.config["downloaders"].get(
-            "download-dir",
-            os.path.join(os.path.dirname(session.download_dir), "downloads"),
+        session_download_path = pathlib.Path(session.download_dir)
+        self.config["downloaders"]["download-dir"] = pathlib.Path(
+            self.config["downloaders"].get("download-dir", session_download_path)
         )
-        self.config["downloaders"]["imported-dir"] = self.config["downloaders"].get(
-            "imported-dir",
-            os.path.join(os.path.dirname(session.download_dir), "imported"),
+        self.config["downloaders"]["imported-dir"] = pathlib.Path(
+            self.config["downloaders"].get(
+                "imported-dir", session_download_path.parent / "imported",
+            )
         )
-        self.config["downloaders"]["deleted-dir"] = self.config["downloaders"].get(
-            "deleted-dir",
-            os.path.join(os.path.dirname(session.download_dir), "deleted"),
+        self.config["downloaders"]["deleted-dir"] = pathlib.Path(
+            self.config["downloaders"].get(
+                "deleted-dir", session_download_path.parent / "deleted",
+            )
         )
 
         # Indexers config processing
@@ -288,21 +290,26 @@ class Prunerr(object):
                     self.SERVARR_TYPE_MAPS[servarr_config["type"]]["download_dir_field"]
                 ]
             ).resolve()
-            servarr_config["importedDir"] = (
-                pathlib.Path(self.config["downloaders"]["imported-dir"])
-                / (
-                    servarr_config["downloadDir"].relative_to(
-                        self.config["downloaders"]["download-dir"]
-                    )
+            if (
+                    self.config["downloaders"]["download-dir"] not in
+                    (servarr_config["downloadDir"] / "child").parents
+            ):
+                # TODO: Should this just be a logged error?
+                raise ValueError(
+                    f"Download client directory in Servarr settings, "
+                    f"{str(servarr_config["downloadDir"])!r}, must be a descendant of "
+                    f"the download client's default download directory, "
+                    f"{str(servarr_config["downloadDir"])!r}"
                 )
+            servarr_config["importedDir"] = self.config["downloaders"][
+                "imported-dir"
+            ] / servarr_config["downloadDir"].relative_to(
+                        self.config["downloaders"]["download-dir"],
             ).resolve()
-            servarr_config["deletedDir"] = (
-                pathlib.Path(self.config["downloaders"]["deleted-dir"])
-                / (
-                    servarr_config["downloadDir"].relative_to(
-                        self.config["downloaders"]["download-dir"]
-                    )
-                )
+            servarr_config["deletedDir"] = self.config["downloaders"][
+                "deleted-dir"
+            ] / servarr_config["downloadDir"].relative_to(
+                        self.config["downloaders"]["download-dir"],
             ).resolve()
         self.servarr_name = servarr_name
         if servarr_name is not None:

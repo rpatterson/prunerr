@@ -410,10 +410,7 @@ class Prunerr(object):
         """
         destination = self.config["downloaders"]["copy"]["destination"]
         command = self.config["downloaders"]["copy"]["command"]
-        imported_dir = self.config["downloaders"].get(
-            "imported-dir",
-            os.path.join(os.path.dirname(session.download_dir), "imported"),
-        )
+        imported_dir = self.config["downloaders"]["imported-dir"]
         retry_codes = self.config["downloaders"]["copy"].get(
             "daemon-retry-codes", [10, 12, 20, 30, 35, 255],
         )
@@ -886,14 +883,9 @@ class Prunerr(object):
             if (
                 (
                     torrent.status == "downloading"
-                    or torrent.downloadDir.startswith(
-                        self.config["downloaders"].get(
-                            "imported-dir",
-                            os.path.join(
-                                os.path.dirname(session.download_dir), "imported"
-                            ),
-                        )
-                    )
+                    or self.config["downloaders"]["imported-dir"] in pathlib.Path(
+                        torrent.downloadDir,
+                    ).parents
                 )
                 and torrent.error == 2
                 and "unregistered torrent" in torrent.errorString.lower()
@@ -919,14 +911,8 @@ class Prunerr(object):
             session.download_dir,
             # The Prunerr directories that reflect the state of download items in
             # Servarr.
-            self.config["downloaders"].get(
-                "imported-dir",
-                os.path.join(os.path.dirname(session.download_dir), "imported"),
-            ),
-            self.config["downloaders"].get(
-                "deleted-dir",
-                os.path.join(os.path.dirname(session.download_dir), "deleted"),
-            ),
+            str(self.config["downloaders"]["imported-dir"]),
+            str(self.config["downloaders"]["deleted-dir"]),
         )
 
         # Assemble all directories whose descendants are torrents
@@ -1038,12 +1024,10 @@ class Prunerr(object):
             torrent for torrent in self.torrents
             # only those previously synced and moved
             if torrent.status == "seeding"
-            and torrent.downloadDir.startswith(
-                self.config["downloaders"].get(
-                    "deleted-dir",
-                    os.path.join(os.path.dirname(session.download_dir), "deleted"),
-                )
-            )
+            and self.config["downloaders"]["deleted-dir"] in pathlib.Path(
+                torrent.downloadDir,
+            ).parents
+
             # TODO: Optionally include imported items for Servarr configurations that
             # copy items instead of making hard-links, such as when the download client
             # isn't on the same host as the Servarr instance

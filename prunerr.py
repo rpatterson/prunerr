@@ -126,6 +126,10 @@ class DownloadItem(transmission_rpc.Torrent):
                 except Exception:
                     logger.exception("Failed to deserialize JSON file: %s", data_path)
             download_data["path"] = data_path
+            if "latestImportedDate" in download_data:
+                download_data["latestImportedDate"] = ciso8601.parse_datetime(
+                    download_data["latestImportedDate"],
+                )
             if download_data["history"] is None:
                 logger.warning(
                     "No history previously found for download item, "
@@ -141,10 +145,6 @@ class DownloadItem(transmission_rpc.Torrent):
                 for history_date, history_record in
                 download_data["history"].items()
             }
-            if "latestImportedDate" in download_data:
-                download_data["latestImportedDate"] = ciso8601.parse_datetime(
-                    download_data["latestImportedDate"],
-                )
 
         # Cache the deserialized and normalized data
         vars(self)["prunerr_data"] = download_data

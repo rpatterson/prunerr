@@ -297,19 +297,21 @@ class Prunerr(object):
                 # TODO: Should this just be a logged error?
                 raise ValueError(
                     f"Download client directory in Servarr settings, "
-                    f"{str(servarr_config["downloadDir"])!r}, must be a descendant of "
+                    f"{str(servarr_config['downloadDir'])!r}, must be a descendant of "
                     f"the download client's default download directory, "
-                    f"{str(servarr_config["downloadDir"])!r}"
+                    f"{str(servarr_config['downloadDir'])!r}"
                 )
-            servarr_config["importedDir"] = self.config["downloaders"][
-                "imported-dir"
-            ] / servarr_config["downloadDir"].relative_to(
+            servarr_config["importedDir"] = (
+                self.config["downloaders"]["imported-dir"]
+                / servarr_config["downloadDir"].relative_to(
                         self.config["downloaders"]["download-dir"],
+                )
             ).resolve()
-            servarr_config["deletedDir"] = self.config["downloaders"][
-                "deleted-dir"
-            ] / servarr_config["downloadDir"].relative_to(
+            servarr_config["deletedDir"] = (
+                self.config["downloaders"]["deleted-dir"]
+                / servarr_config["downloadDir"].relative_to(
                         self.config["downloaders"]["download-dir"],
+                )
             ).resolve()
         self.servarr_name = servarr_name
         if servarr_name is not None:

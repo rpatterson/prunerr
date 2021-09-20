@@ -1,0 +1,17 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+#
+# Run `$ prunerr daemon` as an S6 service.
+
+set -eu -o pipefail
+PS4='${LINENO}+'
+# set -x
+
+
+main() {
+    export HOME=~abc/
+    exec s6-setuidgid abc prunerr daemon "${@}"
+}
+
+
+main "$@"

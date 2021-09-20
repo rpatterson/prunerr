@@ -598,9 +598,9 @@ class Prunerr(object):
         """
         # Collect all Servarr API download queue records
         queue_records = {}
-        queue_page = None
-        page_num = 1
         for servarr_config in self.servarrs.values():
+            queue_page = None
+            page_num = 1
             while (
                 queue_page is None
                 or (page_num * 250) <= queue_page["totalRecords"]

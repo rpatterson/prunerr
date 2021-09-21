@@ -15,7 +15,7 @@ jobs:
 
       - name: Add user installs to PATH
         run: |
-          echo "::add-path::$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@master

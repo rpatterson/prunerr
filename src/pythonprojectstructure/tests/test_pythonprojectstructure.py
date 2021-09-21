@@ -51,7 +51,8 @@ class PythonProjectStructureTests(unittest.TestCase):
         """
         result = pythonprojectstructure.main(args=[])
         self.assertIsNone(
-            result, "Wrong console script options return value",
+            result,
+            "Wrong console script options return value",
         )
 
     def test_cli_option_errors(self):

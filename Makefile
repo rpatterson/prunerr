@@ -13,7 +13,7 @@ format: var/log/tox-recreate.log
 	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
-	.tox/lint/bin/autopep8 -v -i -r ./
+	.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
 	.tox/lint/bin/black ./
 
 .PHONY: test

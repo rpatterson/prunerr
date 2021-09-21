@@ -33,7 +33,11 @@ setuptools.setup(
         write_to="src/pythonprojectstructure/version.py",
         local_scheme="no-local-version",
     ),
-    setup_requires=["setuptools_scm"],
+    setup_requires=[
+        'setuptools_scm;python_version>="3"',
+        # BBB: Python 2.7 compatibility
+        'setuptools_scm<6;python_version<"3"',
+    ],
     extras_require=dict(
         dev=[
             "pytest",

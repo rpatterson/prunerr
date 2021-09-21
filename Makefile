@@ -20,6 +20,10 @@ format: var/log/tox-recreate.log
 test: all format
 	tox
 
+.PHONY: test-debug
+test-debug: var/log/tox-recreate.log
+	./.tox/py3/bin/pytest --pdb
+
 .PHONY: upgrade
 upgrade: var/log/tox-recreate.log
 	make -j $(words $(VENVS:%=upgrade-%)) $(VENVS:%=upgrade-%)

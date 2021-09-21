@@ -6,7 +6,10 @@ VENVS = $(shell tox -l)
 ## Top-level targets
 
 .PHONY: all
-all: upgrade
+all: build
+
+.PHONY: build
+build: var/log/tox-recreate.log
 
 .PHONY: format
 format: var/log/tox-recreate.log
@@ -17,7 +20,7 @@ format: var/log/tox-recreate.log
 	.tox/lint/bin/black ./
 
 .PHONY: test
-test: all format
+test: build format
 	tox
 
 .PHONY: test-debug
@@ -26,12 +29,16 @@ test-debug: var/log/tox-recreate.log
 
 .PHONY: upgrade
 upgrade: .git/hooks/pre-commit .git/hooks/pre-push
-	make -j $(words $(VENVS:%=upgrade-%)) $(VENVS:%=upgrade-%)
+	touch "./setup.py"
+	$(MAKE) "test"
 
 
 ## Real targets
 
-var/log/tox-recreate.log: setup.py setup.cfg tox.ini
+requirements.txt: setup.py setup.cfg tox.ini
+	tox -r -e "pip-tools"
+
+var/log/tox-recreate.log: requirements.txt tox.ini
 	mkdir -p "var/log"
 	tox -r --notest -v | tee "$(@)"
 
@@ -40,8 +47,3 @@ var/log/tox-recreate.log: setup.py setup.cfg tox.ini
 
 .git/hooks/pre-push: var/log/tox-recreate.log
 	.tox/lint/bin/pre-commit install --hook-type pre-push
-
-.PHONY: $(VENVS:%=upgrade-%)
-$(VENVS:%=upgrade-%):
-	.tox/$(@:upgrade-%=%)/bin/pip install -U --upgrade-strategy=eager .[dev] | \
-		tee .tox/$(@:upgrade-%=%)/log/pip-upgrade.log

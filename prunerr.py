@@ -1209,6 +1209,7 @@ class Prunerr(object):
         """
         file_attr = operation_config.get("name", "size")
         aggregation = operation_config.get("aggregation", "portion")
+        total = operation_config.get("total", "size_when_done")
 
         item_files = download_item.files()
         self.seen_empty_files = getattr(self, "seen_empty_files", set())
@@ -1239,7 +1240,7 @@ class Prunerr(object):
                 getattr(matching_file, file_attr) for matching_file in matching_files
             )
             if aggregation == "portion":
-                sort_value = sort_value / download_item.size_when_done
+                sort_value = sort_value / getattr(download_item, total)
         else:
             raise ValueError(f"Unknown item files aggregation {aggregation!r}")
 

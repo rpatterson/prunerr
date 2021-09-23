@@ -99,12 +99,13 @@ indexers:
           blacklist: true
         ## Reject download items containing archives to optimize seeding per disk space.
         - type: "files"
-          suffixes:
-            - ".rar"
-            - ".zip"
-            - ".gz"
-            - ".tgz"
-            - ".bz2"
+          patterns:
+            - ".+\\.rar$"
+            - ".+\\.r[0-9]{2,}$"
+            - ".+\\.zip$"
+            - ".+\\.gz$"
+            - ".+\\.tgz$"
+            - ".+\\.bz2$"
           ## The attribute of the download item's files with those extension
           # name: "size"  # Default
           ## The portion of the download item's size from files with those extension
@@ -124,12 +125,13 @@ indexers:
     - name: null  # `null` matches all other indexers not specified in `operations`
       operations:
         - type: "files"
-          suffixes:
-            - ".rar"
-            - ".zip"
-            - ".gz"
-            - ".tgz"
-            - ".bz2"
+          patterns:
+            - ".+\\.rar$"
+            - ".+\\.r[0-9]{2,}$"
+            - ".+\\.zip$"
+            - ".+\\.gz$"
+            - ".+\\.tgz$"
+            - ".+\\.bz2$"
           maximum: 0.50
           remove: true
           blacklist: true

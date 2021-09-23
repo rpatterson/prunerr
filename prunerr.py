@@ -20,6 +20,7 @@ import pprint
 import json
 import datetime
 import copy
+import re
 
 import ciso8601
 import yaml
@@ -1222,13 +1223,13 @@ class Prunerr(object):
                 self.seen_empty_files.add(download_item.hashString.upper())
             return False
 
-        suffixes = operation_config.get("suffixes", [])
-        if suffixes:
+        patterns = operation_config.get("patterns", [])
+        if patterns:
             matching_files = []
-            for suffix in suffixes:
+            for pattern in patterns:
                 matching_files.extend(
                     item_file for item_file in item_files
-                    if item_file.name.endswith(suffix)
+                    if re.fullmatch(pattern, item_file.name)
                 )
         else:
             matching_files = item_files

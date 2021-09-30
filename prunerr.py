@@ -366,7 +366,6 @@ class Prunerr(object):
 
         # Keep track of torrents being verified to resume them
         # when verification is complete
-        self.corrupt.update(self.verify_corrupted())
         for torrent_id, torrent in list(self.corrupt.items()):
             try:
                 torrent.update()
@@ -388,6 +387,7 @@ class Prunerr(object):
                 "Waiting for torrents to verify:\n%s",
                 "\n".join(map(str, self.corrupt.values())),
             )
+        self.corrupt.update(self.verify_corrupted())
 
         if self.config["downloaders"].get("copy"):
             # Launch copy of most optimal, fully downloaded torrent in the downloads

@@ -877,7 +877,6 @@ class Prunerr(object):
         For example, when a private tracker removes a duplicate/invalid/unauthorized
         torrent.
         """
-        session = self.client.get_session()
         return self.sort_torrents_by_tracker(
             torrent
             for torrent in self.torrents
@@ -1020,7 +1019,6 @@ class Prunerr(object):
         """
         Filter torrents that have been deleted from the Servarr library.
         """
-        session = self.client.get_session()
         return self.sort_torrents_by_tracker(
             torrent for torrent in self.torrents
             # only those previously synced and moved

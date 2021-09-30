@@ -46,6 +46,13 @@ Prunerr uses and requires a configuration file which defaults to
 `<./home/.config/prunerr.yml>`_.
 
 
+***********
+Quick Start
+***********
+
+TODO
+
+
 *******************
 Order of Operations
 *******************
@@ -60,6 +67,8 @@ reliably determines disk space margin *as* the download clients are downloading.
    - remove torrents containing archives (`*.rar`, `*.zip`, `*.tar.gz`, etc.)
    - remove stalled torrents and trigger a search
    - etc.
+
+TODO: Review and update below
 
 #. Identify and report orphan files and directories:
 

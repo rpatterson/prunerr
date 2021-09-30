@@ -847,6 +847,9 @@ class Prunerr(object):
                 download_dir = candidate.downloadDir
                 self.client.remove_torrent(candidate.id, delete_data=True)
                 self.move_timeout(candidate, download_dir)
+                # Transmission may fail to actually remove the files if the filesystem
+                # has run out of space.
+                # TODO: Manually delete files if timed out
 
             # Handle filesystem paths not recognized by the download client
             else:
@@ -1118,6 +1121,7 @@ class Prunerr(object):
         """
         Execute each of the configured indexer priority operations
         """
+        # TODO: Add `name` to operation configs and use in log/exc messages
         sort_key = []
         include = True
         for operation_config in operation_configs:

@@ -5,6 +5,7 @@ version: "3.8"
 services:
 
   sonarr:
+    container_name: "sonarr"
     image: "ghcr.io/hotio/sonarr"
     volumes:
       - "./sonarr/config/:/config/"
@@ -18,6 +19,7 @@ services:
         grep '"appData": *"/config"'
 
   radarr:
+    container_name: "radarr"
     image: "ghcr.io/hotio/radarr"
     volumes:
       - "./radarr/config/:/config/"
@@ -31,6 +33,7 @@ services:
         grep '"appData": *"/config"'
 
   prunerr-daemon:
+    container_name: "prunerr-daemon"
     image: "prunerr"
     build: "./prunerr/"
     depends_on:

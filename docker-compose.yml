@@ -37,8 +37,8 @@ services:
     image: "prunerr"
     build: "./prunerr/"
     depends_on:
-      - sonarr
-      - radarr
+      - "sonarr"
+      - "radarr"
     volumes:
       # Grant access to the download clients torrent files for `readd_missing_data()`
       - "./transmission/config/:/config/"

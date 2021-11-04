@@ -4,8 +4,12 @@
 # Run `$ prunerr daemon` as an S6 service.
 
 set -eu -o pipefail
-PS4='${LINENO}+'
-# set -x
+if [ ! -z "${DEBUG:-}" ]
+then
+    # Echo commands for easier debugging
+    PS4='$0:$LINENO+'
+    set -x
+fi
 
 
 main() {

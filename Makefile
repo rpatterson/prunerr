@@ -14,10 +14,18 @@ MAKEFLAGS += --no-builtin-rules
 # Support reuse both locally and in Servarr containers
 PREFIX=.
 
+# Options affecting target behavior
+PRUNERR_CMD=exec
+
 ## Top level targets
 
 .PHONY: all
 all: $(PREFIX).venv/bin/prunerr
+
+.PHONY: debug
+## Capture how to run Prunerr in the Python interactive debugger
+debug: $(PREFIX).venv/bin/prunerr
+	"$(<:%/prunerr=/python)" -m "pdb" "$(<)" "$(PRUNERR_CMD)"
 
 .PHONY: clean
 clean:

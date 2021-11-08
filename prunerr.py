@@ -1686,6 +1686,14 @@ class Prunerr(object):
                 )
                 return str(download_path)
 
+        download_item.update()
+        if not download_item.files():
+            logger.warning(
+                "Download item has no files yet: %r",
+                download_item,
+            )
+            return
+
         return self.move_torrent(download_item, src_path, dst_path)
 
     def handle_imported(

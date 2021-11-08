@@ -906,6 +906,9 @@ class Prunerr(object):
         Useful to identify paths to delete when freeing disk space.  Returned sorted
         from paths that use the least disk space to the most.
         """
+        # FIXME: Identify duplicate directories with different ancestors
+        #        /media/Library/incomplete/Foo Bar
+        #        /media/Library/Videos/Movies/Foo Bar
         session = self.client.get_session()
         download_dirs = (
             # Transmission's `incomplete` directory for incomplete, leeching torrents
@@ -917,22 +920,39 @@ class Prunerr(object):
             str(self.config["downloaders"]["imported-dir"]),
             str(self.config["downloaders"]["deleted-dir"]),
         )
+        # FIXME: Select all the but the last/latest in the Servarr lifecycle when there
+        # are multiple orphans for the same item.
 
         # Assemble all directories whose descendants are torrents
         torrent_dirs = set()
         torrent_paths = set()
         unstarted_names = set()
+        # Include the directories managed by the download client
+        # so we know what dirs to descend into when looking for orphans
+        for client_dir in (session.incomplete_dir, session.download_dir):
+            client_ancestor, tail = os.path.split(client_dir + os.sep)
+            while client_ancestor not in torrent_dirs or client_ancestor != os.sep:
+                torrent_dirs.add(client_ancestor)
+                client_ancestor, tail = os.path.split(client_ancestor)
+        # Add the paths for each individual torrent
         for torrent in self.torrents:
-            # Transmission's `incomplete` directory for incomplete, leeching torrents
-            torrent_paths.add(os.path.join(session.incomplete_dir, torrent.name))
-            # Transmission's `downloads` directory for complete, seeding torrents
-            torrent_dir, tail = os.path.split(torrent.downloadDir + os.sep)
+            item_path = self.get_item_path(torrent)
+            if item_path.exists():
+                # Transmission's `downloads` directory for complete, seeding torrents
+                torrent_paths.add(str(item_path))
+            else:
+                # Transmission's `incomplete` directory for incomplete, leeching
+                # torrents
+                torrent_paths.add(os.path.join(
+                    session.incomplete_dir,
+                    self.get_item_root_name(torrent),
+                ))
             # Include the ancestors of the torrent's path
             # so we know what dirs to descend into when looking for orphans
+            torrent_dir, tail = os.path.split(torrent.downloadDir + os.sep)
             while torrent_dir not in torrent_dirs or torrent_dir != os.sep:
                 torrent_dirs.add(torrent_dir)
                 torrent_dir, tail = os.path.split(torrent_dir)
-            torrent_paths.add(os.path.join(torrent.downloadDir, torrent.name))
             if torrent.progress == 0.0:
                 unstarted_names.add(torrent.name)
 
@@ -1428,6 +1448,20 @@ class Prunerr(object):
         )
         return dirs_history[dir_id]
 
+    def get_item_root_name(self, download_item):
+        """
+        Return the name of the first path element for all items in the download item.
+
+        Needed because it's not always the same as the item's name.  If
+        torrent has multiple files, assumes that all files are under the same top-level
+        directory.
+        """
+        item_files = download_item.files()
+        if item_files:
+            return pathlib.Path(item_files[0].name).parts[0]
+        else:
+            return download_item.name
+
     def get_item_path(self, download_item):
         """
         Return the root path for all items in the download client item.
@@ -1435,12 +1469,10 @@ class Prunerr(object):
         Needed because it's not always the same as the item's download directory plus
         the item's name.
         """
-        item_files = download_item.files()
-        if item_files:
-            item_root_name = pathlib.Path(item_files[0].name).parts[0]
-        else:
-            item_root_name = download_item.name
-        return (pathlib.Path(download_item.download_dir) / item_root_name).resolve()
+        return (
+            pathlib.Path(download_item.download_dir)
+            / self.get_item_root_name(download_item)
+        ).resolve()
 
     def sync(self):
         """

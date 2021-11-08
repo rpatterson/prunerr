@@ -12,7 +12,7 @@ MAKEFLAGS += --no-builtin-rules
 
 # Variables used to define targets
 # Support reuse both locally and in Servarr containers
-Prefix=.
+PREFIX=.
 
 ## Top level targets
 

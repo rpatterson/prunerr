@@ -1312,7 +1312,7 @@ class Prunerr(object):
         the same `No data found!` error message so there's a chance this can cause
         issues.
         """
-        torrents_were_readded = False
+        readded_items = []
         for torrent in self.torrents:
             if not (
                 torrent.status == "stopped"
@@ -1324,7 +1324,7 @@ class Prunerr(object):
             logger.error("No data found for %s, re-adding", torrent)
             with open(torrent.torrentFile, mode="r+b") as torrent_opened:
                 self.client.remove_torrent(ids=[torrent.hashString])
-                self.client.add_torrent(
+                readded = self.client.add_torrent(
                     torrent=torrent_opened,
                     # These are the only fields from the `add_torrent()` call signature
                     # in the docs I could see corresponding fields for in the
@@ -1333,8 +1333,16 @@ class Prunerr(object):
                     download_dir=torrent.download_dir,
                     peer_limit=torrent.peer_limit,
                 )
-            torrents_were_readded = True
-        if torrents_were_readded:
+                readded = self.get_download_item(readded.hashString)
+                readded.update()
+                assert (
+                    readded.download_dir == torrent.download_dir
+                ), (
+                    f"Re-added download location changed: "
+                    f"{torrent.download_dir!r} -> {readded.download_dir!r}"
+                )
+                readded_items.append(readded)
+        if readded_items:
             self.update()
 
     def move_torrent(self, torrent, old_path, new_path):

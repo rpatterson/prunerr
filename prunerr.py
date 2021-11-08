@@ -432,7 +432,7 @@ class Prunerr(object):
         )
         if self.popen is not None:
             if self.popen.poll() is None:
-                if not to_copy or self.copying.id == to_copy[0].id:
+                if not to_copy or self.copying.hashString == to_copy[0].hashString:
                     logger.info("Letting running copy finish: %s", self.copying)
                     to_copy = None
                 else:
@@ -444,7 +444,7 @@ class Prunerr(object):
                 self.move_torrent(
                     self.copying, old_path=session.download_dir, new_path=imported_dir
                 )
-                if to_copy and self.copying.id == to_copy[0].id:
+                if to_copy and self.copying.hashString == to_copy[0].hashString:
                     to_copy.pop(0)
                 self.copying = None
                 self.popen = None
@@ -845,7 +845,7 @@ class Prunerr(object):
                     ),
                 )
                 download_dir = candidate.downloadDir
-                self.client.remove_torrent(candidate.id, delete_data=True)
+                self.client.remove_torrent([candidate.hashString], delete_data=True)
                 self.move_timeout(candidate, download_dir)
                 # Transmission may fail to actually remove the files if the filesystem
                 # has run out of space.
@@ -1272,7 +1272,7 @@ class Prunerr(object):
         Verify any incomplete torrents that are paused because of corruption.
         """
         corrupt = dict(
-            (torrent.id, torrent)
+            (torrent.hashString, torrent)
             for torrent in self.torrents
             if torrent.status == "stopped"
             and torrent.error == 3
@@ -1320,10 +1320,10 @@ class Prunerr(object):
                 and torrent.errorString.lower().startswith("no data found")
             ):
                 continue
-            torrent = self.get_download_item(torrent.id)
+            torrent = self.get_download_item(torrent.hashString)
             logger.error("No data found for %s, re-adding", torrent)
             with open(torrent.torrentFile, mode="r+b") as torrent_opened:
-                self.client.remove_torrent(ids=[torrent.id])
+                self.client.remove_torrent(ids=[torrent.hashString])
                 self.client.add_torrent(
                     torrent=torrent_opened,
                     # These are the only fields from the `add_torrent()` call signature

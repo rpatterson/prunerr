@@ -39,6 +39,9 @@ services:
     depends_on:
       - "sonarr"
       - "radarr"
+    environment:
+      # Find the same configuration file even when run as another user, e.g. `root`.
+      HOME: "/config"
     volumes:
       # Grant access to the download clients torrent files for `readd_missing_data()`
       - "./transmission/config/:/config/"

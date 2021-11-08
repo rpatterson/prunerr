@@ -47,4 +47,6 @@ services:
       - "./transmission/config/:/config/"
       # Use the Prunerr config from the Prunerr checkout
       # - "./prunerr/home/.config/:/config/.config/"
+      # For development, test changes without rebuilding the image
+      - "./prunerr/:/usr/local/src/prunerr/"
     restart: "unless-stopped"

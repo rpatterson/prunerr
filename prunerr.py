@@ -2081,6 +2081,177 @@ class Prunerr(object):
                 new_path=session.download_dir,
             )
 
+    def restore_data(self):
+        """
+        Match torrent locations to matching paths with the largest size.
+
+        Useful when torrents end up with different locations than their data.
+        """
+        session = self.client.get_session()
+        incomplete_path = pathlib.Path(session.incomplete_dir)
+        client_download_path = pathlib.Path(session.download_dir)
+        restored_items = {}
+        # Cache history paging across download items
+        for servarr_config in self.servarrs.values():
+            servarr_config["history"] = {}
+
+        # Start by matching to any orphan paths
+        orphans = self.find_orphans()
+        # Start with the largest orphan path first
+        orphans.reverse()
+        for download_item in self.torrents:
+            download_id = download_item.hashString.lower()
+            download_path = self.get_item_path(download_item)
+
+            # Look for orphan paths that match by basename
+            for orphan_size, orphan_path in orphans:
+                orphan_path = pathlib.Path(orphan_path)
+                if orphan_path.name == download_path.name:
+
+                    # Largest orphan path whose basename matches
+                    if orphan_path != download_path and (
+                            # Avoid restoring partial data from item's that started
+                            # re-downloading after the data was disconnected.  Only use
+                            # orphans from the download client's incomplete or downloads
+                            # directories the item's download directory doesn't exist.
+                            not download_path.exists() or (
+                                incomplete_path not in orphan_path.parents
+                                and client_download_path not in orphan_path.parents
+                            )
+                    ):
+                        # Collect results of actions taken
+                        restored_items.setdefault(download_item.name, dict(orphans=[]))[
+                            "orphans"
+                        ].append(str(orphan_path))
+                        logger.info(
+                            "Restoring data: %r -> %r",
+                            str(download_path), str(orphan_path),
+                        )
+                        download_item.locate_data(str(orphan_path.parent))
+
+                    # Found the largest matching path, no need to continue
+                    break
+
+            # Next try to restore as much as possible from the Servarr history
+            for servarr_config in self.servarrs.values():
+                servarr_history = servarr_config.setdefault("history", {})
+                self.find_latest_item_history(
+                    servarr_config, torrent=download_item,
+                )
+                item_history = servarr_history["records"]["download_ids"].get(
+                    download_id, [],
+                )
+                if not item_history:
+                    continue
+                latest_record = item_history[0]
+
+                # Restore Servarr download paths
+                event_locations = self.SERVARR_EVENT_LOCATIONS[
+                    latest_record["eventType"]
+                ]
+                dst_path = servarr_config[event_locations["dst"]]
+                if download_path.parent != dst_path:
+                    logger.info(
+                        "Restoring download path: %r -> %r",
+                        str(download_path), str(dst_path),
+                    )
+                    new_download_path = self.move_torrent(
+                        download_item, download_path.parent, dst_path,
+                    )
+                    # Collect results of actions taken
+                    restored_items.setdefault(download_item.name, dict(paths=[]))[
+                        "paths"
+                    ].append(str(new_download_path))
+
+                # Restore Servarr imports hard links
+                # TODO: Honor Servarr hard link vs copy setting
+                for imported_record in item_history:
+                    if "importedPath" not in imported_record["data"]:
+                        continue
+                    imported_path = pathlib.Path(
+                        imported_record["data"]["importedPath"],
+                    )
+                    if imported_path.exists():
+                        item_root_name = self.get_item_root_name(download_item)
+                        dropped_path = pathlib.Path(
+                            imported_record["data"]["droppedPath"],
+                        )
+                        if item_root_name in dropped_path.parts:
+                            relative_path = pathlib.Path(*dropped_path.parts[
+                                dropped_path.parts.index(item_root_name):
+                            ])
+                        else:
+                            logger.error(
+                                "Servarr dropped path doesn't include item root name: "
+                                "%r",
+                                str(dropped_path),
+                            )
+
+                        # Does the imported file correspond to a file in the download
+                        # item.  If the imported file was extracted from an archive in
+                        # the download item, for example, skip verifying and resuming.
+                        imported_item_file = None
+                        for item_file in download_item.files():
+                            if item_file.name == str(relative_path):
+                                imported_item_file = item_file
+                                break
+
+                        current_dropped_path = dst_path / relative_path
+                        if imported_item_file is not None and (
+                                not current_dropped_path.is_file()
+                                or current_dropped_path.stat().st_nlink <= 1
+                        ):
+                            # Collect results of actions taken
+                            restored_items.setdefault(
+                                download_item.name, dict(imported=[]),
+                            )["imported"].append(str(imported_path))
+                            if current_dropped_path.exists():
+                                logger.info(
+                                    "Removing dropped path: %r",
+                                    str(current_dropped_path),
+                                )
+                                current_dropped_path.unlink()
+                            elif not current_dropped_path.parent.exists():
+                                logger.info(
+                                    "Creating dropped directory: %r",
+                                    str(current_dropped_path.parent),
+                                )
+                                current_dropped_path.parent.mkdir(
+                                    parents=True, exist_ok=True,
+                                )
+                            logger.info(
+                                "Restoring imported path: %r -> %r",
+                                str(imported_path), str(current_dropped_path),
+                            )
+                            imported_path.link_to(current_dropped_path)
+
+                # Found corresponding Servarr history, stop iterating over Servarr
+                # instances
+                break
+            else:
+                logger.warning("No Servarr history found: %r", download_item)
+
+            # Verify item data and resume if anything we've done or can check indicates
+            # it might have been successfully restored.
+            download_parent = pathlib.Path(download_item.download_dir)
+            item_files_exist = [
+                item_file for item_file in download_item.files()
+                if (incomplete_path / item_file.name).exists
+                or (download_parent / item_file.name).exists
+            ]
+            if (
+                    (download_item.status == 'stopped' and item_files_exist)
+                    or restored_items.get(download_item.name, {}).get("orphans", [])
+                    or restored_items.get(download_item.name, {}).get("imported", [])
+            ):
+                logger.info(
+                    "Verifying and resuming: %r", download_item,
+                )
+                self.client.verify_torrent([download_item.hashString])
+                download_item.start()
+
+        return restored_items
+
 
 Prunerr.__doc__ = __doc__
 
@@ -2220,6 +2391,18 @@ Also run operations for Servarr events/history that have previously been run.
 parser_sync.set_defaults(command=sync)
 
 
+def restore_data(prunerr):
+    prunerr.update()
+    return prunerr.restore_data()
+
+
+restore_data.__doc__ = Prunerr.restore_data.__doc__
+parser_restore_data = subparsers.add_parser(
+    "restore-data", help=restore_data.__doc__.strip(),
+)
+parser_restore_data.set_defaults(command=restore_data)
+
+
 def main(args=None):
     logging.basicConfig(level=logging.INFO)
     # Want just our logger, not transmission-rpc's to log DEBUG
@@ -2253,7 +2436,7 @@ def main(args=None):
                 "%r results for download client %r:\n%s",
                 parsed_args.command.__name__,
                 downloader_url,
-                pprint.pformat(results),
+                pprint.pformat(results, width=100),
             )
 
 

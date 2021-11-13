@@ -16,7 +16,7 @@ required = [
     # Configuration file format
     "pyyaml",
     # Servarr API clients/wrappers
-    "arrapi",
+    "arrapi>=1.2",
 ]
 
 setup(

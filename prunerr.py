@@ -608,7 +608,7 @@ class Prunerr(object):
                     servarr_config["name"],
                     page_num,
                 )
-                queue_page = servarr_config["client"]._get(
+                queue_page = servarr_config["client"]._raw._get(
                     "queue",
                     # Maximum Servarr page size
                     pageSize=250,
@@ -1439,7 +1439,7 @@ class Prunerr(object):
             servarr_config["name"],
             json.dumps(params),
         )
-        history_response = servarr_config["client"]._get(
+        history_response = servarr_config["client"]._raw._get(
             f"history/{servarr_type_map['dir_type']}",
             **params,
         )
@@ -1866,7 +1866,7 @@ class Prunerr(object):
                 servarr_config["name"],
                 servarr_history["page"],
             )
-            history_page = servarr_config["client"]._get(
+            history_page = servarr_config["client"]._raw._get(
                 "history",
                 # Maximum Servarr page size
                 pageSize=250,
@@ -2291,7 +2291,7 @@ def collect_downloaders(config):
             "Requesting %r Servarr download clients settings",
             servarr_config["name"],
         )
-        for downloader_config in servarr_client._get("downloadclient"):
+        for downloader_config in servarr_client._raw._get("downloadclient"):
             if not downloader_config["enable"]:
                 continue
 

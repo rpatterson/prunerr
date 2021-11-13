@@ -1734,8 +1734,13 @@ class Prunerr(object):
                 download_item,
             )
 
+        # TODO: If none of the imported files are among the torrent's files, such as
+        # when the torrent contains archives which have been extracted and imported,
+        # move the item to the deleted folder.
+        # https://github.com/davidnewhall/unpackerr
+
         # If we're not waiting for history, then proceed to move the download item.
-        # Ensure the download item's location matches the Servarr state
+        # Ensure the download item's location matches the Servarr state.
         history_record["prunerr"]["handlerResult"] = str(self.sync_item_location(
             servarr_config,
             download_item,

@@ -18,7 +18,7 @@ Please do use Prunerr, but use at your own risk and report all issues you encoun
 full details.  Better yet, debug the issue, fix it, and submit a PR.  It's often
 impractical to keep a full backup of our media libraries, so set up a small sandbox with
 copies of media that can be safely deleted, make sure Prunerr is working smoothly for
-you for some time throughout the Servarr/Prunerr lifecycle before using it with your
+you for some time throughout the Servarr/Prunerr life-cycle before using it with your
 real library and even then understand the risks.
 
 
@@ -80,7 +80,7 @@ TODO: Review and update below
    Compare all download client items against those added by each `Servarr`_ application
    to identify those that weren't added by a `Servarr`_ application and are therefor
    un-managed or managed by something else.  Note that these items aren't considered for
-   deletion.  Not reported under ``$ prunerr deamon`` to reduce logging noise.
+   deletion.  Not reported under ``$ prunerr daemon`` to reduce logging noise.
 
 #. Order download items deleted by Servarr according to per-indexer rules:
 
@@ -132,10 +132,10 @@ Prunerr also provides a ``$ ./bin/prunerr sync`` sub-command to introspect the i
 history from Servarr instances and apply any appropriate state that can be determined
 from the Servarr history to the download client items.  This sub-command can be used to
 get any existing download client items in sync as if they had been processed by the ``$
-prunerr daemon ...`` or ``$ prunerr exec`` subcommands.  The ``sync`` sub-command also
+prunerr daemon ...`` or ``$ prunerr exec`` sub-commands.  The ``sync`` sub-command also
 accepts a ``--replay`` option to ignore state already reflected in the download client
 and re-apply the changes that would have been applied from the beginning of the download
-item's Servarr history if any.  This option is useful to re-synchronize downlaod client
+item's Servarr history if any.  This option is useful to re-synchronize download client
 state with Servarr state when the way Prunerr handles Servarr events changes.
 
 
@@ -171,7 +171,7 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 
   Perhaps we can use the Servarr "Connect" API?
 
-- Improve configur-ability, particularly the various download client paths:
+- Improve configure-ability, particularly the various download client paths:
 
   Currently, Prunerr strongly depends on using the ``.../incomplete/``,
   ``.../downloads/``, ``.../imported/``,  and ``.../deleted/`` paths.  In theory, these

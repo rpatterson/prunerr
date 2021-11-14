@@ -138,6 +138,38 @@ and re-apply the changes that would have been applied from the beginning of the 
 item's Servarr history if any.  This option is useful to re-synchronize download client
 state with Servarr state when the way Prunerr handles Servarr events changes.
 
+Manual Item Locations
+=====================
+
+In some cases, it can be useful to exempt items from the Prunerr state synchronization
+logic and/or to include items not managed by Servarr into portions of the Prunerr state
+synchronization logic.  You can accomplish some of this using the corresponding
+``./downloads/manual/**``, ``./imported/manual/**``, ``./deleted/manual/**`` paths.
+
+For example, Servarr doesn't support multiple editions of the same movie or episode and
+as such downloading and importing such files must be done manually.  Suppose you've
+previously downloaded an ``SD`` resolution of the director's cut of a movie manually.
+You'd also like to keep the theatrical release which will be managed by Sonarr, so
+you've manually imported the ``SD`` director's cut along side the theatrical release.
+Just a day or 2 later you find a ``HD`` version of the director's cut, manually download
+it and replace the ``SD`` import with this new ``HD`` import.  The ``SD`` download item
+could now be deleted but hasn't met it's private tracker seeding requirements and
+there's no need to delete it before it has to be for disk space.  Move the ``SD``
+download item to the corresponding ``./deleted/manual/**`` location and Prunerr will
+include it in the download item deletion logic even though it's not managed by Servarr.
+
+In an other example, you've found a mislabeled download item that Servarr couldn't
+correctly identify.  You've manually downloaded the item and then had Servarr import it
+via ``Manual Import``.  You can then mode the download item to the corresponding
+``./imported/manual/**`` directory.  Prunerr won't do anything further with this item in
+this location but it can be helpful to keep track of what's been done manually.
+
+Note that the ``.../manual/...`` part of these paths is arbitrary and you may use
+whatever you like.  The important part is that manually managed directories be
+descendants of the corresponding ``download-dir``, ``imported-dir``, or ``deleted-dir``
+ancestor but *not* be descendants of the corresponding download client directory in the
+Servarr settings.
+
 
 ****************
 Other Operations

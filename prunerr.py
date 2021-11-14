@@ -1943,6 +1943,10 @@ class Prunerr(object):
             ].strftime(self.SERVARR_DATETIME_FORMAT)
         if "path" in download_data:
             download_data["path"] = str(download_data["path"])
+        existing_deserialized = ""
+        if data_path.exists():
+            with data_path.open("r") as data_read:
+                existing_deserialized = data_read.read()
         with data_path.open("w") as data_opened:
             logger.debug("Writing Prunerr download item data: %s", data_path)
             try:
@@ -1953,6 +1957,8 @@ class Prunerr(object):
                     str(data_path),
                     pprint.pformat(download_data),
                 )
+                data_opened.seek(0)
+                data_opened.write(existing_deserialized)
 
     def collate_history_records(
             self, servarr_config, history_records, servarr_history=None,

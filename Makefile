@@ -15,12 +15,18 @@ MAKEFLAGS += --no-builtin-rules
 PREFIX=.
 
 # Options affecting target behavior
+PUID=1000
+PGID=100
 PRUNERR_CMD=exec
 
 ## Top level targets
 
 .PHONY: all
-all: $(PREFIX).venv/bin/prunerr
+all: build
+
+.PHONY: build
+build: $(PREFIX).venv/bin/prunerr
+	docker-compose build --pull --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)"
 
 .PHONY: debug
 ## Capture how to run Prunerr in the Python interactive debugger

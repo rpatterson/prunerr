@@ -34,19 +34,21 @@ services:
 
   prunerr-daemon:
     container_name: "prunerr-daemon"
-    image: "prunerr"
-    build: "./prunerr/"
+    image: "prunerr/prunerr"
+    build: "./"
     depends_on:
       - "sonarr"
       - "radarr"
+    # Match permissions inside and outside the container
+    user: "1000:100"
     environment:
       # Find the same configuration file even when run as another user, e.g. `root`.
-      HOME: "/config"
+      HOME: "/home/prunerr"
     volumes:
       # Grant access to the download clients torrent files for `readd_missing_data()`
       - "./transmission/config/:/config/"
       # Use the Prunerr config from the Prunerr checkout
-      # - "./prunerr/home/.config/:/config/.config/"
+      - "./home/.config/:/home/prunerr/.config/"
       # For development, test changes without rebuilding the image
-      - "./prunerr/:/usr/local/src/prunerr/"
+      # - "./:/usr/local/src/prunerr/"
     restart: "unless-stopped"

@@ -1,17 +1,20 @@
-# From https://hub.docker.com/r/lsiobase/alpine
-# Used to get `PUID`/`PGID` support
-FROM lsiobase/alpine:3.14
+# From https://hub.docker.com/_/python
+FROM python:3
+
+# Add a user whose home directory will contain the configuration file
+ARG PUID=1000
+ARG PGID=100
 
 # Install the application and dependencies
 WORKDIR /usr/local/src/prunerr/
 COPY [ "./", "./" ]
-# TODO: Use build stages to minimize image size
-RUN [ \
-    "apk", "add", "--no-cache", "python3", "py3-pip", "gcc", "musl-dev", "python3-dev" \
-]
-RUN [ "pip3", "install", "--no-cache-dir", "-r", "./requirements.txt" ]
-RUN [ "apk", "del", "--no-cache", "gcc", "musl-dev", "python3-dev" ]
+RUN [ "pip", "install", "--no-cache-dir", "-r", "./requirements.txt" ]
 
-# Add the S6-overlay service
-WORKDIR /
-COPY [ "./root/", "./" ]
+# Add a user whose home directory will contain the configuration file
+RUN adduser --uid "${PUID}" --gid "${PGID}" --disabled-password \
+    --gecos "Prunerr,,," "prunerr"
+USER $PUID:$PGID
+
+WORKDIR /home/prunerr/
+ENTRYPOINT  [ "prunerr" ]
+CMD [ "daemon" ]

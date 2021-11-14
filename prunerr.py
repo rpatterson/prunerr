@@ -1560,7 +1560,8 @@ class Prunerr(object):
             dir_id = download_record[dir_id_key]
 
         # Reconcile current Servarr history with the Prunerr data file
-        download_history = {}
+        existing_history = download_data["history"]
+        download_history = download_data["history"] = {}
         if servarr_history is None:
             servarr_history = self.get_dir_history(servarr_config, dir_id)
         if download_id not in servarr_history["records"]["download_ids"]:
@@ -1578,9 +1579,7 @@ class Prunerr(object):
             # TODO: Skip duplicate events for multi-file items such as season packs
 
             # Preserve existing Prunerr data
-            existing_record = download_data["history"].get(
-                history_record["date"], {},
-            )
+            existing_record = existing_history.get(history_record["date"], {})
             history_record["prunerr"] = existing_record.get("prunerr", {})
             # Insert into the new history keyed by time stamp
             download_history[history_record["date"]] = history_record

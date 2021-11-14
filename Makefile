@@ -25,23 +25,23 @@ PRUNERR_CMD=exec
 all: build
 
 .PHONY: build
-build: $(PREFIX).venv/bin/prunerr
+build: $(PREFIX)/.venv/bin/prunerr
 	docker-compose build --pull --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)"
 
 .PHONY: debug
 ## Capture how to run Prunerr in the Python interactive debugger
-debug: $(PREFIX).venv/bin/prunerr
+debug: $(PREFIX)/.venv/bin/prunerr
 	"$(<:%/prunerr=/python)" -m "pdb" "$(<)" "$(PRUNERR_CMD)"
 
 .PHONY: clean
 clean:
-	test -e "$(PREFIX).venv/" && rm -r "$(PREFIX).venv/"
+	test -e "$(PREFIX)/.venv/" && rm -r "$(PREFIX)/.venv/"
 
 ## Real targets
 
-$(PREFIX).venv/bin/prunerr: ./setup.py $(PREFIX).venv/bin/activate
+$(PREFIX)/.venv/bin/prunerr: ./setup.py $(PREFIX)/.venv/bin/activate
 	"$(@:%/prunerr=%/pip)" install wheel
 	"$(@:%/prunerr=%/pip)" install -e ".[transmission]"
 
-$(PREFIX).venv/bin/activate:
+$(PREFIX)/.venv/bin/activate:
 	python3 -m venv "$(@:%/bin/activate=%/)"

@@ -133,8 +133,7 @@ class DownloadItem(transmission_rpc.Torrent):
                 )
             if download_data["history"] is None:
                 logger.warning(
-                    "No history previously found for download item, "
-                    "skipping: %r",
+                    "No history previously found: %r",
                     self,
                 )
                 vars(self)["prunerr_data"] = download_data
@@ -1552,7 +1551,7 @@ class Prunerr(object):
             )
             if download_record is None:
                 logger.error(
-                    "No history found for %r Servarr download item %r",
+                    "No %r Servarr history found, skipping: %r",
                     servarr_config["name"],
                     download_item,
                 )

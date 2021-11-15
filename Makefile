@@ -24,12 +24,12 @@ test: build format
 	tox
 
 .PHONY: test-debug
-test-debug: var/log/tox-recreate.log
+test-debug: var/log/tox-editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
 upgrade: .git/hooks/pre-commit .git/hooks/pre-push
-	touch "./setup.py"
+	touch "./pyproject.toml"
 	$(MAKE) "test"
 
 .PHONY: clean
@@ -39,12 +39,15 @@ clean:
 
 ## Real targets
 
-requirements.txt: setup.py setup.cfg tox.ini
+requirements.txt: pyproject.toml setup.cfg tox.ini
 	tox -r -e "pip-tools"
 
 var/log/tox-recreate.log: requirements.txt tox.ini
 	mkdir -p "var/log"
 	tox -r --notest -v | tee "$(@)"
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
+var/log/tox-editable.log: var/log/tox-recreate.log
+	./.tox/py3/bin/pip install -e "./"
 
 .git/hooks/pre-commit: var/log/tox-recreate.log
 	.tox/lint/bin/pre-commit install

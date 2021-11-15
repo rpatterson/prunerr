@@ -1,0 +1,9 @@
+[build-system]
+# https://setuptools.pypa.io/en/latest/build_meta.html#how-to-use-it
+requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
+build-backend = "setuptools.build_meta"
+
+# https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
+[tool.setuptools_scm]
+write_to = "src/pythonprojectstructure/version.py"
+local_scheme = "no-local-version"

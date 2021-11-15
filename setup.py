@@ -26,7 +26,7 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "Topic :: Utilities",
     ],
-    python_requires=">=2.7",
+    python_requires=">=3",
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     use_scm_version=dict(
@@ -34,9 +34,7 @@ setuptools.setup(
         local_scheme="no-local-version",
     ),
     setup_requires=[
-        'setuptools_scm;python_version>="3"',
-        # BBB: Python 2.7 compatibility
-        'setuptools_scm<6;python_version<"3"',
+        "setuptools_scm",
     ],
     extras_require=dict(
         dev=[
@@ -46,7 +44,7 @@ setuptools.setup(
             "flake8",
             "autoflake",
             "autopep8",
-            'flake8-black;python_version>="3"',
+            "flake8-black",
             "rstcheck",
             "pip-tools",
         ]

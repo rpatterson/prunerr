@@ -32,6 +32,10 @@ upgrade: .git/hooks/pre-commit .git/hooks/pre-push
 	touch "./setup.py"
 	$(MAKE) "test"
 
+.PHONY: clean
+clean:
+	git clean -dfx -e "var/" -n
+
 
 ## Real targets
 

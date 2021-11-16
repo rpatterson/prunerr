@@ -86,7 +86,7 @@ jobs:
         env:
           SETUPTOOLS_SCM_DEBUG: "true"
         run: |
-          .tox/py3/bin/python setup.py sdist bdist_wheel
+          python -m build
 
       - name: Publish distribution to Test PyPI for devel branches
         if: (github.ref != 'refs/heads/master') && (matrix.python-version == 3.9)

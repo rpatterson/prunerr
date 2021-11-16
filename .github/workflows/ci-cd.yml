@@ -57,10 +57,10 @@ jobs:
           path: ./.tox
           # Never get a cache hit to force always caching the upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
-          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          key: ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys:
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
+            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
 
       - name: Test with tox
         env:
@@ -86,7 +86,7 @@ jobs:
         env:
           SETUPTOOLS_SCM_DEBUG: "true"
         run: |
-          python -m build
+          .tox/build/bin/python -m build
 
       - name: Publish distribution to Test PyPI for devel branches
         if: (github.ref != 'refs/heads/master') && (matrix.python-version == 3.9)

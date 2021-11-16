@@ -6,13 +6,14 @@ VENVS = $(shell tox -l)
 ## Top-level targets
 
 .PHONY: all
-all: build
+all: .tox/log/recreate.log build
 
 .PHONY: build
-build: var/log/tox-recreate.log
+build: .tox/log/recreate.log
+	.tox/build/bin/python -m build
 
 .PHONY: format
-format: var/log/tox-recreate.log
+format: .tox/log/recreate.log
 	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
@@ -20,11 +21,11 @@ format: var/log/tox-recreate.log
 	.tox/lint/bin/black ./
 
 .PHONY: test
-test: build format
+test: .tox/log/recreate.log format
 	tox
 
 .PHONY: test-debug
-test-debug: var/log/tox-editable.log
+test-debug: .tox/log/editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
@@ -34,23 +35,23 @@ upgrade: .git/hooks/pre-commit .git/hooks/pre-push
 
 .PHONY: clean
 clean:
-	git clean -dfx -e "var/" -n
+	git clean -dfx -e "var/"
 
 
 ## Real targets
 
 requirements.txt: pyproject.toml setup.cfg tox.ini
-	tox -r -e "pip-tools"
+	tox -r -e "build"
 
-var/log/tox-recreate.log: requirements.txt tox.ini
-	mkdir -p "var/log"
+.tox/log/recreate.log: requirements.txt tox.ini
+	mkdir -pv "$(dir $(@))"
 	tox -r --notest -v | tee "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-var/log/tox-editable.log: var/log/tox-recreate.log
+.tox/log/editable.log: .tox/log/recreate.log
 	./.tox/py3/bin/pip install -e "./"
 
-.git/hooks/pre-commit: var/log/tox-recreate.log
+.git/hooks/pre-commit: .tox/log/recreate.log
 	.tox/lint/bin/pre-commit install
 
-.git/hooks/pre-push: var/log/tox-recreate.log
+.git/hooks/pre-push: .tox/log/recreate.log
 	.tox/lint/bin/pre-commit install --hook-type pre-push

@@ -73,12 +73,12 @@ jobs:
 
       - name: Bump version and push tag
         id: github-tag-action
-        uses: mathieudutour/github-tag-action@v4
-        if: matrix.python-version == 3.9
+        uses: mathieudutour/github-tag-action@v5.6
+        if: (github.ref == 'refs/heads/master') && (matrix.python-version == 3.9)
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Fetch release version tag
-        if: matrix.python-version == 3.9
+        if: (github.ref == 'refs/heads/master') && (matrix.python-version == 3.9)
         run: git fetch --depth=1 origin +refs/tags/v*:refs/tags/v* || true
 
       - name: Build a binary wheel and a source tarball

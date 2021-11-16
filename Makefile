@@ -6,10 +6,11 @@ VENVS = $(shell tox -l)
 ## Top-level targets
 
 .PHONY: all
-all: build
+all: .tox/log/recreate.log build
 
 .PHONY: build
 build: .tox/log/recreate.log
+	.tox/build/bin/python -m build
 
 .PHONY: format
 format: .tox/log/recreate.log
@@ -20,7 +21,7 @@ format: .tox/log/recreate.log
 	.tox/lint/bin/black ./
 
 .PHONY: test
-test: build format
+test: .tox/log/recreate.log format
 	tox
 
 .PHONY: test-debug
@@ -40,7 +41,7 @@ clean:
 ## Real targets
 
 requirements.txt: pyproject.toml setup.cfg tox.ini
-	tox -r -e "pip-tools"
+	tox -r -e "build"
 
 .tox/log/recreate.log: requirements.txt tox.ini
 	mkdir -pv "$(dir $(@))"

@@ -6,14 +6,16 @@ VENVS = $(shell tox -l)
 ## Top-level targets
 
 .PHONY: all
-all: .tox/log/recreate.log build
+all: build
 
 .PHONY: build
-build: .tox/log/recreate.log
+build: var/log/init-setup.log .tox/log/recreate.log
+.PHONY: build-dist
+build-dist: build
 	.tox/build/bin/python -m build
 
 .PHONY: format
-format: .tox/log/recreate.log
+format: build
 	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
@@ -21,7 +23,7 @@ format: .tox/log/recreate.log
 	.tox/lint/bin/black ./
 
 .PHONY: test
-test: .tox/log/recreate.log format
+test: build format
 	tox
 
 .PHONY: test-debug
@@ -29,7 +31,7 @@ test-debug: .tox/log/editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
-upgrade: .git/hooks/pre-commit .git/hooks/pre-push
+upgrade:
 	touch "./pyproject.toml"
 	$(MAKE) "test"
 
@@ -49,6 +51,11 @@ requirements.txt: pyproject.toml setup.cfg tox.ini
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 .tox/log/editable.log: .tox/log/recreate.log
 	./.tox/py3/bin/pip install -e "./"
+
+# Perform any one-time local checkout set up
+var/log/init-setup.log: .git/hooks/pre-commit .git/hooks/pre-push
+	mkdir -pv "$(dir $(@))"
+	date >> "$(@)"
 
 .git/hooks/pre-commit: .tox/log/recreate.log
 	.tox/lint/bin/pre-commit install

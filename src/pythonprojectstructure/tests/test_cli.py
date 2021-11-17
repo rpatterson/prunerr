@@ -1,5 +1,5 @@
 """
-python-project-structure unit and integration tests.
+Test the python-project-structure Command-Line Interface.
 """
 
 import sys
@@ -14,8 +14,7 @@ import pythonprojectstructure
 
 class PythonProjectStructureTests(unittest.TestCase):
     """
-
-    python-project-structure unit and integration tests.
+    Test the python-project-structure Command-Line Interface.
     """
 
     def test_importable(self):

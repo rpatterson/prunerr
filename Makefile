@@ -6,15 +6,19 @@ VENVS = $(shell tox -l)
 ## Top-level targets
 
 .PHONY: all
+### Default target
 all: build
 
 .PHONY: build
+### Perform any currently necessary local set-up common to most operations
 build: var/log/init-setup.log .tox/log/recreate.log
 .PHONY: build-dist
+### Build installable Python packages, mostly to check build locally
 build-dist: build
 	.tox/build/bin/python -m build
 
 .PHONY: format
+### Automatically correct code in this checkout according to linters and style checkers
 format: build
 	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
@@ -23,19 +27,23 @@ format: build
 	.tox/lint/bin/black ./
 
 .PHONY: test
+### Run the full suite of tests, coverage checks, and linters
 test: build format
 	tox
 
 .PHONY: test-debug
+### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: .tox/log/editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
+### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./pyproject.toml"
 	$(MAKE) "test"
 
 .PHONY: clean
+### Restore the checkout to a state as close to an initial clone as possible
 clean:
 	git clean -dfx -e "var/"
 

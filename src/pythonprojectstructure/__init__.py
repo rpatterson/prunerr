@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(
 )
 
 
-def main(args=None):
+def main(args=None):  # pylint: disable=missing-function-docstring
     parser.parse_args(args=args)
 
 

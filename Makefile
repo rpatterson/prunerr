@@ -60,6 +60,17 @@ clean:
 	git clean -dfx -e "var/"
 
 
+## Utility targets
+
+.PHONY: expand-template
+## Create a file from a template replacing environment variables
+expand-template: .SHELLFLAGS = -eu -o pipefail -c
+expand-template:
+	template_str=$$(cat "$(template)")
+# Substitute variables and write file
+	eval "echo \"$${template_str}\"" >"$(target)"
+
+
 ## Real targets
 
 requirements.txt: pyproject.toml setup.cfg tox.ini
@@ -82,3 +93,8 @@ var/log/init-setup.log: .git/hooks/pre-commit .git/hooks/pre-push
 
 .git/hooks/pre-push: .tox/log/recreate.log
 	.tox/lint/bin/pre-commit install --hook-type pre-push
+
+
+# Emacs editor settings
+.dir-locals.el: .dir-locals.el.in
+	$(MAKE) "template=$(<)" "target=$(@)" expand-template

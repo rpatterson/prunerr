@@ -1,5 +1,17 @@
 ## Development, build and maintenance tasks
 
+### Defensive settings for make:
+#     https://tech.davis-hansson.com/p/make/
+SHELL:=bash
+.ONESHELL:
+.SHELLFLAGS:=-xeu -o pipefail -c
+.SILENT:
+.DELETE_ON_ERROR:
+MAKEFLAGS+=--warn-undefined-variables
+MAKEFLAGS+=--no-builtin-rules
+PS1?=$$
+
+# Derived values
 VENVS = $(shell tox -l)
 
 

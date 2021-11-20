@@ -685,7 +685,7 @@ class Prunerr(object):
                     delete_params = dict(removeFromClient="true")
                     if operation_config.get("blacklist", False):
                         delete_params["blacklist"] = "true"
-                    queue_record["servarr_config"]["client"]._delete(
+                    queue_record["servarr_config"]["client"]._raw._delete(
                         f"queue/{queue_id}", **delete_params,
                     )
                 self.move_timeout(download_item, download_item.downloadDir)

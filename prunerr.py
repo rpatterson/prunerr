@@ -635,7 +635,14 @@ class Prunerr(object):
                     download_item,
                 )
                 continue
-            self.review_item(queue_records, download_item)
+            try:
+                self.review_item(queue_records, download_item)
+            except Exception:
+                logger.exception(
+                    "Un-handled exception reviewing item: %r",
+                    download_item,
+                )
+                continue
 
     def review_item(self, queue_records, download_item):
         """
@@ -1310,6 +1317,32 @@ class Prunerr(object):
 
         return corrupt
 
+    def readd_item(self, download_item):
+        """
+        Re-add to transmission the `*.torrent` file for the item.
+        """
+        download_item = self.get_download_item(download_item.hashString)
+        with open(download_item.torrentFile, mode="r+b") as download_item_opened:
+            self.client.remove_torrent(ids=[download_item.hashString])
+            readded = self.client.add_torrent(
+                torrent=download_item_opened,
+                # These are the only fields from the `add_torrent()` call signature
+                # in the docs I could see corresponding fields for in the
+                # representation of a torrent.
+                bandwidthPriority=download_item.bandwidthPriority,
+                download_dir=download_item.download_dir,
+                peer_limit=download_item.peer_limit,
+            )
+        readded = self.get_download_item(readded.hashString)
+        readded.update()
+        assert (
+            readded.download_dir == download_item.download_dir
+        ), (
+            f"Re-added download location changed: "
+            f"{download_item.download_dir!r} -> {readded.download_dir!r}"
+        )
+        return readded
+
     def readd_missing_data(self):
         """
         Workaround an issue with Transmission when starting torrents with no free space.
@@ -1339,28 +1372,16 @@ class Prunerr(object):
                 and torrent.errorString.lower().startswith("no data found")
             ):
                 continue
-            torrent = self.get_download_item(torrent.hashString)
             logger.error("No data found for %s, re-adding", torrent)
-            with open(torrent.torrentFile, mode="r+b") as torrent_opened:
-                self.client.remove_torrent(ids=[torrent.hashString])
-                readded = self.client.add_torrent(
-                    torrent=torrent_opened,
-                    # These are the only fields from the `add_torrent()` call signature
-                    # in the docs I could see corresponding fields for in the
-                    # representation of a torrent.
-                    bandwidthPriority=torrent.bandwidthPriority,
-                    download_dir=torrent.download_dir,
-                    peer_limit=torrent.peer_limit,
+            try:
+                readded = self.readd_item(torrent)
+            except Exception:
+                logger.exception(
+                    "Un-handled exception re-adding item: %r",
+                    torrent,
                 )
-                readded = self.get_download_item(readded.hashString)
-                readded.update()
-                assert (
-                    readded.download_dir == torrent.download_dir
-                ), (
-                    f"Re-added download location changed: "
-                    f"{torrent.download_dir!r} -> {readded.download_dir!r}"
-                )
-                readded_items.append(readded)
+                continue
+            readded_items.append(readded)
         if readded_items:
             self.update()
 
@@ -1502,7 +1523,14 @@ class Prunerr(object):
 
                 # This download client item is in the download directory of a Servarr
                 # instance.  Sync the individual item.
-                item_result = self.sync_item(servarr_config, torrent)
+                try:
+                    item_result = self.sync_item(servarr_config, torrent)
+                except Exception:
+                    logger.exception(
+                        "Un-handled exception syncing item: %r",
+                        torrent,
+                    )
+                    continue
                 if item_result is not None:
                     sync_results.append(item_result)
                 break

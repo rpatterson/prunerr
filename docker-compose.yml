@@ -40,7 +40,7 @@ services:
       - "sonarr"
       - "radarr"
     # Match permissions inside and outside the container
-    user: "1000:100"
+    user: "${PUID:-1000}:${PGID:-100}"
     environment:
       # Find the same configuration file even when run as another user, e.g. `root`.
       HOME: "/home/prunerr"

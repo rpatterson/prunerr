@@ -12,7 +12,7 @@ import unittest
 import pythonprojectstructure
 
 
-class PythonProjectStructureTests(unittest.TestCase):
+class PythonProjectStructureCLITests(unittest.TestCase):
     """
     Test the python-project-structure Command-Line Interface.
     """

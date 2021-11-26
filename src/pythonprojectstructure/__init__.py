@@ -22,6 +22,25 @@ parser = argparse.ArgumentParser(
     description=__doc__.strip(),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
+# Define CLI sub-commands
+subparsers = parser.add_subparsers(
+    dest="command",
+    required=True,
+    help="sub-command help",
+)
+
+
+def foo():
+    """
+    Run the foo sub-command from the command line.
+    """
+    return
+
+
+parser_foo = subparsers.add_parser("foo", help=foo.__doc__.strip())
+# Make the function for the sub-command specified in the CLI argument available in the
+# argument parser for delegation below.
+parser_foo.set_defaults(command=foo)
 
 
 def config_cli_logging(
@@ -55,10 +74,14 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     # handling, that shouldn't be passed onto functions meant to handle CLI usage.  More
     # generally, err on the side of options and arguments being kwargs, remove the
     # exceptions.
-    # del shared_kwargs["foo"]
+    del cli_kwargs["command"]
 
     # Configure logging for CLI usage
     config_cli_logging(**cli_kwargs)
+
+    # Delegate to the function for the sub-command CLI argument
+    logger.info("Running %r sub-command", parsed_args.command.__name__)
+    return parsed_args.command()
 
 
 main.__doc__ = __doc__

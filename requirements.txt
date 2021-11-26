@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=dev ./pyproject.toml
 #
-astroid==2.8.5
+astroid==2.9.0
     # via pylint
 attrs==21.2.0
     # via pytest
@@ -26,7 +26,7 @@ coverage==6.1.2
     # via python-project-structure (./pyproject.toml)
 distlib==0.3.3
     # via virtualenv
-docutils==0.18
+docutils==0.18.1
     # via rstcheck
 filelock==3.4.0
     # via virtualenv
@@ -79,7 +79,7 @@ pyflakes==2.4.0
     # via
     #   autoflake
     #   flake8
-pylint==2.11.1
+pylint==2.12.1
     # via python-project-structure (./pyproject.toml)
 pyparsing==3.0.6
     # via packaging

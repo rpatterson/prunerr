@@ -60,7 +60,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         The command line script accepts options controlling behavior.
         """
-        result = pythonprojectstructure.main(args=[])
+        result = pythonprojectstructure.main(args=["foo"])
         self.assertIsNone(
             result,
             "Wrong console script options return value",
@@ -70,7 +70,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         The command line script displays useful messages for invalid option values.
         """
-        stderr = self.getCliErrorMessages(args=["--non-existent-option"])
+        stderr = self.getCliErrorMessages(args=["foo", "--non-existent-option"])
         self.assertIn(
             "error: unrecognized arguments: --non-existent-option",
             stderr,

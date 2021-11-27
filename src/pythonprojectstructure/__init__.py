@@ -85,7 +85,7 @@ def main(args=None):  # pylint: disable=missing-function-docstring
 
     # Delegate to the function for the sub-command CLI argument
     logger.info("Running %r sub-command", parsed_args.command.__name__)
-    return parsed_args.command()
+    return parsed_args.command(**cli_kwargs)
 
 
 main.__doc__ = __doc__

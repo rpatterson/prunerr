@@ -7,3 +7,13 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "src/pythonprojectstructure/version.py"
 local_scheme = "no-local-version"
+
+[tool.pylint.MASTER]
+# Auto-detect the number of processors available to use from:
+#     $ pylint --generate-rcfile
+jobs = 0
+ignore-paths = [
+# Managed by tools, best to use `# pylint: disable=...` inline comments for any other
+# ignores.
+    "src/pythonprojectstructure/version.py"
+]

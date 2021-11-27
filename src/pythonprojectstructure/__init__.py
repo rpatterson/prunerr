@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(
 subparsers = parser.add_subparsers(
     dest="command",
     required=True,
-    help="sub-command help",
+    help="sub-command",
 )
 
 
@@ -37,7 +37,11 @@ def foo():
     return
 
 
-parser_foo = subparsers.add_parser("foo", help=foo.__doc__.strip())
+parser_foo = subparsers.add_parser(
+    "foo",
+    help=foo.__doc__.strip(),
+    description=foo.__doc__.strip(),
+)
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
 parser_foo.set_defaults(command=foo)

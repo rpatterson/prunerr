@@ -22,7 +22,7 @@ click==8.0.3
     # via
     #   black
     #   pip-tools
-coverage==6.1.2
+coverage==6.2
     # via python-project-structure (./pyproject.toml)
 distlib==0.3.3
     # via virtualenv

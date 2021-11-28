@@ -30,21 +30,21 @@ subparsers = parser.add_subparsers(
 )
 
 
-def foo():
+def foobar():
     """
-    Run the foo sub-command from the command line.
+    Run the foobar sub-command from the command line.
     """
     return
 
 
-parser_foo = subparsers.add_parser(
-    "foo",
-    help=foo.__doc__.strip(),
-    description=foo.__doc__.strip(),
+parser_foobar = subparsers.add_parser(
+    "foobar",
+    help=foobar.__doc__.strip(),
+    description=foobar.__doc__.strip(),
 )
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
-parser_foo.set_defaults(command=foo)
+parser_foobar.set_defaults(command=foobar)
 
 
 def config_cli_logging(

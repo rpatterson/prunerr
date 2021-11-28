@@ -31,7 +31,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
             "The Python package not importable",
         )
 
-    def getCliErrorMessages(self, args):
+    def get_cli_error_messages(self, args):
         """
         Run the CLI script and return any error messages.
         """
@@ -60,7 +60,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         The command line script accepts options controlling behavior.
         """
-        result = pythonprojectstructure.main(args=["foo"])
+        result = pythonprojectstructure.main(args=["foobar"])
         self.assertIsNone(
             result,
             "Wrong console script options return value",
@@ -70,7 +70,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         The command line script displays useful messages for invalid option values.
         """
-        stderr = self.getCliErrorMessages(args=["foo", "--non-existent-option"])
+        stderr = self.get_cli_error_messages(args=["foobar", "--non-existent-option"])
         self.assertIn(
             "error: unrecognized arguments: --non-existent-option",
             stderr,

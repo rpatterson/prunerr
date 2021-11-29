@@ -892,9 +892,8 @@ class Prunerr(object):
             if (
                 (
                     torrent.status == "downloading"
-                    or self.config["downloaders"]["imported-dir"] in pathlib.Path(
-                        torrent.downloadDir,
-                    ).parents
+                    or self.config["downloaders"]["imported-dir"] in
+                    self.get_item_path(torrent).parents
                 )
                 and torrent.error == 2
                 and "unregistered torrent" in torrent.errorString.lower()
@@ -1052,9 +1051,8 @@ class Prunerr(object):
             torrent for torrent in self.torrents
             # only those previously synced and moved
             if torrent.status == "seeding"
-            and self.config["downloaders"]["deleted-dir"] in pathlib.Path(
-                torrent.downloadDir,
-            ).parents
+            and self.config["downloaders"]["deleted-dir"] in
+            self.get_item_path(torrent).parents
 
             # TODO: Optionally include imported items for Servarr configurations that
             # copy items instead of making hard-links, such as when the download client

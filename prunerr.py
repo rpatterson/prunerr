@@ -31,6 +31,8 @@ import transmission_rpc
 from transmission_rpc import utils
 from transmission_rpc import error
 
+missing_value = object()
+
 logger = logging.getLogger("prunerr")
 
 
@@ -1229,8 +1231,11 @@ class Prunerr(object):
         """
         Return the attribute or key value for the download item.
         """
-        if hasattr(torrent, operation_config["name"]):
-            return getattr(torrent, operation_config["name"])
+        # Use `missing_value` instead of `hasattr()`
+        # to avoid redundant property method calls
+        value = getattr(torrent, operation_config["name"], missing_value)
+        if value is not missing_value:
+            return value
         if callable(getattr(torrent, "get", None)):
             return torrent.get(operation_config["name"])
 

@@ -31,7 +31,7 @@ build: $(PREFIX)/.venv/bin/prunerr
 .PHONY: debug
 ## Capture how to run Prunerr in the Python interactive debugger
 debug: $(PREFIX)/.venv/bin/prunerr
-	"$(<:%/prunerr=/python)" -m "pdb" "$(<)" "$(PRUNERR_CMD)"
+	"$(<:%/prunerr=%/python)" -m "pdb" "$(<)" "$(PRUNERR_CMD)"
 
 .PHONY: clean
 clean:

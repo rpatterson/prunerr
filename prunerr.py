@@ -164,9 +164,39 @@ class DownloadItem(transmission_rpc.Torrent):
 
         Best available estimation of total seeding time.
         """
+        if (
+            self._fields["leftUntilDone"].value
+            or self._fields["percentDone"].value < 1
+        ):
+            logger.warning(
+                "Can't determine seconds since done, not done: %r",
+                self,
+            )
+            return None
         done_date = self._fields["doneDate"].value
+        if not done_date:
+            if self._fields["startDate"].value:
+                logger.warning(
+                    "Missing done date for seconds since done"
+                    ", using start date: %r",
+                    self,
+                )
+                done_date = self._fields["startDate"].value
+            elif self._fields["addedDate"].value:
+                logger.warning(
+                    "Missing done date for seconds since done"
+                    ", using added date: %r",
+                    self,
+                )
+                done_date = self._fields["addedDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date
+        else:
+            logger.warning(
+                "Missing done date for seconds since done: %r",
+                self,
+            )
+            return None
 
     @property
     def rate_total(self):

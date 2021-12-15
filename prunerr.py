@@ -171,7 +171,7 @@ class DownloadItem(transmission_rpc.Torrent):
             or self._fields["percentDone"].value < 1
         ):
             logger.warning(
-                "Can't determine seconds since done, not done: %r",
+                "Can't determine seconds since done, not complete: %r",
                 self,
             )
             return None

@@ -1981,7 +1981,6 @@ class Prunerr(object):
         Convert Servarr history values to native Python types when possible.
         """
         # Prevent serialized values from leaking into cached Servarr history
-        history_record = copy.deepcopy(history_record)
         for history_data in (
                 history_record,
                 history_record["data"],
@@ -1997,11 +1996,12 @@ class Prunerr(object):
         """
         Serialize an item's Prunerr data and write to the Prunerr data file.
         """
+        download_data = copy.deepcopy(download_data)
         # Convert loaded JSON to native types where possible
         if download_history is not None:
             download_history = {
                 history_date.strftime(self.SERVARR_DATETIME_FORMAT):
-                self.serialize_history(history_record)
+                self.serialize_history(copy.deepcopy(history_record))
                 for history_date, history_record in
                 download_history.items()
             }

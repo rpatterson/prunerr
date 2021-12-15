@@ -674,7 +674,10 @@ class Prunerr(object):
                     "Un-handled exception reviewing item: %r",
                     download_item,
                 )
-                continue
+                if "DEBUG" in os.environ:
+                    raise
+                else:
+                    continue
 
     def review_item(self, queue_records, download_item):
         """
@@ -1413,7 +1416,10 @@ class Prunerr(object):
                     "Un-handled exception re-adding item: %r",
                     torrent,
                 )
-                continue
+                if "DEBUG" in os.environ:
+                    raise
+                else:
+                    continue
             readded_items.append(readded)
         if readded_items:
             self.update()
@@ -1563,7 +1569,10 @@ class Prunerr(object):
                         "Un-handled exception syncing item: %r",
                         torrent,
                     )
-                    continue
+                    if "DEBUG" in os.environ:
+                        raise
+                    else:
+                        continue
                 if item_result is not None:
                     sync_results.append(item_result)
                 break

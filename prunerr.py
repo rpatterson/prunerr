@@ -1610,7 +1610,7 @@ class Prunerr(object):
         if not self.replay and dir_id is None and download_data.get("history"):
             # Try to correlate to the Servarr movie/series/etc. using existing Prunerr
             # data
-            for history_record in download_data["history"].values():
+            for history_record in reversed(download_data["history"].values()):
                 if dir_id_key in history_record:
                     dir_id = history_record.get(dir_id_key)
                     break

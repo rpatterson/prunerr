@@ -177,20 +177,33 @@ class DownloadItem(transmission_rpc.Torrent):
             return None
         done_date = self._fields["doneDate"].value
         if not done_date:
-            if self._fields["startDate"].value:
-                logger.warning(
-                    "Missing done date for seconds since done"
-                    ", using start date: %r",
-                    self,
-                )
-                done_date = self._fields["startDate"].value
-            elif self._fields["addedDate"].value:
-                logger.warning(
-                    "Missing done date for seconds since done"
-                    ", using added date: %r",
-                    self,
-                )
-                done_date = self._fields["addedDate"].value
+            # Try to find the latest imported record
+            history_records = self.prunerr_data.get("history", {})
+            for history_date in sorted(history_records, reverse=True):
+                imported_record = history_records[history_date]
+                if imported_record["eventType"] == "downloadFolderImported":
+                    logger.warning(
+                        "Missing done date for seconds since done"
+                        ", using Servarr imported date: %r",
+                        self,
+                    )
+                    done_date = imported_record["date"].timestamp()
+                    break
+            else:
+                if self._fields["startDate"].value:
+                    logger.warning(
+                        "Missing done date for seconds since done"
+                        ", using start date: %r",
+                        self,
+                    )
+                    done_date = self._fields["startDate"].value
+                elif self._fields["addedDate"].value:
+                    logger.warning(
+                        "Missing done date for seconds since done"
+                        ", using added date: %r",
+                        self,
+                    )
+                    done_date = self._fields["addedDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date
         else:

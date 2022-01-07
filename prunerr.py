@@ -2227,6 +2227,9 @@ class Prunerr(object):
                             "orphans",
                             [],
                         ).append(str(orphan_path))
+                        # Update local, in-memory data
+                        download_item.update()
+                        download_path = self.get_item_path(download_item)
 
                     # Found the largest matching path, no need to continue
                     break
@@ -2262,6 +2265,9 @@ class Prunerr(object):
                         "paths",
                         [],
                     ).append(str(new_download_path))
+                    # Update local, in-memory data
+                    download_item.update()
+                    download_path = self.get_item_path(download_item)
 
                 # Restore Servarr imports hard links
                 # TODO: Honor Servarr hard link vs copy setting

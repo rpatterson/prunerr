@@ -2344,14 +2344,21 @@ class Prunerr(object):
             # it might have been successfully restored.
             download_parent = pathlib.Path(download_item.download_dir)
             item_files_exist = [
-                item_file for item_file in download_item.files()
-                if (incomplete_path / item_file.name).exists
-                or (download_parent / item_file.name).exists
+                item_file for item_file in download_item.files() if
+                (incomplete_path / item_file.name).exists()
+                or (download_parent / item_file.name).exists()
+            ]
+            item_files_undownloaded = [
+                item_file for item_file in item_files_exist if not item_file.completed
             ]
             if (
-                    (download_item.status == 'stopped' and item_files_exist)
-                    or restored_items.get(download_item.name, {}).get("orphans", [])
-                    or restored_items.get(download_item.name, {}).get("imported", [])
+                (
+                    download_item.status == 'stopped'
+                    and item_files_undownloaded
+                    and download_parent != client_download_path
+                )
+                or restored_items.get(download_item.name, {}).get("orphans", [])
+                or restored_items.get(download_item.name, {}).get("imported", [])
             ):
                 logger.info(
                     "Verifying and resuming: %r", download_item,

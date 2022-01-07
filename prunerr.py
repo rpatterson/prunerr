@@ -2192,6 +2192,12 @@ class Prunerr(object):
         # Start with the largest orphan path first
         orphans.reverse()
         for download_item in self.torrents:
+            if download_item.status.lower().startswith("check"):
+                logger.debug(
+                    "Skipping verifying item: %r",
+                    download_item,
+                )
+                continue
             download_id = download_item.hashString.lower()
             download_path = self.get_item_path(download_item)
 

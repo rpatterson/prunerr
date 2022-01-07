@@ -2217,15 +2217,16 @@ class Prunerr(object):
                                 and client_download_path not in orphan_path.parents
                             )
                     ):
-                        # Collect results of actions taken
-                        restored_items.setdefault(download_item.name, dict(orphans=[]))[
-                            "orphans"
-                        ].append(str(orphan_path))
                         logger.info(
                             "Restoring data: %r -> %r",
                             str(download_path), str(orphan_path),
                         )
                         download_item.locate_data(str(orphan_path.parent))
+                        # Collect results of actions taken
+                        restored_items.setdefault(download_item.name, {}).setdefault(
+                            "orphans",
+                            [],
+                        ).append(str(orphan_path))
 
                     # Found the largest matching path, no need to continue
                     break
@@ -2257,9 +2258,10 @@ class Prunerr(object):
                         download_item, download_path.parent, dst_path,
                     )
                     # Collect results of actions taken
-                    restored_items.setdefault(download_item.name, dict(paths=[]))[
-                        "paths"
-                    ].append(str(new_download_path))
+                    restored_items.setdefault(download_item.name, {}).setdefault(
+                        "paths",
+                        [],
+                    ).append(str(new_download_path))
 
                 # Restore Servarr imports hard links
                 # TODO: Honor Servarr hard link vs copy setting
@@ -2301,8 +2303,11 @@ class Prunerr(object):
                         ):
                             # Collect results of actions taken
                             restored_items.setdefault(
-                                download_item.name, dict(imported=[]),
-                            )["imported"].append(str(imported_path))
+                                download_item.name,
+                                {},
+                            ).setdefault("imported", []).append(
+                                str(imported_path),
+                            )
                             if current_dropped_path.exists():
                                 logger.info(
                                     "Removing dropped path: %r",

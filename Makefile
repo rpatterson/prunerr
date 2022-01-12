@@ -11,6 +11,11 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Options affecting target behavior
+PUID=1000
+PGID=100
+REQUIREMENTS=./requirements-devel.txt
+
 # Derived values
 VENVS = $(shell tox -l)
 
@@ -23,7 +28,7 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./var/log/init-setup.log ./var/log/recreate.log
+build: ./var/log/init-setup.log ./var/log/recreate.log ./var/log/docker-build.log
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
 build-dist: build
@@ -40,8 +45,12 @@ format: build
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: build format
-	tox
+test: build format test-docker
+.PHONY: test-docker
+### Run the full suite of tests inside a docker container
+test-docker: ./var/log/docker-build.log
+	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
+	    --entrypoint="tox" python-project-structure
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
@@ -52,7 +61,7 @@ test-debug: ./var/log/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./pyproject.toml"
-	$(MAKE) "test"
+	$(MAKE) PUID=$(PUID) "test"
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
@@ -82,6 +91,15 @@ expand-template:
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./"
+
+# Docker targets
+./var/log/docker-build.log: ./requirements.txt ./Dockerfile ./docker-compose.yml
+# Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
+# dockerd`, it ends up owned by `root`.
+	mkdir -pv "./.tox-docker/"
+	docker-compose build --pull \
+	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
+	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"
 
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push

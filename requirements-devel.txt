@@ -27,7 +27,9 @@ distlib==0.3.4
 docutils==0.18.1
     # via rstcheck
 filelock==3.4.2
-    # via virtualenv
+    # via
+    #   tox
+    #   virtualenv
 flake8==4.0.1
     # via
     #   flake8-black
@@ -51,7 +53,9 @@ mypy-extensions==0.4.3
 nodeenv==1.6.0
     # via pre-commit
 packaging==21.3
-    # via pytest
+    # via
+    #   pytest
+    #   tox
 pathspec==0.9.0
     # via black
 pep517==0.12.0
@@ -64,11 +68,15 @@ platformdirs==2.4.1
     #   pylint
     #   virtualenv
 pluggy==1.0.0
-    # via pytest
+    # via
+    #   pytest
+    #   tox
 pre-commit==2.16.0
     # via python-project-structure (./pyproject.toml)
 py==1.11.0
-    # via pytest
+    # via
+    #   pytest
+    #   tox
 pycodestyle==2.8.0
     # via
     #   autopep8
@@ -88,7 +96,9 @@ pyyaml==6.0
 rstcheck==3.3.1
     # via python-project-structure (./pyproject.toml)
 six==1.16.0
-    # via virtualenv
+    # via
+    #   tox
+    #   virtualenv
 toml==0.10.2
     # via
     #   autopep8
@@ -96,17 +106,22 @@ toml==0.10.2
     #   pre-commit
     #   pylint
     #   pytest
+    #   tox
 tomli==1.2.3
     # via
     #   black
     #   pep517
+tox==3.24.5
+    # via python-project-structure (./pyproject.toml)
 typing-extensions==4.0.1
     # via
     #   astroid
     #   black
     #   pylint
 virtualenv==20.13.0
-    # via pre-commit
+    # via
+    #   pre-commit
+    #   tox
 wheel==0.37.1
     # via pip-tools
 wrapt==1.13.3

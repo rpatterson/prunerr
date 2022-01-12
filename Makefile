@@ -76,7 +76,7 @@ expand-template:
 ./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
 	tox -r -e "build"
 
-./.tox/log/recreate.log: ./requirements.txt ./tox.ini
+./.tox/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r --notest -v | tee "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`

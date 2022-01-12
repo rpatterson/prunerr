@@ -4,17 +4,15 @@
 #
 #    pip-compile --extra=devel ./pyproject.toml
 #
-astroid==2.9.0
+astroid==2.9.3
     # via pylint
-attrs==21.2.0
+attrs==21.4.0
     # via pytest
 autoflake==1.4
     # via python-project-structure (./pyproject.toml)
 autopep8==1.6.0
     # via python-project-structure (./pyproject.toml)
-backports.entry-points-selectable==1.1.1
-    # via virtualenv
-black==21.11b1
+black==21.12b0
     # via flake8-black
 cfgv==3.3.1
     # via pre-commit
@@ -24,11 +22,11 @@ click==8.0.3
     #   pip-tools
 coverage==6.2
     # via python-project-structure (./pyproject.toml)
-distlib==0.3.3
+distlib==0.3.4
     # via virtualenv
 docutils==0.18.1
     # via rstcheck
-filelock==3.4.0
+filelock==3.4.2
     # via virtualenv
 flake8==4.0.1
     # via
@@ -36,13 +34,13 @@ flake8==4.0.1
     #   python-project-structure (./pyproject.toml)
 flake8-black==0.2.3
     # via python-project-structure (./pyproject.toml)
-identify==2.4.0
+identify==2.4.3
     # via pre-commit
 iniconfig==1.1.1
     # via pytest
 isort==5.10.1
     # via pylint
-lazy-object-proxy==1.6.0
+lazy-object-proxy==1.7.1
     # via astroid
 mccabe==0.6.1
     # via
@@ -60,14 +58,14 @@ pep517==0.12.0
     # via pip-tools
 pip-tools==6.4.0
     # via python-project-structure (./pyproject.toml)
-platformdirs==2.4.0
+platformdirs==2.4.1
     # via
     #   black
     #   pylint
     #   virtualenv
 pluggy==1.0.0
     # via pytest
-pre-commit==2.15.0
+pre-commit==2.16.0
     # via python-project-structure (./pyproject.toml)
 py==1.11.0
     # via pytest
@@ -79,7 +77,7 @@ pyflakes==2.4.0
     # via
     #   autoflake
     #   flake8
-pylint==2.12.1
+pylint==2.12.2
     # via python-project-structure (./pyproject.toml)
 pyparsing==3.0.6
     # via packaging
@@ -87,8 +85,6 @@ pytest==6.2.5
     # via python-project-structure (./pyproject.toml)
 pyyaml==6.0
     # via pre-commit
-regex==2021.11.10
-    # via black
 rstcheck==3.3.1
     # via python-project-structure (./pyproject.toml)
 six==1.16.0
@@ -100,18 +96,18 @@ toml==0.10.2
     #   pre-commit
     #   pylint
     #   pytest
-tomli==1.2.2
+tomli==1.2.3
     # via
     #   black
     #   pep517
-typing-extensions==4.0.0
+typing-extensions==4.0.1
     # via
     #   astroid
     #   black
     #   pylint
-virtualenv==20.10.0
+virtualenv==20.13.0
     # via pre-commit
-wheel==0.37.0
+wheel==0.37.1
     # via pip-tools
 wrapt==1.13.3
     # via astroid

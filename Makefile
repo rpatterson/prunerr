@@ -51,6 +51,10 @@ test: build format test-docker
 test-docker: ./var/log/docker-build.log
 	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
 	    --entrypoint="tox" python-project-structure
+# Ensure the dist/package has been correctly installed in the image
+	docker-compose run --rm --entrypoint="python" python-project-structure \
+	    -m pythonprojectstructure --help
+	docker-compose run --rm --entrypoint="python-project-structure" python-project-structure --help
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures

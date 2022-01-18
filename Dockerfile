@@ -10,6 +10,7 @@ ARG REQUIREMENTS=./requirements.txt
 WORKDIR /usr/local/src/python-project-structure/
 COPY [ "./", "./" ]
 RUN pip install --no-cache-dir -r "${REQUIREMENTS}"
+RUN pip install --no-cache-dir -e "./"
 
 # Add a user whose home directory will contain the configuration file
 RUN adduser --uid "${PUID}" --gid "${PGID}" --disabled-password \

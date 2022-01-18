@@ -1,0 +1,20 @@
+# Minimal `$ docker-compose ...` configuration to demonstrate the requirements for
+# running `$ feedarchiver ...` in containers.
+version: "3.8"
+
+services:
+
+  python-project-structure:
+    container_name: "python-project-structure"
+    image: "rpatterson/python-project-structure"
+    build: "./"
+    # Match permissions inside and outside the container
+    user: "${PUID:-1000}:${PGID:-100}"
+    environment:
+      # Find the same configuration file even when run as another user, e.g. `root`.
+      HOME: "/home/python-project-structure"
+    volumes:
+      # For development, test changes without rebuilding the image
+      - "./:/usr/local/src/python-project-structure/"
+      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
+    restart: "unless-stopped"

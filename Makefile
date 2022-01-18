@@ -11,6 +11,11 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Options affecting target behavior
+PUID=1000
+PGID=100
+REQUIREMENTS=./requirements-devel.txt
+
 # Derived values
 VENVS = $(shell tox -l)
 
@@ -23,36 +28,40 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: var/log/init-setup.log .tox/log/recreate.log
+build: ./var/log/init-setup.log ./var/log/recreate.log ./var/log/docker-build.log
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
 build-dist: build
-	.tox/build/bin/python -m build
+	./.tox/build/bin/python -m build
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
 format: build
-	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
+	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
-	.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
-	.tox/lint/bin/black ./
+	./.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
+	./.tox/lint/bin/black ./
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: build format
-	tox
+test: build format test-docker
+.PHONY: test-docker
+### Run the full suite of tests inside a docker container
+test-docker: ./var/log/docker-build.log
+	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
+	    --entrypoint="tox" python-project-structure
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: .tox/log/editable.log
+test-debug: ./var/log/editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./pyproject.toml"
-	$(MAKE) "test"
+	$(MAKE) PUID=$(PUID) "test"
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
@@ -73,28 +82,42 @@ expand-template:
 
 ## Real targets
 
-requirements.txt: pyproject.toml setup.cfg tox.ini
+./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
 	tox -r -e "build"
 
-.tox/log/recreate.log: requirements.txt tox.ini
+./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r --notest -v | tee "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-.tox/log/editable.log: .tox/log/recreate.log
+./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./"
 
+# Docker targets
+./var/log/docker-build.log: \
+		./requirements.txt ./requirements-devel.txt \
+		./Dockerfile ./docker-compose.yml
+# Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
+# dockerd`, it ends up owned by `root`.
+	mkdir -pv "./.tox-docker/"
+	docker-compose build --pull \
+	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
+	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"
+# Ensure that `./.tox/` is also up to date in the container
+	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
+	    --entrypoint="tox" python-project-structure -r --notest -v
+
 # Perform any one-time local checkout set up
-var/log/init-setup.log: .git/hooks/pre-commit .git/hooks/pre-push
+./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
 	mkdir -pv "$(dir $(@))"
 	date >> "$(@)"
 
-.git/hooks/pre-commit: .tox/log/recreate.log
-	.tox/lint/bin/pre-commit install
+./.git/hooks/pre-commit: ./var/log/recreate.log
+	./.tox/lint/bin/pre-commit install
 
-.git/hooks/pre-push: .tox/log/recreate.log
-	.tox/lint/bin/pre-commit install --hook-type pre-push
+./.git/hooks/pre-push: ./var/log/recreate.log
+	./.tox/lint/bin/pre-commit install --hook-type pre-push
 
 
 # Emacs editor settings
-.dir-locals.el: .dir-locals.el.in
+./.dir-locals.el: ./.dir-locals.el.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template

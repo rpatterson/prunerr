@@ -68,7 +68,7 @@ jobs:
         env:
           SETUPTOOLS_SCM_DEBUG: "true"
         run: |
-          make upgrade
+          make PUID=1001 upgrade
           tox
 
       # Release

@@ -23,20 +23,20 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: var/log/init-setup.log .tox/log/recreate.log
+build: ./var/log/init-setup.log ./var/log/recreate.log
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
 build-dist: build
-	.tox/build/bin/python -m build
+	./.tox/build/bin/python -m build
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
 format: build
-	.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
+	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
-	.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
-	.tox/lint/bin/black ./
+	./.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
+	./.tox/lint/bin/black ./
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
@@ -45,7 +45,7 @@ test: build format
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: .tox/log/editable.log
+test-debug: ./var/log/editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
@@ -73,28 +73,28 @@ expand-template:
 
 ## Real targets
 
-requirements.txt: pyproject.toml setup.cfg tox.ini
+./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
 	tox -r -e "build"
 
-.tox/log/recreate.log: requirements.txt tox.ini
+./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r --notest -v | tee "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-.tox/log/editable.log: .tox/log/recreate.log
+./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./"
 
 # Perform any one-time local checkout set up
-var/log/init-setup.log: .git/hooks/pre-commit .git/hooks/pre-push
+./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
 	mkdir -pv "$(dir $(@))"
 	date >> "$(@)"
 
-.git/hooks/pre-commit: .tox/log/recreate.log
-	.tox/lint/bin/pre-commit install
+./.git/hooks/pre-commit: ./var/log/recreate.log
+	./.tox/lint/bin/pre-commit install
 
-.git/hooks/pre-push: .tox/log/recreate.log
-	.tox/lint/bin/pre-commit install --hook-type pre-push
+./.git/hooks/pre-push: ./var/log/recreate.log
+	./.tox/lint/bin/pre-commit install --hook-type pre-push
 
 
 # Emacs editor settings
-.dir-locals.el: .dir-locals.el.in
+./.dir-locals.el: ./.dir-locals.el.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template

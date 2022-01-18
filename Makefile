@@ -19,6 +19,7 @@ PUID=1000
 PGID=100
 PRUNERR_CMD=exec
 
+
 ## Top level targets
 
 .PHONY: all
@@ -36,6 +37,7 @@ debug: $(PREFIX)/.venv/bin/prunerr
 .PHONY: clean
 clean:
 	test -e "$(PREFIX)/.venv/" && rm -r "$(PREFIX)/.venv/"
+
 
 ## Real targets
 

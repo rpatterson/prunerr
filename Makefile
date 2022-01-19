@@ -79,9 +79,13 @@ clean:
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template:
-	template_str=$$(cat "$(template)")
-# Substitute variables and write file
-	eval "echo \"$${template_str}\"" >"$(target)"
+	if [ -e "$(target)" ]
+	then
+	    echo "Template $(template) has been updated"
+	    echo "Reconcile changes and touch $(target)"
+	    false
+	fi
+	envsubst <"$(template)" >"$(target)"
 
 
 ## Real targets

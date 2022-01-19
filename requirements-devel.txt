@@ -36,7 +36,7 @@ flake8==4.0.1
     #   python-project-structure (./pyproject.toml)
 flake8-black==0.2.3
     # via python-project-structure (./pyproject.toml)
-identify==2.4.3
+identify==2.4.4
     # via pre-commit
 iniconfig==1.1.1
     # via pytest
@@ -71,7 +71,7 @@ pluggy==1.0.0
     # via
     #   pytest
     #   tox
-pre-commit==2.16.0
+pre-commit==2.17.0
     # via python-project-structure (./pyproject.toml)
 py==1.11.0
     # via

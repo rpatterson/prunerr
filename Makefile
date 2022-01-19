@@ -113,7 +113,7 @@ expand-template:
 # Docker targets
 ./var/log/docker-build.log: \
 		./requirements.txt ./requirements-devel.txt \
-		./Dockerfile ./docker-compose.yml
+		./Dockerfile ./docker-compose.yml ./.env.in
 # Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
 # dockerd`, it ends up owned by `root`.
 	mkdir -pv "./.tox-docker/"
@@ -123,6 +123,10 @@ expand-template:
 # Ensure that `./.tox/` is also up to date in the container
 	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
 	    --entrypoint="tox" python-project-structure -r --notest -v
+
+# Local environment variables from a template
+./.env: ./.env.in
+	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push

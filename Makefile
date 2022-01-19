@@ -34,6 +34,17 @@ build: ./var/log/init-setup.log ./var/log/recreate.log ./var/log/docker-build.lo
 build-dist: build
 	./.tox/build/bin/python -m build
 
+.PHONY: start
+### Run the local development end-to-end stack services in the background as daemons
+start: build
+	docker-compose down
+	docker-compose up -d
+.PHONY: run
+### Run the local development end-to-end stack services in the foreground for debugging
+run: build
+	docker-compose down
+	docker-compose up
+
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
 format: build

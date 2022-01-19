@@ -1,5 +1,5 @@
 # Minimal `$ docker-compose ...` configuration to demonstrate the requirements for
-# running `$ feedarchiver ...` in containers.
+# running python-project-structure in containers.
 version: "3.8"
 
 services:

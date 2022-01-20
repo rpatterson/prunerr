@@ -15,5 +15,6 @@ jobs = 0
 ignore-paths = [
 # Managed by tools, best to use `# pylint: disable=...` inline comments for any other
 # ignores.
-    "src/pythonprojectstructure/version.py"
+    "src/.+/version.py",
+    ".*/src/.+/version.py",
 ]

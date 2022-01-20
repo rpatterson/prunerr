@@ -35,7 +35,6 @@ services:
   prunerr-daemon:
     container_name: "prunerr-daemon"
     image: "rpatterson/prunerr"
-    build: "./"
     depends_on:
       - "sonarr"
       - "radarr"
@@ -49,6 +48,4 @@ services:
       - "./transmission/config/:/config/"
       # Use the Prunerr config from the Prunerr checkout
       - "./home/.config/:/home/prunerr/.config/"
-      # For development, test changes without rebuilding the image
-      # - "./:/usr/local/src/prunerr/"
     restart: "unless-stopped"

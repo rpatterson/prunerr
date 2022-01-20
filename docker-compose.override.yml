@@ -1,0 +1,12 @@
+# Override `$ docker-compose ...` configuration for development or testing here in this
+# repo checkout.  Everything that may be used outside this checkout should be in
+# `./docker-compose.yml`.
+version: "3.8"
+
+services:
+
+  prunerr-daemon:
+    build: "./"
+    volumes:
+      # For development, test changes without rebuilding the image
+      - "./:/usr/local/src/prunerr/"

@@ -34,7 +34,7 @@ services:
 
   prunerr-daemon:
     container_name: "prunerr-daemon"
-    image: "prunerr/prunerr"
+    image: "rpatterson/prunerr"
     build: "./"
     depends_on:
       - "sonarr"

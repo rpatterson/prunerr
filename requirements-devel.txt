@@ -79,7 +79,7 @@ pyflakes==2.4.0
     #   flake8
 pylint==2.12.2
     # via python-project-structure (./pyproject.toml)
-pyparsing==3.0.6
+pyparsing==3.0.7
     # via packaging
 pytest==6.2.5
     # via python-project-structure (./pyproject.toml)

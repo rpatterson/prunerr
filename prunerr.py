@@ -1661,7 +1661,9 @@ class Prunerr(object):
             # TODO: Skip duplicate events for multi-file items such as season packs
 
             # Preserve existing Prunerr data
-            existing_record = existing_history.get(history_record["date"], {})
+            existing_record = {}
+            if existing_history is not None:
+                existing_record = existing_history.get(history_record["date"], {})
             history_record["prunerr"] = existing_record.get("prunerr", {})
             # Insert into the new history keyed by time stamp
             download_history[history_record["date"]] = history_record

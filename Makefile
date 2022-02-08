@@ -26,8 +26,20 @@ PRUNERR_CMD=exec
 all: build
 
 .PHONY: build
-build: $(PREFIX)/.venv/bin/prunerr
+build: $(PREFIX)/.venv/bin/prunerr ./.env
 	docker-compose build --pull --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)"
+
+.PHONY: expand-template
+## Create a file from a template replacing environment variables
+expand-template: .SHELLFLAGS = -eu -o pipefail -c
+expand-template:
+	if [ -e "$(target)" ]
+	then
+	    echo "WARNING: Template $(template) has been updated:"
+	    diff -u "$(target)" "$(template)" || true
+	else
+	    envsubst <"$(template)" >"$(target)"
+	fi
 
 .PHONY: debug
 ## Capture how to run Prunerr in the Python interactive debugger
@@ -47,3 +59,11 @@ $(PREFIX)/.venv/bin/prunerr: ./setup.py $(PREFIX)/.venv/bin/activate
 
 $(PREFIX)/.venv/bin/activate:
 	python3 -m venv "$(@:%/bin/activate=%/)"
+
+./.env: ./.env.in /usr/bin/apg
+	export TRANSMISSION_PASS="$(apg -n 1)"
+	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+
+/usr/bin/apg:
+	apt-get update
+	apt-get install -y "$(@:/usr/bin/%=%)"

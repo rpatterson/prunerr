@@ -4,6 +4,28 @@ version: "3.8"
 
 services:
 
+  transmission:
+    container_name: "transmission"
+    image: "linuxserver/transmission"
+    environment:
+      TZ: "${TZ:-America/Los_Angeles}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-100}"
+      USER: "${TRANSMISSION_USER:-transmission}"
+      PASS: "${TRANSMISSION_PASS}"
+    volumes:
+      # Exit the container if the core `s6-overlay` service fails.
+      # Replace with the correct path for your `$ docker-compose ...` project.
+      # - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
+      # Intended for use in the image
+      - "./transmission/config/:/config/"
+    healthcheck:
+      test: >-
+        ping -c 1 dns.google.com &&
+        curl -LI -u "${TRANSMISSION_USER}:${TRANSMISSION_PASS}"
+        "http://localhost:9091/transmission/rpc/" |
+        grep '^X-Transmission-Session-Id: '
+
   sonarr:
     container_name: "sonarr"
     image: "ghcr.io/hotio/sonarr"

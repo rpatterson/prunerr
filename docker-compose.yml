@@ -7,6 +7,17 @@ services:
   transmission:
     container_name: "transmission"
     image: "linuxserver/transmission"
+    # command:
+    #   # From `# pgrep -fla transmission`:
+    #   # `/usr/bin/transmission-daemon -g /config -c /watch -f`
+    #   - "transmission-daemon"
+    #   - "-g"
+    #   - "/config"
+    #   - "-c"
+    #   - "/watch"
+    #   - "-f"
+    #   # Enable debug logging
+    #   - "--log-debug"
     environment:
       TZ: "${TZ:-America/Los_Angeles}"
       PUID: "${PUID:-1000}"

@@ -20,6 +20,9 @@ services:
       # Intended for use in the image
       - "./transmission/config/:/config/"
     healthcheck:
+      # A deployment with a large number of torrents, as is the intended use case for
+      # Prunerr, can take some time to start accepting RPC connections.
+      start_period: "60s"
       test: >-
         ping -c 1 dns.google.com &&
         curl -LI -u "${TRANSMISSION_USER}:${TRANSMISSION_PASS}"

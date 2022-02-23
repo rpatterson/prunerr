@@ -72,6 +72,7 @@ services:
     container_name: "prunerr-daemon"
     image: "rpatterson/prunerr"
     depends_on:
+      - "transmission"
       - "sonarr"
       - "radarr"
     # Match permissions inside and outside the container

@@ -17,6 +17,8 @@ required = [
     "pyyaml",
     # Servarr API clients/wrappers
     "arrapi>=1.2",
+    # Retry on connection errors
+    "tenacity",
 ]
 
 setup(

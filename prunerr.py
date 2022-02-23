@@ -24,6 +24,7 @@ import re
 
 import ciso8601
 import yaml
+import tenacity
 
 import arrapi
 
@@ -275,13 +276,15 @@ class Prunerr(object):
     # Prunerr constants
     PRUNERR_FILE_SUFFIXES = {".prunerr.json", "-servarr-imported.ln"}
 
-    def __init__(self, config, servarrs, client, url, servarr_name=None, replay=False):
+    def __init__(self, config, servarrs, url, servarr_name=None, replay=False):
         """
         Do any config post-processing and set initial state.
         """
-        # Download client handling
-        self.client = client
         self.url = url
+        self.servarrs = servarrs
+
+        # Downloader and Servarr client handling
+        self.connect()
         session = self.client.get_session()
 
         # Prunerr config processing
@@ -326,7 +329,6 @@ class Prunerr(object):
         }
 
         # Servarr API client and download client settings
-        self.servarrs = servarrs
         # Derive the destination directories for this download client for each type of
         # Servarr instance, e.g. `tvDirectory` vs `movieDirectory`.
         for servarr_config in self.servarrs.values():
@@ -373,6 +375,38 @@ class Prunerr(object):
         self.popen = self.copying = None
         self.corrupt = {}
         self.quiet = False
+
+    @tenacity.retry(
+        retry=tenacity.retry_if_exception_type((
+            socket.error,
+            error.TransmissionError,
+            arrapi.exceptions.ConnectionFailure,
+        )),
+        wait=tenacity.wait_fixed(1),
+        reraise=True,
+        before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
+    )
+    def connect(self):
+        """
+        Connect to the download and Servarr clients, waiting for reconnection on error.
+        """
+        split_url = urllib.parse.urlsplit(self.url)
+        logger.debug(
+            "Connecting to download client: %s",
+            self.url,
+        )
+        self.client = transmission_rpc.client.Client(
+            protocol=split_url.scheme,
+            host=split_url.hostname,
+            port=split_url.port,
+            path=split_url.path,
+            username=split_url.username,
+            password=split_url.password,
+        )
+        for _, servarr_config in self.servarrs.items():
+            servarr_config["client"] = Prunerr.SERVARR_TYPE_MAPS[
+                servarr_config["type"]
+            ]["client"](servarr_config["url"], servarr_config["api-key"])
 
     def strip_type_prefix(
             self,
@@ -570,31 +604,29 @@ class Prunerr(object):
         # daemon poll loop.
         self.quiet = False
         while True:
-            while True:
-                try:
-                    # Don't loop until we successfully update everything
-                    self.update()
-                except (
-                        socket.error,
-                        error.TransmissionError,
-                        arrapi.exceptions.ConnectionFailure) as exc:
-                    logger.error(
-                        "Connection error while updating from server: %s",
-                        exc,
-                    )
-                    pass
-                else:
-                    time.sleep(1)
-                    break
-
+            # Start the clock for the poll loop as early as possible to keep the inner
+            # loop duration as accurate as possible.
             start = time.time()
+
             try:
+                # Refresh the list of download items
+                self.update()
+                # Run the `exec` sub-command as the inner loop
                 self.exec_()
-            except socket.error:
-                logger.exception("Connection error while running daemon")
-                pass
-            # Don't repeat noisy messages from now on.
-            self.quiet = True
+            except (
+                    socket.error,
+                    error.TransmissionError,
+                    arrapi.exceptions.ConnectionFailure) as exc:
+                logger.error(
+                    "Connection error while updating from server: %s",
+                    exc,
+                )
+                # Re-connect to external services and retry
+                self.connect()
+                continue
+            else:
+                # Don't repeat noisy messages from now on.
+                self.quiet = True
 
             # Wait for the next interval
             poll = (
@@ -2376,6 +2408,15 @@ def get_home():
         return os.path.expanduser("~")
 
 
+@tenacity.retry(
+    retry=tenacity.retry_if_exception_type((
+        socket.error,
+        arrapi.exceptions.ConnectionFailure,
+    )),
+    wait=tenacity.wait_fixed(1),
+    reraise=True,
+    before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
+)
 def collect_downloaders(config):
     """
     Aggregate all download clients from all Servarr instances defined in the config.
@@ -2436,14 +2477,6 @@ def collect_downloaders(config):
         # Aggregate the download clients from all Servarrs so that we run for each
         # download client once even when used for multiple Servarr instances
         if downloader_url.geturl() not in downloaders:
-            downloader_config["client"] = transmission_rpc.client.Client(
-                protocol=downloader_url.scheme,
-                host=downloader_url.hostname,
-                port=downloader_url.port,
-                path=downloader_url.path,
-                username=downloader_url.username,
-                password=downloader_url.password,
-            )
             downloaders[downloader_url.geturl()] = downloader_config
 
     return downloaders
@@ -2534,9 +2567,9 @@ def main(args=None):
     for downloader_url, downloader_config in downloaders.items():
         prunerr_kwargs = dict(shared_kwargs)
         prunerr_kwargs["servarrs"] = downloader_config.get("servarrs", {})
-        prunerr_kwargs["client"] = downloader_config["client"]
         prunerr_kwargs["url"] = downloader_url
         prunerr = Prunerr(**prunerr_kwargs)
+        # FIXME: `daemon` sub-command only ever processes first download client
         results = parsed_args.command(prunerr)
         if results:
             if isinstance(results, list):

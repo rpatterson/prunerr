@@ -2393,6 +2393,126 @@ class Prunerr(object):
 
         return restored_items
 
+    def relink(self):
+        """
+        Relink the source from the latest import history record if present.
+
+        Useful something else has been linked over the destination, such as when an
+        extra video video file with the same extenstion/suffix is imported.
+
+        https://forums.sonarr.tv/t/importing-extra-files-overwrites-samples-over-full-video-files/30039/3
+        """
+        event_locations = self.SERVARR_EVENT_LOCATIONS["downloadFolderImported"]
+        for servarr_config in self.servarrs.values():
+            # Radarr movies or Sonarr series episodes, `movieId` vs `episodeId`
+            media_id_field = (
+                f"{self.SERVARR_TYPE_MAPS[servarr_config['type']]['file_type']}Id"
+            )
+            media_items = set()
+            # Prunerr lifecycle top-level directories
+            downloads_dir = servarr_config[event_locations["src"]]
+            imports_dir = servarr_config[event_locations["dst"]]
+
+            # Page through all import history
+            history_page = None
+            history_page_num = 1
+            while (
+                # Is history for this Servarr instance exhausted?
+                history_page is None
+                or (history_page_num * 250) <= history_page["totalRecords"]
+            ):
+                logger.debug(
+                    "Requesting %r Servarr history page: %s",
+                    servarr_config["name"],
+                    history_page_num,
+                )
+                history_page = servarr_config["client"]._raw._get(
+                    "history",
+                    # Only import history records
+                    eventType=3,
+                    # Most recent first
+                    sortKey="date",
+                    sortDirection="descending",
+                    # Maximum Servarr page size
+                    pageSize=250,
+                    page=history_page_num,
+                )
+                history_page_num += 1
+
+                # Check all import history records in this page
+                for history_record in history_page["records"]:
+                    media_id = history_record[media_id_field]
+                    if media_id in media_items:
+                        logger.debug(
+                            "Skipping older import history record: %r",
+                            media_id,
+                        )
+                        continue
+                    media_items.add(media_id)
+                    logger.debug(
+                        "Processing media item: %r",
+                        media_id,
+                    )
+
+                    imported_path = pathlib.Path(history_record["data"]["importedPath"])
+                    if not imported_path.exists():
+                        logger.warning(
+                            "Skipping missing imported path: %s",
+                            imported_path,
+                        )
+                        continue
+
+                    # Checks and adjustments for Prunerr moves
+                    dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
+                    if downloads_dir not in dropped_path.parents:
+                        logger.warning(
+                            "Skipping dropped path not in downloads: %s",
+                            dropped_path,
+                        )
+                        continue
+                    relative_path = dropped_path.relative_to(downloads_dir)
+                    source_path = imports_dir / relative_path
+                    if not source_path.exists():
+                        logger.info(
+                            "Downloaded source path not longer exists: %s",
+                            source_path,
+                        )
+                        continue
+
+                    source_stat = source_path.stat()
+                    imported_stat = imported_path.stat()
+                    if (
+                            (source_stat.st_dev, source_stat.st_ino) ==
+                            (imported_stat.st_dev, imported_stat.st_ino)
+                    ):
+                        logger.info(
+                            "Source already linked to imported path: %s",
+                            source_path,
+                        )
+                        continue
+
+                    backup_path = imported_path.with_name(
+                        f"{imported_path.name}.~prunerr-relink~"
+                    )
+                    if backup_path.exists():
+                        logger.warning(
+                            "Deleting previous backup: %s",
+                            backup_path,
+                        )
+                        backup_path.unlink()
+                    logger.debug(
+                        "Backing up existing imported link: %s",
+                        backup_path,
+                    )
+                    imported_path.rename(backup_path)
+
+                    logger.info(
+                        "Linking source to imported path: %s -> %s",
+                        source_path,
+                        imported_path,
+                    )
+                    source_path.link_to(imported_path)
+
 
 Prunerr.__doc__ = __doc__
 
@@ -2543,6 +2663,18 @@ parser_restore_data = subparsers.add_parser(
     "restore-data", help=restore_data.__doc__.strip(),
 )
 parser_restore_data.set_defaults(command=restore_data)
+
+
+def relink(prunerr):
+    prunerr.update()
+    return prunerr.relink()
+
+
+relink.__doc__ = Prunerr.relink.__doc__
+parser_relink = subparsers.add_parser(
+    "relink", help=relink.__doc__.strip(),
+)
+parser_relink.set_defaults(command=relink)
 
 
 def main(args=None):

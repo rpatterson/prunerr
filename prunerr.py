@@ -627,6 +627,7 @@ class Prunerr(object):
             else:
                 # Don't repeat noisy messages from now on.
                 self.quiet = True
+            logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
 
             # Wait for the next interval
             poll = (
@@ -638,6 +639,7 @@ class Prunerr(object):
                 self.popen is None or self.popen.poll() is None
             ) and time.time() - start < poll:
                 time.sleep(1)
+            logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
 
     def move_timeout(self, torrent, download_dir, move_timeout=5 * 60):
         """

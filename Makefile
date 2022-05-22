@@ -53,9 +53,9 @@ clean:
 
 ## Real targets
 
-$(PREFIX)/.venv/bin/prunerr: ./setup.py $(PREFIX)/.venv/bin/activate
+$(PREFIX)/.venv/bin/prunerr: ./setup.py ./requirements.txt $(PREFIX)/.venv/bin/activate
 	"$(@:%/prunerr=%/pip)" install wheel
-	"$(@:%/prunerr=%/pip)" install -e ".[transmission]"
+	"$(@:%/prunerr=%/pip)" install -r "./requirements.txt"
 
 $(PREFIX)/.venv/bin/activate:
 	python3 -m venv "$(@:%/bin/activate=%/)"

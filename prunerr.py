@@ -54,6 +54,14 @@ The path to the Prunerr configuration file. Example:
 https://gitlab.com/rpatterson/prunerr/-/blob/master/home/.config/prunerr.yml\
 """,
 )
+parser.add_argument(
+    "--servarr-name",
+    "-n",
+    help="""\
+The name of the Sonarr config within the Prunerr config.
+Only applicable to certain sub-commands.\
+""",
+)
 subparsers = parser.add_subparsers(
     dest='command', required=True,
     help="sub-command help")
@@ -2604,9 +2612,9 @@ def collect_downloaders(config):
     return downloaders
 
 
-def sync(prunerr):
+def sync(prunerr, *args, **kwargs):
     prunerr.update()
-    return len(prunerr.sync())
+    return len(prunerr.sync(*args, **kwargs))
 
 
 sync.__doc__ = Prunerr.sync.__doc__
@@ -2614,9 +2622,9 @@ parser_sync = subparsers.add_parser("sync", help=sync.__doc__.strip())
 parser_sync.set_defaults(command=sync)
 
 
-def exec_(prunerr):
+def exec_(prunerr, *args, **kwargs):
     prunerr.update()
-    result = prunerr.exec_()
+    result = prunerr.exec_(*args, **kwargs)
     if prunerr.popen is not None:
         logger.info("Letting running copy finish: %s", prunerr.copying)
         prunerr.popen.wait()
@@ -2628,8 +2636,8 @@ parser_exec = subparsers.add_parser("exec", help=exec_.__doc__.strip())
 parser_exec.set_defaults(command=exec_)
 
 
-def daemon(prunerr):
-    return prunerr.daemon()
+def daemon(prunerr, *args, **kwargs):
+    return prunerr.daemon(*args, **kwargs)
 
 
 daemon.__doc__ = Prunerr.daemon.__doc__
@@ -2637,9 +2645,9 @@ parser_daemon = subparsers.add_parser("daemon", help=daemon.__doc__.strip())
 parser_daemon.set_defaults(command=daemon)
 
 
-def sync(prunerr):
+def sync(prunerr, *args, **kwargs):
     prunerr.update()
-    return prunerr.sync()
+    return prunerr.sync(*args, **kwargs)
 
 
 sync.__doc__ = Prunerr.sync.__doc__
@@ -2655,9 +2663,9 @@ Also run operations for Servarr events/history that have previously been run.
 parser_sync.set_defaults(command=sync)
 
 
-def restore_data(prunerr):
+def restore_data(prunerr, *args, **kwargs):
     prunerr.update()
-    return prunerr.restore_data()
+    return prunerr.restore_data(*args, **kwargs)
 
 
 restore_data.__doc__ = Prunerr.restore_data.__doc__
@@ -2667,9 +2675,9 @@ parser_restore_data = subparsers.add_parser(
 parser_restore_data.set_defaults(command=restore_data)
 
 
-def relink(prunerr):
+def relink(prunerr, *args, **kwargs):
     prunerr.update()
-    return prunerr.relink()
+    return prunerr.relink(*args, **kwargs)
 
 
 relink.__doc__ = Prunerr.relink.__doc__
@@ -2694,6 +2702,13 @@ def main(args=None):
     parsed_args = parser.parse_args(args)
     shared_kwargs = dict(vars(parsed_args))
     del shared_kwargs["command"]
+    # Separate the arguments for the sub-command
+    prunerr_dests = {action.dest for action in parser._actions}
+    command_kwargs = {}
+    for dest, value in list(shared_kwargs.items()):
+        if dest not in prunerr_dests:
+            command_kwargs[dest] = value
+            del shared_kwargs[dest]
 
     # Iterate over each of the unique enabled download clients in each Servarr instances
     # and run the sub-command for each of those.
@@ -2704,7 +2719,7 @@ def main(args=None):
         prunerr_kwargs["url"] = downloader_url
         prunerr = Prunerr(**prunerr_kwargs)
         # FIXME: `daemon` sub-command only ever processes first download client
-        results = parsed_args.command(prunerr)
+        results = parsed_args.command(prunerr, **command_kwargs)
         if results:
             if isinstance(results, list):
                 results = len(results)

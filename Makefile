@@ -56,6 +56,7 @@ clean:
 $(PREFIX)/.venv/bin/prunerr: ./setup.py ./requirements.txt $(PREFIX)/.venv/bin/activate
 	"$(@:%/prunerr=%/pip)" install wheel
 	"$(@:%/prunerr=%/pip)" install -r "./requirements.txt"
+	"$(@:%/prunerr=%/python)" -m "spacy" download "en_core_web_sm"
 
 $(PREFIX)/.venv/bin/activate:
 	python3 -m venv "$(@:%/bin/activate=%/)"

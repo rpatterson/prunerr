@@ -32,7 +32,6 @@ services:
       - "./transmission/config/:/config/"
     healthcheck:
       test: >-
-        ping -c 1 dns.google.com &&
         curl -LI -u "${TRANSMISSION_USER}:${TRANSMISSION_PASS}"
         "http://localhost:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '

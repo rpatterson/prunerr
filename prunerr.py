@@ -68,6 +68,14 @@ The name of the Sonarr config within the Prunerr config.
 Only applicable to certain sub-commands.\
 """,
 )
+parser.add_argument(
+    "--replay",
+    "-r",
+    action="store_true",
+    help="""\
+Also run operations for Servarr events/history that have previously been run.
+""",
+)
 subparsers = parser.add_subparsers(
     dest='command', required=True,
     help="sub-command help")
@@ -2899,14 +2907,6 @@ def sync(prunerr, *args, **kwargs):
 
 sync.__doc__ = Prunerr.sync.__doc__
 parser_sync = subparsers.add_parser("sync", help=sync.__doc__.strip())
-parser_sync.add_argument(
-    "--replay",
-    "-r",
-    action="store_true",
-    help="""\
-Also run operations for Servarr events/history that have previously been run.
-""",
-)
 parser_sync.set_defaults(command=sync)
 
 

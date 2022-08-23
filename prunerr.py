@@ -1611,7 +1611,6 @@ class Prunerr(object):
             servarr_config["history"] = {}
 
         sync_results = []
-        self.update()
         for torrent in self.torrents:
             download_path = self.get_item_path(torrent)
 

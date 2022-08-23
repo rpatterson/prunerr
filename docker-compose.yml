@@ -35,6 +35,13 @@ services:
         curl -LI -u "${TRANSMISSION_USER}:${TRANSMISSION_PASS}"
         "http://localhost:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '
+    labels:
+      traefik.enable: true
+      # Un comment and set `TRANSMISSION_HOST` to proxy via Traefik
+      # traefik.http.routers.transmission.rule: "Host(`${TRANSMISSION_HOST}`)"
+      traefik.http.services.transmission.loadbalancer.server.port: 9091
+      traefik.http.routers.transmission.entrypoints: "websecure"
+      traefik.http.routers.transmission.tls.certresolver: "letsencrypt"
 
   sonarr:
     container_name: "sonarr"

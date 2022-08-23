@@ -241,6 +241,8 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 
 - Fix ``sync`` loop for download items with same name.
 
+- Fix items with character mapping (Samba) treated as orphans.
+
 
 .. _`Python 3.x`: https://docs.python.org/3/
 .. _`Python 2.x`: https://www.python.org/doc/sunset-python-2/

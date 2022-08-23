@@ -2900,16 +2900,6 @@ parser_daemon = subparsers.add_parser("daemon", help=daemon.__doc__.strip())
 parser_daemon.set_defaults(command=daemon)
 
 
-def sync(prunerr, *args, **kwargs):
-    prunerr.update()
-    return prunerr.sync(*args, **kwargs)
-
-
-sync.__doc__ = Prunerr.sync.__doc__
-parser_sync = subparsers.add_parser("sync", help=sync.__doc__.strip())
-parser_sync.set_defaults(command=sync)
-
-
 def restore_data(prunerr, *args, **kwargs):
     prunerr.update()
     return prunerr.restore_data(*args, **kwargs)

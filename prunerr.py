@@ -260,8 +260,15 @@ class Prunerr(object):
     # Map the different Servarr applications type terminology
     SERVARR_TYPE_MAPS = dict(
         sonarr=dict(
-            file_type="episode",
+            # The top-level containing type, if applicable.  IOW, the type of items in
+            # the top-level listing of the Servarr UI.  This is series for Sonarr as
+            # contrasted with episode or season.  This is movie for Radarr.
             dir_type="series",
+            # File vs item is a little confusing.  Item refers to episodes/movies as
+            # contrasted with the `dir_type`.  But an episode/movie may comprise of
+            # multiple files and a file may contain multiple episodes.
+            item_type="episode",
+            file_has_multi=True,
             client=arrapi.SonarrAPI,
             download_dir_field="tvDirectory",
             rename_template=(
@@ -269,8 +276,9 @@ class Prunerr(object):
             ),
         ),
         radarr=dict(
-            file_type="movie",
             dir_type="movie",
+            item_type="movie",
+            file_has_multi=False,
             client=arrapi.RadarrAPI,
             download_dir_field="movieDirectory",
             rename_template="{movie[title]} ({movie[release_year]})"
@@ -442,7 +450,7 @@ class Prunerr(object):
             self,
             servarr_type,
             prefixed,
-            servarr_term="file_type",
+            servarr_term="item_type",
     ):
         """
         Strip the particular Servarr type prefix if present.
@@ -2436,10 +2444,10 @@ class Prunerr(object):
         event_locations = self.SERVARR_EVENT_LOCATIONS["downloadFolderImported"]
         for servarr_config in self.servarrs.values():
             # Radarr movies or Sonarr series episodes, `movieId` vs `episodeId`
-            media_id_field = (
-                f"{self.SERVARR_TYPE_MAPS[servarr_config['type']]['file_type']}Id"
+            item_id_field = (
+                f"{self.SERVARR_TYPE_MAPS[servarr_config['type']]['item_type']}Id"
             )
-            media_items = set()
+            item_ids = set()
             # Prunerr lifecycle top-level directories
             downloads_dir = servarr_config[event_locations["src"]]
             imports_dir = servarr_config[event_locations["dst"]]
@@ -2472,17 +2480,17 @@ class Prunerr(object):
 
                 # Check all import history records in this page
                 for history_record in history_page["records"]:
-                    media_id = history_record[media_id_field]
-                    if media_id in media_items:
+                    item_id = history_record[item_id_field]
+                    if item_id in item_ids:
                         logger.debug(
                             "Skipping older import history record: %r",
-                            media_id,
+                            item_id,
                         )
                         continue
-                    media_items.add(media_id)
+                    item_ids.add(item_id)
                     logger.debug(
-                        "Processing media item: %r",
-                        media_id,
+                        "Processing item item: %r",
+                        item_id,
                     )
 
                     imported_path = pathlib.Path(history_record["data"]["importedPath"])

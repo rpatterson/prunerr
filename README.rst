@@ -243,6 +243,11 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 
 - Fix items with character mapping (Samba) treated as orphans.
 
+- Download items removed in Servarr queue but not from download client not getting
+  synced as deleted.
+
+- Document that we prioritize first for free storage space then for seeding.
+
 
 .. _`Python 3.x`: https://docs.python.org/3/
 .. _`Python 2.x`: https://www.python.org/doc/sunset-python-2/

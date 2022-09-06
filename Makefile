@@ -37,13 +37,13 @@ build-dist: build
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
 start: build
-	docker-compose down
-	docker-compose up -d
+	docker compose down
+	docker compose up -d
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging
 run: build
-	docker-compose down
-	docker-compose up
+	docker compose down
+	docker compose up
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -60,10 +60,10 @@ test: build format test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: ./var/log/docker-build.log
-	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
+	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
 	    --entrypoint="tox" python-project-structure
 # Ensure the dist/package has been correctly installed in the image
-	docker-compose run --rm --entrypoint="python" python-project-structure \
+	docker compose run --rm --entrypoint="python" python-project-structure \
 	    -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 
 .PHONY: test-debug
@@ -80,7 +80,7 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	docker-compose down --rmi "all" -v || true
+	docker compose down --rmi "all" -v || true
 	test ! -x "./.tox/lint/bin/pre-commit" || (
 	    ./.tox/lint/bin/pre-commit uninstall --hook-type pre-push
 	    ./.tox/lint/bin/pre-commit uninstall
@@ -125,11 +125,11 @@ expand-template:
 # Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
 # dockerd`, it ends up owned by `root`.
 	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/"
-	docker-compose build --pull \
+	docker compose build --pull \
 	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
 	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"
 # Ensure that `./.tox/` is also up to date in the container
-	docker-compose run --rm --workdir="/usr/local/src/python-project-structure/" \
+	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
 	    --entrypoint="tox" python-project-structure -r --notest -v
 
 # Local environment variables from a template

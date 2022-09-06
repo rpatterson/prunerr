@@ -27,7 +27,8 @@ all: build
 
 .PHONY: build
 build: $(PREFIX)/.venv/bin/prunerr ./.env
-	docker-compose build --pull --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)"
+	docker compose build --pull \
+	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)"
 
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables

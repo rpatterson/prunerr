@@ -1,4 +1,4 @@
-# Override `$ docker-compose ...` configuration for development or testing here in this
+# Override `$ docker compose ...` configuration for development or testing here in this
 # repo checkout.  Everything that may be used outside this checkout should be in
 # `./docker-compose.yml`.
 version: "3.8"

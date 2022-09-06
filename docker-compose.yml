@@ -1,4 +1,4 @@
-# Minimal `$ docker-compose ...` configuration to demonstrate the requirements for
+# Minimal `$ docker compose ...` configuration to demonstrate the requirements for
 # running Prunerr in containers.
 version: "3.8"
 
@@ -26,7 +26,7 @@ services:
       PASS: "${TRANSMISSION_PASS}"
     volumes:
       # Exit the container if the core `s6-overlay` service fails.
-      # Replace with the correct path for your `$ docker-compose ...` project.
+      # Replace with the correct path for your `$ docker compose ...` project.
       # - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
       # Intended for use in the image
       - "./transmission/config/:/config/"

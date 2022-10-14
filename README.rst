@@ -248,6 +248,11 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 
 - Document that we prioritize first for free storage space then for seeding.
 
+- Items deleted from download client outside of Prunerr being re-added.
+
+- Transmission locking up when removing the files of large torrents, switch to just
+  removing the torrent and delete the files in prunerr.
+
 
 .. _`Python 3.x`: https://docs.python.org/3/
 .. _`Python 2.x`: https://www.python.org/doc/sunset-python-2/

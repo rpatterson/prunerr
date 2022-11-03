@@ -27,7 +27,7 @@ services:
     volumes:
       # Exit the container if the core `s6-overlay` service fails.
       # Replace with the correct path for your `$ docker compose ...` project.
-      # - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
+      # - "./s6/etc/s6-overlay/s6-rc.d/svc-transmission/finish:/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
       # Intended for use in the image
       - "./transmission/config/:/config/"
     healthcheck:

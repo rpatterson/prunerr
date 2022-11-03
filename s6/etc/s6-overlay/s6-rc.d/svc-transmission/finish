@@ -1,0 +1,20 @@
+#!/usr/bin/with-contenv bash
+
+# From the container image:
+#     $ docker run --entrypoint="cat" "linuxserver/transmission" "/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
+
+pid=$(pidof transmission-daemon)
+
+if [[ -n "$USER" ]] && [[ -n "$PASS" ]]; then
+    /usr/bin/transmission-remote -n "$USER":"$PASS" --exit
+else
+    /usr/bin/transmission-remote --exit
+fi
+
+# tail --pid=${pid} -f /dev/null
+
+# Stop the container if the service fails
+#
+# https://github.com/just-containers/s6-overlay#writing-an-optional-finish-script
+echo $1 >"/run/s6-linux-init-container-results/exitcode"
+exec /run/s6/basedir/bin/halt

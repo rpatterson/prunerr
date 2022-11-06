@@ -12,8 +12,8 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Options affecting target behavior
-PUID=1000
-PGID=100
+export PUID=1000
+export PGID=100
 REQUIREMENTS=./requirements-devel.txt
 
 # Derived values
@@ -81,7 +81,7 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	docker-compose down --rmi "all" -v
+	docker-compose down --rmi "all" -v || true
 	test ! -x "./.tox/lint/bin/pre-commit" || (
 	    ./.tox/lint/bin/pre-commit uninstall --hook-type pre-push
 	    ./.tox/lint/bin/pre-commit uninstall
@@ -122,10 +122,10 @@ expand-template:
 # Docker targets
 ./var/log/docker-build.log: \
 		./requirements.txt ./requirements-devel.txt \
-		./Dockerfile ./docker-compose.yml ./.env.in
+		./Dockerfile ./docker-compose.yml ./.env
 # Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
 # dockerd`, it ends up owned by `root`.
-	mkdir -pv "./.tox-docker/"
+	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/"
 	docker-compose build --pull \
 	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
 	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"

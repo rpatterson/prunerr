@@ -8,7 +8,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.10"]
     steps:
 
       # Global set up
@@ -76,29 +76,29 @@ jobs:
       - name: "Bump version and push tag"
         id: "github-tag-action"
         uses: "mathieudutour/github-tag-action@v5.6"
-        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.9)"
+        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.10)"
         with:
           github_token: "${{ secrets.GITHUB_TOKEN }}"
       - name: "Fetch release version tag"
-        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.9)"
+        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.10)"
         run: "git fetch --depth=1 origin +refs/tags/v*:refs/tags/v* || true"
 
       - name: "Build a binary wheel and a source tarball"
-        if: "matrix.python-version == 3.9"
+        if: "matrix.python-version == 3.10"
         env:
           SETUPTOOLS_SCM_DEBUG: "true"
         run: |
           .tox/build/bin/python -m build
 
       - name: "Publish distribution to Test PyPI for devel branches"
-        if: "(github.ref != 'refs/heads/master') && (matrix.python-version == 3.9)"
+        if: "(github.ref != 'refs/heads/master') && (matrix.python-version == 3.10)"
         uses: "pypa/gh-action-pypi-publish@master"
         with:
           password: "${{ secrets.test_pypi_password }}"
           repository_url: "https://test.pypi.org/legacy/"
 
       - name: "Publish distribution to PyPI for master"
-        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.9)"
+        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.10)"
         uses: "pypa/gh-action-pypi-publish@master"
         with:
           password: "${{ secrets.pypi_password }}"

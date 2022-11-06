@@ -124,7 +124,7 @@ expand-template:
 		./Dockerfile ./docker-compose.yml ./.env.in
 # Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
 # dockerd`, it ends up owned by `root`.
-	mkdir -pv "./.tox-docker/"
+	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/"
 	docker-compose build --pull \
 	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
 	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"

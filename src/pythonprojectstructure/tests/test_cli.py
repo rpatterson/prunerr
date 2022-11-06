@@ -23,7 +23,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         import_process = subprocess.run(
             [sys.executable, "-c", "import pythonprojectstructure"],
-            check=True,
+            check=False,
         )
         self.assertEqual(
             import_process.returncode,

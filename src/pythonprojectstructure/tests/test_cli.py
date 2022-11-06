@@ -76,3 +76,17 @@ class PythonProjectStructureCLITests(unittest.TestCase):
             stderr,
             "Wrong invalid option message",
         )
+
+    def test_cli_module_main(self):
+        """
+        The package/module supports execution via Python's `-m` option.
+        """
+        module_main_process = subprocess.run(
+            [sys.executable, "-m", "pythonprojectstructure", "foobar"],
+            check=False,
+        )
+        self.assertEqual(
+            module_main_process.returncode,
+            0,
+            "Running via Python's `-m` option exited with non-zero status code",
+        )

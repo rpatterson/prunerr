@@ -25,8 +25,6 @@ extension-pkg-allow-list = ["lxml"]
 ignored-classes = ["lxml.etree.QName.localname"]
 # Match Black's defaults
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#pylint
-[tool.pylint.messages_control]
-disable = "C0330, C0326"
 [tool.pylint.format]
 max-line-length = "88"
 

@@ -6,6 +6,7 @@ import sys
 import io
 import subprocess
 import contextlib
+import pathlib
 
 import unittest
 
@@ -23,7 +24,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         import_process = subprocess.run(
             [sys.executable, "-c", "import pythonprojectstructure"],
-            check=True,
+            check=False,
         )
         self.assertEqual(
             import_process.returncode,
@@ -56,13 +57,21 @@ class PythonProjectStructureCLITests(unittest.TestCase):
             "The console script name missing from --help output",
         )
 
+    def test_cli_subcommand(self):
+        """
+        The command line supports sub-commands.
+        """
+        self.assertIsNone(
+            pythonprojectstructure.main(args=["foobar"]),
+            "Wrong console script sub-command return value",
+        )
+
     def test_cli_options(self):
         """
         The command line script accepts options controlling behavior.
         """
-        result = pythonprojectstructure.main(args=["foobar"])
         self.assertIsNone(
-            result,
+            pythonprojectstructure.main(args=["foobar", "-q"]),
             "Wrong console script options return value",
         )
 
@@ -75,4 +84,39 @@ class PythonProjectStructureCLITests(unittest.TestCase):
             "error: unrecognized arguments: --non-existent-option",
             stderr,
             "Wrong invalid option message",
+        )
+
+    def test_cli_module_main(self):
+        """
+        The package/module supports execution via Python's `-m` option.
+        """
+        module_main_process = subprocess.run(
+            [sys.executable, "-m", "pythonprojectstructure", "foobar"],
+            check=False,
+        )
+        self.assertEqual(
+            module_main_process.returncode,
+            0,
+            "Running via Python's `-m` option exited with non-zero status code",
+        )
+
+    def test_cli_exit_code(self):
+        """
+        The command line script exits with status code zero if there are no exceptions.
+        """
+        # Find the location of the `console_scripts` for this test environment
+        prefix_path = pathlib.Path(sys.argv[0]).parent
+        while not (prefix_path / "bin").is_dir():
+            prefix_path = prefix_path.parent
+            if prefix_path.parent is prefix_path.parents[-1]:  # pragma: no cover
+                raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
+
+        script_process = subprocess.run(
+            [prefix_path / "bin" / "python-project-structure", "foobar"],
+            check=False,
+        )
+        self.assertEqual(
+            script_process.returncode,
+            0,
+            "Running the console script exited with non-zero status code",
         )

@@ -5,6 +5,7 @@ Python project structure foundation or template, top-level package.
 import os
 import logging
 import argparse
+import pprint
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +31,13 @@ subparsers = parser.add_subparsers(
 )
 
 
-def foobar():
+def foobar(quiet=False):
     """
     Run the foobar sub-command from the command line.
     """
-    return
+    if not quiet:
+        return ["foo", "bar"]
+    return None
 
 
 parser_foobar = subparsers.add_parser(
@@ -45,6 +48,12 @@ parser_foobar = subparsers.add_parser(
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
 parser_foobar.set_defaults(command=foobar)
+parser_foobar.add_argument(
+    "-q",
+    "--quiet",
+    action="store_true",
+    help="Suppress reporting results",
+)
 
 
 def config_cli_logging(
@@ -85,7 +94,11 @@ def main(args=None):  # pylint: disable=missing-function-docstring
 
     # Delegate to the function for the sub-command CLI argument
     logger.info("Running %r sub-command", parsed_args.command.__name__)
-    return parsed_args.command(**cli_kwargs)
+    # Sub-commands may return a result to be pretty printed, or handle output themselves
+    # and return nothing.
+    result = parsed_args.command(**cli_kwargs)
+    if result is not None:
+        pprint.pprint(result)
 
 
 main.__doc__ = __doc__

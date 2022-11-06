@@ -1,0 +1,15 @@
+# Override `$ docker-compose ...` configuration for development or testing here in this
+# repo checkout.  Everything that may be used outside this checkout should be in
+# `./docker-compose.yml`.
+version: "3.8"
+
+services:
+
+  python-project-structure:
+    build: "./"
+    volumes:
+      # For development, test changes without rebuilding the image
+      - "./:/usr/local/src/python-project-structure/"
+      # Use separate Python artifacts inside the image and locally on the host
+      - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"

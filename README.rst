@@ -189,6 +189,16 @@ TODO
 The following are known issues with Prunerr or features that are particularly desirable
 to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
 
+- Switch from current downloads/imported/deleted download item statuses and back to just
+  downloads/seeding and, when freeing space, delete from the seeding status based on the
+  percentage of download item disk space has just one hard link.  Move download items
+  from downloads to seeding after the first Servarr event for that download item *after*
+  grabbed, IOW: imported, deleted, anything but grabbed.
+
+- Find a good way to review download items that are now only partially hard linked.
+  IOW, when only some episodes from one download item have replaced only some episodes
+  from another.  Maybe a partial/mixed status?
+
 - Support download clients on different file-systems, copy completed items:
 
   There is existing support for copying finished torrents via an arbitrary command, but

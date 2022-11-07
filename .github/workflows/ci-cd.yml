@@ -91,7 +91,7 @@ jobs:
           .tox/build/bin/python -m build
 
       - name: "Publish distribution to Test PyPI for devel branches"
-        if: "(github.ref != 'refs/heads/master') && (matrix.python-version == 3.10)"
+        if: "(github.ref == 'refs/heads/develop') && (matrix.python-version == 3.10)"
         uses: "pypa/gh-action-pypi-publish@master"
         with:
           password: "${{ secrets.test_pypi_password }}"

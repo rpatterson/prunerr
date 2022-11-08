@@ -10,11 +10,11 @@ servarrs:
   - name: "Sonarr"
     type: "sonarr"
     url: "http://localhost:8989"
-    api-key: "********************************"
+    api-key: ""
   - name: "Radarr"
     type: "radarr"
     url: "http://localhost:7878"
-    api-key: "********************************"
+    api-key: ""
 downloaders:
   ## TODO: Support multiple download clients
   ## Support managing download clients without Servarr instances, use these URLs to

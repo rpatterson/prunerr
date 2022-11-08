@@ -9,21 +9,18 @@ import subprocess
 import contextlib
 import pathlib
 
-import unittest
 from unittest import mock
 
 import prunerr
 
-HOME = pathlib.Path(prunerr.__path__[0]).parents[1] / "home"
+from .. import tests
 
 
-@mock.patch.dict(os.environ, {"HOME": str(HOME)})
-class PrunerrCLITests(unittest.TestCase):
+@mock.patch.dict(os.environ, {"HOME": str(tests.PrunerrTestCase.HOME)})
+class PrunerrCLITests(tests.PrunerrTestCase):
     """
     Test the prunerr Command-Line Interface.
     """
-
-    CONFIG = HOME / ".config" / "prunerr.yml"
 
     def test_importable(self):
         """
@@ -64,21 +61,21 @@ class PrunerrCLITests(unittest.TestCase):
             "The console script name missing from --help output",
         )
 
-    @unittest.skip("TODO: Implement Servarr test fixture")
     def test_cli_subcommand(self):
         """
         The command line supports sub-commands.
         """
+        self.mock_responses()
         self.assertIsNone(
             prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
             "Wrong console script sub-command return value",
         )
 
-    @unittest.skip("TODO: Implement Servarr test fixture")
     def test_cli_options(self):
         """
         The command line script accepts options controlling behavior.
         """
+        self.mock_responses()
         self.assertIsNone(
             prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "exec"]),
             "Wrong console script options return value",

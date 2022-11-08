@@ -179,10 +179,10 @@ class DownloadItem(transmission_rpc.Torrent):
                 return download_data
             # Convert loaded JSON to native types where possible
             download_data["history"] = {
-                ciso8601.parse_datetime(history_date):
-                self.prunerr.deserialize_history(history_record)
-                for history_date, history_record in
-                download_data["history"].items()
+                ciso8601.parse_datetime(history_date): self.prunerr.deserialize_history(
+                    history_record
+                )
+                for history_date, history_record in download_data["history"].items()
             }
 
         # Cache the deserialized and normalized data
@@ -203,10 +203,7 @@ class DownloadItem(transmission_rpc.Torrent):
 
         Best available estimation of total seeding time.
         """
-        if (
-            self._fields["leftUntilDone"].value
-            or self._fields["percentDone"].value < 1
-        ):
+        if self._fields["leftUntilDone"].value or self._fields["percentDone"].value < 1:
             logger.warning(
                 "Can't determine seconds since done, not complete: %r",
                 self,
@@ -260,9 +257,7 @@ class DownloadItem(transmission_rpc.Torrent):
             done_date = time.time()
         return (
             self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
-        ) / (
-            done_date - self._fields["addedDate"].value
-        )
+        ) / (done_date - self._fields["addedDate"].value)
 
 
 class Prunerr(object):
@@ -295,7 +290,7 @@ class Prunerr(object):
             file_has_multi=False,
             client=arrapi.RadarrAPI,
             download_dir_field="movieDirectory",
-            rename_template="{movie[title]} ({movie[release_year]})"
+            rename_template="{movie[title]} ({movie[release_year]})",
         ),
     )
     # Map Servarr event types to download client location path config
@@ -344,15 +339,20 @@ class Prunerr(object):
 
         # Download client config processing
         self.config["downloaders"]["min-download-free-space"] = (
-            self.config["downloaders"]["max-download-bandwidth"]
-            # Convert bandwidth bits to bytes
-            / 8
-        ) * (
-            # Convert bandwidth MBps to Bps
-            1024 * 1024
-        ) * (
-            # Multiply by seconds of download time margin
-            self.config["downloaders"].get("min-download-time-margin", 3600)
+            (
+                self.config["downloaders"]["max-download-bandwidth"]
+                # Convert bandwidth bits to bytes
+                / 8
+            )
+            * (
+                # Convert bandwidth MBps to Bps
+                1024
+                * 1024
+            )
+            * (
+                # Multiply by seconds of download time margin
+                self.config["downloaders"].get("min-download-time-margin", 3600)
+            )
         )
         # Set any download client config defaults for Prunerr
         session_download_path = pathlib.Path(session.download_dir)
@@ -361,12 +361,14 @@ class Prunerr(object):
         )
         self.config["downloaders"]["imported-dir"] = pathlib.Path(
             self.config["downloaders"].get(
-                "imported-dir", session_download_path.parent / "imported",
+                "imported-dir",
+                session_download_path.parent / "imported",
             )
         )
         self.config["downloaders"]["deleted-dir"] = pathlib.Path(
             self.config["downloaders"].get(
-                "deleted-dir", session_download_path.parent / "deleted",
+                "deleted-dir",
+                session_download_path.parent / "deleted",
             )
         )
 
@@ -390,8 +392,8 @@ class Prunerr(object):
                 ]
             ).resolve()
             if (
-                    self.config["downloaders"]["download-dir"] not in
-                    (servarr_config["downloadDir"] / "child").parents
+                self.config["downloaders"]["download-dir"]
+                not in (servarr_config["downloadDir"] / "child").parents
             ):
                 # TODO: Should this just be a logged error?
                 raise ValueError(
@@ -403,13 +405,13 @@ class Prunerr(object):
             servarr_config["importedDir"] = (
                 self.config["downloaders"]["imported-dir"]
                 / servarr_config["downloadDir"].relative_to(
-                        self.config["downloaders"]["download-dir"],
+                    self.config["downloaders"]["download-dir"],
                 )
             ).resolve()
             servarr_config["deletedDir"] = (
                 self.config["downloaders"]["deleted-dir"]
                 / servarr_config["downloadDir"].relative_to(
-                        self.config["downloaders"]["download-dir"],
+                    self.config["downloaders"]["download-dir"],
                 )
             ).resolve()
         self.servarr_name = servarr_name
@@ -418,7 +420,10 @@ class Prunerr(object):
             if "client" not in servarr_config:
                 self.servarr_config["client"] = self.SERVARR_TYPE_MAPS[
                     servarr_config["type"]
-                ]["client"](servarr_config["url"], servarr_config["api-key"],)
+                ]["client"](
+                    servarr_config["url"],
+                    servarr_config["api-key"],
+                )
 
         # Should all events be handled again, even if previously processed.
         self.replay = replay
@@ -429,11 +434,13 @@ class Prunerr(object):
         self.quiet = False
 
     @tenacity.retry(
-        retry=tenacity.retry_if_exception_type((
-            socket.error,
-            error.TransmissionError,
-            arrapi.exceptions.ConnectionFailure,
-        )),
+        retry=tenacity.retry_if_exception_type(
+            (
+                socket.error,
+                error.TransmissionError,
+                arrapi.exceptions.ConnectionFailure,
+            )
+        ),
         wait=tenacity.wait_fixed(1),
         reraise=True,
         before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
@@ -461,10 +468,10 @@ class Prunerr(object):
             ]["client"](servarr_config["url"], servarr_config["api-key"])
 
     def strip_type_prefix(
-            self,
-            servarr_type,
-            prefixed,
-            servarr_term="item_type",
+        self,
+        servarr_type,
+        prefixed,
+        servarr_term="item_type",
     ):
         """
         Strip the particular Servarr type prefix if present.
@@ -473,7 +480,7 @@ class Prunerr(object):
         servarr_type_map = self.SERVARR_TYPE_MAPS[servarr_type]
         prefix = servarr_type_map[servarr_term]
         if prefixed.startswith(prefix):
-            stripped = prefixed[len(prefix):]
+            stripped = prefixed[len(prefix) :]
             stripped = f"{stripped[0].lower()}{stripped[1:]}"
             # Don't strip the prefix for DB IDs in the Servarr API JSON, e.g.:
             # `movieId`.
@@ -543,7 +550,8 @@ class Prunerr(object):
         command = self.config["downloaders"]["copy"]["command"]
         imported_dir = self.config["downloaders"]["imported-dir"]
         retry_codes = self.config["downloaders"]["copy"].get(
-            "daemon-retry-codes", [10, 12, 20, 30, 35, 255],
+            "daemon-retry-codes",
+            [10, 12, 20, 30, 35, 255],
         )
         to_copy = sorted(
             (
@@ -551,7 +559,8 @@ class Prunerr(object):
                 for torrent in self.torrents
                 if torrent.status == "seeding"
                 and not os.path.relpath(
-                    torrent.downloadDir, self.config["downloaders"]["download-dir"],
+                    torrent.downloadDir,
+                    self.config["downloaders"]["download-dir"],
                 ).startswith(os.pardir + os.sep)
             ),
             # 1. Copy lower priority torrents first so they may be deleted
@@ -620,9 +629,9 @@ class Prunerr(object):
         assert torrent_files, "Must be able to find torrent files"
 
         return (
-            file_.name for file_ in torrent_files
-            if file_.selected
-            and os.path.exists(os.path.join(download_dir, file_.name))
+            file_.name
+            for file_ in torrent_files
+            if file_.selected and os.path.exists(os.path.join(download_dir, file_.name))
         )
 
     def copy(self, torrent, destination, command):
@@ -666,9 +675,10 @@ class Prunerr(object):
                 # Run the `exec` sub-command as the inner loop
                 self.exec_()
             except (
-                    socket.error,
-                    error.TransmissionError,
-                    arrapi.exceptions.ConnectionFailure) as exc:
+                socket.error,
+                error.TransmissionError,
+                arrapi.exceptions.ConnectionFailure,
+            ) as exc:
                 logger.error(
                     "Connection error while updating from server: %s",
                     exc,
@@ -683,8 +693,12 @@ class Prunerr(object):
 
             # Wait for the next interval
             poll = (
-                self.config["daemon"].get("poll", 60,)
-                if self.config["daemon"] else 60
+                self.config["daemon"].get(
+                    "poll",
+                    60,
+                )
+                if self.config["daemon"]
+                else 60
             )
             # Loop early if the copy process finishes early
             while (
@@ -729,10 +743,7 @@ class Prunerr(object):
         for servarr_config in self.servarrs.values():
             queue_page = None
             page_num = 1
-            while (
-                queue_page is None
-                or (page_num * 250) <= queue_page["totalRecords"]
-            ):
+            while queue_page is None or (page_num * 250) <= queue_page["totalRecords"]:
                 logger.debug(
                     "Requesting %r Servarr queue page: %s",
                     servarr_config["name"],
@@ -783,7 +794,8 @@ class Prunerr(object):
         Apply review operations to this download item.
         """
         include, sort_key = self.exec_indexer_operations(
-            download_item, operations_type="reviews",
+            download_item,
+            operations_type="reviews",
         )
         indexer_idx = sort_key[0]
         sort_values = sort_key[1:]
@@ -813,14 +825,16 @@ class Prunerr(object):
                             download_item,
                         )
                     self.client.remove_torrent(
-                        download_item.hashString, delete_data=True,
+                        download_item.hashString,
+                        delete_data=True,
                     )
                 else:
                     delete_params = dict(removeFromClient="true")
                     if operation_config.get("blacklist", False):
                         delete_params["blacklist"] = "true"
                     queue_record["servarr_config"]["client"]._raw._delete(
-                        f"queue/{queue_id}", **delete_params,
+                        f"queue/{queue_id}",
+                        **delete_params,
                     )
                 self.move_timeout(download_item, download_item.downloadDir)
                 # Avoid race conditions, perform no further operations on removed items
@@ -834,7 +848,8 @@ class Prunerr(object):
                     json.dumps(operation_config["change"]),
                 )
                 self.client.change_torrent(
-                    [download_item.hashString], **operation_config["change"],
+                    [download_item.hashString],
+                    **operation_config["change"],
                 )
 
         return include, sort_key
@@ -878,9 +893,12 @@ class Prunerr(object):
         orphans = self.find_orphans()
         if orphans:
             logger.error(
-                "Deleting from %s orphans to free space", len(orphans),
+                "Deleting from %s orphans to free space",
+                len(orphans),
             )
-            removed_torrents.extend(self.free_space_remove_torrents(orphans),)
+            removed_torrents.extend(
+                self.free_space_remove_torrents(orphans),
+            )
             if self.free_space_maybe_resume():
                 # There is now sufficient free disk space
                 return removed_torrents
@@ -893,7 +911,9 @@ class Prunerr(object):
                 "Deleting from %s seeding torrents deleted from the Servarr library",
                 len(deleted_torrents),
             )
-            removed_torrents.extend(self.free_space_remove_torrents(deleted_torrents),)
+            removed_torrents.extend(
+                self.free_space_remove_torrents(deleted_torrents),
+            )
             if self.free_space_maybe_resume():
                 # There is now sufficient free disk space
                 return removed_torrents
@@ -919,7 +939,8 @@ class Prunerr(object):
         session = self.client.get_session()
         total_remaining_download = sum(
             torrent.leftUntilDone
-            for torrent in self.torrents if torrent.status == "downloading"
+            for torrent in self.torrents
+            if torrent.status == "downloading"
         )
         if total_remaining_download > session.download_dir_free_space:
             logger.debug(
@@ -931,8 +952,8 @@ class Prunerr(object):
                 ),
             )
         if (
-                session.download_dir_free_space
-                >= self.config["downloaders"]["min-download-free-space"]
+            session.download_dir_free_space
+            >= self.config["downloaders"]["min-download-free-space"]
         ):
             logger.debug(
                 "Sufficient free space to continue downloading: %0.2f %s >= %0.2f %s",
@@ -1026,8 +1047,8 @@ class Prunerr(object):
             if (
                 (
                     torrent.status == "downloading"
-                    or self.config["downloaders"]["imported-dir"] in
-                    self.get_item_path(torrent).parents
+                    or self.config["downloaders"]["imported-dir"]
+                    in self.get_item_path(torrent).parents
                 )
                 and torrent.error == 2
                 and "unregistered torrent" in torrent.errorString.lower()
@@ -1082,10 +1103,12 @@ class Prunerr(object):
             else:
                 # Transmission's `incomplete` directory for incomplete, leeching
                 # torrents
-                torrent_paths.add(os.path.join(
-                    session.incomplete_dir,
-                    self.get_item_root_name(torrent),
-                ))
+                torrent_paths.add(
+                    os.path.join(
+                        session.incomplete_dir,
+                        self.get_item_root_name(torrent),
+                    )
+                )
             # Include the ancestors of the torrent's path
             # so we know what dirs to descend into when looking for orphans
             torrent_dir, tail = os.path.split(torrent.downloadDir + os.sep)
@@ -1099,14 +1122,22 @@ class Prunerr(object):
         # TODO Windows compatibility
         du_cmd = ["du", "-s", "--block-size=1", "--files0-from=-"]
         du = subprocess.Popen(
-            du_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=0,
+            du_cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+            bufsize=0,
         )
         orphans = sorted(
             itertools.chain(
                 *(
                     self._list_orphans(
-                        session, torrent_dirs, torrent_paths, unstarted_names,
-                        du, download_dir,
+                        session,
+                        torrent_dirs,
+                        torrent_paths,
+                        unstarted_names,
+                        du,
+                        download_dir,
                     )
                     for download_dir in download_dirs
                     if pathlib.Path(download_dir).is_dir()
@@ -1121,14 +1152,20 @@ class Prunerr(object):
                 "Found orphan paths unrecognized by download client:\n%s",
                 "\n".join(
                     f"{orphan_size}\t{orphan_path}"
-                    for orphan_size, orphan_path in orphans),
+                    for orphan_size, orphan_path in orphans
+                ),
             )
 
         return orphans
 
     def _list_orphans(
-            self, session, torrent_dirs, torrent_paths, unstarted_names,
-            du, path,
+        self,
+        session,
+        torrent_dirs,
+        torrent_paths,
+        unstarted_names,
+        du,
+        path,
     ):
         """Recursively list paths that aren't a part of any torrent."""
         path = pathlib.Path(path)
@@ -1138,21 +1175,22 @@ class Prunerr(object):
             is_prunerr_file = False
             for prunerr_suffix in self.PRUNERR_FILE_SUFFIXES:
                 if entry_path.name.endswith(prunerr_suffix):
-                    entry_base = entry_path.name[:-len(prunerr_suffix)]
+                    entry_base = entry_path.name[: -len(prunerr_suffix)]
                     for unstarted_name in unstarted_names:
                         if unstarted_name.startswith(entry_base):
                             is_prunerr_file = True
                             break
                     entry_glob = f"{glob.escape(entry_base)}*"
                     non_orphans = {
-                        match_path for match_path in itertools.chain(
+                        match_path
+                        for match_path in itertools.chain(
                             pathlib.Path(session.incomplete_dir).glob(entry_glob),
-                            entry_path.parent.glob(entry_glob)
+                            entry_path.parent.glob(entry_glob),
                         )
                         if not {
-                                match_path
-                                for prunerr_suffix in self.PRUNERR_FILE_SUFFIXES
-                                if match_path.name.endswith(prunerr_suffix)
+                            match_path
+                            for prunerr_suffix in self.PRUNERR_FILE_SUFFIXES
+                            if match_path.name.endswith(prunerr_suffix)
                         }
                     }
                     if non_orphans:
@@ -1162,8 +1200,8 @@ class Prunerr(object):
                 continue
 
             if (
-                    str(entry_path) not in torrent_paths
-                    and str(entry_path) not in torrent_dirs
+                str(entry_path) not in torrent_paths
+                and str(entry_path) not in torrent_dirs
             ):
                 du.stdin.write(f"{entry_path}\0")
                 du_line = du.stdout.readline()
@@ -1172,8 +1210,12 @@ class Prunerr(object):
                 yield (int(size), str(entry_path))
             elif str(entry_path) in torrent_dirs:
                 for orphan in self._list_orphans(
-                        session, torrent_dirs, torrent_paths, unstarted_names,
-                        du, entry_path,
+                    session,
+                    torrent_dirs,
+                    torrent_paths,
+                    unstarted_names,
+                    du,
+                    entry_path,
                 ):
                     yield orphan
 
@@ -1182,12 +1224,12 @@ class Prunerr(object):
         Filter torrents that have been deleted from the Servarr library.
         """
         return self.sort_torrents_by_tracker(
-            torrent for torrent in self.torrents
+            torrent
+            for torrent in self.torrents
             # only those previously synced and moved
             if torrent.status == "seeding"
-            and self.config["downloaders"]["deleted-dir"] in
-            self.get_item_path(torrent).parents
-
+            and self.config["downloaders"]["deleted-dir"]
+            in self.get_item_path(torrent).parents
             # TODO: Optionally include imported items for Servarr configurations that
             # copy items instead of making hard-links, such as when the download client
             # isn't on the same host as the Servarr instance
@@ -1207,9 +1249,9 @@ class Prunerr(object):
         # Try to find an indexer name from the items Servarr history
         for servarr_config in self.servarrs.values():
             for servarr_dir in (
-                    servarr_config["downloadDir"],
-                    servarr_config["importedDir"],
-                    servarr_config["deletedDir"],
+                servarr_config["downloadDir"],
+                servarr_config["importedDir"],
+                servarr_config["deletedDir"],
             ):
                 if servarr_dir in download_path.parents:
                     break
@@ -1217,7 +1259,8 @@ class Prunerr(object):
                 # Not managed by this servarr instance
                 continue
             download_record = self.find_latest_item_history(
-                servarr_config, torrent=torrent,
+                servarr_config,
+                torrent=torrent,
             )
             if download_record:
                 if "indexer" in download_record["data"]:
@@ -1245,9 +1288,14 @@ class Prunerr(object):
         """
         Return the indexer name if the download item matches a configured tracker URL.
         """
-        for possible_name, possible_urls in self.config.get(
-                "indexers", {},
-        ).get("urls", {}).items():
+        for possible_name, possible_urls in (
+            self.config.get(
+                "indexers",
+                {},
+            )
+            .get("urls", {})
+            .items()
+        ):
             for tracker in torrent.trackers:
                 for action in ("announce", "scrape"):
                     tracker_url = tracker[action]
@@ -1272,7 +1320,7 @@ class Prunerr(object):
         indexer_config = indexer_configs[indexer_name]
 
         include, sort_key = self.exec_operations(indexer_config["operations"], torrent)
-        cached_results[operations_type] = (include, (indexer_idx, ) + sort_key)
+        cached_results[operations_type] = (include, (indexer_idx,) + sort_key)
         return cached_results[operations_type]
 
     def exec_operations(self, operation_configs, torrent):
@@ -1391,7 +1439,8 @@ class Prunerr(object):
             matching_files = []
             for pattern in patterns:
                 matching_files.extend(
-                    item_file for item_file in item_files
+                    item_file
+                    for item_file in item_files
                     if re.fullmatch(pattern, item_file.name)
                 )
         else:
@@ -1415,13 +1464,16 @@ class Prunerr(object):
         Resume downloading if it's been stopped.
         """
         speed_limit_down = self.config["downloaders"]["max-download-bandwidth"]
-        if (
-            session.speed_limit_down_enabled
-            and (not speed_limit_down or speed_limit_down != session.speed_limit_down)
+        if session.speed_limit_down_enabled and (
+            not speed_limit_down or speed_limit_down != session.speed_limit_down
         ):
-            if self.config["downloaders"].get(
-                    "resume-set-download-bandwidth-limit", False,
-            ) and speed_limit_down:
+            if (
+                self.config["downloaders"].get(
+                    "resume-set-download-bandwidth-limit",
+                    False,
+                )
+                and speed_limit_down
+            ):
                 kwargs = dict(speed_limit_down=speed_limit_down)
             else:
                 kwargs = dict(speed_limit_down_enabled=False)
@@ -1470,9 +1522,7 @@ class Prunerr(object):
             )
         readded = self.get_download_item(readded.hashString)
         readded.update()
-        assert (
-            readded.download_dir == download_item.download_dir
-        ), (
+        assert readded.download_dir == download_item.download_dir, (
             f"Re-added download location changed: "
             f"{download_item.download_dir!r} -> {readded.download_dir!r}"
         )
@@ -1556,14 +1606,18 @@ class Prunerr(object):
         # extracted an archive in the old import location we want the orphan logic to
         # find it after Servarr has upgraded it
         if dst_torrent_path.is_file():
-            import_links_pattern = str(src_torrent_path.with_name(
-                f"{glob.escape(src_torrent_path.name)}**-servarr-imported.ln",
-            ))
+            import_links_pattern = str(
+                src_torrent_path.with_name(
+                    f"{glob.escape(src_torrent_path.name)}**-servarr-imported.ln",
+                )
+            )
             data_path = src_torrent_path.with_suffix(".prunerr.json")
         else:
-            import_links_pattern = str(src_torrent_path.with_name(
-                f"{glob.escape(src_torrent_path.name)}**-servarr-imported.ln",
-            ))
+            import_links_pattern = str(
+                src_torrent_path.with_name(
+                    f"{glob.escape(src_torrent_path.name)}**-servarr-imported.ln",
+                )
+            )
             data_path = src_torrent_path.with_name(
                 f"{src_torrent_path.name}.prunerr.json"
             )
@@ -1602,7 +1656,8 @@ class Prunerr(object):
             **params,
         )
         dirs_history[dir_id] = self.collate_history_records(
-            servarr_config, history_records=history_response,
+            servarr_config,
+            history_records=history_response,
         )
         return dirs_history[dir_id]
 
@@ -1685,11 +1740,11 @@ class Prunerr(object):
         return sync_results
 
     def sync_item(
-            self,
-            servarr_config,
-            download_item,
-            dir_id=None,
-            servarr_history=None,
+        self,
+        servarr_config,
+        download_item,
+        dir_id=None,
+        servarr_history=None,
     ):
         """
         Ensure the download client state is in sync with Servarr state.
@@ -1699,7 +1754,8 @@ class Prunerr(object):
         download_data = download_item.prunerr_data
         for servarr_key in ("type", "name"):
             download_data.setdefault("servarr", {}).setdefault(
-                servarr_key, servarr_config[servarr_key],
+                servarr_key,
+                servarr_config[servarr_key],
             )
         data_path = download_data["path"]
 
@@ -1715,7 +1771,8 @@ class Prunerr(object):
         if dir_id is None:
             # Identify the item in the global Servarr history
             download_record = self.find_latest_item_history(
-                servarr_config, download_item,
+                servarr_config,
+                download_item,
             )
             if download_record is None:
                 logger.error(
@@ -1741,7 +1798,7 @@ class Prunerr(object):
             # Continue to below to write item Prunerr data
         seen_event_types = set()
         for history_record in reversed(
-                servarr_history["records"]["download_ids"].get(download_id, []),
+            servarr_history["records"]["download_ids"].get(download_id, []),
         ):
             # TODO: Skip duplicate events for multi-file items such as season packs
 
@@ -1865,10 +1922,10 @@ class Prunerr(object):
         return self.move_torrent(download_item, src_path, dst_path)
 
     def handle_imported(
-            self,
-            servarr_config,
-            download_item,
-            history_record,
+        self,
+        servarr_config,
+        download_item,
+        history_record,
     ):
         """
         Handle Servarr imported event, wait for import to complete, then move.
@@ -1876,9 +1933,10 @@ class Prunerr(object):
         download_data = download_item.prunerr_data
         if "latestImportedDate" not in download_data:
             download_data["latestImportedDate"] = history_record["date"]
-        wait_duration = datetime.datetime.now(
-            download_data["latestImportedDate"].tzinfo
-        ) - download_data["latestImportedDate"]
+        wait_duration = (
+            datetime.datetime.now(download_data["latestImportedDate"].tzinfo)
+            - download_data["latestImportedDate"]
+        )
         if wait_duration < self.SERVARR_HISTORY_WAIT:
             logger.info(
                 "Waiting for import to complete before moving, %s so far: %r",
@@ -1888,7 +1946,8 @@ class Prunerr(object):
             return
         elif not self.replay:
             imported_records = [
-                imported_record for imported_record in download_data["history"].values()
+                imported_record
+                for imported_record in download_data["history"].values()
                 if imported_record["eventType"] == "downloadFolderImported"
             ]
             if imported_records:
@@ -1909,11 +1968,13 @@ class Prunerr(object):
 
         # If we're not waiting for history, then proceed to move the download item.
         # Ensure the download item's location matches the Servarr state.
-        history_record["prunerr"]["handlerResult"] = str(self.sync_item_location(
-            servarr_config,
-            download_item,
-            history_record,
-        ))
+        history_record["prunerr"]["handlerResult"] = str(
+            self.sync_item_location(
+                servarr_config,
+                download_item,
+                history_record,
+            )
+        )
         download_item.update()
 
         # Reflect imported files in the download client item using symbolic links
@@ -1940,7 +2001,8 @@ class Prunerr(object):
         if os.path.lexists(link_path):
             if not link_path.is_symlink():
                 logger.error(
-                    "Imported file link is not a symlink: %s", link_path,
+                    "Imported file link is not a symlink: %s",
+                    link_path,
                 )
             elif pathlib.Path(os.readlink(link_path)) != imported_link_target:
                 logger.error(
@@ -1950,11 +2012,14 @@ class Prunerr(object):
                 )
         elif not link_path.parent.exists():
             logger.error(
-                "Imported file link directory no longer exists: %s", link_path,
+                "Imported file link directory no longer exists: %s",
+                link_path,
             )
         else:
             logger.info(
-                "Symlinking imported file: %s -> %s", link_path, imported_link_target,
+                "Symlinking imported file: %s -> %s",
+                link_path,
+                imported_link_target,
             )
             if not (link_path.parent / imported_link_target).is_file():
                 logger.error(
@@ -2046,7 +2111,8 @@ class Prunerr(object):
                 servarr_history=servarr_history,
             )
             for history_record in collated_history["records"]["download_ids"].get(
-                    download_id, [],
+                download_id,
+                [],
             ):
                 if "downloadId" in history_record:
                     if download_record is None:
@@ -2065,9 +2131,9 @@ class Prunerr(object):
         Convert Servarr history values to native Python types when possible.
         """
         for history_data in (
-                history_record,
-                history_record["data"],
-                history_record.get("prunerr", {}),
+            history_record,
+            history_record["data"],
+            history_record.get("prunerr", {}),
         ):
             for key, value in list(history_data.items()):
                 # Perform any data transformations, e.g. to native Python types
@@ -2082,9 +2148,9 @@ class Prunerr(object):
         """
         # Prevent serialized values from leaking into cached Servarr history
         for history_data in (
-                history_record,
-                history_record["data"],
-                history_record.get("prunerr", {}),
+            history_record,
+            history_record["data"],
+            history_record.get("prunerr", {}),
         ):
             for key, value in list(history_data.items()):
                 # Perform any data transformations, e.g. to native Python types
@@ -2100,10 +2166,10 @@ class Prunerr(object):
         # Convert loaded JSON to native types where possible
         if download_history is not None:
             download_history = {
-                history_date.strftime(self.SERVARR_DATETIME_FORMAT):
-                self.serialize_history(copy.deepcopy(history_record))
-                for history_date, history_record in
-                download_history.items()
+                history_date.strftime(
+                    self.SERVARR_DATETIME_FORMAT
+                ): self.serialize_history(copy.deepcopy(history_record))
+                for history_date, history_record in download_history.items()
             }
         download_data["history"] = download_history
         if "latestImportedDate" in download_data:
@@ -2130,7 +2196,10 @@ class Prunerr(object):
                 data_opened.write(existing_deserialized)
 
     def collate_history_records(
-            self, servarr_config, history_records, servarr_history=None,
+        self,
+        servarr_config,
+        history_records,
+        servarr_history=None,
     ):
         """
         Collate Servarr history response under best ids for each history record.
@@ -2138,10 +2207,10 @@ class Prunerr(object):
         if servarr_history is None:
             # Start fresh by default
             servarr_history = {}
+        servarr_history.setdefault("records", dict(download_ids={}, source_titles={}))
         servarr_history.setdefault(
-            "records", dict(download_ids={}, source_titles={}))
-        servarr_history.setdefault(
-            "event_types", dict(download_ids={}, source_titles={}))
+            "event_types", dict(download_ids={}, source_titles={})
+        )
 
         for history_record in history_records:
             self.deserialize_history(history_record)
@@ -2162,29 +2231,35 @@ class Prunerr(object):
             if "downloadId" in history_record:
                 # History record can be matched exactly to the download client item
                 servarr_history["records"]["download_ids"].setdefault(
-                    history_record["downloadId"].lower(), [],
+                    history_record["downloadId"].lower(),
+                    [],
                 ).append(history_record)
                 servarr_history["event_types"]["download_ids"].setdefault(
-                    history_record["downloadId"].lower(), {},
+                    history_record["downloadId"].lower(),
+                    {},
                 ).setdefault(history_record["eventType"], []).append(history_record)
             if "importedPath" in history_record["data"]:
                 # Capture a reference that may match to more recent history record
                 # below, such as deleting upon upgrade
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], [],
+                    history_record["data"]["importedPath"],
+                    [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], {},
+                    history_record["data"]["importedPath"],
+                    {},
                 ).setdefault(history_record["eventType"], []).append(history_record)
             if "sourceTitle" in history_record:
                 # Can't match exactly to a download client item, capture a reference
                 # that may match to more recent history record below, such as
                 # deleting upon upgrade
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["sourceTitle"], [],
+                    history_record["sourceTitle"],
+                    [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["sourceTitle"], {},
+                    history_record["sourceTitle"],
+                    {},
                 ).setdefault(history_record["eventType"], []).append(history_record)
 
             # Match this older import history record to previously processed, newer,
@@ -2217,19 +2292,25 @@ class Prunerr(object):
                 newer_event_types = {}
                 for newer_record in newer_records:
                     newer_event_types.setdefault(
-                        newer_record["eventType"], [],
+                        newer_record["eventType"],
+                        [],
                     ).append(newer_record)
-                for (event_type, newer_event_records,) in newer_event_types.items():
+                for (
+                    event_type,
+                    newer_event_records,
+                ) in newer_event_types.items():
                     servarr_history["event_types"]["download_ids"][
                         history_record["downloadId"].lower()
                     ].setdefault(event_type, [])[:0] = newer_event_records
 
                 # Also include history records under the imported path
                 servarr_history["records"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], [],
+                    history_record["data"]["importedPath"],
+                    [],
                 ).append(history_record)
                 servarr_history["event_types"]["source_titles"].setdefault(
-                    history_record["data"]["importedPath"], {},
+                    history_record["data"]["importedPath"],
+                    {},
                 ).setdefault(history_record["eventType"], []).append(history_record)
 
         return servarr_history
@@ -2295,18 +2376,20 @@ class Prunerr(object):
 
                     # Largest orphan path whose basename matches
                     if orphan_path != download_path and (
-                            # Avoid restoring partial data from item's that started
-                            # re-downloading after the data was disconnected.  Only use
-                            # orphans from the download client's incomplete or downloads
-                            # directories the item's download directory doesn't exist.
-                            not download_path.exists() or (
-                                incomplete_path not in orphan_path.parents
-                                and client_download_path not in orphan_path.parents
-                            )
+                        # Avoid restoring partial data from item's that started
+                        # re-downloading after the data was disconnected.  Only use
+                        # orphans from the download client's incomplete or downloads
+                        # directories the item's download directory doesn't exist.
+                        not download_path.exists()
+                        or (
+                            incomplete_path not in orphan_path.parents
+                            and client_download_path not in orphan_path.parents
+                        )
                     ):
                         logger.info(
                             "Restoring data: %r -> %r",
-                            str(download_path), str(orphan_path),
+                            str(download_path),
+                            str(orphan_path),
                         )
                         download_item.locate_data(str(orphan_path.parent))
                         # Collect results of actions taken
@@ -2325,10 +2408,12 @@ class Prunerr(object):
             for servarr_config in self.servarrs.values():
                 servarr_history = servarr_config.setdefault("history", {})
                 self.find_latest_item_history(
-                    servarr_config, torrent=download_item,
+                    servarr_config,
+                    torrent=download_item,
                 )
                 item_history = servarr_history["records"]["download_ids"].get(
-                    download_id, [],
+                    download_id,
+                    [],
                 )
                 if not item_history:
                     continue
@@ -2342,10 +2427,13 @@ class Prunerr(object):
                 if download_path.parent != dst_path:
                     logger.info(
                         "Restoring download path: %r -> %r",
-                        str(download_path), str(dst_path),
+                        str(download_path),
+                        str(dst_path),
                     )
                     new_download_path = self.move_torrent(
-                        download_item, download_path.parent, dst_path,
+                        download_item,
+                        download_path.parent,
+                        dst_path,
                     )
                     # Collect results of actions taken
                     restored_items.setdefault(download_item.name, {}).setdefault(
@@ -2370,9 +2458,11 @@ class Prunerr(object):
                             imported_record["data"]["droppedPath"],
                         )
                         if item_root_name in dropped_path.parts:
-                            relative_path = pathlib.Path(*dropped_path.parts[
-                                dropped_path.parts.index(item_root_name):
-                            ])
+                            relative_path = pathlib.Path(
+                                *dropped_path.parts[
+                                    dropped_path.parts.index(item_root_name) :
+                                ]
+                            )
                         else:
                             logger.error(
                                 "Servarr dropped path doesn't include item root name: "
@@ -2391,8 +2481,8 @@ class Prunerr(object):
 
                         current_dropped_path = dst_path / relative_path
                         if imported_item_file is not None and (
-                                not current_dropped_path.is_file()
-                                or current_dropped_path.stat().st_nlink <= 1
+                            not current_dropped_path.is_file()
+                            or current_dropped_path.stat().st_nlink <= 1
                         ):
                             # Collect results of actions taken
                             restored_items.setdefault(
@@ -2413,11 +2503,13 @@ class Prunerr(object):
                                     str(current_dropped_path.parent),
                                 )
                                 current_dropped_path.parent.mkdir(
-                                    parents=True, exist_ok=True,
+                                    parents=True,
+                                    exist_ok=True,
                                 )
                             logger.info(
                                 "Restoring imported path: %r -> %r",
-                                str(imported_path), str(current_dropped_path),
+                                str(imported_path),
+                                str(current_dropped_path),
                             )
                             imported_path.link_to(current_dropped_path)
 
@@ -2432,14 +2524,15 @@ class Prunerr(object):
             download_parent = pathlib.Path(download_item.download_dir)
             if (
                 (
-                    download_item.status == 'stopped'
+                    download_item.status == "stopped"
                     and download_parent != client_download_path
                 )
                 or restored_items.get(download_item.name, {}).get("orphans", [])
                 or restored_items.get(download_item.name, {}).get("imported", [])
             ):
                 logger.info(
-                    "Verifying and resuming: %r", download_item,
+                    "Verifying and resuming: %r",
+                    download_item,
                 )
                 self.client.verify_torrent([download_item.hashString])
                 download_item.start()
@@ -2534,9 +2627,9 @@ class Prunerr(object):
 
                     source_stat = source_path.stat()
                     imported_stat = imported_path.stat()
-                    if (
-                            (source_stat.st_dev, source_stat.st_ino) ==
-                            (imported_stat.st_dev, imported_stat.st_ino)
+                    if (source_stat.st_dev, source_stat.st_ino) == (
+                        imported_stat.st_dev,
+                        imported_stat.st_ino,
                     ):
                         logger.info(
                             "Source already linked to imported path: %s",
@@ -2678,10 +2771,10 @@ class Prunerr(object):
             # Start with dumb normalization, just string processing
             name_str = normalize_str(video_path.stem)
             for title_str, episode in sorted(
-                    episode_titles_str.items(),
-                    # Longer matches first
-                    key=lambda item: len(item[0]),
-                    reverse=True,
+                episode_titles_str.items(),
+                # Longer matches first
+                key=lambda item: len(item[0]),
+                reverse=True,
             ):
                 if title_str in name_str:
                     logger.debug(
@@ -2695,10 +2788,10 @@ class Prunerr(object):
             else:
                 name_nlp = normalize_nlp(video_path.stem)
                 for title_nlp, episode in sorted(
-                        episode_titles_nlp.items(),
-                        # Longer matches first
-                        key=lambda item: len(item[0]),
-                        reverse=True,
+                    episode_titles_nlp.items(),
+                    # Longer matches first
+                    key=lambda item: len(item[0]),
+                    reverse=True,
                 ):
                     if title_nlp in name_nlp:
                         logger.debug(
@@ -2752,10 +2845,12 @@ def get_home():
 
 
 @tenacity.retry(
-    retry=tenacity.retry_if_exception_type((
-        socket.error,
-        arrapi.exceptions.ConnectionFailure,
-    )),
+    retry=tenacity.retry_if_exception_type(
+        (
+            socket.error,
+            arrapi.exceptions.ConnectionFailure,
+        )
+    ),
     wait=tenacity.wait_fixed(1),
     reraise=True,
     before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
@@ -2773,7 +2868,10 @@ def collect_downloaders(config):
     for servarr_config in config.get("servarrs", []):
         servarr_config["client"] = servarr_client = Prunerr.SERVARR_TYPE_MAPS[
             servarr_config["type"]
-        ]["client"](servarr_config["url"], servarr_config["api-key"],)
+        ]["client"](
+            servarr_config["url"],
+            servarr_config["api-key"],
+        )
 
         logger.debug(
             "Requesting %r Servarr download clients settings",
@@ -2803,7 +2901,8 @@ def collect_downloaders(config):
             # Use the same config dict when a download client is used in multiple
             # Servarr instances
             downloader_config = downloader_urls.setdefault(
-                downloader_url, downloader_config,
+                downloader_url,
+                downloader_config,
             )
             downloader_config.setdefault("servarrs", {})[
                 servarr_config["name"]
@@ -2862,15 +2961,14 @@ def normalize_nlp(text):
     global NLP
     if NLP is None:
         import spacy
-        NLP = spacy.load('en_core_web_sm')
+
+        NLP = spacy.load("en_core_web_sm")
         # Spacy's  default stop words are a bit too aggressive for this purpose
         NLP.Defaults.stop_words = {
             stop_word
             for stop_word in NLP.Defaults.stop_words
             # Do normalize apostrophe versions
-            if "'" in stop_word
-            or '‘' in stop_word
-            or '’' in stop_word
+            if "'" in stop_word or "‘" in stop_word or "’" in stop_word
             # Otherwise only strip out a small subset of stop workds
             or stop_word in STOP_WORDS
         }

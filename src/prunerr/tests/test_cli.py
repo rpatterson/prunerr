@@ -13,10 +13,13 @@ import unittest
 import prunerr
 
 
+@unittest.skip("TODO: Implement Servarr test fixture")
 class PrunerrCLITests(unittest.TestCase):
     """
     Test the prunerr Command-Line Interface.
     """
+
+    ENV = {"HOME": pathlib.Path(prunerr.__path__[0]).parents[1] / "home"}
 
     def test_importable(self):
         """
@@ -25,6 +28,7 @@ class PrunerrCLITests(unittest.TestCase):
         import_process = subprocess.run(
             [sys.executable, "-c", "import prunerr"],
             check=False,
+            env=self.ENV,
         )
         self.assertEqual(
             import_process.returncode,
@@ -71,7 +75,7 @@ class PrunerrCLITests(unittest.TestCase):
         The command line script accepts options controlling behavior.
         """
         self.assertIsNone(
-            prunerr.main(args=["exec", "-q"]),
+            prunerr.main(args=["exec"]),
             "Wrong console script options return value",
         )
 
@@ -93,6 +97,7 @@ class PrunerrCLITests(unittest.TestCase):
         module_main_process = subprocess.run(
             [sys.executable, "-m", "prunerr", "exec"],
             check=False,
+            env=self.ENV,
         )
         self.assertEqual(
             module_main_process.returncode,
@@ -114,6 +119,7 @@ class PrunerrCLITests(unittest.TestCase):
         script_process = subprocess.run(
             [prefix_path / "bin" / "prunerr", "exec"],
             check=False,
+            env=self.ENV,
         )
         self.assertEqual(
             script_process.returncode,

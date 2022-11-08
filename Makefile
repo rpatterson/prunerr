@@ -106,7 +106,7 @@ expand-template:
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
-	    echo "Reconcile changes and `$$ touch $(target)`:"
+	    echo "Reconcile changes and \`$$ touch $(target)\`:"
 	    diff -u "$(target)" "$(template)" || true
 	    false
 	fi

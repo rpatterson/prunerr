@@ -3127,22 +3127,25 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     parsed_args = parser.parse_args(args=args)
     # Avoid noisy boilerplate, functions meant to handle CLI usage should accept kwargs
     # that match the defined option and argument names.
-    shared_kwargs = dict(vars(parsed_args))
+    cli_kwargs = dict(vars(parsed_args))
     # Remove any meta options and arguments, those used to direct option and argument
     # handling, that shouldn't be passed onto functions meant to handle CLI usage.  More
     # generally, err on the side of options and arguments being kwargs, remove the
     # exceptions.
-    del shared_kwargs["command"]
+    del cli_kwargs["command"]
     # Separate the arguments for the sub-command
-    prunerr_dests = {action.dest for action in parser._actions}
+    prunerr_dests = {
+        action.dest for action in parser._actions  # pylint: disable=protected-access
+    }
+    shared_kwargs = dict(cli_kwargs)
     command_kwargs = {}
     for dest, value in list(shared_kwargs.items()):
-        if dest not in prunerr_dests:
+        if dest not in prunerr_dests:  # pragma: no cover
             command_kwargs[dest] = value
             del shared_kwargs[dest]
 
     # Configure logging for CLI usage
-    config_cli_logging(**cli_kwargs)
+    config_cli_logging(**shared_kwargs)
 
     # Iterate over each of the unique enabled download clients in each Servarr instances
     # and run the sub-command for each of those.
@@ -3161,8 +3164,8 @@ def main(args=None):  # pylint: disable=missing-function-docstring
         )
         # FIXME: `daemon` sub-command only ever processes first download client
         results = parsed_args.command(prunerr, **command_kwargs)
-        # Sub-commands may return a result to be pretty printed, or handle output themselves
-        # and return nothing.
+        # Sub-commands may return a result to be pretty printed, or handle output
+        # themselves # and return nothing.
         if results:
             if isinstance(results, list):
                 results = len(results)

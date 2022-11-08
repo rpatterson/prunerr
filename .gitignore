@@ -95,3 +95,8 @@ ENV/
 
 # Emacs editor settings
 /.dir-locals.el
+
+# Project-specific artifacts
+/radarr
+/sonarr
+/transmission

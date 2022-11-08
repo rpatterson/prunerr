@@ -1,0 +1,34 @@
+[build-system]
+# https://setuptools.pypa.io/en/latest/build_meta.html#how-to-use-it
+requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
+build-backend = "setuptools.build_meta"
+
+# https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
+[tool.setuptools_scm]
+write_to = "src/prunerr/version.py"
+local_scheme = "no-local-version"
+
+[tool.pylint.MASTER]
+# Auto-detect the number of processors available to use from:
+#     $ pylint --generate-rcfile
+jobs = 0
+ignore-paths = [
+# Managed by tools, best to use `# pylint: disable=...` inline comments for any other
+# ignores.
+    "src/.+/version.py",
+    ".*/src/.+/version.py",
+]
+# Extend linting to usage of trusted extension packages
+extension-pkg-allow-list = ["lxml"]
+[tool.pylint.TYPECHECK]
+# Ignore false negatives from external packages
+ignored-classes = ["lxml.etree.QName.localname"]
+# Match Black's defaults
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#pylint
+[tool.pylint.format]
+max-line-length = "88"
+
+[tool.isort]
+# Match Black's defaults
+# https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#isort
+profile = "black"

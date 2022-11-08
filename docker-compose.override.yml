@@ -15,3 +15,6 @@ services:
     volumes:
       # For development, test changes without rebuilding the image
       - "./:/usr/local/src/prunerr/"
+      # Use separate Python artifacts inside the image and locally on the host
+      - "./src/prunerr-docker.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
+      - "./.tox-docker/:/usr/local/src/prunerr/.tox/"

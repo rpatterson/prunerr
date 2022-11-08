@@ -99,8 +99,9 @@ expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template:
 	if [ -e "$(target)" ]
 	then
-	    echo "Template $(template) has been updated"
-	    echo "Reconcile changes and touch $(target)"
+	    echo "WARNING: Template $(template) has been updated:"
+	    echo "Reconcile changes and \`$$ touch $(target)\`:"
+	    diff -u "$(target)" "$(template)" || true
 	    false
 	fi
 	envsubst <"$(template)" >"$(target)"

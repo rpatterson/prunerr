@@ -76,7 +76,7 @@ pep517==0.13.0
     # via build
 pip-tools==6.9.0
     # via python-project-structure (./pyproject.toml)
-platformdirs==2.5.2
+platformdirs==2.5.3
     # via
     #   black
     #   pylint

@@ -32,7 +32,7 @@ services:
       - "./transmission/config/:/config/"
     healthcheck:
       test: >-
-        curl -LI -u "${TRANSMISSION_USER}:${TRANSMISSION_PASS}"
+        curl -LI -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
         "http://localhost:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '
     labels:

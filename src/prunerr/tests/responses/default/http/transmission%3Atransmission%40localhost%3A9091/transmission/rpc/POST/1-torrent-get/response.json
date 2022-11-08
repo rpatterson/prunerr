@@ -1,1 +1,45 @@
-{"arguments": {"torrents": []}, "result": "success"}
+{
+  "arguments": {
+    "torrents": [
+      {
+	"addedDate": 0,
+	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
+	"error": 0,
+	"errorString": "",
+	"eta": -1,
+	"id": 1,
+	"isFinished": false,
+	"isStalled": true,
+	"leftUntilDone": 1048576,
+	"metadataPercentComplete": 1,
+	"name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
+	"peersConnected": 0,
+	"peersGettingFromUs": 0,
+	"peersSendingToUs": 0,
+	"percentDone": 0.09,
+	"queuePosition": 1,
+	"rateDownload": 0,
+	"rateUpload": 0,
+	"recheckProgress": 0,
+	"seedRatioLimit": 4,
+	"seedRatioMode": 0,
+	"sizeWhenDone": 1073741824,
+	"status": 4,
+	"totalSize": 1073741824,
+	"trackers": [
+	  {
+            "announce": "udp://tracker.example.com:6969/announce",
+            "id": 0,
+            "scrape": "udp://tracker.example.com:6969/scrape",
+            "tier": 0
+	  }
+	],
+	"uploadRatio": 1.5000,
+	"uploadedEver": 1610612736,
+	"webseedsSendingToUs": 0
+      }
+    ]
+  },
+  "result": "success"
+}
+

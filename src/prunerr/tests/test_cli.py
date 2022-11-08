@@ -3,23 +3,27 @@ Test the Prunerr Command-Line Interface.
 """
 
 import sys
+import os
 import io
 import subprocess
 import contextlib
 import pathlib
 
 import unittest
+from unittest import mock
 
 import prunerr
 
+HOME = pathlib.Path(prunerr.__path__[0]).parents[1] / "home"
 
-@unittest.skip("TODO: Implement Servarr test fixture")
+
+@mock.patch.dict(os.environ, {"HOME": str(HOME)})
 class PrunerrCLITests(unittest.TestCase):
     """
     Test the prunerr Command-Line Interface.
     """
 
-    ENV = {"HOME": pathlib.Path(prunerr.__path__[0]).parents[1] / "home"}
+    CONFIG = HOME / ".config" / "prunerr.yml"
 
     def test_importable(self):
         """
@@ -28,7 +32,6 @@ class PrunerrCLITests(unittest.TestCase):
         import_process = subprocess.run(
             [sys.executable, "-c", "import prunerr"],
             check=False,
-            env=self.ENV,
         )
         self.assertEqual(
             import_process.returncode,
@@ -57,25 +60,27 @@ class PrunerrCLITests(unittest.TestCase):
         stdout = stdout_file.getvalue()
         self.assertIn(
             prunerr.__doc__.strip(),
-            stdout,
+            stdout.replace("\n", " "),
             "The console script name missing from --help output",
         )
 
+    @unittest.skip("TODO: Implement Servarr test fixture")
     def test_cli_subcommand(self):
         """
         The command line supports sub-commands.
         """
         self.assertIsNone(
-            prunerr.main(args=["exec"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
             "Wrong console script sub-command return value",
         )
 
+    @unittest.skip("TODO: Implement Servarr test fixture")
     def test_cli_options(self):
         """
         The command line script accepts options controlling behavior.
         """
         self.assertIsNone(
-            prunerr.main(args=["exec"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "exec"]),
             "Wrong console script options return value",
         )
 
@@ -83,7 +88,13 @@ class PrunerrCLITests(unittest.TestCase):
         """
         The command line script displays useful messages for invalid option values.
         """
-        stderr = self.get_cli_error_messages(args=["exec", "--non-existent-option"])
+        stderr = self.get_cli_error_messages(
+            args=[
+                f"--config={self.CONFIG}",
+                "exec",
+                "--non-existent-option",
+            ]
+        )
         self.assertIn(
             "error: unrecognized arguments: --non-existent-option",
             stderr,
@@ -95,9 +106,8 @@ class PrunerrCLITests(unittest.TestCase):
         The package/module supports execution via Python's `-m` option.
         """
         module_main_process = subprocess.run(
-            [sys.executable, "-m", "prunerr", "exec"],
+            [sys.executable, "-m", "prunerr", "exec", "--help"],
             check=False,
-            env=self.ENV,
         )
         self.assertEqual(
             module_main_process.returncode,
@@ -117,9 +127,8 @@ class PrunerrCLITests(unittest.TestCase):
                 raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(
-            [prefix_path / "bin" / "prunerr", "exec"],
+            [prefix_path / "bin" / "prunerr", "exec", "--help"],
             check=False,
-            env=self.ENV,
         )
         self.assertEqual(
             script_process.returncode,

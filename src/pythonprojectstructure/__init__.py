@@ -88,15 +88,25 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     # generally, err on the side of options and arguments being kwargs, remove the
     # exceptions.
     del cli_kwargs["command"]
+    # Separate the arguments for the sub-command
+    prunerr_dests = {
+        action.dest for action in parser._actions  # pylint: disable=protected-access
+    }
+    shared_kwargs = dict(cli_kwargs)
+    command_kwargs = {}
+    for dest, value in list(shared_kwargs.items()):
+        if dest not in prunerr_dests:  # pragma: no cover
+            command_kwargs[dest] = value
+            del shared_kwargs[dest]
 
     # Configure logging for CLI usage
-    config_cli_logging(**cli_kwargs)
+    config_cli_logging(**shared_kwargs)
 
     # Delegate to the function for the sub-command CLI argument
     logger.info("Running %r sub-command", parsed_args.command.__name__)
     # Sub-commands may return a result to be pretty printed, or handle output themselves
     # and return nothing.
-    result = parsed_args.command(**cli_kwargs)
+    result = parsed_args.command(**command_kwargs)
     if result is not None:
         pprint.pprint(result)
 

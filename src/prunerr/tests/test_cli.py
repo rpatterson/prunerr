@@ -16,7 +16,13 @@ import prunerr
 from .. import tests
 
 
-@mock.patch.dict(os.environ, {"HOME": str(tests.PrunerrTestCase.HOME)})
+@mock.patch.dict(
+    os.environ,
+    {
+        "HOME": str(tests.PrunerrTestCase.HOME),
+        "DEBUG": "true",
+    },
+)
 class PrunerrCLITests(tests.PrunerrTestCase):
     """
     Test the prunerr Command-Line Interface.

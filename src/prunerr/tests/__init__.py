@@ -9,6 +9,7 @@ import email.utils
 import email.message
 import urllib.parse
 import json
+import tempfile
 
 import unittest
 
@@ -55,6 +56,38 @@ class PrunerrTestCase(unittest.TestCase):
         self.requests_mock = requests_mock.Mocker()
         self.addCleanup(self.requests_mock.stop)
         self.requests_mock.start()
+
+        # Create a temporary directory for mutable test data
+        self.tmp_dir = (
+            tempfile.TemporaryDirectory(  # pylint: disable=consider-using-with
+                prefix=f"{self.__class__.__module__}-",
+                suffix=".d",
+            )
+        )
+        self.addCleanup(self.tmp_dir.cleanup)
+
+    def patch_paths(self, data):
+        """
+        Adjust Servarr/transmission storage paths for testing.
+        """
+        is_list = True
+        if not isinstance(data, list):
+            is_list = False
+            data = [data]
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            for key, value in list(item.items()):
+                if isinstance(value, (str)) and value.startswith("/media/"):
+                    # Keys containing storage paths in this object
+                    item[key] = f"{self.tmp_dir.name}{value}"
+                    pathlib.Path(item[key]).parent.mkdir(parents=True, exist_ok=True)
+                elif isinstance(value, (dict, list)):
+                    # Keys containing objects that may themselves contain storage paths
+                    self.patch_paths(item[key])
+        if not is_list:
+            (data,) = data
+        return data
 
     def mock_responses(
         self,
@@ -118,6 +151,14 @@ class PrunerrTestCase(unittest.TestCase):
                     if response_type:
                         response_headers["Content-Type"] = response_type
 
+                # Patch transmission/Servarr storage paths if the body is JSON
+                if "Content-Type" in response_headers:
+                    _, minor_type = parse_content_type(response_headers["Content-Type"])
+                    if minor_type.lower() == "json":
+                        response_bytes = json.dumps(
+                            self.patch_paths(json.loads(response_bytes))
+                        ).encode()
+
                 responses.append(
                     dict(headers=response_headers, content=response_bytes),
                 )
@@ -145,10 +186,7 @@ class PrunerrTestCase(unittest.TestCase):
         for request_mock, mock_responses in request_mocks:
             if request_mock.call_count < len(mock_responses):
                 response_contents = []
-                for mock_response in mock_responses:
-                    response_params = (
-                        mock_response._params  # pylint: disable=protected-access
-                    )
+                for response_params in mock_responses:
                     response_content = response_params.get(
                         "json",
                         response_params.get("text", response_params.get("content")),

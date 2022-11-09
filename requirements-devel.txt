@@ -240,7 +240,7 @@ wasabi==0.10.1
     #   spacy
     #   spacy-loggers
     #   thinc
-wheel==0.38.3
+wheel==0.38.4
     # via pip-tools
 wrapt==1.14.1
     # via astroid

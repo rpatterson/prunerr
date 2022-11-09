@@ -65,21 +65,23 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         The command line supports sub-commands.
         """
-        self.mock_responses()
+        request_mocks = self.mock_responses()
         self.assertIsNone(
             prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
             "Wrong console script sub-command return value",
         )
+        self.assert_request_mocks(request_mocks)
 
     def test_cli_options(self):
         """
         The command line script accepts options controlling behavior.
         """
-        self.mock_responses()
+        request_mocks = self.mock_responses()
         self.assertIsNone(
             prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "exec"]),
             "Wrong console script options return value",
         )
+        self.assert_request_mocks(request_mocks)
 
     def test_cli_option_errors(self):
         """

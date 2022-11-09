@@ -7,6 +7,7 @@ import pathlib
 import mimetypes
 import email.utils
 import urllib.parse
+import cgi
 import json
 
 import unittest
@@ -56,7 +57,7 @@ class PrunerrTestCase(unittest.TestCase):
         - More readable diffs in VCS
         - Potential to be re-used outside the test suite programming language
         """
-        response_mocks = {}
+        request_mocks = []
         for request_headers_path in responses_dir.glob("**/request-headers.json"):
             method = self.HTTP_METHODS_RE.match(request_headers_path.parent.name).group(
                 1
@@ -80,7 +81,9 @@ class PrunerrTestCase(unittest.TestCase):
             )
 
             responses = []
-            for response_path in request_headers_path.parent.glob("*/response.*"):
+            for response_path in sorted(
+                request_headers_path.parent.glob("*/response.*"),
+            ):
                 if response_path.name.endswith("~"):
                     # Ignore backup files
                     continue
@@ -109,10 +112,68 @@ class PrunerrTestCase(unittest.TestCase):
 
             with request_headers_path.open() as request_headers_opened:
                 request_headers = json.load(request_headers_opened)
-            response_mocks[url_split] = self.requests_mock.register_uri(
-                method=method,
-                url=url_split.geturl(),
-                request_headers=request_headers,
-                response_list=responses,
+            request_mocks.append(
+                (
+                    self.requests_mock.register_uri(
+                        method=method,
+                        url=url_split.geturl(),
+                        complete_qs=True,
+                        request_headers=request_headers,
+                        response_list=responses,
+                    ),
+                    responses,
+                )
             )
-        return response_mocks
+        return request_mocks
+
+    def assert_request_mocks(self, request_mocks):
+        """
+        Assert that all request mocks have been called and each only once.
+        """
+        for request_mock, mock_responses in request_mocks:
+            if request_mock.call_count < len(mock_responses):
+                response_contents = []
+                for mock_response in mock_responses:
+                    response_params = (
+                        mock_response._params  # pylint: disable=protected-access
+                    )
+                    response_content = response_params.get(
+                        "json",
+                        response_params.get("text", response_params.get("content")),
+                    )
+                    if isinstance(
+                        response_content, (str, bytes)
+                    ) and "Content-Type" in response_params.get("headers", {}):
+                        mimetype, _ = cgi.parse_header(
+                            response_params["headers"]["Content-Type"],
+                        )
+                        _, minor_type = mimetype.split("/")
+                        if minor_type.lower() == "json":
+                            response_content = json.loads(response_content)
+                    response_contents.append(response_content)
+                self.assertEqual(
+                    response_contents,
+                    response_contents[: request_mock.call_count],
+                    "Some response mocks not called: "
+                    f"{request_mock._method} "  # pylint: disable=protected-access
+                    f"{request_mock._url}",  # pylint: disable=protected-access
+                )
+            elif request_mock.call_count > len(mock_responses):
+                request_contents = []
+                for mock_call in request_mock.request_history:
+                    request_content = mock_call.text
+                    if "Accept" in mock_call.headers:
+                        mimetype, _ = cgi.parse_header(
+                            mock_call.headers["Accept"],
+                        )
+                        _, minor_type = mimetype.split("/")
+                        if minor_type.lower() == "json":
+                            request_content = mock_call.json()
+                    request_contents.append(request_content)
+                self.assertEqual(
+                    request_contents[: len(mock_responses)],
+                    request_contents,
+                    "More requests than mocks: "
+                    f"{request_mock._method} "  # pylint: disable=protected-access
+                    f"{request_mock._url}",  # pylint: disable=protected-access
+                )

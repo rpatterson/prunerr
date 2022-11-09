@@ -20,7 +20,7 @@ ignore-paths = [
 ]
 # Extend linting to usage of trusted extension packages
 extension-pkg-allow-list = ["lxml"]
-fail-under = 8.98
+fail-under = 8.99
 [tool.pylint.TYPECHECK]
 # Ignore false negatives from external packages
 ignored-classes = ["lxml.etree.QName.localname"]

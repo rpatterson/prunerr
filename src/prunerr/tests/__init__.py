@@ -6,8 +6,8 @@ import re
 import pathlib
 import mimetypes
 import email.utils
+import email.message
 import urllib.parse
-import cgi
 import json
 
 import unittest
@@ -15,6 +15,18 @@ import unittest
 import requests_mock
 
 import prunerr
+
+
+def parse_content_type(content_type):
+    """
+    Parse an RFC822-style `Content-Type` header.
+
+    Useful to safely extract the MIME type from the charset.
+    """
+    message = email.message.Message()
+    message["Content-Type"] = content_type
+    major_type, minor_type = message.get_params()[0][0].split("/")
+    return major_type, minor_type
 
 
 class PrunerrTestCase(unittest.TestCase):
@@ -144,10 +156,9 @@ class PrunerrTestCase(unittest.TestCase):
                     if isinstance(
                         response_content, (str, bytes)
                     ) and "Content-Type" in response_params.get("headers", {}):
-                        mimetype, _ = cgi.parse_header(
+                        _, minor_type = parse_content_type(
                             response_params["headers"]["Content-Type"],
                         )
-                        _, minor_type = mimetype.split("/")
                         if minor_type.lower() == "json":
                             response_content = json.loads(response_content)
                     response_contents.append(response_content)
@@ -163,10 +174,7 @@ class PrunerrTestCase(unittest.TestCase):
                 for mock_call in request_mock.request_history:
                     request_content = mock_call.text
                     if "Accept" in mock_call.headers:
-                        mimetype, _ = cgi.parse_header(
-                            mock_call.headers["Accept"],
-                        )
-                        _, minor_type = mimetype.split("/")
+                        _, minor_type = parse_content_type(mock_call.headers["Accept"])
                         if minor_type.lower() == "json":
                             request_content = mock_call.json()
                     request_contents.append(request_content)

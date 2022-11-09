@@ -10,9 +10,9 @@ import email.message
 import urllib.parse
 import json
 import tempfile
-
 import unittest
 
+import yaml
 import requests_mock
 
 import prunerr
@@ -30,7 +30,9 @@ def parse_content_type(content_type):
     return major_type, minor_type
 
 
-class PrunerrTestCase(unittest.TestCase):
+class PrunerrTestCase(
+    unittest.TestCase
+):  # pylint: disable=too-many-instance-attributes
     """
     Constants and set-up used in all Prunerr tests.
     """
@@ -43,6 +45,15 @@ class PrunerrTestCase(unittest.TestCase):
         "HOME": str(HOME),
         "DEBUG": "true",
     }
+
+    STORAGE_DIR = pathlib.PurePath("media", "Library")
+    INCOMPLETE_DIR = STORAGE_DIR / "incomplete"
+    DOWNLOADS_DIR = STORAGE_DIR / "downloads"
+    SONARR_DOWNLOADS_DIR = DOWNLOADS_DIR / "Sonarr" / "Videos" / "Series"
+    RADARR_DOWNLOADS_DIR = DOWNLOADS_DIR / "Radarr" / "Videos" / "Movies"
+    SEEDING_DIR = STORAGE_DIR / "seeding"
+    SONARR_SEEDING_DIR = SEEDING_DIR / "Sonarr" / "Videos" / "Series"
+    RADARR_SEEDING_DIR = SEEDING_DIR / "Radarr" / "Videos" / "Movies"
 
     # From /usr/lib/python3.10/wsgiref/validate.py:340
     HTTP_METHODS = ("GET", "HEAD", "POST", "OPTIONS", "PATCH", "PUT", "DELETE", "TRACE")
@@ -69,6 +80,41 @@ class PrunerrTestCase(unittest.TestCase):
             )
         )
         self.addCleanup(self.tmp_dir.cleanup)
+        self.tmp_path = pathlib.Path(self.tmp_dir.name)
+
+        # Convenient access to the parsed configuration file
+        with self.CONFIG.open() as config_opened:
+            self.config = yaml.safe_load(config_opened)
+        # Convenient access to parsed mocked API/RPC request responses
+        self.servarr_download_client_responses = {}
+        self.servarr_urls = [
+            servarr_config["url"] for servarr_config in self.config["servarrs"].values()
+        ]
+        for servarr_url in self.servarr_urls:
+            servarr_url = urllib.parse.urlsplit(servarr_url)
+            with (
+                self.RESPONSES_DIR
+                / servarr_url.scheme
+                / urllib.parse.quote(servarr_url.netloc)
+                / "api"
+                / "v3"
+                / "downloadclient%3Fapikey%3D"
+                / "GET"
+                / "0-response"
+                / "response.json"
+            ).open() as servarr_download_client_response:
+                self.servarr_download_client_responses[
+                    servarr_url.geturl()
+                ] = json.load(servarr_download_client_response)
+        # Convenience access to frequently used paths
+        self.storage_dir = self.tmp_path / self.STORAGE_DIR
+        self.incomplete_dir = self.tmp_path / self.INCOMPLETE_DIR
+        self.downloads_dir = self.tmp_path / self.DOWNLOADS_DIR
+        self.sonarr_downloads_dir = self.tmp_path / self.SONARR_DOWNLOADS_DIR
+        self.radarr_downloads_dir = self.tmp_path / self.RADARR_DOWNLOADS_DIR
+        self.seeding_dir = self.tmp_path / self.SEEDING_DIR
+        self.sonarr_seeding_dir = self.tmp_path / self.SONARR_SEEDING_DIR
+        self.radarr_seeding_dir = self.tmp_path / self.RADARR_SEEDING_DIR
 
     def patch_paths(self, data):
         """
@@ -84,7 +130,7 @@ class PrunerrTestCase(unittest.TestCase):
             for key, value in list(item.items()):
                 if isinstance(value, (str)) and value.startswith("/media/"):
                     # Keys containing storage paths in this object
-                    item[key] = f"{self.tmp_dir.name}{value}"
+                    item[key] = f"{self.tmp_path}{value}"
                     pathlib.Path(item[key]).parent.mkdir(parents=True, exist_ok=True)
                 elif isinstance(value, (dict, list)):
                     # Keys containing objects that may themselves contain storage paths
@@ -95,7 +141,7 @@ class PrunerrTestCase(unittest.TestCase):
 
     def mock_responses(
         self,
-        responses_dir=RESPONSES_DIR,
+        responses_dir=None,
     ):  # pylint: disable=too-many-locals
         """
         Mock response responses from files in the given directory.
@@ -106,6 +152,8 @@ class PrunerrTestCase(unittest.TestCase):
         - More readable diffs in VCS
         - Potential to be re-used outside the test suite programming language
         """
+        if responses_dir is None:
+            responses_dir = self.RESPONSES_DIR
         request_mocks = []
         for request_headers_path in responses_dir.glob("**/request-headers.json"):
             method = self.HTTP_METHODS_RE.match(request_headers_path.parent.name).group(
@@ -139,7 +187,8 @@ class PrunerrTestCase(unittest.TestCase):
                 response_headers = {}
                 response_headers_path = response_path.parent / "response-headers.json"
                 if response_headers_path.exists():
-                    response_headers = json.load(response_headers_path)
+                    with response_headers_path.open() as response_headers_opened:
+                        response_headers = json.load(response_headers_opened)
                 response_stat = response_path.stat()
                 response_bytes = response_path.read_bytes()
 

@@ -13,7 +13,6 @@ import subprocess
 import time
 import logging
 import pathlib  # TODO: replace os.path
-import urllib
 import tempfile
 import glob
 import pprint
@@ -26,7 +25,6 @@ import string
 
 import ciso8601
 import yaml
-import tenacity
 
 import arrapi
 
@@ -266,33 +264,6 @@ class Prunerr(object):
         "S{episode[seasonNumber]:02d}E{episode[episodeNumber]:02d}"
     )
 
-    # Map the different Servarr applications type terminology
-    SERVARR_TYPE_MAPS = dict(
-        sonarr=dict(
-            # The top-level containing type, if applicable.  IOW, the type of items in
-            # the top-level listing of the Servarr UI.  This is series for Sonarr as
-            # contrasted with episode or season.  This is movie for Radarr.
-            dir_type="series",
-            # File vs item is a little confusing.  Item refers to episodes/movies as
-            # contrasted with the `dir_type`.  But an episode/movie may comprise of
-            # multiple files and a file may contain multiple episodes.
-            item_type="episode",
-            file_has_multi=True,
-            client=arrapi.SonarrAPI,
-            download_dir_field="tvDirectory",
-            rename_template=(
-                "{series[title]} - {episode[seasonEpisode]} - {episode[title]}"
-            ),
-        ),
-        radarr=dict(
-            dir_type="movie",
-            item_type="movie",
-            file_has_multi=False,
-            client=arrapi.RadarrAPI,
-            download_dir_field="movieDirectory",
-            rename_template="{movie[title]} ({movie[release_year]})",
-        ),
-    )
     # Map Servarr event types to download client location path config
     SERVARR_EVENT_LOCATIONS = dict(
         grabbed=dict(src="downloadDir", dst="downloadDir"),
@@ -432,40 +403,6 @@ class Prunerr(object):
         self.popen = self.copying = None
         self.corrupt = {}
         self.quiet = False
-
-    @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(
-            (
-                socket.error,
-                error.TransmissionError,
-                arrapi.exceptions.ConnectionFailure,
-            )
-        ),
-        wait=tenacity.wait_fixed(1),
-        reraise=True,
-        before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
-    )
-    def connect(self):
-        """
-        Connect to the download and Servarr clients, waiting for reconnection on error.
-        """
-        split_url = urllib.parse.urlsplit(self.url)
-        logger.debug(
-            "Connecting to download client: %s",
-            self.url,
-        )
-        self.client = transmission_rpc.client.Client(
-            protocol=split_url.scheme,
-            host=split_url.hostname,
-            port=split_url.port,
-            path=split_url.path,
-            username=split_url.username,
-            password=split_url.password,
-        )
-        for _, servarr_config in self.servarrs.items():
-            servarr_config["client"] = Prunerr.SERVARR_TYPE_MAPS[
-                servarr_config["type"]
-            ]["client"](servarr_config["url"], servarr_config["api-key"])
 
     def strip_type_prefix(
         self,
@@ -2081,6 +2018,7 @@ class Prunerr(object):
 
         Cache these lookups as we page through the history across subsequent calls.
         """
+        # TODO: Use Servarr queue API instead of history
         servarr_history = servarr_config.setdefault("history", {})
         servarr_history.setdefault("page", 1)
         download_id = torrent.hashString.lower()
@@ -2089,6 +2027,8 @@ class Prunerr(object):
         # item.
         history_page = None
         download_record = indexer_record = None
+        # TODO: Avoid unnecessary history requests when a previous one alread identified
+        # the item.
         while (
             # Is history for this Servarr instance exhausted?
             history_page is None
@@ -2844,86 +2784,6 @@ def get_home():
         return os.path.expanduser("~")
 
 
-@tenacity.retry(
-    retry=tenacity.retry_if_exception_type(
-        (
-            socket.error,
-            arrapi.exceptions.ConnectionFailure,
-        )
-    ),
-    wait=tenacity.wait_fixed(1),
-    reraise=True,
-    before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
-)
-def collect_downloaders(config):
-    """
-    Aggregate all download clients from all Servarr instances defined in the config.
-    """
-    # TODO: Cleanup with re-use in mind.  Specifically how to connect the API clients
-    # for Servarr and download client with their configs, both Prunerr config and
-    # settings from Servarr.
-
-    # Collect connections information for all unique download clients
-    downloader_urls = {}
-    for servarr_config in config.get("servarrs", []):
-        servarr_config["client"] = servarr_client = Prunerr.SERVARR_TYPE_MAPS[
-            servarr_config["type"]
-        ]["client"](
-            servarr_config["url"],
-            servarr_config["api-key"],
-        )
-
-        logger.debug(
-            "Requesting %r Servarr download clients settings",
-            servarr_config["name"],
-        )
-        for downloader_config in servarr_client._raw._get("downloadclient"):
-            if not downloader_config["enable"]:
-                continue
-
-            # Create a copy specific to this download client so we can modify freely
-            servarr_config = dict(servarr_config)
-            servarr_config["downloadclient"] = downloader_config
-
-            downloader_config["fieldValues"] = field_values = {
-                downloader_config_field["name"]: downloader_config_field["value"]
-                for downloader_config_field in downloader_config["fields"]
-                if "value" in downloader_config_field
-            }
-            downloader_url = urllib.parse.SplitResult(
-                "http" if not field_values["useSsl"] else "https",
-                f"{field_values['username']}:{field_values['password']}@"
-                f"{field_values['host']}:{field_values['port']}",
-                field_values["urlBase"],
-                None,
-                None,
-            )
-            # Use the same config dict when a download client is used in multiple
-            # Servarr instances
-            downloader_config = downloader_urls.setdefault(
-                downloader_url,
-                downloader_config,
-            )
-            downloader_config.setdefault("servarrs", {})[
-                servarr_config["name"]
-            ] = servarr_config
-
-    # Include any download clients not connected to a Servarr instance
-    for downloader_url_str in config.get("downloaders", {}).get("urls", []):
-        downloader_url = urllib.parse.urlsplit(downloader_url_str)
-        downloader_urls.setdefault(downloader_url, {})
-
-    # Connect clients to all download clients
-    downloaders = {}
-    for download_url, downloader_config in downloader_urls.items():
-        # Aggregate the download clients from all Servarrs so that we run for each
-        # download client once even when used for multiple Servarr instances
-        if downloader_url.geturl() not in downloaders:
-            downloaders[downloader_url.geturl()] = downloader_config
-
-    return downloaders
-
-
 PUNCT_RE = re.compile("[\\{}]".format("\\".join(punct for punct in string.punctuation)))
 
 
@@ -3149,8 +3009,9 @@ def main(args=None):  # pylint: disable=missing-function-docstring
 
     # Iterate over each of the unique enabled download clients in each Servarr instances
     # and run the sub-command for each of those.
-    downloaders = collect_downloaders(shared_kwargs["config"])
-    for downloader_url, downloader_config in downloaders.items():
+    for downloader_url, downloader_config in shared_kwargs["config"][
+        "downloaders"
+    ].items():
         prunerr_kwargs = dict(shared_kwargs)
         prunerr_kwargs["servarrs"] = downloader_config.get("servarrs", {})
         prunerr_kwargs["url"] = downloader_url

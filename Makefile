@@ -52,7 +52,7 @@ run: build
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: build
+format:
 	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./

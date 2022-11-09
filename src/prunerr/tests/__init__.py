@@ -39,6 +39,10 @@ class PrunerrTestCase(unittest.TestCase):
 
     HOME = pathlib.Path(prunerr.__path__[0]).parents[1] / "home"
     CONFIG = HOME / ".config" / "prunerr.yml"
+    ENV = {
+        "HOME": str(HOME),
+        "DEBUG": "true",
+    }
 
     # From /usr/lib/python3.10/wsgiref/validate.py:340
     HTTP_METHODS = ("GET", "HEAD", "POST", "OPTIONS", "PATCH", "PUT", "DELETE", "TRACE")

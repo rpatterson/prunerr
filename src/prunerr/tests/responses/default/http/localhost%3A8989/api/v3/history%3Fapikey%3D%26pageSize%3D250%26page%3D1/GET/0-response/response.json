@@ -8,7 +8,7 @@
     {
       "episodeId": 2,
       "seriesId": 1,
-      "sourceTitle": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
+      "sourceTitle": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
       "language": {
         "id": 1,
         "name": "English"
@@ -33,8 +33,8 @@
       "eventType": "downloadFolderImported",
       "data": {
         "fileId": "1",
-        "droppedPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.mkv",
-        "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.mkv",
+        "droppedPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+        "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
         "downloadClient": "Transmission",
         "downloadClientName": "transmission",
         "preferredWordScore": "1000",
@@ -45,7 +45,7 @@
     {
       "episodeId": 1,
       "seriesId": 1,
-      "sourceTitle": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
+      "sourceTitle": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
       "language": {
         "id": 1,
         "name": "English"
@@ -79,8 +79,8 @@
         "downloadClient": "Transmission",
         "downloadClientName": "transmission",
         "size": "1073741824",
-        "downloadUrl": "http://localhost:9117/dl/nzbhydra2/?jackett_apikey=********************************&path=**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************&file=Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
-        "guid": "https://tracker.foo.example.com/download/1/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.torrent",
+        "downloadUrl": "http://localhost:9117/dl/nzbhydra2/?jackett_apikey=********************************&path=**************************************************************************************************************************************************************************************************************************************************************************************************************************************************************&file=Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+        "guid": "https://tracker.foo.example.com/download/1/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.torrent",
         "tvdbId": "0",
         "tvRageId": "0",
         "protocol": "2",

@@ -2,7 +2,7 @@
   {
     "episodeId": 1,
     "seriesId": 1,
-    "sourceTitle": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
+    "sourceTitle": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
     "language": {
       "id": 1,
       "name": "English"
@@ -27,8 +27,8 @@
     "eventType": "downloadFolderImported",
     "data": {
       "fileId": "1",
-      "droppedPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.mkv",
-      "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.mkv",
+      "droppedPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
       "downloadClient": "Transmission",
       "downloadClientName": "transmission",
       "preferredWordScore": "1000",

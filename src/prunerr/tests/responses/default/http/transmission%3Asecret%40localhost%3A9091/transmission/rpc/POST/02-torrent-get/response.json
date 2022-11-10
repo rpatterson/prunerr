@@ -11,7 +11,7 @@
 	  {
             "bytesCompleted": 2147483648,
             "length": 2147483648,
-            "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.mkv"
+            "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
 	  }
 	],
 	"fileStats": [
@@ -26,7 +26,7 @@
 	"isStalled": true,
 	"leftUntilDone": 0,
 	"metadataPercentComplete": 1,
-	"name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
+	"name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
 	"hashString": "72D08E64D0FE455A9ECE08AED0BB646D2632D339",
 	"peersConnected": 1,
 	"peersGettingFromUs": 0,
@@ -69,7 +69,7 @@
 	  {
             "bytesCompleted": 1073741824,
             "length": 1073741824,
-            "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER.mkv"
+            "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
 	  }
 	],
 	"fileStats": [
@@ -84,7 +84,7 @@
 	"isStalled": true,
 	"leftUntilDone": 1048576,
 	"metadataPercentComplete": 1,
-	"name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC.6CH-RELEASER",
+	"name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
 	"hashString": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
 	"peersConnected": 0,
 	"peersGettingFromUs": 0,

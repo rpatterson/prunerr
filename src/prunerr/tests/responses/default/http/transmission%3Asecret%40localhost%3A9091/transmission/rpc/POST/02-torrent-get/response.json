@@ -67,14 +67,14 @@
 	"eta": -1,
 	"files": [
 	  {
-            "bytesCompleted": 1073741824,
+            "bytesCompleted": 1072693248,
             "length": 1073741824,
             "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
 	  }
 	],
 	"fileStats": [
 	  {
-            "bytesCompleted": 1073741824,
+            "bytesCompleted": 1072693248,
             "priority": 0,
             "wanted": true
 	  }

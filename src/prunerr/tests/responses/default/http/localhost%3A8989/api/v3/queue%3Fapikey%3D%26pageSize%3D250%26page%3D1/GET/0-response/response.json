@@ -3,7 +3,7 @@
     "pageSize": 250,
     "sortKey": "progress",
     "sortDirection": "descending",
-    "totalRecords": 0,
+    "totalRecords": 1,
     "records": [
       {
 	"seriesId": 1,

@@ -66,22 +66,6 @@ class PrunerrTestCase(
         """
         super().setUp()
 
-        # Mock HTTP/S requests:
-        # https://requests-mock.readthedocs.io/en/latest/fixture.html#fixtures
-        self.requests_mock = requests_mock.Mocker()
-        self.addCleanup(self.requests_mock.stop)
-        self.requests_mock.start()
-
-        # Create a temporary directory for mutable test data
-        self.tmp_dir = (
-            tempfile.TemporaryDirectory(  # pylint: disable=consider-using-with
-                prefix=f"{self.__class__.__module__}-",
-                suffix=".d",
-            )
-        )
-        self.addCleanup(self.tmp_dir.cleanup)
-        self.tmp_path = pathlib.Path(self.tmp_dir.name)
-
         # Convenient access to the parsed configuration file
         with self.CONFIG.open() as config_opened:
             self.config = yaml.safe_load(config_opened)
@@ -106,6 +90,23 @@ class PrunerrTestCase(
                 self.servarr_download_client_responses[
                     servarr_url.geturl()
                 ] = json.load(servarr_download_client_response)
+
+        # Mock HTTP/S requests:
+        # https://requests-mock.readthedocs.io/en/latest/fixture.html#fixtures
+        self.requests_mock = requests_mock.Mocker()
+        self.addCleanup(self.requests_mock.stop)
+        self.requests_mock.start()
+
+        # Create a temporary directory for mutable test data
+        self.tmp_dir = (
+            tempfile.TemporaryDirectory(  # pylint: disable=consider-using-with
+                prefix=f"{self.__class__.__module__}-",
+                suffix=".d",
+            )
+        )
+        self.addCleanup(self.tmp_dir.cleanup)
+        self.tmp_path = pathlib.Path(self.tmp_dir.name)
+
         # Convenience access to frequently used paths
         self.storage_dir = self.tmp_path / self.STORAGE_DIR
         self.incomplete_dir = self.tmp_path / self.INCOMPLETE_DIR

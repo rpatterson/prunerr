@@ -8,8 +8,8 @@ import io
 import subprocess
 import contextlib
 import pathlib
+import importlib
 
-import unittest
 from unittest import mock
 
 import prunerr
@@ -17,7 +17,6 @@ import prunerr
 from .. import tests
 
 
-@unittest.skip("WIP breaking changes")
 @mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
 class PrunerrCLITests(tests.PrunerrTestCase):
     """
@@ -69,7 +68,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "sync"]),
             "Wrong console script sub-command return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -80,7 +79,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "exec"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "sync"]),
             "Wrong console script options return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -92,7 +91,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         stderr = self.get_cli_error_messages(
             args=[
                 f"--config={self.CONFIG}",
-                "exec",
+                "sync",
                 "--non-existent-option",
             ]
         )
@@ -106,8 +105,9 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         The package/module supports execution via Python's `-m` option.
         """
+        importlib.import_module("prunerr.__main__")
         module_main_process = subprocess.run(
-            [sys.executable, "-m", "prunerr", "exec", "--help"],
+            [sys.executable, "-m", "prunerr", "sync", "--help"],
             check=False,
         )
         self.assertEqual(
@@ -128,7 +128,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
                 raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(
-            [prefix_path / "bin" / "prunerr", "exec", "--help"],
+            [prefix_path / "bin" / "prunerr", "sync", "--help"],
             check=False,
         )
         self.assertEqual(

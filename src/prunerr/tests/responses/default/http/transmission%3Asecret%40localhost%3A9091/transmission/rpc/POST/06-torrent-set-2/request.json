@@ -1,9 +1,0 @@
-{
-  'arguments': {
-    'ids': [2],
-    'location': '/media/Library/imported/Sonarr/Videos/Series/',
-    'move': True
-  },
-  'method': 'torrent-set-location',
-  'tag': 6
-}

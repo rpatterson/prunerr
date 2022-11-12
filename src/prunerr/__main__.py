@@ -2,10 +2,10 @@
 Prunerr, command-line execution.
 """
 
-import sys  # pragma: no cover
+import sys
 
-from . import main  # pragma: no cover
+from . import main
 
 
-if __name__ == "__main__":  # pragma: no cover
-    sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())  # pragma: no cover

@@ -413,14 +413,12 @@ class PrunerrServarrDownloadClient:
 
         return self.download_client
 
-    def sync(self, download_items=None):
+    def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.
         """
-        if download_items is None:
-            download_items = self.download_client.download_items
         sync_results = {}
-        for download_item in download_items:
+        for download_item in self.download_client.download_items:
             # Wrap the inner loop so that exceptions can be logged and the rest of the
             # items still synced
             try:
@@ -435,16 +433,6 @@ class PrunerrServarrDownloadClient:
                 continue
             if item_result is not None:
                 sync_results[download_item.name] = item_result
-            break
-
-        else:
-            if not self.download_client.runner.quiet:
-                logger.debug(
-                    "Download item not managed by Servarr %r: %s",
-                    self.servarr.config["name"],
-                    download_item.name,
-                )
-
         return sync_results
 
     def get_item_servarr_dir(self, download_item):
@@ -491,6 +479,7 @@ class PrunerrServarrDownloadClient:
         dir_id_key = (
             f"{self.servarr.TYPE_MAPS[self.servarr.config['type']]['dir_type']}Id"
         )
+        dir_id = None
         if not self.download_client.runner.replay:
             # Get from existing Prunerr item data if available.
             # First from the Servarr queue records if Prunerr was able to get those
@@ -539,6 +528,12 @@ class PrunerrServarrDownloadClient:
         """
         # TODO: Observed items being moved back and forth.  Investigate and fix.
         if not self.get_item_servarr_dir(download_item):
+            if not self.download_client.runner.quiet:
+                logger.debug(
+                    "Download item not managed by Servarr %r: %s",
+                    self.servarr.config["name"],
+                    download_item.name,
+                )
             return None
         download_path = download_item.path
         download_item.prunerr_data["servarr"].update(self.servarr.config)

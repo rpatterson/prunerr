@@ -112,7 +112,7 @@ class PrunerrDownloadClient:
         # TODO: Stop after first Servarr that matches?  Try data file and Servarr queue
         # match for each Servarr first.  IOW, avoid history search as much as possible.
         return {
-            servarr_url: servarr_download_client.sync(self.download_items)
+            servarr_url: servarr_download_client.sync()
             for servarr_url, servarr_download_client in self.servarrs.items()
         }
 
@@ -434,7 +434,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         # Wait until the files are finished moving
         start = time.time()
-        while list(self.list_files(download_dir)):
+        while list(self.list_files()):
             if time.time() - start > move_timeout:
                 raise DownloadClientTimeout(
                     f"Timed out waiting for {self} to move "
@@ -442,20 +442,18 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 )
             time.sleep(1)
 
-    def list_files(self, download_dir=None):
+    def list_files(self):
         """
         Iterate over all download item selected file paths that exist.
         """
-        if download_dir is None:
-            download_dir = self.downloadDir
-
         files = self.files()
         assert files, "Must be able to find download item files"
 
         return (
             file_.name
             for file_ in files
-            if file_.selected and os.path.exists(os.path.join(download_dir, file_.name))
+            if file_.selected
+            and os.path.exists(os.path.join(self.download_dir, file_.name))
         )
 
     def match_indexer_urls(self):

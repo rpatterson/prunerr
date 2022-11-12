@@ -1,7 +1,0 @@
-{
-  'arguments': {
-    'download-dir': '/media/Library/downloads'
-  },
-  'method': 'session-set',
-  'tag': 4
-}

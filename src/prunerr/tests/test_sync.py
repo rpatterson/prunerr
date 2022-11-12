@@ -184,11 +184,11 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
         )
         with download_items_response_path.open() as download_items_response_opened:
             download_items_response = json.load(download_items_response_opened)
-        imported_download_item = None
-        for download_item in download_items_response["arguments"]["torrents"]:
-            if download_item["name"] == self.download_item_title:
-                imported_download_item = download_item
-                break
+        imported_download_item = [
+            download_item
+            for download_item in download_items_response["arguments"]["torrents"]
+            if download_item["name"] == self.download_item_title
+        ][0]
         self.assertIsNotNone(
             imported_download_item,
             "Could not find downloaded item in request mock",

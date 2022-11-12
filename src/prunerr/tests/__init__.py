@@ -20,7 +20,7 @@ import requests_mock
 import prunerr
 
 
-def parse_content_type(content_type):
+def parse_content_type(content_type):  # pragma: no cover
     """
     Parse an RFC822-style `Content-Type` header.
 
@@ -156,12 +156,11 @@ class PrunerrTestCase(
             self.storage_dir / self.SERVARR_STORAGE_RELATIVE / self.SERVARR_DIR_TITLE
         )
 
-        if self.download_client_urls[0] in self.download_client_items_responses:
-            self.set_up_download_item(
-                self.download_client_items_responses[self.download_client_urls[0]][
-                    "arguments"
-                ]["torrents"][-1]["name"]
-            )
+        self.set_up_download_item(
+            self.download_client_items_responses[self.download_client_urls[0]][
+                "arguments"
+            ]["torrents"][-1]["name"]
+        )
 
     def set_up_download_item(self, download_item_title):
         """
@@ -189,16 +188,11 @@ class PrunerrTestCase(
         self.seeding_item_data = self.seeding_item.with_name(
             self.downloaded_item_data.name,
         )
-        if self.SERVARR_IMPORT_PARENT_BASENAME:
-            self.imported_item_file = (
-                self.servarr_import_dir
-                / self.SERVARR_IMPORT_PARENT_BASENAME
-                / self.incomplete_item_file.name
-            )
-        else:
-            self.imported_item_file = (
-                self.servarr_import_dir / self.incomplete_item_file.name
-            )
+        self.imported_item_file = (
+            self.servarr_import_dir
+            / self.SERVARR_IMPORT_PARENT_BASENAME
+            / self.incomplete_item_file.name
+        )
 
     def set_up_download_item_files(self, download_client_url):
         """
@@ -215,8 +209,6 @@ class PrunerrTestCase(
                 / "POST"
             ).glob("*-torrent-get")
         )
-        if not torrent_list_mocks:
-            return
         with (
             torrent_list_mocks[0] / "response.json"
         ).open() as download_client_items_response:
@@ -315,32 +307,22 @@ class PrunerrTestCase(
                     # Ignore backup files
                     continue
                 response_headers = {}
-                response_headers_path = response_path.parent / "response-headers.json"
-                if response_headers_path.exists():
-                    with response_headers_path.open() as response_headers_opened:
-                        response_headers = json.load(response_headers_opened)
                 response_stat = response_path.stat()
                 response_bytes = response_path.read_bytes()
 
-                if "Last-Modified" not in response_headers:
-                    response_headers["Last-Modified"] = email.utils.formatdate(
-                        timeval=response_stat.st_mtime,
-                        usegmt=True,
-                    )
-                if "Content-Length" not in response_headers:
-                    response_headers["Content-Length"] = str(len(response_bytes))
-                if "Content-Type" not in response_headers:
-                    response_type, _ = mimetypes.guess_type(response_path.name)
-                    if response_type:
-                        response_headers["Content-Type"] = response_type
-
                 # Patch transmission/Servarr storage paths if the body is JSON
-                if "Content-Type" in response_headers:
-                    _, minor_type = parse_content_type(response_headers["Content-Type"])
-                    if minor_type.lower() == "json":
-                        response_bytes = json.dumps(
-                            self.patch_paths(json.loads(response_bytes))
-                        ).encode()
+                response_bytes = json.dumps(
+                    self.patch_paths(json.loads(response_bytes))
+                ).encode()
+
+                response_headers["Last-Modified"] = email.utils.formatdate(
+                    timeval=response_stat.st_mtime,
+                    usegmt=True,
+                )
+                response_headers["Content-Length"] = str(len(response_bytes))
+                response_headers["Content-Type"] = mimetypes.guess_type(
+                    response_path.name
+                )[0]
 
                 responses[response_path.parent.name] = dict(
                     headers=response_headers,
@@ -379,7 +361,7 @@ class PrunerrTestCase(
             for request_mock, mock_responses in methods.values():
                 self.assert_request_mock(request_mock, mock_responses)
 
-    def assert_request_mock(self, request_mock, mock_responses):
+    def assert_request_mock(self, request_mock, mock_responses):  # pragma: no cover
         """
         Assert that one request mock has been called once for each response.
         """
@@ -427,19 +409,13 @@ class PrunerrTestCase(
 
     def mock_download_client_complete_item(
         self,
-        servarr_type=None,
-        incomplete_item=None,
     ):
         """
         Simulate the download client finishing a download by moving the item.
         """
-        if servarr_type is None:
-            servarr_type = self.SERVARR_TYPE
-        if incomplete_item is None:
-            incomplete_item = self.incomplete_item
         self.servarr_downloaded_dir.mkdir(parents=True, exist_ok=True)
-        return incomplete_item.rename(
-            self.servarr_downloaded_dir / incomplete_item.name,
+        return self.incomplete_item.rename(
+            self.servarr_downloaded_dir / self.incomplete_item.name,
         )
 
     def mock_move_torrent_response(self, request, _):
@@ -451,20 +427,16 @@ class PrunerrTestCase(
         self.downloaded_item.rename(location / self.downloaded_item.name)
         return {"arguments": {}, "result": "success"}
 
-    def mock_servarr_import_item(self, servarr_type=None, downloaded_item=None):
+    def mock_servarr_import_item(self):
         """
         Simulate Servarr importing a downloaded item, hardlink files into the library.
         """
-        if servarr_type is None:
-            servarr_type = self.SERVARR_TYPE
-        if downloaded_item is None:
-            downloaded_item = self.downloaded_item
         self.imported_item_file.parent.mkdir(parents=True, exist_ok=True)
         imported_files = []
         for ext, mime_type in mimetypes.types_map.items():
             if not mime_type.startswith("video/"):
                 continue
-            for downloaded_item_file in downloaded_item.glob(f"**/*{ext}"):
+            for downloaded_item_file in self.downloaded_item.glob(f"**/*{ext}"):
                 downloaded_item_imported_file = (
                     self.imported_item_file.parent / downloaded_item_file.name
                 )
@@ -479,6 +451,5 @@ class PrunerrTestCase(
         Assumes the only difference between Servarr importing an upgrade for the file
         and a user deleting the file through the UI is in the Servarr history.
         """
-        if imported_item_file is None:
-            imported_item_file = self.imported_item_file
+        imported_item_file = self.imported_item_file
         return imported_item_file.unlink()

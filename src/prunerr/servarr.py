@@ -706,7 +706,7 @@ class PrunerrServarrDownloadClient:
             )
             return None
 
-        return download_item.move(src_path, dst_path)
+        return download_item.move(dst_path)
 
     def handle_imported(self, download_item, history_record):
         """

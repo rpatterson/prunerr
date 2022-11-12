@@ -374,25 +374,16 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 data_opened.seek(0)
                 data_opened.write(existing_deserialized)
 
-    def move(self, old_path, new_path):
+    def move(self, location):
         """
         Move the given download item relative to its old path.
         """
-        download_dir = self.downloadDir
-        src_path = self.path
+        src_path = pathlib.Path(self.download_dir)
         data_path = self.prunerr_data_path
-        if pathlib.Path(old_path) not in src_path.parents:
-            raise ValueError(
-                f"Download item {self!r} not in expected location: "
-                f"{str(old_path)!r} vs {download_dir!r}"
-            )
-        split = splitpath(os.path.relpath(download_dir, os.path.dirname(old_path)))[1:]
-        subpath = split and os.path.join(split[0], *split[1:]) or ""
-        location = os.path.join(new_path, subpath)
         logger.info("Moving %r: %r -> %r", self, self.download_dir, location)
         self.move_data(location)
         try:
-            self.move_timeout(download_dir)
+            self.move_timeout()
         except DownloadClientTimeout as exc:
             logger.error("Moving download item timed out, pausing: %s", exc)
             self.stop()
@@ -416,17 +407,15 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         if data_path.exists():
             prunerr_files.add(data_path)
         for prunerr_file in prunerr_files:
-            prunerr_file.rename(
-                pathlib.Path(new_path) / prunerr_file.relative_to(old_path),
-            )
-            if prunerr_file.parent != pathlib.Path(old_path) and not list(
+            prunerr_file.rename(location / prunerr_file.relative_to(src_path))
+            if prunerr_file.parent != pathlib.Path(src_path) and not list(
                 prunerr_file.parent.iterdir()
             ):
                 prunerr_file.parent.rmdir()  # empty dir
 
         return location
 
-    def move_timeout(self, download_dir, move_timeout=5 * 60):
+    def move_timeout(self, move_timeout=5 * 60):
         """
         Block until a torrents files are no longer in the old location.
 
@@ -436,10 +425,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         start = time.time()
         while list(self.list_files()):
             if time.time() - start > move_timeout:
-                raise DownloadClientTimeout(
-                    f"Timed out waiting for {self} to move "
-                    f"from {download_dir!r}".format(**locals())
-                )
+                raise DownloadClientTimeout(f"Timed out waiting for {self} to move")
             time.sleep(1)
 
     def list_files(self):
@@ -475,20 +461,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                         if tracker_url.startswith(indexer_url):
                             return possible_name
         return None
-
-
-def splitpath(path, platform=os.path):
-    """Split all path elements"""
-    result = []
-    head, tail = platform.split(path)
-    result.append(tail)
-    while head:
-        head, tail = platform.split(head)
-        result.append(tail or platform.sep)
-        if not tail and head == platform.sep:
-            break
-    result.reverse()
-    return result
 
 
 class DownloadClientTimeout(Exception):

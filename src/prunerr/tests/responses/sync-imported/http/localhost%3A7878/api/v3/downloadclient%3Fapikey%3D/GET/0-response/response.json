@@ -1,0 +1,139 @@
+[
+    {
+        "enable": true,
+        "protocol": "torrent",
+        "priority": 1,
+        "removeCompletedDownloads": false,
+        "removeFailedDownloads": true,
+        "name": "transmission",
+        "fields": [
+            {
+                "order": 0,
+                "name": "host",
+                "label": "Host",
+                "value": "localhost",
+                "type": "textbox",
+                "advanced": false
+            },
+            {
+                "order": 1,
+                "name": "port",
+                "label": "Port",
+                "value": 9091,
+                "type": "textbox",
+                "advanced": false
+            },
+            {
+                "order": 2,
+                "name": "useSsl",
+                "label": "Use SSL",
+                "helpText": "Use secure connection when connecting to Transmission",
+                "value": false,
+                "type": "checkbox",
+                "advanced": false
+            },
+            {
+                "order": 3,
+                "name": "urlBase",
+                "label": "Url Base",
+                "helpText": "Adds a prefix to the transmission rpc url, eg http://[host]:[port]/[urlBase]/rpc, defaults to '/transmission/'",
+                "value": "/transmission/",
+                "type": "textbox",
+                "advanced": true
+            },
+            {
+                "order": 4,
+                "name": "username",
+                "label": "Username",
+                "value": "transmission",
+                "type": "textbox",
+                "advanced": false
+            },
+            {
+                "order": 5,
+                "name": "password",
+                "label": "Password",
+                "value": "secret",
+                "type": "password",
+                "advanced": false
+            },
+            {
+                "order": 6,
+                "name": "movieCategory",
+                "label": "Category",
+                "helpText": "Adding a category specific to Radarr avoids conflicts with unrelated non-Radarr downloads. Using a category is optional, but strongly recommended. Creates a [category] subdirectory in the output directory.",
+                "type": "textbox",
+                "advanced": false
+            },
+            {
+                "order": 7,
+                "name": "movieDirectory",
+                "label": "Directory",
+                "helpText": "Optional location to put downloads in, leave blank to use the default Transmission location",
+                "value": "/media/Library/downloads/Radarr/Videos/Movies",
+                "type": "textbox",
+                "advanced": true
+            },
+            {
+                "order": 8,
+                "name": "recentMoviePriority",
+                "label": "Recent Priority",
+                "helpText": "Priority to use when grabbing movies that released within the last 21 days",
+                "value": 0,
+                "type": "select",
+                "advanced": false,
+                "selectOptions": [
+                    {
+                        "value": 0,
+                        "name": "Last",
+                        "order": 0,
+                        "dividerAfter": false
+                    },
+                    {
+                        "value": 1,
+                        "name": "First",
+                        "order": 1,
+                        "dividerAfter": false
+                    }
+                ]
+            },
+            {
+                "order": 9,
+                "name": "olderMoviePriority",
+                "label": "Older Priority",
+                "helpText": "Priority to use when grabbing movies that released over 21 days ago",
+                "value": 0,
+                "type": "select",
+                "advanced": false,
+                "selectOptions": [
+                    {
+                        "value": 0,
+                        "name": "Last",
+                        "order": 0,
+                        "dividerAfter": false
+                    },
+                    {
+                        "value": 1,
+                        "name": "First",
+                        "order": 1,
+                        "dividerAfter": false
+                    }
+                ]
+            },
+            {
+                "order": 10,
+                "name": "addPaused",
+                "label": "Add Paused",
+                "value": false,
+                "type": "checkbox",
+                "advanced": false
+            }
+        ],
+        "implementationName": "Transmission",
+        "implementation": "Transmission",
+        "configContract": "TransmissionSettings",
+        "infoLink": "https://wiki.servarr.com/radarr/supported#transmission",
+        "tags": [],
+        "id": 1
+    }
+]

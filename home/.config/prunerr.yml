@@ -1,3 +1,4 @@
+# TODO: Audit after rewrite
 daemon:
   ## The number of seconds to wait between each execution of the order of operations.
   ## Default: 60
@@ -7,11 +8,11 @@ servarrs:
   ## items should be pruned.  At least one Servarr instance must be configured.
   ## Multiple Servarr instances may be given: e.g. prune download client items in both
   ## Sonarr and Radarr.
-  sonarr:
+  Sonarr:
     url: "http://localhost:8989"
     api-key: ""
     type: "sonarr"
-  radarr:
+  Radarr:
     url: "http://localhost:7878"
     api-key: ""
     type: "radarr"
@@ -19,8 +20,8 @@ download-clients:
   ## TODO: Support multiple download clients
   ## Support managing download clients without Servarr instances, use these URLs to
   ## connect to download clients instead of looking them up from Servarr settings.
-  urls:
-    - "https://transmission:secret@transmission.example.com"
+  # urls:
+  #   - "https://transmission:secret@transmission.example.com"
   ## Calculate an appropriate margin of disk space to keep free when deciding whether to
   ## prune download items based the maximum download bandwidth/speed in Mbps and the
   ## amount of time in seconds at that rate for which download clients should be able to
@@ -35,17 +36,6 @@ download-clients:
   ## limit when resuming downloads after previously stopping?  May be useful for QoS to
   ## optimize real download throughput.
   # resume-set-download-bandwidth-limit: false
-  ## The base directory of items before they are done downloading.
-  # download-dir: "/var/lib/transmission-daemon/downloads"
-  ## If items are done downloading, are seeding, and have been successfully imported (or
-  ## copied) they will be moved to this directory.  Defaults to an `./imported/`
-  ## directory next to the download client's default `./downloads` directory.
-  # imported-dir: "/var/lib/transmission-daemon/imported"
-  ## If items have been previously imported and subsequently deleted, such as when an
-  ## item has been upgraded, they will be moved to this directory.  Defaults to a
-  ## `./deleted/` directory next to the download client's default `./downloads`
-  ## directory.
-  # deleted-dir: "/var/lib/transmission-daemon/deleted"
   ## Settings that control copying downloaded items to remote servarr hosts.  If
   ## unset, downloads are left in place such as when download clients are running on
   ## the same host as the servarr instances.

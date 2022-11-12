@@ -4,6 +4,7 @@ Test the aggregation of download client configurations.
 # Aggregate download client configurations from Servarr and the configuration file.
 
 import os
+import pathlib
 
 from unittest import mock
 
@@ -17,6 +18,10 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
     """
     Test the aggregation of download client configurations.
     """
+
+    HOME = pathlib.Path(__file__).parent / "home" / "download-clients"
+    CONFIG = HOME / ".config" / "prunerr.yml"
+    ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
 
     RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "download-clients"
 
@@ -68,10 +73,10 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
         # caching the clients may do
         self.assertIs(
             runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[0]]
-            .servarrs[self.config["servarrs"]["sonarr"]["url"]]
+            .servarrs[self.config["servarrs"]["Sonarr"]["url"]]
             .servarr.client,
             runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[1]]
-            .servarrs[self.config["servarrs"]["sonarr"]["url"]]
+            .servarrs[self.config["servarrs"]["Sonarr"]["url"]]
             .servarr.client,
             "Servarr instance client not re-used across download clients",
         )
@@ -153,12 +158,12 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
                     "Servarr instance empty config type",
                 )
                 self.assertIn(
-                    "download_dir",
+                    "download_item_dirs",
                     dir(servarr),
                     "Servarr instance missing download dir",
                 )
                 self.assertEqual(
-                    servarr.download_dir,
+                    servarr.download_item_dirs["downloadDir"],
                     self.tmp_path
                     / self.servarr_download_client_responses[servarr_config["url"]][0][
                         "fields"

@@ -189,6 +189,8 @@ TODO
 The following are known issues with Prunerr or features that are particularly desirable
 to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
 
+- Update docs after rewrite
+
 - Switch from current downloads/imported/deleted download item statuses and back to just
   downloads/seeding and, when freeing space, delete from the seeding status based on the
   percentage of download item disk space has just one hard link.  Move download items

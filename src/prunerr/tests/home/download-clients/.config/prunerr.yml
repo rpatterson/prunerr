@@ -1,0 +1,204 @@
+# TODO: Audit after rewrite
+daemon:
+  ## The number of seconds to wait between each execution of the order of operations.
+  ## Default: 60
+  # poll: 60
+servarrs:
+  ## The Servarr application instances, such as Sonarr or Radarr, whose download client
+  ## items should be pruned.  At least one Servarr instance must be configured.
+  ## Multiple Servarr instances may be given: e.g. prune download client items in both
+  ## Sonarr and Radarr.
+  Sonarr:
+    url: "http://localhost:8989"
+    api-key: ""
+    type: "sonarr"
+  Radarr:
+    url: "http://localhost:7878"
+    api-key: ""
+    type: "radarr"
+download-clients:
+  ## TODO: Support multiple download clients
+  ## Support managing download clients without Servarr instances, use these URLs to
+  ## connect to download clients instead of looking them up from Servarr settings.
+  urls:
+    - "https://transmission:secret@transmission.example.com"
+  ## Calculate an appropriate margin of disk space to keep free when deciding whether to
+  ## prune download items based the maximum download bandwidth/speed in Mbps and the
+  ## amount of time in seconds at that rate for which download clients should be able to
+  ## continue downloading without exhausting disk space.
+  ## 100 Mb/s, e.g. dedicated ethernet
+  max-download-bandwidth: 100
+  ## 60 seconds * 60 minutes = 1 hour, default
+  # min-download-time-margin: 3600
+  ## 60 seconds * 10 daemon poll margin = 10 minutes
+  min-download-time-margin: 600
+  ## Should the maximum download bandwidth/speed be set in the download client as a
+  ## limit when resuming downloads after previously stopping?  May be useful for QoS to
+  ## optimize real download throughput.
+  # resume-set-download-bandwidth-limit: false
+  ## Settings that control copying downloaded items to remote servarr hosts.  If
+  ## unset, downloads are left in place such as when download clients are running on
+  ## the same host as the servarr instances.
+  # copy:
+  ## The command to execute to copy competed downloads.  Must accept two arguments: the
+  ## `imported-dir`, and the corresponding destination path on the remote host.  Must
+  ## also accept relative paths for each file in the download item on `/dev/stdin`.
+  ## Expects the same behaviour as the default `$ rsync ...` command.
+  # command: "rsync -tSmP --files-from=-"
+  ## The destination remote host and base path in the format accepted as the second
+  ## argument to `command`.
+  # destination: "servarr.example.com:/media/Library/downloads/"
+  ## Workaround an issue with Transmission when starting torrents with no free space.
+  ## See the Python docstring for `prunerr.Prunerr.readd_missing_data()` for details.
+  # readd-missing-data: true
+indexers:
+  ## Used to match download items with no corresponding Servarr history from which
+  ## the indexer for the item can be found.
+  urls:
+    ExamplePrivateTracker:
+      - "https://tracker.example.com"
+  ## Apply per-indexer maintenance operations to all download items, e.g.:
+  ## - adjust priorities
+  ## - reject archives
+  ## - etc.
+  reviews:
+    - name: "ExamplePrivateTracker"
+      operations:
+        ## Reject stalled download items whose progress is too slow.
+        ## Strike a balance between giving difficult to find items time to download
+        ## while also pruning items that will never be completed.
+        - type: "or"
+          operations:
+            - type: "value"
+              ## Don't consider completed torrents to be stalled.
+              ## If an item seems to be completely downloaded to the client but then
+              ## later it's verified and some last corrupted bits are re-downloaded,
+              ## it's `doneDate` will be updated.  This can really throw off the total
+              ## download rate, especially for small torrents.
+              name: "status"
+              equals: "seeding"
+            - type: "value"
+              name: "age"
+              # 1 week * 7 days * 24 hours * 60 minutes * 60 seconds
+              maximum: 604800
+            - type: "value"
+              name: "rate_total"
+              # Minimum Bps of total throughput before an item is considered stalled
+              minimum: 50
+          remove: true
+          blacklist: true
+        ## Reject download items containing archives to optimize seeding per disk space.
+        - type: "files"
+          patterns:
+            - ".+\\.rar$"
+            - ".+\\.r[0-9]+$"
+            - ".+\\.zip$"
+            - ".+\\.zip\\.[0-9]+$"
+            - ".+\\.gz$"
+            - ".+\\.tgz$"
+            - ".+\\.bz2$"
+          ## The attribute of the download item's files with those extension
+          # name: "size"  # Default
+          ## The portion of the download item's size from files with those extension
+          # aggregation: "portion"  # Default
+          # aggregation: "sum"
+          # aggregation: "count"  # `name` is ignored
+          ## todo: Tune this value?
+          maximum: 0.50
+          remove: true
+          blacklist: true
+        ## Set download items from private indexers/trackers to high priority.
+        - type: "value"
+          name: "bandwidthPriority"
+          equals: 1
+          change:
+            bandwidthPriority: 1
+    - name: null  # `null` matches all other indexers not specified in `operations`
+      operations:
+        - type: "files"
+          patterns:
+            - ".+\\.rar$"
+            - ".+\\.r[0-9]+$"
+            - ".+\\.zip$"
+            - ".+\\.zip\\.[0-9]+$"
+            - ".+\\.gz$"
+            - ".+\\.tgz$"
+            - ".+\\.bz2$"
+          maximum: 0.50
+          remove: true
+          blacklist: true
+        ## Set download items from public indexers/trackers to low priority.
+        - type: "value"
+          name: "bandwidthPriority"
+          equals: -1
+          change:
+            bandwidthPriority: -1
+  priorities:
+    ## Delete download items that are public torrents before those from private trackers
+    ## by putting the priority definitions of private tackers before the definition for
+    ## public torrents.
+    - name: "ExamplePrivateTracker"
+      ## Example for a private tracker with various rules that affect both whether
+      ## download items should be considered for deletion yet and which itmes should be
+      ## deleted first.
+      ## TODO: Use some rule engine library?
+      operations:
+        ## Have download items met the private tracker's minimum requirements for
+        ## snatched items.  In this case, until we've either reached a minimum ration
+        ## *or* seeded for a long enough amount of time.
+        - type: "or"
+          ## If download items that haven't meet those minimum requirements, exclude
+          ## them from considering for deletion.  As opposed to just sorting those items
+          ## that haven't met those requirements to be deleted last.
+          filter: true
+          operations:
+            - type: "value"
+              ## The amount of time that has passed since the item has been
+              ## completely downloaded.  Beware that this is not necessarily
+              ## the total sum of actively seeding time as seen by the
+              ## tracker.  For example:
+              ## 1. private tracker torrent is downloaded and seeds all of day 1
+              ## 2. you go on vacation and your client crashes on day 2
+              ## 3. you return from vacation and restart your client on day 10
+              ## Then `seconds_since_done` is 10 days while the private
+              ## tracker only sees you as seeding for 1 day.  As such, be sure
+              ## to add a healthy margin for downtime lest Prunerr delete
+              ## torrents that haven't actually met the private trackers
+              ## seeding requirements.
+              name: "seconds_since_done"
+              ## 10 days * 24 hours * 60 minutes * 60 seconds
+              minimum: 864000
+            - type: "value"
+              name: "ratio"
+              minimum: 1.0
+        ## Maximize private tracker global user ratio, delete last torrents with the
+        ## most bytes uploaded because they may be most likely to keep accruing more
+        ## upload to your ratio. As opposed to sorting by individual download item
+        ## ratio.
+        - type: "value"
+          name: "uploadedEver"
+          reversed: true
+        ## For private trackers with a bonus system for seeding torrents, maximize bonus
+        ## points by deleting last the smallest download item that is also larger than
+        ## the size that qualifies for the maximum bonus rate.
+        - type: "value"
+          name: "size_when_done"
+          ## Max bonus points rate: 10 GB * 1024 MB * 1024 KB * 1024 B
+          minimum: 10737418240
+          ## Items that are smaller than the maximum bonus rate size should be
+          ## considered for deletion before those that are larger.
+          reversed: true
+        ## Items that are much larger than the maximum bonus rate size should be
+        ## considered for deletion before those that are greater than but also closest
+        ## to the maximum bonus rate size.
+        - type: "value"
+          name: "size_when_done"
+    ## Fallback for any download items whose indexer or tracker URLs don't match any
+    ## other priorities above.  For example, public torrents.
+    - name: null  # `null` matches all other indexers not specified in `operations`
+      operations:
+        ## Delete popular download items with a healthy number of seeders before
+        ## obscure, less popular items to support the health and breadth of items
+        ## available to the community.
+        - type: "value"
+          name: "ratio"

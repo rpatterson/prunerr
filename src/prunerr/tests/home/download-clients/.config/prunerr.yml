@@ -21,7 +21,7 @@ download-clients:
   ## Support managing download clients without Servarr instances, use these URLs to
   ## connect to download clients instead of looking them up from Servarr settings.
   urls:
-    - "https://transmission:secret@transmission.example.com"
+    - "https://transmission.example.com"
   ## Calculate an appropriate margin of disk space to keep free when deciding whether to
   ## prune download items based the maximum download bandwidth/speed in Mbps and the
   ## amount of time in seconds at that rate for which download clients should be able to

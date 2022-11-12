@@ -30,13 +30,11 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
         "http://transmission:secret@localhost:9091/transmission/",
         # Simulate a Servarr instance with multiple download clients
         # Simulate a Servarr instance not using authentication
-        "http://192.168.1.1:9091/transmission/",
+        "http://transmission@192.168.1.1:9091/transmission/",
     )
     # Simulate a download client not used by a Servarr instance
     # Simulate a download client using HTTPS/TLS/SSL
-    INDEPENDENT_DOWNLOAD_CLIENT_URLS = (
-        "https://transmission:secret@transmission.example.com",
-    )
+    INDEPENDENT_DOWNLOAD_CLIENT_URLS = ("https://transmission.example.com",)
     DOWNLOAD_CLIENT_URLS = (
         SERVARR_DOWNLOAD_CLIENT_URLS + INDEPENDENT_DOWNLOAD_CLIENT_URLS
     )

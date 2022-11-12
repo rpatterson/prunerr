@@ -178,6 +178,7 @@
                 "order": 4,
                 "name": "username",
                 "label": "Username",
+                "value": "transmission",
                 "type": "textbox",
                 "advanced": false
             },

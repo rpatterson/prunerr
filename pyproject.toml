@@ -28,6 +28,12 @@ ignored-classes = ["lxml.etree.QName.localname"]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#pylint
 [tool.pylint.format]
 max-line-length = "88"
+[tool.pylint."messages control"]
+# I'm not sure I agree with PyLiint here.  I prefer my `TODO`s to be in the the most
+# appropriate context where the change should happen.  It helps my recall.  If someone
+# else wants to take the time to move the `TODO`s into `./TODO.rst`, I won't object as
+# long as sufficient context comes along with them.
+disable = ["fixme"]
 
 [tool.isort]
 # Match Black's defaults

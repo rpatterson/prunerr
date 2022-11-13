@@ -1,5 +1,5 @@
 """
-Test the aggregation of download client configurations.
+Test Prunerr's interaction with download clients.
 """
 # Aggregate download client configurations from Servarr and the configuration file.
 

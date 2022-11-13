@@ -1207,10 +1207,11 @@ class Prunerr(object):
             )
         readded = self.get_download_item(readded.hashString)
         readded.update()
-        assert readded.download_dir == download_item.download_dir, (
-            f"Re-added download location changed: "
-            f"{download_item.download_dir!r} -> {readded.download_dir!r}"
-        )
+        if readded.download_dir != download_item.download_dir:
+            raise ValueError(
+                f"Re-added download location changed: "
+                f"{download_item.download_dir!r} -> {readded.download_dir!r}",
+            )
         return readded
 
     def readd_missing_data(self):

@@ -435,7 +435,8 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         Iterate over all download item selected file paths that exist.
         """
         files = self.files()
-        assert files, "Must be able to find download item files"
+        if not files:
+            raise ValueError(f"No files found in {self!r}")
 
         return (
             file_.name

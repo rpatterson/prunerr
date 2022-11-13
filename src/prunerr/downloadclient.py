@@ -19,19 +19,21 @@ import prunerr.utils
 logger = logging.getLogger(__name__)
 
 
-def parallel_to(base_dir, parallel_path, root_basename):
+def parallel_to(base_path, parallel_path, root_basename):
     """
     Return a path with a parallel relative root to the given full path.
     """
-    base_dir = pathlib.Path(base_dir)
-    assert base_dir.name != root_basename, (
-        "Parallel root basename same as the relative root: "
-        f"{base_dir!r} -> {parallel_path!r}"
-    )
-    return (
-        base_dir.parent
-        / root_basename
-        / pathlib.Path(parallel_path).relative_to(base_dir)
+    base_path = pathlib.Path(base_path)
+    common_path = pathlib.Path(os.path.commonpath((base_path.parent, parallel_path)))
+    if common_path == pathlib.Path(os.sep):
+        logger.warning(
+            "The only common path between %r and %r is the filesystem root.  "
+            "This is probably a sign of mis-configuration.",
+            base_path.parent,
+            parallel_path,
+        )
+    return common_path / root_basename / pathlib.Path(parallel_path).relative_to(
+        parallel_path.parents[-(len(base_path.parts))],
     )
 
 

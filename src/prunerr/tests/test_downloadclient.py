@@ -9,6 +9,7 @@ import pathlib
 from unittest import mock
 
 import prunerr.runner
+import prunerr.downloadclient
 
 from .. import tests
 
@@ -168,3 +169,35 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
                     ][7]["value"].lstrip(os.path.sep),
                     "Servarr instance wrong download dir",
                 )
+
+    def test_parallel_to(self):
+        """
+        Represent Servarr state in download item locations through parallel paths.
+        """
+        self.assertEqual(
+            prunerr.downloadclient.parallel_to(
+                self.downloaded_dir,
+                self.downloaded_item,
+                prunerr.downloadclient.PrunerrDownloadClient.SEEDING_DIR_BASENAME,
+            ),
+            self.seeding_item,
+            "Wrong seeding directory for downloaded item",
+        )
+        self.assertEqual(
+            prunerr.downloadclient.parallel_to(
+                self.seeding_dir,
+                self.servarr_downloaded_dir,
+                "downloads",
+            ),
+            self.servarr_downloaded_dir,
+            "Wrong downloaded directory for Servarr seeding directtory",
+        )
+        self.assertEqual(
+            prunerr.downloadclient.parallel_to(
+                self.downloaded_dir,
+                self.servarr_seeding_dir,
+                prunerr.downloadclient.PrunerrDownloadClient.SEEDING_DIR_BASENAME,
+            ),
+            self.servarr_seeding_dir,
+            "Wrong seeding directory for downloaded item",
+        )

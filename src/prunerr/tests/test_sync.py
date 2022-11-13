@@ -220,11 +220,11 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
             "Download item not in downloaded path after finished downloading",
         )
         self.assertTrue(
-            (self.downloaded_item / self.incomplete_item_file.name).is_file(),
+            self.downloaded_item_file.is_file(),
             "Download item file is not a file after finished downloading",
         )
         self.assertEqual(
-            (self.downloaded_item / self.incomplete_item_file.name).stat().st_nlink,
+            self.downloaded_item_file.stat().st_nlink,
             1,
             "Download item file has more than one link before importing",
         )
@@ -275,13 +275,13 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
             "Download item not in downloaded path after finished downloading",
         )
         self.assertTrue(
-            (self.downloaded_item / self.incomplete_item_file.name).is_file(),
+            self.downloaded_item_file.is_file(),
             "Download item file is not a file after finished downloading",
         )
         self.assertEqual(
-            (self.downloaded_item / self.incomplete_item_file.name).stat().st_nlink,
+            self.downloaded_item_file.stat().st_nlink,
             2,
-            "Download item file has more than one link before importing",
+            "Download item file wrong number of links after import",
         )
         self.assertTrue(
             self.downloaded_item_data.is_file(),
@@ -349,13 +349,13 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
             "Download item seeding path is not a directory after import",
         )
         self.assertTrue(
-            (self.seeding_item / self.incomplete_item_file.name).is_file(),
+            self.seeding_item_file.is_file(),
             "Download item file is not a file after import",
         )
         self.assertEqual(
-            (self.seeding_item / self.incomplete_item_file.name).stat().st_nlink,
+            self.seeding_item_file.stat().st_nlink,
             2,
-            "Download item file has more than one link before importing",
+            "Download item file wrong number of links after import",
         )
         self.assertTrue(
             self.seeding_item_data.is_file(),
@@ -385,43 +385,48 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
         self.assert_request_mocks(imported_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
-            "Download item in incomplete path after import",
+            "Download item in incomplete path after deleted",
         )
         self.assertFalse(
             self.incomplete_item_data.exists(),
-            "Prunerr data file in incomplete path after import",
+            "Prunerr data file in incomplete path after deleted",
         )
         self.assertFalse(
             self.downloaded_item.exists(),
-            "Download item in downloading path after import",
+            "Download item in downloading path after deleted",
         )
         self.assertFalse(
             self.downloaded_item_data.exists(),
-            "Prunerr data file in downloading path after import",
+            "Prunerr data file in downloading path after deleted",
         )
         self.assertTrue(
             self.seeding_item.is_dir(),
-            "Download item seeding path is not a directory after import",
+            "Download item seeding path is not a directory after deleted",
         )
         self.assertTrue(
-            (self.seeding_item / self.incomplete_item_file.name).is_file(),
-            "Download item file is not a file after import",
+            self.seeding_item_file.is_file(),
+            "Download item file is not a file after deleted",
+        )
+        self.assertEqual(
+            self.seeding_item_file.stat().st_nlink,
+            1,
+            "Download item file has too many links after deleted",
         )
         self.assertTrue(
             self.seeding_item_data.is_file(),
-            "Prunerr data file isn't a file after being imported",
+            "Prunerr data file isn't a file after being deleted",
         )
         with self.seeding_item_data.open() as imported_data_opened:
             imported_prunerr_data = json.load(imported_data_opened)
         self.assertIn(
             "dirId",
             imported_prunerr_data,
-            "Prunerr data Servarr DB id not found after import",
+            "Prunerr data Servarr DB id not found after deleted",
         )
         self.assertEqual(
             imported_prunerr_data["dirId"],
             1,
-            "Wrong Prunerr data Servarr DB id after import",
+            "Wrong Prunerr data Servarr DB id after deleted",
         )
 
         # 7. The delete event becomes visible in the Servarr API history.  Running the
@@ -433,43 +438,48 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
         self.assert_request_mocks(deleted_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
-            "Download item in incomplete path after import",
+            "Download item in incomplete path after deleted",
         )
         self.assertFalse(
             self.incomplete_item_data.exists(),
-            "Prunerr data file in incomplete path after import",
+            "Prunerr data file in incomplete path after deleted",
         )
         self.assertFalse(
             self.downloaded_item.exists(),
-            "Download item in downloading path after import",
+            "Download item in downloading path after deleted",
         )
         self.assertFalse(
             self.downloaded_item_data.exists(),
-            "Prunerr data file in downloading path after import",
+            "Prunerr data file in downloading path after deleted",
         )
         self.assertTrue(
             self.seeding_item.is_dir(),
-            "Download item seeding path is not a directory after import",
+            "Download item seeding path is not a directory after deleted",
         )
         self.assertTrue(
-            (self.seeding_item / self.incomplete_item_file.name).is_file(),
-            "Download item file is not a file after import",
+            self.seeding_item_file.is_file(),
+            "Download item file is not a file after deleted",
+        )
+        self.assertEqual(
+            self.seeding_item_file.stat().st_nlink,
+            1,
+            "Download item file has too many links after deleted",
         )
         self.assertTrue(
             self.seeding_item_data.is_file(),
-            "Prunerr data file isn't a file after being imported",
+            "Prunerr data file isn't a file after being deleted",
         )
         with self.seeding_item_data.open() as imported_data_opened:
             imported_prunerr_data = json.load(imported_data_opened)
         self.assertIn(
             "dirId",
             imported_prunerr_data,
-            "Prunerr data Servarr DB id not found after import",
+            "Prunerr data Servarr DB id not found after deleted",
         )
         self.assertEqual(
             imported_prunerr_data["dirId"],
             1,
-            "Wrong Prunerr data Servarr DB id after import",
+            "Wrong Prunerr data Servarr DB id after deleted",
         )
 
     @unittest.skip("TODO")

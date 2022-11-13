@@ -85,6 +85,12 @@ class PrunerrRunner:
 
         return self.download_clients
 
+    def exec_(self):
+        """
+        Run the standard series of Prunerr operations once.
+        """
+        return self.sync()
+
     def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.

@@ -231,6 +231,8 @@ class Prunerr(object):
         """
         Prune download client items once.
         """
+        # TODO: Audit the rest of the operations and decide which to keep and which to
+        #       remove.
         session = self.client.get_session()
         session.download_dir = session.download_dir.strip(" `'\"")
 
@@ -268,9 +270,6 @@ class Prunerr(object):
             # Launch copy of most optimal, fully downloaded torrent in the downloads
             # dir.
             self._exec_copy(session)
-
-        # Ensure that download client state matches Servarr state
-        self.sync()
 
         if "reviews" in self.indexer_operations:
             # Perform any review operations
@@ -1898,7 +1897,7 @@ def normalize_nlp(text):
     )
 
 
-def sync_(runner, *args, **kwargs):
+def sync_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
     runner.connect()
     return runner.sync(*args, **kwargs)
 
@@ -1914,16 +1913,12 @@ parser_sync = subparsers.add_parser(
 parser_sync.set_defaults(command=sync_)
 
 
-def exec_(prunerr, *args, **kwargs):
-    prunerr.update()
-    result = prunerr.exec_(*args, **kwargs)
-    if prunerr.popen is not None:
-        logger.info("Letting running copy finish: %s", prunerr.copying)
-        prunerr.popen.wait()
-    return result
+def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    runner.connect()
+    return runner.exec_(*args, **kwargs)
 
 
-exec_.__doc__ = Prunerr.exec_.__doc__
+exec_.__doc__ = prunerr.runner.PrunerrRunner.exec_.__doc__
 parser_exec = subparsers.add_parser(
     "exec",
     help=exec_.__doc__.strip(),

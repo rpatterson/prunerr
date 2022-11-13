@@ -68,7 +68,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "sync"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
             "Wrong console script sub-command return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -79,7 +79,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "sync"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "--replay", "exec"]),
             "Wrong console script options return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -91,7 +91,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         stderr = self.get_cli_error_messages(
             args=[
                 f"--config={self.CONFIG}",
-                "sync",
+                "exec",
                 "--non-existent-option",
             ]
         )
@@ -107,7 +107,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         importlib.import_module("prunerr.__main__")
         module_main_process = subprocess.run(
-            [sys.executable, "-m", "prunerr", "sync", "--help"],
+            [sys.executable, "-m", "prunerr", "exec", "--help"],
             check=False,
         )
         self.assertEqual(
@@ -128,7 +128,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
                 raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(
-            [prefix_path / "bin" / "prunerr", "sync", "--help"],
+            [prefix_path / "bin" / "prunerr", "exec", "--help"],
             check=False,
         )
         self.assertEqual(

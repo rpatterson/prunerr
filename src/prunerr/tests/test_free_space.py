@@ -112,11 +112,6 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             "Download limit enabled before 'imported insufficient' `free-space` run",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
-        imported_insufficient_after_session = json.loads(
-            imported_insufficient_request_mocks[
-                "http://transmission:secret@localhost:9091/transmission/rpc"
-            ]["POST"][1][-1]["content"],
-        )["arguments"]
         self.assert_request_mocks(imported_insufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -138,15 +133,6 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             self.seeding_item_file.stat().st_nlink,
             2,
             "Download item file not imported by Servarr",
-        )
-        self.assertLess(
-            imported_insufficient_after_session["download-dir-free-space"],
-            self.min_download_free_space,
-            "Too much free space after 'imported insufficient' `free-space` run",
-        )
-        self.assertTrue(
-            imported_insufficient_after_session["speed-limit-down-enabled"],
-            "Download limit disabled after 'imported insufficient' `free-space` run",
         )
 
         # 3. There's still not enough free space but now enough download items can be
@@ -171,11 +157,6 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             "Download limit disabled before 'upgraded insufficient' `free-space` run",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
-        upgraded_insufficient_after_session = json.loads(
-            upgraded_insufficient_request_mocks[
-                "http://transmission:secret@localhost:9091/transmission/rpc"
-            ]["POST"][1][-1]["content"],
-        )["arguments"]
         self.assert_request_mocks(upgraded_insufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -188,13 +169,4 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         self.assertFalse(
             self.seeding_item.is_dir(),
             "Seeding item still exists after 'upgraded insufficient' `free-space` run",
-        )
-        self.assertGreater(
-            upgraded_insufficient_after_session["download-dir-free-space"],
-            self.min_download_free_space,
-            "Not enough free space after 'upgraded insufficient' `free-space` run",
-        )
-        self.assertFalse(
-            upgraded_insufficient_after_session["speed-limit-down-enabled"],
-            "Download limit enabled after 'upgraded insufficient' `free-space` run",
         )

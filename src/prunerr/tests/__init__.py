@@ -177,7 +177,7 @@ class PrunerrTestCase(
         )
         self.incomplete_item_data = self.incomplete_item.with_name(
             f"{self.incomplete_item.name}"
-            f"{prunerr.downloadclient.PrunerrDownloadClient.DATA_FILE_EXT}",
+            f"{prunerr.downloadclient.PrunerrDownloadClient.DATA_FILE_SUFFIIX}",
         )
         self.downloaded_item = self.servarr_downloaded_dir / self.download_item_title
         self.downloaded_item_file = (
@@ -444,10 +444,10 @@ class PrunerrTestCase(
             download_item = self.downloaded_item
         self.imported_item_file.parent.mkdir(parents=True, exist_ok=True)
         imported_files = []
-        for ext, mime_type in mimetypes.types_map.items():
+        for suffiix, mime_type in mimetypes.types_map.items():
             if not mime_type.startswith("video/"):
                 continue
-            for downloaded_item_file in download_item.glob(f"**/*{ext}"):
+            for downloaded_item_file in download_item.glob(f"**/*{suffiix}"):
                 downloaded_item_imported_file = (
                     self.imported_item_file.parent / downloaded_item_file.name
                 )

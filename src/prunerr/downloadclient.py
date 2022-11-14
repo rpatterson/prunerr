@@ -48,7 +48,7 @@ class PrunerrDownloadClient:
     An individual, specific download client that Prunerr interacts with.
     """
 
-    DATA_FILE_EXT = "-prunerr.json"
+    DATA_FILE_SUFFIIX = "-prunerr.json"
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
 
@@ -505,9 +505,9 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         # TODO: Cache?
         if self.files_parent.is_file():
-            return self.files_parent.with_suffix(self.download_client.DATA_FILE_EXT)
+            return self.files_parent.with_suffix(self.download_client.DATA_FILE_SUFFIIX)
         return self.files_parent.with_name(
-            f"{self.files_parent.name}{self.download_client.DATA_FILE_EXT}"
+            f"{self.files_parent.name}{self.download_client.DATA_FILE_SUFFIIX}"
         )
 
     @property

@@ -96,6 +96,9 @@ class PrunerrTestCase(
         # Convenient access to the parsed configuration file
         with self.CONFIG.open() as config_opened:
             self.config = yaml.safe_load(config_opened)
+        self.min_download_free_space = prunerr.downloadclient.calc_free_space_margin(
+            self.config,
+        )
         # Convenient access to parsed mocked API/RPC request responses
         self.servarr_download_client_responses = {}
         self.servarr_urls = [
@@ -418,25 +421,33 @@ class PrunerrTestCase(
             self.servarr_downloaded_dir / self.incomplete_item.name,
         )
 
-    def mock_move_torrent_response(self, request, _):
+    def mock_move_torrent_response(
+        self,
+        request=None,
+        context=None,
+        location=None,
+    ):  # pylint: disable=unused-argument
         """
         Simulate the download client changing a download items location.
         """
-        location = pathlib.Path(request.json()["arguments"]["location"])
+        if request is not None:
+            location = pathlib.Path(request.json()["arguments"]["location"])
         location.mkdir(parents=True, exist_ok=True)
         self.downloaded_item.rename(location / self.downloaded_item.name)
         return {"arguments": {}, "result": "success"}
 
-    def mock_servarr_import_item(self):
+    def mock_servarr_import_item(self, download_item=None):
         """
         Simulate Servarr importing a downloaded item, hardlink files into the library.
         """
+        if download_item is None:
+            download_item = self.downloaded_item
         self.imported_item_file.parent.mkdir(parents=True, exist_ok=True)
         imported_files = []
         for ext, mime_type in mimetypes.types_map.items():
             if not mime_type.startswith("video/"):
                 continue
-            for downloaded_item_file in self.downloaded_item.glob(f"**/*{ext}"):
+            for downloaded_item_file in download_item.glob(f"**/*{ext}"):
                 downloaded_item_imported_file = (
                     self.imported_item_file.parent / downloaded_item_file.name
                 )

@@ -6,6 +6,7 @@ import os
 import time
 import copy
 import pathlib
+import shutil
 import urllib.parse
 import json
 import pprint
@@ -15,6 +16,7 @@ import ciso8601
 import transmission_rpc
 
 import prunerr.utils
+import prunerr.operations
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +61,14 @@ class PrunerrDownloadClient:
         """
         self.runner = runner
         self.config = config
+        self.min_free_space = calc_free_space_margin(runner.config)
         self.servarrs = {}
         if servarr is not None:
             self.servarrs[servarr.servarr.config["url"]] = servarr
+        self.operations = prunerr.operations.PrunerrOperations(
+            self,
+            runner.config.get("indexers", {}),
+        )
 
     def connect(self):
         """
@@ -111,6 +118,8 @@ class PrunerrDownloadClient:
         ]
         return self.items
 
+    # Sub-commands
+
     def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.
@@ -121,6 +130,214 @@ class PrunerrDownloadClient:
             servarr_url: servarr_download_client.sync()
             for servarr_url, servarr_download_client in self.servarrs.items()
         }
+
+    # Other, non-sub-command methods
+
+    def get_item(self, download_id):
+        """
+        Get a download client item, tolerate missing items while logging the error.
+        """
+        if isinstance(download_id, str):
+            download_id = download_id.lower()
+        try:
+            torrent = self.client.get_torrent(download_id)
+            return prunerr.downloadclient.PrunerrDownloadItem(
+                self,
+                self.client,
+                torrent,
+            )
+        except KeyError:
+            # Can happen if the download client item has been manually deleted
+            logger.error(
+                "Could not find item in download client "
+                "for Servarr imported event: %s",
+                download_id,
+            )
+        return None
+
+    def sort_items_by_tracker(self, items):
+        """
+        Sort the given download items according to the indexer priority operations.
+        """
+        return sorted(
+            items,
+            # remove lowest priority and highest ratio first
+            key=lambda item: self.operations.exec_indexer_operations(item)[1],
+            reverse=True,
+        )
+
+    def delete_files(self, item):
+        """
+        Delete all files and directories for the given path and stat or download item.
+
+        First remove from the download client if given a download item.
+        """
+        # Handle actual items recognized by the download client
+        if isinstance(item, PrunerrDownloadItem):
+            size = item.totalSize
+            self.operations.exec_indexer_operations(item)
+            logger.info(
+                "Deleting %r, "
+                "%0.2f %s + %0.2f %s: indexer=%s, priority=%s, ratio=%0.2f",
+                item,
+                *(
+                    transmission_rpc.utils.format_size(
+                        self.client.session.download_dir_free_space,
+                    )
+                    + transmission_rpc.utils.format_size(size)
+                    + (
+                        item.lookup_indexer(),
+                        item.bandwidthPriority,
+                        item.ratio,
+                    )
+                ),
+            )
+            self.client.remove_torrent([item.hashString])
+            # Refresh the list of download items
+            self.update()
+            path = item.path
+
+        # Handle filesystem paths not recognized by the download client
+        else:
+            path, stat = item
+            size = stat.st_size
+            logger.info(
+                "Deleting %r: %0.2f %s + %0.2f %s",
+                item,
+                *(
+                    transmission_rpc.utils.format_size(
+                        self.client.session.download_dir_free_space,
+                    )
+                    + transmission_rpc.utils.format_size(size)
+                ),
+            )
+
+        TODO  # Delete Prunerr files
+        # Delete the actual files ourselves to workaround Transmission hanging when
+        # deleting the data of large items: e.g. season packs.
+        if path.is_dir():
+            shutil.rmtree(path, onerror=log_rmtree_error)
+        else:
+            path.unlink()
+        if next(path.parent.iterdir(), None) is None:
+            # The directory containging the file is empty
+            path.parent.rmdir()
+
+        # Refresh the sessions data including free space
+        self.client.get_session()
+        return size
+
+    def free_space_maybe_resume(self):
+        """
+        Determine if there's sufficient free disk space, resume downloading if paused.
+        """
+        total_remaining_download = sum(
+            item.leftUntilDone for item in self.items if item.status == "downloading"
+        )
+        if total_remaining_download > self.client.session.download_dir_free_space:
+            logger.debug(
+                "Total size of remaining downloads is greater than the available free "
+                "space: %0.2f %s > %0.2f %s",
+                *(
+                    transmission_rpc.utils.format_size(total_remaining_download)
+                    + transmission_rpc.utils.format_size(
+                        self.client.session.download_dir_free_space
+                    )
+                ),
+            )
+        if self.client.session.download_dir_free_space >= self.min_free_space:
+            logger.debug(
+                "Sufficient free space to continue downloading: %0.2f %s >= %0.2f %s",
+                *(
+                    transmission_rpc.utils.format_size(
+                        self.client.session.download_dir_free_space,
+                    )
+                    + transmission_rpc.utils.format_size(
+                        self.min_free_space,
+                    )
+                ),
+            )
+            self.resume_downloading(self.client.session)
+            return True
+        return False
+
+    def resume_downloading(self, session):
+        """
+        Resume downloading if it's been stopped.
+        """
+        speed_limit_down = self.runner.config["download-clients"][
+            "max-download-bandwidth"
+        ]
+        if session.speed_limit_down_enabled and (
+            not speed_limit_down or speed_limit_down != session.speed_limit_down
+        ):
+            if (
+                self.runner.config["download-clients"].get(
+                    "resume-set-download-bandwidth-limit",
+                    False,
+                )
+                and speed_limit_down
+            ):
+                kwargs = dict(speed_limit_down=speed_limit_down)
+            else:
+                kwargs = dict(speed_limit_down_enabled=False)
+            logger.info("Resuming downloading: %s", kwargs)
+            self.client.set_session(**kwargs)
+
+    def find_unregistered(self):
+        """
+        Filter already imported items that are no longer recognized by their tracker.
+
+        For example, when a private tracker removes a duplicate/invalid/unauthorized
+        item.
+        """
+        # TODO: Mark as failed in Servarr?
+        seeding_dirs = [
+            servarr.download_item_dirs["seedingDir"]
+            for servarr in self.servarrs.values()
+        ]
+        return self.sort_items_by_tracker(
+            item
+            for item in self.items
+            if (
+                (
+                    item.status == "downloading"
+                    # Give seeding items time to be imported by Servarr since they've
+                    # already been fully downloaded.
+                    or [
+                        seeding_dir
+                        for seeding_dir in seeding_dirs
+                        if seeding_dir in item.path.parents
+                    ]
+                )
+                and item.error == 2
+                and "unregistered item" in item.errorString.lower()
+            )
+        )
+
+    def find_seeding(self):
+        """
+        Filter items that have not yet been imported by Servarr, order by priority.
+        """
+        seeding_dirs = [
+            servarr.download_item_dirs["seedingDir"]
+            for servarr in self.servarrs.values()
+        ]
+        return self.sort_items_by_tracker(
+            item
+            for item in self.items
+            # only those previously synced and moved
+            if item.status == "seeding"
+            and [
+                seeding_dir
+                for seeding_dir in seeding_dirs
+                if seeding_dir in item.path.parents
+            ]
+            # TODO: Optionally include imported items for Servarr configurations that
+            # copy items instead of making hard-links, such as when the download client
+            # isn't on the same host as the Servarr instance
+            and self.operations.exec_indexer_operations(item)[0]
+        )
 
 
 class PrunerrDownloadItem(transmission_rpc.Torrent):
@@ -248,6 +465,32 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         return (
             self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
         ) / (done_date - self._fields["addedDate"].value)
+
+    @property
+    def size_imported(self):
+        """
+        The total size of item files that have been imported by Servarr.
+
+        IOW, the sum of sizes of all item file that have more than one hard link.
+        """
+        return sum(
+            stat.st_size for path, stat in self.list_files_stats() if stat.st_nlink >= 1
+        )
+
+    @property
+    def size_imported_proportion(self):
+        """
+        The proportion of total size of files that have been imported by Servarr.
+        """
+        total = 0
+        imported = 0
+        for _, stat in self.list_files_stats():
+            total += stat.st_size
+            if stat.st_nlink >= 1:
+                imported += stat.st_size
+        if total:
+            return imported / total
+        return 0
 
     @property
     def prunerr_data_path(self):
@@ -434,20 +677,31 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 raise DownloadClientTimeout(f"Timed out waiting for {self} to move")
             time.sleep(1)
 
-    def list_files(self):
+    def list_files(self, selected=True):
         """
-        Iterate over all download item selected file paths that exist.
+        Iterate over all download item file paths that exist.
+
+        Optionally filter the list by those that are selected in the download client.
         """
         files = self.files()
         if not files:
             raise ValueError(f"No files found in {self!r}")
 
         return (
-            file_.name
+            self.path.parent / file_.name
             for file_ in files
-            if file_.selected
+            if (not selected or file_.selected)
             and os.path.exists(os.path.join(self.download_dir, file_.name))
         )
+
+    def list_files_stats(self):
+        """
+        Yield the path and stat for all item files.
+
+        Useful to avoid redundant `stat` syscalls.
+        """
+        for item_file in self.list_files(selected=False):
+            yield item_file, item_file.stat()
 
     def match_indexer_urls(self):
         """
@@ -469,6 +723,39 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                             return possible_name
         return None
 
+    def lookup_indexer(self):
+        """
+        Lookup the indexer for this item and cache.
+        """
+        if "indexer" in self.prunerr_data:
+            return self.prunerr_data["indexer"]
+
+        indexer_name = None
+        # Try to find an indexer name from the items Servarr history
+        for servarr_download_client in self.download_client.servarrs.values():
+            if servarr_download_client.get_item_servarr_dir(self):
+                # Also collects the indexer name if possible
+                servarr_download_client.get_item_dir_id(self)
+                indexer_name = self.prunerr_data.get("indexer")
+                if indexer_name is not None:
+                    break
+        else:
+            logger.debug(
+                "No Servarr history found for download item: %r",
+                self,
+            )
+        # The indexer has been added to the Prunerr data, persist it to the Prunerr data
+        # file.
+        # TODO: This is redundant for any sub-command that runs `sync` which will write
+        # the Prunerr data file at the end.
+        self.serialize_download_data(self.prunerr_data["history"])
+
+        # Match by indexer URLs when no indexer name is available
+        if not indexer_name:
+            indexer_name = self.match_indexer_urls()
+
+        return indexer_name
+
 
 class DownloadClientTimeout(Exception):
     """A download client operation took too long."""
@@ -478,3 +765,44 @@ class DownloadClientTODOException(Exception):
     """
     Placeholder exception until we can determine the correct, narrow list of exceptions.
     """
+
+
+def calc_free_space_margin(config):
+    """
+    Calculate an appropriate margin of disk space to keep free.
+
+    Used when deciding whether to delete download items and their files in the
+    `free-space` sub-command based on the maximum download bandwidth/speed in Mbps and
+    the amount of time in seconds at that rate for which download clients should be able
+    to continue downloading without exhausting disk space.
+    """
+    return (
+        (
+            config["download-clients"]["max-download-bandwidth"]
+            # Convert bandwidth bits to bytes
+            / 8
+        )
+        * (
+            # Convert bandwidth MBps to Bps
+            1024
+            * 1024
+        )
+        * (
+            # Multiply by seconds of download time margin
+            config["download-clients"].get("min-download-time-margin", 3600)
+        )
+    )
+
+
+def log_rmtree_error(function, path, excinfo):
+    """
+    Inform the user on errors deleting item files but also proceed to delete the rest.
+
+    Error handler for `shutil.rmtree`.
+    """
+    logger.error(
+        "Error removing %r (%s)",
+        path,
+        ".".join((function.__module__, function.__name__)),
+        exc_info=excinfo,
+    )

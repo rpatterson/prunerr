@@ -171,6 +171,15 @@ indexers:
             - type: "value"
               name: "ratio"
               minimum: 1.0
+        ## Perma-seeding, don't delete private tracker items that are currently imported
+        ## into the Servarr library.  Estimated as items 90+% whose size has been
+        ## imported, assumes that samples, extras, etc. won't consume more than 10% of
+        ## the item's total size.
+        - type: "value"
+          name: "size_imported_proportion"
+          reversed: true
+          filter: true
+          maximum: 0.9
         ## Maximize private tracker global user ratio, delete last torrents with the
         ## most bytes uploaded because they may be most likely to keep accruing more
         ## upload to your ratio. As opposed to sorting by individual download item
@@ -197,6 +206,10 @@ indexers:
     ## other priorities above.  For example, public torrents.
     - name: null  # `null` matches all other indexers not specified in `operations`
       operations:
+        ## Delete download items that are the least imported into Servarr first.
+        - type: "value"
+          name: "size_imported_proportion"
+          reversed: true
         ## Delete popular download items with a healthy number of seeders before
         ## obscure, less popular items to support the health and breadth of items
         ## available to the community.

@@ -43,7 +43,7 @@ for more details
 
 Prunerr uses and requires a configuration file which defaults to
 ``~/.config/prunerr.yml``.  See the well-commented sample configuration:
-`<./home/.config/prunerr.yml>`_.
+`<./src/prunerr/home/.config/prunerr.yml>`_.
 
 
 ***********
@@ -84,10 +84,10 @@ TODO: Review and update below
 
 #. Order download items deleted by Servarr according to per-indexer rules:
 
-   Apply the per-indexer/per-tracker rules to each item and use the results to define the
-   order in which to delete items as needed for disk space.  See the ``indexers``
-   section in `the sample Prunerr configuration file <./home/.config/prunerr.yml>`_ for
-   details on how to define these rules.
+   Apply the per-indexer/per-tracker rules to each item and use the results to define
+   the order in which to delete items as needed for disk space.  See the ``indexers``
+   section in `the sample Prunerr configuration file
+   <./src/prunerr/home/.config/prunerr.yml>`_ for details on how to define these rules.
 
 #. Calculate required disk margin based on download speed:
 

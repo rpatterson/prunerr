@@ -8,6 +8,8 @@ Run Prunerr commands across multiple Servarr instances and download clients.
 # TODO: Per-download client download directories?  IOW, sharding?
 
 import socket
+import functools
+import pathlib
 import logging
 
 import tenacity
@@ -24,6 +26,8 @@ class PrunerrRunner:
     """
     Run Prunerr sub-commands across multiple Servarr instances and download clients.
     """
+
+    EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
 
     download_clients = None
     servarrs = None
@@ -84,6 +88,14 @@ class PrunerrRunner:
             )
 
         return self.download_clients
+
+    @functools.cached_property
+    def example_confg(self):
+        """
+        Use the example configuration file for defaults where needed.
+        """
+        with self.EXAMPLE_CONFIG.open() as config_opened:
+            return yaml.safe_load(config_opened)
 
     def exec_(self):
         """

@@ -57,7 +57,7 @@ distlib==0.3.6
     # via virtualenv
 docutils==0.19
     # via rstcheck-core
-exceptiongroup==1.0.1
+exceptiongroup==1.0.2
     # via pytest
 filelock==3.8.0
     # via
@@ -111,15 +111,15 @@ packaging==21.3
     #   pytest
     #   spacy
     #   tox
-pathspec==0.10.1
+pathspec==0.10.2
     # via black
 pathy==0.6.2
     # via spacy
 pep517==0.13.0
     # via build
-pip-tools==6.9.0
+pip-tools==6.10.0
     # via prunerr (./pyproject.toml)
-platformdirs==2.5.3
+platformdirs==2.5.4
     # via
     #   black
     #   pylint
@@ -217,7 +217,7 @@ tomli==2.0.1
     #   tox
 tomlkit==0.11.6
     # via pylint
-tox==3.27.0
+tox==3.27.1
     # via prunerr (./pyproject.toml)
 tqdm==4.64.1
     # via spacy

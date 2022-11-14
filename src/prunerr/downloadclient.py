@@ -664,12 +664,16 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 )
             )
         else:
-            prunerr_files.update(src_path.glob(
-                f"*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
-            ))
-            prunerr_files.update(src_path.glob(
-                f"**/*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
-            ))
+            prunerr_files.update(
+                src_path.glob(
+                    f"*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
+                )
+            )
+            prunerr_files.update(
+                src_path.glob(
+                    f"**/*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
+                )
+            )
         if data_path.exists():
             prunerr_files.add(data_path)
         for prunerr_file in prunerr_files:

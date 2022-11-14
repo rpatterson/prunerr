@@ -786,11 +786,9 @@ class PrunerrServarrDownloadClient:
             self.download_item_dirs["downloadDir"],
         )
         new_dropped_path = download_item.downloadDir / relative_to_download_dir
-        link_path = (
-            new_dropped_path.parent / (
-                f"{new_dropped_path.stem}"
-                f"{download_item.download_client.SERVARR_IMPORTED_LINK_SUFFIX}"
-            )
+        link_path = new_dropped_path.parent / (
+            f"{new_dropped_path.stem}"
+            f"{download_item.download_client.SERVARR_IMPORTED_LINK_SUFFIX}"
         )
         imported_link_target = pathlib.Path(
             os.path.relpath(history_record["data"]["importedPath"], link_path.parent)

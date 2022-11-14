@@ -4,6 +4,7 @@
       {
 	"addedDate": 1,
 	"bandwidthPriority": 0,
+	"doneDate": 0,
 	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
 	"error": 0,
 	"errorString": "",
@@ -43,6 +44,7 @@
 	"seedRatioLimit": 4,
 	"seedRatioMode": 0,
 	"sizeWhenDone": 2147483648,
+	"startDate": 0,
 	"status": 6,
 	"totalSize": 2147483648,
 	"trackers": [
@@ -63,6 +65,7 @@
       {
 	"addedDate": 0,
 	"bandwidthPriority": 0,
+	"doneDate": 0,
 	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
 	"error": 0,
 	"errorString": "",
@@ -102,6 +105,7 @@
 	"seedRatioLimit": 4,
 	"seedRatioMode": 0,
 	"sizeWhenDone": 1073741824,
+	"startDate": 0,
 	"status": 4,
 	"totalSize": 1073741824,
 	"trackers": [

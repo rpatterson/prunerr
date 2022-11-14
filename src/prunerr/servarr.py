@@ -91,6 +91,12 @@ class PrunerrServarrInstance:
         self.runner = runner
         self.config = config
 
+    def __repr__(self):
+        """
+        Readable, informative, and specific representation to ease debugging.
+        """
+        return f"<{type(self).__name__} at {self.config['url']!r}>"
+
     def connect(self):
         """
         Connect to the Servarr API client and lookup any download clients it defines.
@@ -377,6 +383,16 @@ class PrunerrServarrDownloadClient:
         """
         self.servarr = servarr
         self.config = config
+
+    def __repr__(self):
+        """
+        Readable, informative, and specific representation to ease debugging.
+        """
+        return (
+            f"<{type(self).__name__}"
+            f" at {self.servarr.config['url']!r}"
+            f"->{self.download_client.config['url']!r}>"
+        )
 
     def connect(self):
         """

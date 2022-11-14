@@ -70,6 +70,12 @@ class PrunerrDownloadClient:
             runner.config.get("indexers", {}),
         )
 
+    def __repr__(self):
+        """
+        Readable, informative, and specific representation to ease debugging.
+        """
+        return f"<{type(self).__name__} at {self.config['url']!r}>"
+
     def connect(self):
         """
         Connect to the download client's RPC client.

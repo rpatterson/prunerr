@@ -179,7 +179,7 @@ indexers:
           name: "size_imported_proportion"
           reversed: true
           filter: true
-          maximum: 0.9
+          minimum: 0.9
         ## Maximize private tracker global user ratio, delete last torrents with the
         ## most bytes uploaded because they may be most likely to keep accruing more
         ## upload to your ratio. As opposed to sorting by individual download item

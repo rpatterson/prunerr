@@ -79,7 +79,7 @@ class PrunerrOperations:
             sort_value = executor(operation_config, item)
             if sort_value is None:
                 # If an executor returns None, all other handling should be skipped
-                return None
+                return include, tuple(sort_key)
             include, sort_value = self.apply_sort_value(
                 operation_config,
                 include,
@@ -149,7 +149,7 @@ class PrunerrOperations:
         for sort_value in sort_key:
             if sort_value:
                 return sort_value
-        return sort_key[-1]
+        return sort_key[-1] if sort_key else False
 
     def exec_operation_and(self, operation_config, download_item):
         """

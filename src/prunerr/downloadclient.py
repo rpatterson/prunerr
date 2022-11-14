@@ -32,8 +32,12 @@ def parallel_to(base_path, parallel_path, root_basename):
             base_path.parent,
             parallel_path,
         )
-    return common_path / root_basename / pathlib.Path(parallel_path).relative_to(
-        parallel_path.parents[-(len(base_path.parts))],
+    return (
+        common_path
+        / root_basename
+        / pathlib.Path(parallel_path).relative_to(
+            parallel_path.parents[-(len(base_path.parts))],
+        )
     )
 
 

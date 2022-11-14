@@ -3,6 +3,7 @@
     "torrents": [
       {
 	"addedDate": 1,
+	"bandwidthPriority": 0,
 	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
 	"error": 0,
 	"errorString": "",
@@ -61,6 +62,7 @@
       },
       {
 	"addedDate": 0,
+	"bandwidthPriority": 0,
 	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
 	"error": 0,
 	"errorString": "",

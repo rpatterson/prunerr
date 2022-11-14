@@ -3,6 +3,7 @@
     "torrents": [
       {
 	"addedDate": 0,
+	"bandwidthPriority": 0,
 	"downloadDir": "/media/Library/seeding/Sonarr/Videos/Series",
 	"error": 0,
 	"errorString": "",

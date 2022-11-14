@@ -26,7 +26,7 @@
     "downloadId": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
     "eventType": "grabbed",
     "data": {
-      "indexer": "NZBHydra2",
+      "indexer": "ExamplePrivateTracker",
       "nzbInfoUrl": "https://tracker.foo.example.com/torrent/1",
       "releaseGroup": "RELEASER",
       "age": "0",

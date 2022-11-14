@@ -35,7 +35,7 @@
 	"downloadId": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
 	"protocol": "torrent",
 	"downloadClient": "transmission",
-	"indexer": "NZBHydra2",
+	"indexer": "ExamplePrivateTracker",
 	"outputPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
 	"id": 1
       }

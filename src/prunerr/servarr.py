@@ -418,7 +418,7 @@ class PrunerrServarrDownloadClient:
         Synchronize the state of download client items with Servarr event history.
         """
         sync_results = {}
-        for download_item in self.download_client.download_items:
+        for download_item in self.download_client.items:
             # Wrap the inner loop so that exceptions can be logged and the rest of the
             # items still synced
             try:

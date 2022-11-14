@@ -47,7 +47,7 @@ class PrunerrDownloadClient:
     SEEDING_DIR_BASENAME = "seeding"
 
     client = None
-    download_items = None
+    items = None
 
     def __init__(self, runner, config, servarr=None):
         """
@@ -97,7 +97,7 @@ class PrunerrDownloadClient:
             "Retrieving list of download items from download client: %s",
             self.config["url"],
         )
-        self.download_items = [
+        self.items = [
             PrunerrDownloadItem(
                 self,
                 torrent._client,  # pylint: disable=protected-access
@@ -105,7 +105,7 @@ class PrunerrDownloadClient:
             )
             for torrent in self.client.get_torrents()
         ]
-        return self.download_items
+        return self.items
 
     def sync(self):
         """
@@ -139,8 +139,8 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Return the name of the first path element for all items in the download item.
 
-        Needed because it's not always the same as the item's name.  If download_item
-        has multiple files, assumes that all files are under the same top-level
+        Needed because it's not always the same as the item's name.  If the download
+        item has multiple files, assumes that all files are under the same top-level
         directory.
         """
         item_files = self.files()
@@ -151,7 +151,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     @property
     def path(self):
         """
-        Return the root path for all items in the download client item.
+        Return the root path for all files in the download item.
 
         Needed because it's not always the same as the item's download directory plus
         the item's name.
@@ -161,7 +161,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     @property
     def files_parent(self):
         """
-        The path in which the items files are currently stored.
+        The path in which the download item's files are currently stored.
 
         This may be the `incomplete_dir` while the item is downloading.
         """
@@ -185,7 +185,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     @property
     def seconds_since_done(self):
         """
-        Number of seconds elapsed since the download_item was completely downloaded.
+        Number of seconds elapsed since the download item was completely downloaded.
 
         Best available estimation of total seeding time.
         """
@@ -392,7 +392,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         finally:
             self.update()
 
-        # Move any non-download_item files managed by Prunerr
+        # Move any files managed by Prunerr that belong to this download item.
         # Explicit is better than implicit, specific e.g.: if a user has manually
         # extracted an archive in the old import location we want the orphan logic to
         # find it after Servarr has upgraded it
@@ -419,7 +419,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
     def move_timeout(self, move_timeout=5 * 60):
         """
-        Block until a torrents files are no longer in the old location.
+        Block until an item's files are no longer in the old location.
 
         Useful for both moving and deleting.
         """

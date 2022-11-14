@@ -281,10 +281,17 @@ class PrunerrRunner:
         # such syscalls downstream.
         orphans = []
         for download_item_dir, download_clients in download_item_dirs.items():
+            first_download_client = next(iter(download_clients.values()))
             for dirpath, _, filenames in os.walk(download_item_dir):
                 for filename in filenames:
                     file_path = download_item_dir / dirpath / filename
-                    if file_path not in item_files:
+                    if (
+                            file_path not in item_files
+                            and not {
+                                suffix for suffix in first_download_client.FILE_SUFFIXES
+                                if file_path.name.endswith(suffix)
+                            }
+                    ):
                         orphans.append(
                             (download_clients, file_path, file_path.stat()),
                         )

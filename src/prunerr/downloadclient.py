@@ -49,6 +49,8 @@ class PrunerrDownloadClient:
     """
 
     DATA_FILE_SUFFIIX = "-prunerr.json"
+    SERVARR_IMPORTED_LINK_SUFFIX = "-servarr-imported.ln"
+    FILE_SUFFIXES = {DATA_FILE_SUFFIIX, SERVARR_IMPORTED_LINK_SUFFIX}
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
 
@@ -218,7 +220,6 @@ class PrunerrDownloadClient:
                 ),
             )
 
-        TODO  # Delete Prunerr files
         # Delete the actual files ourselves to workaround Transmission hanging when
         # deleting the data of large items: e.g. season packs.
         if path.is_dir():
@@ -228,6 +229,9 @@ class PrunerrDownloadClient:
         if next(path.parent.iterdir(), None) is None:
             # The directory containging the file is empty
             path.parent.rmdir()
+        # Delete any files managed by Prunerr.
+        for suffix in self.FILE_SUFFIXES:
+            path.with_name(f"{path.name}{suffix}").unlink(missing_ok=True)
 
         # Refresh the sessions data including free space
         self.client.get_session()
@@ -653,12 +657,19 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         if self.path.is_file():
             prunerr_files.update(
                 src_path.parent.glob(
-                    src_path.with_name(f"{src_path.name}-servarr-imported.ln"),
+                    src_path.with_name(
+                        f"{src_path.name}"
+                        f"{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
+                    ),
                 )
             )
         else:
-            prunerr_files.update(src_path.glob("*-servarr-imported.ln"))
-            prunerr_files.update(src_path.glob("**/*-servarr-imported.ln"))
+            prunerr_files.update(src_path.glob(
+                f"*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
+            ))
+            prunerr_files.update(src_path.glob(
+                f"**/*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
+            ))
         if data_path.exists():
             prunerr_files.add(data_path)
         for prunerr_file in prunerr_files:

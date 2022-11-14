@@ -111,7 +111,6 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             imported_insufficient_before_session["speed-limit-down-enabled"],
             "Download limit enabled before 'imported insufficient' `free-space` run",
         )
-        import pdb; pdb.set_trace()
         prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
         imported_insufficient_after_session = json.loads(
             imported_insufficient_request_mocks[

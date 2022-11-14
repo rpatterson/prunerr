@@ -96,7 +96,7 @@ class PrunerrTestCase(
         # Convenient access to the parsed configuration file
         with self.CONFIG.open() as config_opened:
             self.config = yaml.safe_load(config_opened)
-        self.min_download_free_space = prunerr.downloadclient.calc_free_space_margin(
+        self.min_free_space = prunerr.downloadclient.calc_free_space_margin(
             self.config,
         )
         # Convenient access to parsed mocked API/RPC request responses

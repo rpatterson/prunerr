@@ -60,7 +60,7 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         )["arguments"]
         self.assertGreater(
             imported_sufficient_before_session["download-dir-free-space"],
-            self.min_download_free_space,
+            self.min_free_space,
             "Not enough free space before 'imported sufficient' `free-space` run",
         )
         self.assertFalse(
@@ -104,7 +104,7 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         )["arguments"]
         self.assertLess(
             imported_insufficient_before_session["download-dir-free-space"],
-            self.min_download_free_space,
+            self.min_free_space,
             "Too much free space before 'imported insufficient' `free-space` run",
         )
         self.assertFalse(
@@ -149,7 +149,7 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         )["arguments"]
         self.assertLess(
             upgraded_insufficient_before_session["download-dir-free-space"],
-            self.min_download_free_space,
+            self.min_free_space,
             "Too much free space before 'upgraded insufficient' `free-space` run",
         )
         self.assertTrue(

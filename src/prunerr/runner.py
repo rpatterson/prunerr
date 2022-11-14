@@ -189,7 +189,7 @@ class PrunerrRunner:
                 "Insufficient free space for %r but nothing can be deleted: %0.2f %s",
                 download_client_url,
                 *transmission_rpc.utils.format_size(
-                    download_client.min_download_free_space
+                    download_client.min_free_space
                     - download_client.client.session.download_dir_free_space,
                 ),
             )

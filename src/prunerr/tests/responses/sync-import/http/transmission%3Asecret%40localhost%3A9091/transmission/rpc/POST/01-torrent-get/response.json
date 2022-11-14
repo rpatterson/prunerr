@@ -10,16 +10,16 @@
 	"eta": -1,
 	"files": [
 	  {
-            "bytesCompleted": 1073741824,
-            "length": 1073741824,
-            "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+	    "bytesCompleted": 1073741824,
+	    "length": 1073741824,
+	    "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
 	  }
 	],
 	"fileStats": [
 	  {
-            "bytesCompleted": 1073741824,
-            "priority": 0,
-            "wanted": true
+	    "bytesCompleted": 1073741824,
+	    "priority": 0,
+	    "wanted": true
 	  }
 	],
 	"id": 1,
@@ -33,9 +33,9 @@
 	"peersGettingFromUs": 0,
 	"peersSendingToUs": 0,
 	"percentDone": 1,
-        "priorities": [
-          0
-        ],
+	"priorities": [
+	  0
+	],
 	"queuePosition": 1,
 	"rateDownload": 0,
 	"rateUpload": 0,
@@ -47,16 +47,16 @@
 	"totalSize": 1073741824,
 	"trackers": [
 	  {
-            "announce": "udp://tracker.foo.example.com:6969/announce",
-            "id": 0,
-            "scrape": "udp://tracker.foo.example.com:6969/scrape",
-            "tier": 0
+	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "id": 0,
+	    "scrape": "udp://tracker.foo.example.com:6969/scrape",
+	    "tier": 0
 	  }
 	],
 	"uploadRatio": 1.5000,
 	"uploadedEver": 1073741824,
-        "wanted": [
-          1
+	"wanted": [
+	  1
 	],
 	"webseedsSendingToUs": 0
       }
@@ -64,4 +64,3 @@
   },
   "result": "success"
 }
-

@@ -50,24 +50,24 @@
     "units": {
       "memory-bytes": 1024,
       "memory-units": [
-        "KiB",
-        "MiB",
-        "GiB",
-        "TiB"
+	"KiB",
+	"MiB",
+	"GiB",
+	"TiB"
       ],
       "size-bytes": 1000,
       "size-units": [
-        "kB",
-        "MB",
-        "GB",
-        "TB"
+	"kB",
+	"MB",
+	"GB",
+	"TB"
       ],
       "speed-bytes": 1000,
       "speed-units": [
-        "kB/s",
-        "MB/s",
-        "GB/s",
-        "TB/s"
+	"kB/s",
+	"MB/s",
+	"GB/s",
+	"TB/s"
       ]
     },
     "utp-enabled": true,

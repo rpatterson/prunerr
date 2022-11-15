@@ -481,12 +481,72 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
             "Wrong Prunerr data Servarr DB id after deleted",
         )
 
-    @unittest.skip("TODO")
     def test_sync_imported_before(self):
         """
         Items imported before Prunerr has seen a grabbed event are still synced.
         """
-        raise NotImplementedError("TODO")
+        self.mock_download_client_complete_item()
+        self.mock_servarr_import_item()
+        imported_before_request_mocks = self.mock_responses(
+            tests.PrunerrTestCase.RESPONSES_DIR.parent / "sync-imported-before",
+            # Insert a dynamic response mock to handle moving imported download items
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        "02-torrent-set-location": dict(
+                            json=self.mock_move_torrent_response,
+                        ),
+                    },
+                },
+            },
+        )
+        prunerr.main(args=[f"--config={self.CONFIG}", "sync"])
+        self.assert_request_mocks(imported_before_request_mocks)
+        self.assertFalse(
+            self.incomplete_item.exists(),
+            "Download item in incomplete path after import",
+        )
+        self.assertFalse(
+            self.incomplete_item_data.exists(),
+            "Prunerr data file in incomplete path after import",
+        )
+        self.assertFalse(
+            self.downloaded_item.exists(),
+            "Download item in downloading path after import",
+        )
+        self.assertFalse(
+            self.downloaded_item_data.exists(),
+            "Prunerr data file in downloading path after import",
+        )
+        self.assertTrue(
+            self.seeding_item.is_dir(),
+            "Download item seeding path is not a directory after import",
+        )
+        self.assertTrue(
+            self.seeding_item_file.is_file(),
+            "Download item file is not a file after import",
+        )
+        self.assertEqual(
+            self.seeding_item_file.stat().st_nlink,
+            2,
+            "Download item file wrong number of links after import",
+        )
+        self.assertTrue(
+            self.seeding_item_data.is_file(),
+            "Prunerr data file isn't a file after being imported",
+        )
+        with self.seeding_item_data.open() as import_data_opened:
+            import_prunerr_data = json.load(import_data_opened)
+        self.assertIn(
+            "dirId",
+            import_prunerr_data,
+            "Prunerr data Servarr DB id not found after import",
+        )
+        self.assertEqual(
+            import_prunerr_data["dirId"],
+            1,
+            "Wrong Prunerr data Servarr DB id after import",
+        )
 
     @unittest.skip("TODO")
     def test_sync_user_deleted(self):

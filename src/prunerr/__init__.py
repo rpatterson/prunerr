@@ -1227,8 +1227,6 @@ parser_sync = subparsers.add_parser(
     help=sync_.__doc__.strip(),
     description=sync_.__doc__.strip(),
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_sync.set_defaults(command=sync_)
 
 
@@ -1243,8 +1241,6 @@ parser_free_space = subparsers.add_parser(
     help=free_space.__doc__.strip(),
     description=free_space.__doc__.strip(),
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_free_space.set_defaults(command=free_space)
 
 
@@ -1259,8 +1255,6 @@ parser_exec = subparsers.add_parser(
     help=exec_.__doc__.strip(),
     description=exec_.__doc__.strip(),
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_exec.set_defaults(command=exec_)
 
 
@@ -1274,8 +1268,6 @@ parser_daemon = subparsers.add_parser(
     help=daemon.__doc__.strip(),
     description=daemon.__doc__.strip(),
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_daemon.set_defaults(command=daemon)
 
 
@@ -1290,8 +1282,6 @@ parser_restore_data = subparsers.add_parser(
     help=restore_data.__doc__.strip(),
     description=restore_data.__doc__.strip(),
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_restore_data.set_defaults(command=restore_data)
 
 
@@ -1306,8 +1296,6 @@ parser_relink = subparsers.add_parser(
     help=relink.__doc__.strip(),
     description=relink.__doc__.strip(),
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_relink.set_defaults(command=relink)
 
 
@@ -1332,8 +1320,6 @@ parser_rename.add_argument(
     type=pathlib.Path,
     help="""The path to the download item whose video files should be renamed.""",
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
 parser_rename.set_defaults(command=rename)
 
 

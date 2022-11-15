@@ -498,15 +498,3 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
         should still be moved to `seeding`.
         """
         raise NotImplementedError("TODO")
-
-    @unittest.skip("TODO")
-    def test_sync_orphaned_data_files(self):
-        """
-        Gather orphaned Prunerr data files as items are moved outside of Prunerr.
-
-        When the `sync` sub-command is run, check all Prunerr-managed paths for Prunerr
-        data files corresponding to the download item, choose the newest one, move it
-        into place and backup the rest with logging warnings for unexpected locations
-        and backups.
-        """
-        raise NotImplementedError("TODO")

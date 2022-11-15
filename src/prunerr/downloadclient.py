@@ -343,9 +343,6 @@ class PrunerrDownloadClient:
                 for seeding_dir in seeding_dirs
                 if seeding_dir in item.path.parents
             ]
-            # TODO: Optionally include imported items for Servarr configurations that
-            # copy items instead of making hard-links, such as when the download client
-            # isn't on the same host as the Servarr instance
             and self.operations.exec_indexer_operations(item)[0]
         )
 
@@ -507,7 +504,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Determine the correct sibling path for the Prunerr data file.
         """
-        # TODO: Cache?
         if self.files_parent.is_file():
             return self.files_parent.with_suffix(self.download_client.DATA_FILE_SUFFIIX)
         return self.files_parent.with_name(
@@ -596,7 +592,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Serialize an item's Prunerr data and write to the Prunerr data file.
         """
-        # TODO: Still necessary after rewrite/cleanup?
         download_data = copy.deepcopy(self.prunerr_data)
         # Convert loaded JSON to native types where possible
         if download_history is not None:

@@ -103,7 +103,7 @@ indexers:
           # aggregation: "portion"  # Default
           # aggregation: "sum"
           # aggregation: "count"  # `name` is ignored
-          ## todo: Tune this value?
+          ## TODO: Tune this value?
           maximum: 0.50
           remove: true
           blacklist: true
@@ -141,7 +141,6 @@ indexers:
       ## Example for a private tracker with various rules that affect both whether
       ## download items should be considered for deletion yet and which itmes should be
       ## deleted first.
-      ## TODO: Use some rule engine library?
       operations:
         ## Have download items met the private tracker's minimum requirements for
         ## snatched items.  In this case, until we've either reached a minimum ration

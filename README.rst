@@ -191,12 +191,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 
 - Update docs after rewrite
 
-- Switch from current downloads/imported/deleted download item statuses and back to just
-  downloads/seeding and, when freeing space, delete from the seeding status based on the
-  percentage of download item disk space has just one hard link.  Move download items
-  from downloads to seeding after the first Servarr event for that download item *after*
-  grabbed, IOW: imported, deleted, anything but grabbed.
-
 - Find a good way to review download items that are now only partially hard linked.
   IOW, when only some episodes from one download item have replaced only some episodes
   from another.  Maybe a partial/mixed status?
@@ -221,14 +215,7 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   ``.../downloads/``, ``.../imported/``,  and ``.../deleted/`` paths.  In theory, these
   paths are all configurable, but that's untested.
 
-- **TESTING**!!!!!
-
-  I am embarrassed by this "software".  It grew from ad-hoc maintenance scripts and I
-  know that much of the edge case handling in this code is still needed so I'm not
-  convinced starting from scratch and running into those edge cases again one-by-one
-  would actually result in a net savings of effort.  It's still very much lacking in
-  software best practices.  Testing would the best start and would point the direction
-  to the best places to start refactoring and cleaning up.
+- 100% test coverage
 
 - Support other download client software, not just `Transmission`_:
 
@@ -261,9 +248,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 - Document that we prioritize first for free storage space then for seeding.
 
 - Items deleted from download client outside of Prunerr being re-added.
-
-- Transmission locking up when removing the files of large torrents, switch to just
-  removing the torrent and delete the files in prunerr.
 
 
 .. _`BitTorrent`: https://en.wikipedia.org/wiki/BitTorrent

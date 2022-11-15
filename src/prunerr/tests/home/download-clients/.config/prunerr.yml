@@ -1,4 +1,3 @@
-# TODO: Audit after rewrite
 daemon:
   ## The number of seconds to wait between each execution of the order of operations.
   ## Default: 60
@@ -17,7 +16,6 @@ servarrs:
     api-key: ""
     type: "radarr"
 download-clients:
-  ## TODO: Support multiple download clients
   ## Support managing download clients without Servarr instances, use these URLs to
   ## connect to download clients instead of looking them up from Servarr settings.
   urls:
@@ -103,7 +101,6 @@ indexers:
           # aggregation: "portion"  # Default
           # aggregation: "sum"
           # aggregation: "count"  # `name` is ignored
-          ## todo: Tune this value?
           maximum: 0.50
           remove: true
           blacklist: true
@@ -141,7 +138,6 @@ indexers:
       ## Example for a private tracker with various rules that affect both whether
       ## download items should be considered for deletion yet and which itmes should be
       ## deleted first.
-      ## TODO: Use some rule engine library?
       operations:
         ## Have download items met the private tracker's minimum requirements for
         ## snatched items.  In this case, until we've either reached a minimum ration

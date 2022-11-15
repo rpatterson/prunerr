@@ -416,7 +416,7 @@ class PrunerrTestCase(
         """
         if request_mock.call_count < len(mock_responses):
             response_contents = []
-            for response_params in mock_responses:
+            for response_params in mock_responses.values():
                 response_content = response_params.get(
                     "json",
                     response_params.get("text", response_params.get("content")),

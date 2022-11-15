@@ -203,7 +203,7 @@ class PrunerrTestCase(
         Copy example files into place to represent download item files.
         """
         download_client_url = urllib.parse.urlsplit(download_client_url)
-        torrent_list_mocks = list(
+        torrent_list_mocks = sorted(
             (
                 self.RESPONSES_DIR
                 / download_client_url.scheme
@@ -271,9 +271,9 @@ class PrunerrTestCase(
                 request.json(),
                 f"Wrong request body for {response_mock['response_dir']}",
             )
-        if callable(response_mock["json"]):
+        if callable(response_mock.get("json")):
             return response_mock["json"](request, context, response_mock=response_mock)
-        return response_mock["json"]
+        return response_mock.get("json")
 
     def mock_responses(
         self,
@@ -327,40 +327,44 @@ class PrunerrTestCase(
             )
 
             responses = {}
-            for response_path in request_headers_path.parent.glob("*/response.json"):
+            for response_path in sorted(
+                request_headers_path.parent.glob("*/response.json"),
+            ):
                 if response_path.name.endswith("~"):  # pragma: no cover
                     # Ignore backup files
                     continue
-                request_json_expected = {}
-                request_json_path = response_path.parent / "request.json"
-                if request_json_path.exists():
-                    with request_json_path.open() as request_json_opened:
-                        request_json_expected = json.load(request_json_opened)
-
-                response_headers = {}
-                response_stat = response_path.stat()
-
-                # Patch transmission/Servarr storage paths if the body is JSON
-                with response_path.open() as response_opened:
-                    response_json = json.load(response_opened)
-                response_json = self.patch_paths(response_json)
-
-                response_headers["Last-Modified"] = email.utils.formatdate(
-                    timeval=response_stat.st_mtime,
-                    usegmt=True,
-                )
-                response_headers["Content-Type"] = mimetypes.guess_type(
-                    response_path.name
-                )[0]
-
-                responses[response_path.parent.name] = dict(
-                    request=dict(json=self.patch_paths(request_json_expected)),
-                    headers=response_headers,
-                    json=response_json,
+                response_mock = dict(
                     response_dir=response_path.parent.relative_to(
                         pathlib.Path().resolve(),
                     ),
+                    headers={},
                 )
+
+                # Assemble headers from the file metadata
+                response_stat = response_path.stat()
+                response_mock["headers"]["Last-Modified"] = email.utils.formatdate(
+                    timeval=response_stat.st_mtime,
+                    usegmt=True,
+                )
+                response_mock["headers"]["Content-Type"] = mimetypes.guess_type(
+                    response_path.name
+                )[0]
+
+                # Optionally read the expected response JSON from a sibling file
+                response_mock["request"] = dict(json={})
+                request_json_path = response_path.parent / "request.json"
+                if request_json_path.exists():
+                    with request_json_path.open() as request_json_opened:
+                        response_mock["request"]["json"] = self.patch_paths(
+                            json.load(request_json_opened),
+                        )
+
+                # Patch transmission/Servarr storage paths if the body is JSON
+                response_text = response_path.read_text().strip()
+                if response_text:
+                    response_mock["json"] = self.patch_paths(json.loads(response_text))
+
+                responses[response_path.parent.name] = response_mock
 
             # Insert any manual mocks in the right order.  Useful for dynamic callback
             # mocks such as requesting the download client to move download items.
@@ -510,3 +514,23 @@ class PrunerrTestCase(
         """
         imported_item_file = self.imported_item_file
         return imported_item_file.unlink()
+
+    def mock_get_torrent_response(
+        self,
+        fields,
+        request=None,
+        context=None,
+        response_mock=None,
+    ):  # pylint: disable=unused-argument
+        """
+        Simulate a `torrent-get` request but modify the given fields.
+
+        Useful for testing download item properties that can't be represented in static
+        files such as date/time values.
+        """
+        for torrent, torrent_fields in zip(
+            response_mock["from_mock_dir"]["json"]["arguments"]["torrents"],
+            fields,
+        ):
+            torrent.update(torrent_fields)
+        return response_mock["from_mock_dir"]["json"]

@@ -1,0 +1,8 @@
+{
+  "arguments": {
+    "bandwidthPriority": 1,
+    "ids": ["1FAFED76F4264B14934C13D7A306F94FEA4B3184"]
+  },
+  "method": "torrent-set",
+  "tag": 4
+}

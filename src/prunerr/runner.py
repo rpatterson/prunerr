@@ -102,10 +102,30 @@ class PrunerrRunner:
         Run the standard series of Prunerr operations once.
         """
         results = {}
-        # Relies on preserving key order
+        # Results relies on preserving key order
+        # Run `review` before sync in case it removes items
+        results["review"] = self.review()
+        # Run `sync` before `free-space` in case it makes more items delete-able
         results["sync"] = self.sync()
         results["free-space"] = self.free_space()
         return results
+
+    def review(self):
+        """
+        Apply configured review operations to all download items.
+        """
+        # Combine all Servarr API download queue records.
+        servarr_queue = {}
+        for servarr in self.servarrs.values():
+            servarr_queue.update(
+                (download_id, dict(record, servarr=servarr))
+                for download_id, record in servarr.queue.items()
+            )
+        # Delegate the rest to the download client
+        return {
+            download_client_url: download_client.review(servarr_queue)
+            for download_client_url, download_client in self.download_clients.items()
+        }
 
     def sync(self):
         """

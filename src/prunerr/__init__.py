@@ -380,130 +380,6 @@ class Prunerr(object):
                 time.sleep(1)
             logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
 
-    def review_items(self):
-        """
-        Apply review operations to all download items.
-        """
-        # TODO: Maybe handle multiple downloading items for the
-        # same Servarr item such as when trying several to see which
-        # ones actually have decent download speeds?
-
-        # Collect all Servarr API download queue records
-        queue_records = {}
-        for servarr_config in self.servarrs.values():
-            queue_page = None
-            page_num = 1
-            while queue_page is None or (page_num * 250) <= queue_page["totalRecords"]:
-                logger.debug(
-                    "Requesting %r Servarr queue page: %s",
-                    servarr_config["name"],
-                    page_num,
-                )
-                queue_page = servarr_config["client"]._raw._get(
-                    "queue",
-                    # Maximum Servarr page size
-                    pageSize=250,
-                    page=page_num,
-                )
-                for record in queue_page["records"]:
-                    if "downloadId" not in record:
-                        # Pending downloads
-                        continue
-                    elif record["downloadId"] in queue_records:
-                        # Let config order dictate which queue record should win
-                        continue
-                    record["servarr_config"] = servarr_config
-                    queue_records[record["downloadId"]] = record
-                page_num += 1
-
-        session = self.client.get_session()
-        for download_item in self.torrents:
-            item_path = self.get_item_path(download_item)
-            if pathlib.Path(session.download_dir) not in item_path.parents:
-                # Support exempting items from review, put them in a different location.
-                # Only review items in the client's default download directory.
-                logger.debug(
-                    "Ignoring item not in default download dir: %r",
-                    download_item,
-                )
-                continue
-            try:
-                self.review_item(queue_records, download_item)
-            except Exception:
-                logger.exception(
-                    "Un-handled exception reviewing item: %r",
-                    download_item,
-                )
-                if "DEBUG" in os.environ:
-                    raise
-                else:
-                    continue
-
-    def review_item(self, queue_records, download_item):
-        """
-        Apply review operations to this download item.
-        """
-        include, sort_key = self.exec_indexer_operations(
-            download_item,
-            operations_type="reviews",
-        )
-        indexer_idx = sort_key[0]
-        sort_values = sort_key[1:]
-        reviews_indxers = self.config.get("indexers", {}).get("reviews", [])
-        indexer_config = reviews_indxers[indexer_idx]
-        operation_configs = indexer_config.get("operations", [])
-
-        download_id = download_item.hashString.upper()
-        queue_record = queue_records.get(download_id, {})
-        queue_id = queue_record.get("id")
-
-        for operation_config, sort_value in zip(operation_configs, sort_values):
-            if sort_value:
-                # Sort value didn't match review operation requirements
-                continue
-
-            if operation_config.get("remove", False):
-                logger.info(
-                    "Removing download item per %r review: %r",
-                    operation_config["type"],
-                    download_item,
-                )
-                if queue_id is None:
-                    if self.servarrs and not self.quiet:
-                        logger.warning(
-                            "Download item not in any Servarr queue: %r",
-                            download_item,
-                        )
-                    self.client.remove_torrent(
-                        download_item.hashString,
-                        delete_data=True,
-                    )
-                else:
-                    delete_params = dict(removeFromClient="true")
-                    if operation_config.get("blacklist", False):
-                        delete_params["blacklist"] = "true"
-                    queue_record["servarr_config"]["client"]._raw._delete(
-                        f"queue/{queue_id}",
-                        **delete_params,
-                    )
-                self.move_timeout(download_item, download_item.downloadDir)
-                # Avoid race conditions, perform no further operations on removed items
-                continue
-
-            if "change" in operation_config:
-                logger.info(
-                    "Changing download item per %r review for %r: %s",
-                    operation_config["type"],
-                    download_item,
-                    json.dumps(operation_config["change"]),
-                )
-                self.client.change_torrent(
-                    [download_item.hashString],
-                    **operation_config["change"],
-                )
-
-        return include, sort_key
-
     def verify_corrupted(self):
         """
         Verify any incomplete torrents that are paused because of corruption.
@@ -1214,6 +1090,22 @@ def normalize_nlp(text):
         # Strip out punctuation and redundant spaces
         and not (token.is_punct or token.is_space)
     )
+
+
+def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    runner.connect()
+    return runner.review(*args, **kwargs)
+
+
+review.__doc__ = prunerr.runner.PrunerrRunner.review.__doc__
+parser_review = subparsers.add_parser(
+    "review",
+    help=review.__doc__.strip(),
+    description=review.__doc__.strip(),
+)
+# Make the function for the sub-command specified in the CLI argument available in the
+# argument parser for delegation below.
+parser_review.set_defaults(command=review)
 
 
 def sync_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring

@@ -45,7 +45,7 @@
         "isStalled": true,
 	"labels": [],
         "leftUntilDone": 1048576,
-        "magnetLink": "magnet:?xt=urn:btih:1FAFED76F4264B14934C13D7A306F94FEA4B3184&dn=Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER&tr=https%3A%2F%2Ftracker.foo.example.com%2Fa%2F1fafed76f4264b14934c13d7a306f94fea4b3184%2Fannounce",
+        "magnetLink": "magnet:?xt=urn:btih:1FAFED76F4264B14934C13D7A306F94FEA4B3184&dn=Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER&tr=https%3A%2F%2Ftracker.private.example.com%2Fa%2F1fafed76f4264b14934c13d7a306f94fea4b3184%2Fannounce",
         "manualAnnounceTime": -1,
         "maxConnectedPeers": 288,
         "metadataPercentComplete": 1,
@@ -87,12 +87,12 @@
         "totalSize": 1073741824,
         "trackerStats": [
 	  {
-	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "announce": "udp://tracker.private.example.com:6969/announce",
             "announceState": 2,
             "downloadCount": -1,
             "hasAnnounced": true,
             "hasScraped": false,
-            "host": "udp://tracker.foo.example.com:6969",
+            "host": "udp://tracker.private.example.com:6969",
             "id": 0,
             "isBackup": false,
             "lastAnnouncePeerCount": 0,
@@ -109,18 +109,18 @@
             "leecherCount": 0,
             "nextAnnounceTime": 0,
             "nextScrapeTime": 0,
-            "scrape": "udp://tracker.foo.example.com:6969/scrape",
+            "scrape": "udp://tracker.private.example.com:6969/scrape",
             "scrapeState": 2,
             "seederCount": 0,
             "tier": 0
 	  },
           {
-	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "announce": "udp://tracker.private.example.com:6969/announce",
             "announceState": 0,
             "downloadCount": -1,
             "hasAnnounced": false,
             "hasScraped": false,
-            "host": "udp://tracker.foo.example.com:6969",
+            "host": "udp://tracker.private.example.com:6969",
             "id": 1,
             "isBackup": true,
             "lastAnnouncePeerCount": 0,
@@ -137,7 +137,7 @@
             "leecherCount": -1,
             "nextAnnounceTime": 0,
             "nextScrapeTime": 0,
-            "scrape": "udp://tracker.foo.example.com:6969/scrape",
+            "scrape": "udp://tracker.private.example.com:6969/scrape",
             "scrapeState": 0,
             "seederCount": -1,
             "tier": 0
@@ -145,15 +145,15 @@
 	],
         "trackers": [
 	  {
-	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "announce": "udp://tracker.private.example.com:6969/announce",
             "id": 0,
-            "scrape": "udp://tracker.foo.example.com:6969/scrape",
+            "scrape": "udp://tracker.private.example.com:6969/scrape",
             "tier": 0
 	  },
           {
-	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "announce": "udp://tracker.private.example.com:6969/announce",
             "id": 1,
-            "scrape": "udp://tracker.foo.example.com:6969/scrape",
+            "scrape": "udp://tracker.private.example.com:6969/scrape",
             "tier": 0
 	  }
 	],

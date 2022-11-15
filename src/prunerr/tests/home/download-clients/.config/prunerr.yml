@@ -112,6 +112,20 @@ indexers:
             bandwidthPriority: 1
     - name: null  # `null` matches all other indexers not specified in `operations`
       operations:
+        ## Same rules for deleting items as for private indexers above
+        - type: "or"
+          operations:
+            - type: "value"
+              name: "status"
+              equals: "seeding"
+            - type: "value"
+              name: "age"
+              maximum: 604800
+            - type: "value"
+              name: "rate_total"
+              minimum: 50
+          remove: true
+          blacklist: true
         - type: "files"
           patterns:
             - ".+\\.rar$"

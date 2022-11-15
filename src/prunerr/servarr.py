@@ -3,6 +3,7 @@ Prunerr interaction with Servarr instances.
 """
 
 import os
+import dataclasses
 import datetime
 import urllib.parse
 import pathlib
@@ -12,11 +13,35 @@ import json
 import logging
 
 import arrapi
+import arrapi.apis.base
 
 import prunerr.utils
 import prunerr.downloadclient
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class PrunerrServarrAPIClient:
+    """
+    Wrap the `arrapi` client private/internal bits we depend on.
+    """
+
+    client: arrapi.apis.base.BaseAPI
+
+    @property
+    def get(self):
+        """
+        Return the `arrapi` client private/internal `GET` method.
+        """
+        return self.client._raw._get  # pylint: disable=protected-access
+
+    @property
+    def delete(self):
+        """
+        Return the `arrapi` client private/internal `DELETE` method.
+        """
+        return self.client._raw._delete  # pylint: disable=protected-access
 
 
 class PrunerrServarrInstance:
@@ -73,7 +98,6 @@ class PrunerrServarrInstance:
     HISTORY_WAIT = datetime.timedelta(seconds=120)
 
     client = None
-    api_get = None
     download_clients = None
     queue = None
     history = None
@@ -99,18 +123,19 @@ class PrunerrServarrInstance:
             "Connecting to Servarr instance: %s",
             self.config["name"],
         )
-        self.client = self.TYPE_MAPS[self.config["type"]]["client"](
-            self.config["url"],
-            self.config["api-key"],
+        self.client = PrunerrServarrAPIClient(
+            self.TYPE_MAPS[self.config["type"]]["client"](
+                self.config["url"],
+                self.config["api-key"],
+            ),
         )
-        self.api_get = self.client._raw._get  # pylint: disable=protected-access
 
         self.download_clients = {}
         logger.debug(
             "Requesting Servarr download clients settings: %r",
             self.config["name"],
         )
-        for download_client_config in self.api_get("downloadclient"):
+        for download_client_config in self.client.get("downloadclient"):
             if not download_client_config["enable"]:
                 continue
             download_client_config = deserialize_servarr_download_client(
@@ -179,7 +204,7 @@ class PrunerrServarrInstance:
                 self.config["name"],
                 endpoint,
             )
-            response = self.api_get(
+            response = self.client.get(
                 endpoint,
                 # Maximum Servarr page size
                 pageSize=self.MAX_PAGE_SIZE,
@@ -202,7 +227,7 @@ class PrunerrServarrInstance:
             self.config["name"],
             json.dumps(params),
         )
-        history_response = self.api_get(
+        history_response = self.client.get(
             f"history/{type_map['dir_type']}",
             **params,
         )

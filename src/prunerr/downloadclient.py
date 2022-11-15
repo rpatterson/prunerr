@@ -128,6 +128,37 @@ class PrunerrDownloadClient:
 
     # Sub-commands
 
+    def review(self, servarr_queue):
+        """
+        Apply configured review operations to all download items.
+        """
+        # TODO: Maybe handle multiple downloading items for the
+        # same Servarr item such as when trying several to see which
+        # ones actually have decent download speeds?
+        results = {}
+        # Need to make a copy in case review leads to deleting an item and modifying
+        # `self.items`.
+        for item in list(self.items):
+            if pathlib.Path(self.client.session.download_dir) not in item.path.parents:
+                # Support exempting items from review, put them in a different location.
+                # Only review items in the client's default download directory.
+                logger.debug(
+                    "Ignoring item not in default download dir: %r",
+                    item,
+                )
+                continue
+            try:
+                results[item] = item.review(servarr_queue)
+            except DownloadClientTODOException:
+                logger.exception(
+                    "Un-handled exception reviewing item: %r",
+                    item,
+                )
+                if "DEBUG" in os.environ:
+                    raise
+                continue
+        return results
+
     def sync(self):
         """
         Synchronize the state of download client items with Servarr event history.
@@ -174,6 +205,8 @@ class PrunerrDownloadClient:
             reverse=True,
         )
 
+    # Methods used by the `free-space` sub-command
+
     def delete_files(self, item):
         """
         Delete all files and directories for the given path and stat or download item.
@@ -202,7 +235,7 @@ class PrunerrDownloadClient:
             )
             self.client.remove_torrent([item.hashString])
             self.items.remove(item)
-            path = item.path
+            path = item.files_parent
 
         # Handle filesystem paths not recognized by the download client
         else:
@@ -722,14 +755,10 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Return the indexer name if the download item matches a configured tracker URL.
         """
-        for possible_name, possible_urls in (
-            self.download_client.runner.config.get(
-                "indexers",
-                {},
-            )
-            .get("urls", {})
-            .items()
-        ):
+        for possible_name, possible_urls in self.download_client.operations.config.get(
+            "urls",
+            {},
+        ).items():
             for tracker in self.trackers:
                 for action in ("announce", "scrape"):
                     tracker_url = tracker[action]
@@ -770,6 +799,71 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             indexer_name = self.match_indexer_urls()
 
         return indexer_name
+
+    def review(self, servarr_queue):
+        """
+        Apply review operations to this download item.
+        """
+        _, sort_key = self.download_client.operations.exec_indexer_operations(
+            self,
+            operations_type="reviews",
+        )
+        reviews_indxers = self.download_client.operations.config.get("reviews", [])
+        indexer_config = reviews_indxers[sort_key[0]]
+        operation_configs = indexer_config.get("operations", [])
+
+        download_id = self.hashString.upper()
+        queue_record = servarr_queue.get(download_id, {})
+        queue_id = queue_record.get("id")
+
+        results = []
+        for operation_config, sort_value in zip(operation_configs, sort_key[1:]):
+            if sort_value:
+                # Sort value didn't match review operation requirements
+                continue
+
+            if operation_config.get("remove", False):
+                result = dict(remove=True)
+                logger.info(
+                    "Removing download item per %r review: %r",
+                    operation_config["type"],
+                    self,
+                )
+                if queue_id is None:
+                    if not queue_record and not self.download_client.runner.quiet:
+                        logger.warning(
+                            "Download item not in any Servarr queue: %r",
+                            self,
+                        )
+                else:
+                    delete_params = {}
+                    if operation_config.get("blacklist", False):
+                        delete_params["blacklist"] = "true"
+                        result["blacklist"] = True
+                    queue_record["servarr"].client.delete(
+                        f"queue/{queue_id}",
+                        **delete_params,
+                    )
+                self.download_client.delete_files(self)
+                results.append(result)
+                # Avoid race conditions, perform no further operations on removed items
+                break
+
+            if "change" in operation_config:
+                logger.info(
+                    "Changing download item per %r review for %r: %s",
+                    operation_config["type"],
+                    self,
+                    json.dumps(operation_config["change"]),
+                )
+                self.download_client.client.change_torrent(
+                    [self.hashString],
+                    **operation_config["change"],
+                )
+                results.append(operation_config["change"])
+                self.update()
+
+        return results
 
 
 class DownloadClientTimeout(Exception):

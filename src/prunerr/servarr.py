@@ -51,12 +51,6 @@ class PrunerrServarrInstance:
             rename_template="{movie[title]} ({movie[release_year]})",
         ),
     )
-    # Map Servarr event types from the API to the Prunerr suffixes
-    HISTORY_EVENT_TYPES = {
-        "downloadFolderImported": "imported",
-        "fileDeleted": "deleted",
-        "downloadIgnored": "deleted",
-    }
     # Map Servarr event types to download client location path config
     EVENT_LOCATIONS = dict(
         grabbed=dict(src="downloadDir", dst="downloadDir"),
@@ -641,34 +635,21 @@ class PrunerrServarrDownloadClient:
 
         # Synchronize the item's state with this history event/record
         # Run any handler for this specific event type, if defined
-        handler_suffix = self.servarr.HISTORY_EVENT_TYPES.get(
-            history_record["eventType"],
-            history_record["eventType"],
+        handler = getattr(
+            self,
+            f"handle_{history_record['eventType']}",
+            self.sync_item_location,
         )
-        handler = getattr(self, f"handle_{handler_suffix}", None)
-        if handler is not None:
-            logger.debug(
-                "Handling %r Servarr %r event: %r",
-                self.servarr.config["name"],
-                history_record["eventType"],
-                download_item,
-            )
-            handler_result = handler(
-                download_item,
-                history_record,
-            )
-        else:
-            logger.debug(
-                "No handler found for Servarr %r event type: %s",
-                self.servarr.config["name"],
-                history_record["eventType"],
-            )
-            # Default handler actions
-            # Ensure the download item's location matches the Servarr state
-            handler_result = self.sync_item_location(
-                download_item,
-                history_record,
-            )
+        logger.debug(
+            "Handling %r Servarr %r event: %r",
+            self.servarr.config["name"],
+            history_record["eventType"],
+            download_item,
+        )
+        handler_result = handler(
+            download_item,
+            history_record,
+        )
         if handler_result is not None:
             history_record["prunerr"]["handlerResult"] = str(handler_result)
             history_record["prunerr"]["syncedDate"] = datetime.datetime.now()
@@ -722,7 +703,11 @@ class PrunerrServarrDownloadClient:
 
         return download_item.move(dst_path)
 
-    def handle_imported(self, download_item, history_record):
+    def handle_downloadFolderImported(  # pylint: disable=invalid-name
+        self,
+        download_item,
+        history_record,
+    ):
         """
         Handle Servarr imported event, wait for import to complete, then move.
         """

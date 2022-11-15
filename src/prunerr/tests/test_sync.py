@@ -553,12 +553,15 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
         )
 
     @unittest.skip("TODO")
-    def test_sync_user_deleted(self):
+    def test_sync_user_ignored(self):
         """
-        Items not automatically imported and deleted by the user are synced correctly.
+        Items not automatically imported and ignored by the user are synced correctly.
 
         For example, if the item is of lower quality than the currently imported item
         and the user decides to delete it from the Servarr queue instead.  That item
-        should still be moved to `seeding`.
+        should still be moved to `seeding`.  At the moment, this also covers every
+        event type other than `downloadFolderImported` as that is the only event that
+        has it's own handler and does anything other than sync the item's location
+        per-`prunerr.servarr.PrunerrServarrInstance.EVENT_LOCATIONS`.
         """
         raise NotImplementedError("TODO")

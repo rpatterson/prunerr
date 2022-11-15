@@ -265,14 +265,12 @@ class PrunerrTestCase(
         """
         Assert that the request is as expected before mocking a response to a request.
         """
-        if "Content-Type" in request.headers:
-            _, minor_type = parse_content_type(request.headers["Content-Type"])
-            if minor_type == "json":
-                self.assertEqual(
-                    response_mock["request"]["json"],
-                    request.json(),
-                    f"Wrong request body for {response_mock['response_dir']}",
-                )
+        if request.text:
+            self.assertEqual(
+                response_mock["request"]["json"],
+                request.json(),
+                f"Wrong request body for {response_mock['response_dir']}",
+            )
         if callable(response_mock["json"]):
             return response_mock["json"](request, context, response_mock=response_mock)
         return response_mock["json"]
@@ -330,7 +328,7 @@ class PrunerrTestCase(
 
             responses = {}
             for response_path in request_headers_path.parent.glob("*/response.json"):
-                if response_path.name.endswith("~"):
+                if response_path.name.endswith("~"):  # pragma: no cover
                     # Ignore backup files
                     continue
                 request_json_expected = {}
@@ -474,19 +472,15 @@ class PrunerrTestCase(
         request=None,
         context=None,
         response_mock=None,
-        location=None,
     ):  # pylint: disable=unused-argument
         """
         Simulate the download client changing a download items location.
         """
-        if request is not None:
-            location = pathlib.Path(request.json()["arguments"]["location"])
+        location = pathlib.Path(request.json()["arguments"]["location"])
         location.mkdir(parents=True, exist_ok=True)
         self.downloaded_item.rename(location / self.downloaded_item.name)
-        if response_mock is not None:
-            context.headers.update(response_mock.get("headers", {}))
-            return response_mock["from_mock_dir"]["json"]
-        return None
+        context.headers.update(response_mock.get("headers", {}))
+        return response_mock["from_mock_dir"]["json"]
 
     def mock_servarr_import_item(self, download_item=None):
         """

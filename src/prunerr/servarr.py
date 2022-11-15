@@ -95,7 +95,7 @@ class PrunerrServarrInstance:
         """
         Readable, informative, and specific representation to ease debugging.
         """
-        return f"<{type(self).__name__} at {self.config['url']!r}>"
+        return f"<{type(self).__name__} {self.config['name']!r}>"
 
     def connect(self):
         """
@@ -389,8 +389,7 @@ class PrunerrServarrDownloadClient:
         Readable, informative, and specific representation to ease debugging.
         """
         return (
-            f"<{type(self).__name__}"
-            f" at {self.servarr.config['url']!r}"
+            f"<{type(self).__name__} {self.servarr.config['name']!r}"
             f"->{self.download_client.config['url']!r}>"
         )
 
@@ -477,9 +476,9 @@ class PrunerrServarrDownloadClient:
             != self.servarr.config["url"]
         ):
             raise NotImplementedError(
-                f"Item download dir matches Servarr at {self.servarr.config['url']} "
-                "but item data if for Servarr at "
-                f"{download_item.prunerr_data['servarr']['url']}."
+                f"Item download dir matches Servarr {self.servarr.config['name']!r} "
+                "but item data if for Servarr "
+                f"{download_item.prunerr_data['servarr']['name']!r}."
             )
         return servarr_dir
 

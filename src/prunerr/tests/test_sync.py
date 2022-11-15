@@ -484,6 +484,10 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
     def test_sync_imported_before(self):
         """
         Items imported before Prunerr has seen a grabbed event are still synced.
+
+        This also describes items "grabbed" by the user outside of Servarr and then
+        manually imported into Servarr.  Such items still have an imported event with
+        the download item hash id, so they can still be `sync`ed without issue.
         """
         self.mock_download_client_complete_item()
         self.mock_servarr_import_item()
@@ -551,7 +555,7 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
     @unittest.skip("TODO")
     def test_sync_user_deleted(self):
         """
-        Items not automatically imported and deleted by they user are synced correctly.
+        Items not automatically imported and deleted by the user are synced correctly.
 
         For example, if the item is of lower quality than the currently imported item
         and the user decides to delete it from the Servarr queue instead.  That item

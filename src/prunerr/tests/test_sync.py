@@ -318,7 +318,7 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "03-torrent-set-location": dict(
+                        "02-torrent-set-location": dict(
                             json=self.mock_move_torrent_response,
                         ),
                     },

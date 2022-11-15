@@ -201,8 +201,7 @@ class PrunerrDownloadClient:
                 ),
             )
             self.client.remove_torrent([item.hashString])
-            # Refresh the list of download items
-            self.update()
+            self.items.remove(item)
             path = item.path
 
         # Handle filesystem paths not recognized by the download client

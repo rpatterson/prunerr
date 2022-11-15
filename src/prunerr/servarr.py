@@ -713,7 +713,6 @@ class PrunerrServarrDownloadClient:
                 )
                 return str(download_item.path)
 
-        download_item.update()  # TODO: Still necessary?
         if not download_item.files():
             logger.warning(
                 "Download item has no files yet: %r",
@@ -763,7 +762,6 @@ class PrunerrServarrDownloadClient:
         history_record["prunerr"]["handlerResult"] = str(
             self.sync_item_location(download_item, history_record),
         )
-        download_item.update()
 
         # Reflect imported files in the download client item using symbolic links
         old_dropped_path = pathlib.Path(history_record["data"]["droppedPath"])

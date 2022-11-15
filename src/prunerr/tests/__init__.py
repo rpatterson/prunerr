@@ -3,6 +3,7 @@ Tests for Prunerr.
 """
 
 import os
+import functools
 import re
 import pathlib
 import mimetypes
@@ -255,6 +256,27 @@ class PrunerrTestCase(
             (data,) = data
         return data
 
+    def mock_response_callback(
+        self,
+        response_mock,
+        request,
+        context,
+    ):
+        """
+        Assert that the request is as expected before mocking a response to a request.
+        """
+        if "Content-Type" in request.headers:
+            _, minor_type = parse_content_type(request.headers["Content-Type"])
+            if minor_type == "json":
+                self.assertEqual(
+                    response_mock["request"]["json"],
+                    request.json(),
+                    f"Wrong request body for {response_mock['response_dir']}",
+                )
+        if callable(response_mock["json"]):
+            return response_mock["json"](request, context, response_mock=response_mock)
+        return response_mock["json"]
+
     def mock_responses(
         self,
         responses_dir=None,
@@ -275,6 +297,8 @@ class PrunerrTestCase(
             responses_dir.is_dir(),
             f"Mock requests responses directory is not a directory: {responses_dir}",
         )
+        if manual_mocks is None:
+            manual_mocks = {}
         # Clear any previous mocks to support multiple groups of request mocks per test,
         self.requests_mock.stop()
         self.requests_mock = requests_mock.Mocker()
@@ -305,42 +329,66 @@ class PrunerrTestCase(
             )
 
             responses = {}
-            for response_path in request_headers_path.parent.glob("*/response.*"):
+            for response_path in request_headers_path.parent.glob("*/response.json"):
                 if response_path.name.endswith("~"):
                     # Ignore backup files
                     continue
+                request_json_expected = {}
+                request_json_path = response_path.parent / "request.json"
+                if request_json_path.exists():
+                    with request_json_path.open() as request_json_opened:
+                        request_json_expected = json.load(request_json_opened)
+
                 response_headers = {}
                 response_stat = response_path.stat()
-                response_bytes = response_path.read_bytes()
 
                 # Patch transmission/Servarr storage paths if the body is JSON
-                response_bytes = json.dumps(
-                    self.patch_paths(json.loads(response_bytes))
-                ).encode()
+                with response_path.open() as response_opened:
+                    response_json = json.load(response_opened)
+                response_json = self.patch_paths(response_json)
 
                 response_headers["Last-Modified"] = email.utils.formatdate(
                     timeval=response_stat.st_mtime,
                     usegmt=True,
                 )
-                response_headers["Content-Length"] = str(len(response_bytes))
                 response_headers["Content-Type"] = mimetypes.guess_type(
                     response_path.name
                 )[0]
 
                 responses[response_path.parent.name] = dict(
+                    request=dict(json=self.patch_paths(request_json_expected)),
                     headers=response_headers,
-                    content=response_bytes,
+                    json=response_json,
+                    response_dir=response_path.parent.relative_to(
+                        pathlib.Path().resolve(),
+                    ),
                 )
 
             # Insert any manual mocks in the right order.  Useful for dynamic callback
             # mocks such as requesting the download client to move download items.
-            if manual_mocks is not None:
-                responses.update(
-                    manual_mocks.get(url_split.geturl(), {}).get(method, {}),
+            for mock_order, mock_kwargs in (
+                manual_mocks.get(url_split.geturl(), {})
+                .get(
+                    method,
+                    {},
                 )
-            responses = [
-                responses[mock_order] for mock_order in sorted(responses.keys())
-            ]
+                .items()
+            ):
+                mock_kwargs["from_mock_dir"] = responses[mock_order]
+                responses[mock_order] = responses[mock_order] | mock_kwargs
+
+            # Use the callback to make assertions on the request bodies
+            response_list = []
+            for mock_order in sorted(responses.keys()):
+                response_list.append(
+                    dict(
+                        headers=responses[mock_order]["headers"],
+                        json=functools.partial(
+                            self.mock_response_callback,
+                            responses[mock_order],
+                        ),
+                    ),
+                )
 
             with request_headers_path.open() as request_headers_opened:
                 request_headers = json.load(request_headers_opened)
@@ -350,7 +398,7 @@ class PrunerrTestCase(
                     url=url_split.geturl(),
                     complete_qs=True,
                     request_headers=request_headers,
-                    response_list=responses,
+                    response_list=response_list,
                 ),
                 responses,
             )
@@ -425,6 +473,7 @@ class PrunerrTestCase(
         self,
         request=None,
         context=None,
+        response_mock=None,
         location=None,
     ):  # pylint: disable=unused-argument
         """
@@ -434,7 +483,10 @@ class PrunerrTestCase(
             location = pathlib.Path(request.json()["arguments"]["location"])
         location.mkdir(parents=True, exist_ok=True)
         self.downloaded_item.rename(location / self.downloaded_item.name)
-        return {"arguments": {}, "result": "success"}
+        if response_mock is not None:
+            context.headers.update(response_mock.get("headers", {}))
+            return response_mock["from_mock_dir"]["json"]
+        return None
 
     def mock_servarr_import_item(self, download_item=None):
         """

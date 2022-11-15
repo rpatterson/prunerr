@@ -3,7 +3,6 @@ Prunerr removes imported items to free space according to configured rules.
 """
 
 import os
-import json
 
 from unittest import mock
 
@@ -53,11 +52,9 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         # 1. There's still enough free space and no download items can be deleted.
         #    Running the `free-space` sub-command makes no no changes.
         imported_sufficient_request_mocks = self.mock_responses()
-        imported_sufficient_before_session = json.loads(
-            imported_sufficient_request_mocks[
-                "http://transmission:secret@localhost:9091/transmission/rpc"
-            ]["POST"][1][0]["content"],
-        )["arguments"]
+        imported_sufficient_before_session = imported_sufficient_request_mocks[
+            "http://transmission:secret@localhost:9091/transmission/rpc"
+        ]["POST"][1]["00-session-get"]["json"]["arguments"]
         self.assertGreater(
             imported_sufficient_before_session["download-dir-free-space"],
             self.min_free_space,
@@ -97,11 +94,9 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         imported_insufficient_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-imported-insufficient",
         )
-        imported_insufficient_before_session = json.loads(
-            imported_insufficient_request_mocks[
-                "http://transmission:secret@localhost:9091/transmission/rpc"
-            ]["POST"][1][0]["content"],
-        )["arguments"]
+        imported_insufficient_before_session = imported_insufficient_request_mocks[
+            "http://transmission:secret@localhost:9091/transmission/rpc"
+        ]["POST"][1]["00-session-get"]["json"]["arguments"]
         self.assertLess(
             imported_insufficient_before_session["download-dir-free-space"],
             self.min_free_space,
@@ -142,11 +137,9 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         upgraded_insufficient_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-upgraded-insufficient",
         )
-        upgraded_insufficient_before_session = json.loads(
-            upgraded_insufficient_request_mocks[
-                "http://transmission:secret@localhost:9091/transmission/rpc"
-            ]["POST"][1][0]["content"],
-        )["arguments"]
+        upgraded_insufficient_before_session = upgraded_insufficient_request_mocks[
+            "http://transmission:secret@localhost:9091/transmission/rpc"
+        ]["POST"][1]["00-session-get"]["json"]["arguments"]
         self.assertLess(
             upgraded_insufficient_before_session["download-dir-free-space"],
             self.min_free_space,

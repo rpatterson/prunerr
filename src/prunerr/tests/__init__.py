@@ -66,7 +66,7 @@ class PrunerrTestCase(
     SERVARR_TYPE = "sonarr"
     SERVARR_STORAGE_RELATIVE = pathlib.PurePath("Videos", "Series")
     SERVARR_IMPORT_PARENT_BASENAME = "Season 01"
-    SERVARR_DIR_TITLE = "Foo Series (1970)"
+    SERVARR_DIR_TITLE = "Foo Series (1970) [tvdbid-1]"
 
     def setUp(self):
         """

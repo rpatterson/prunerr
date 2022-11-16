@@ -152,7 +152,6 @@ class Prunerr:
         self.replay = replay
 
         # Initial state
-        self.corrupt = {}
         self.quiet = False
 
     def exec_(self):
@@ -168,55 +167,6 @@ class Prunerr:
             # Workaround an issue with Transmission when starting torrents with no free
             # space.
             self.readd_missing_data()
-
-        # Keep track of torrents being verified to resume them
-        # when verification is complete
-        for torrent_id, torrent in list(self.corrupt.items()):
-            try:
-                torrent.update()
-            except KeyError as exc:
-                logger.error(
-                    "Error updating corrupt %s, " "may have been removed: %s",
-                    torrent,
-                    exc,
-                )
-                del self.corrupt[torrent_id]
-            else:
-                if not torrent.status.startswith("check"):
-                    logger.info("Resuming verified torrent: %s", torrent)
-                    torrent.start()
-                    torrent.update()
-                    del self.corrupt[torrent_id]
-        if self.corrupt:
-            logger.info(
-                "Waiting for torrents to verify:\n%s",
-                "\n".join(map(str, self.corrupt.values())),
-            )
-        self.corrupt.update(self.verify_corrupted())
-
-    def verify_corrupted(self):
-        """
-        Verify any incomplete torrents that are paused because of corruption.
-        """
-        corrupt = dict(
-            (torrent.hashString, torrent)
-            for torrent in self.torrents
-            if torrent.status == "stopped"
-            and torrent.error == 3
-            and (
-                "verif" in torrent.errorString.lower()
-                or "corrput" in torrent.errorString.lower()
-            )
-        )
-        if corrupt:
-            logger.info(
-                "Verifying corrupt torrents:\n%s", "\n".join(map(str, corrupt.values()))
-            )
-            self.client.verify_torrent(list(corrupt.keys()))
-            for torrent in corrupt.values():
-                torrent.update()
-
-        return corrupt
 
     def readd_item(self, download_item):
         """
@@ -517,24 +467,6 @@ class Prunerr:
                 break
             else:
                 logger.warning("No Servarr history found: %r", download_item)
-
-            # Verify item data and resume if anything we've done or can check indicates
-            # it might have been successfully restored.
-            download_parent = pathlib.Path(download_item.download_dir)
-            if (
-                (
-                    download_item.status == "stopped"
-                    and download_parent != client_download_path
-                )
-                or restored_items.get(download_item.name, {}).get("orphans", [])
-                or restored_items.get(download_item.name, {}).get("imported", [])
-            ):
-                logger.info(
-                    "Verifying and resuming: %r",
-                    download_item,
-                )
-                self.client.verify_torrent([download_item.hashString])
-                download_item.start()
 
         return restored_items
 

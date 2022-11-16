@@ -20,6 +20,7 @@ export PUID=1000
 export PGID=100
 REQUIREMENTS=./requirements-devel.txt
 PRUNERR_CMD=exec
+PRUNERR_ARGS=$(PRUNERR_CMD)
 
 # Derived values
 VENVS = $(shell tox -l)
@@ -49,6 +50,12 @@ start: build
 run: build
 	docker compose down
 	docker compose up
+.PHONY: run-debug
+### Run a sub-command with a real configuration and post-mortem debugging
+run-debug: build
+# Depends on the user/developer placing their real Prunerr config in:
+#     ~/.config/prunerr.yml
+	./.tox/py3/bin/python -m pdb ./.tox/py3/bin/prunerr $(PRUNERR_ARGS)
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers

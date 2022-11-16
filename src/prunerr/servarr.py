@@ -17,6 +17,7 @@ import arrapi.apis.base
 
 import prunerr.utils
 import prunerr.downloadclient
+import prunerr.downloaditem
 
 logger = logging.getLogger(__name__)
 
@@ -439,7 +440,7 @@ class PrunerrServarrDownloadClient:
                 ]
             ).resolve(),
         }
-        self.download_item_dirs["seedingDir"] = prunerr.downloadclient.parallel_to(
+        self.download_item_dirs["seedingDir"] = prunerr.downloaditem.parallel_to(
             self.download_client.client.session.download_dir,
             self.download_item_dirs["downloadDir"],
             self.download_client.SEEDING_DIR_BASENAME,

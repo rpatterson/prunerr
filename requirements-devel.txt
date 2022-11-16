@@ -113,7 +113,7 @@ packaging==21.3
     #   tox
 pathspec==0.10.2
     # via black
-pathy==0.7.1
+pathy==0.8.1
     # via spacy
 pep517==0.13.0
     # via build

@@ -1,0 +1,67 @@
+"""
+Tests covering the Prunerr `daemon` sub-command.
+"""
+
+import os
+import pathlib
+
+from unittest import mock
+
+import prunerr.downloadclient
+
+from .. import tests
+
+HOME = pathlib.Path(__file__).parent / "home" / "daemon"
+ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
+
+
+class PrunerrDaemonTestException(BaseException):
+    """
+    Special exception used to break the daemon loop.
+    """
+
+
+@mock.patch.dict(os.environ, ENV)
+class PrunerrDaemonTests(tests.PrunerrTestCase):
+    """
+    Tests covering the Prunerr `daemon` sub-command.
+    """
+
+    HOME = HOME
+    CONFIG = HOME / ".config" / "prunerr.yml"
+    ENV = ENV
+
+    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "daemon"
+
+    def mock_exit_daemon_response(
+        self,
+        request=None,
+        context=None,
+        response_mock=None,
+    ):  # pylint: disable=unused-argument
+        """
+        Simulate an exception to exit the `daemon` sub-command.
+        """
+        raise PrunerrDaemonTestException("Exit the daemon loop")
+
+    def test_daemon_command(self):
+        """
+        The daemon sub-command loops twice and exits.
+        """
+        daemon_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR,
+            # Insert a dynamic response mock to add recent dates
+            {
+                "http://localhost:8989/api/v3/system/status?apikey=": {
+                    "GET": {
+                        "2-response": dict(json=self.mock_exit_daemon_response),
+                    },
+                },
+            },
+        )
+        with self.assertRaises(
+            PrunerrDaemonTestException,
+            msg="Daemon loop exited with wrong exception",
+        ):
+            prunerr.main(args=[f"--config={self.CONFIG}", "daemon"])
+        self.assert_request_mocks(daemon_request_mocks)

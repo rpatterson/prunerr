@@ -6,9 +6,7 @@ Remove Servarr download client items to preserve disk space according to rules.
 import os
 import os.path
 import argparse
-import socket
 import subprocess
-import time
 import logging
 import pathlib  # TODO: replace os.path
 import tempfile
@@ -18,10 +16,6 @@ import re
 import mimetypes
 import string
 
-
-import arrapi
-
-from transmission_rpc import error
 
 import prunerr.runner
 import prunerr.downloadclient
@@ -87,7 +81,7 @@ class ServarrEventError(ValueError):
     """
 
 
-class Prunerr(object):
+class Prunerr:
 
     SEASON_EPISODE_TEMPLATE = (
         "S{episode[seasonNumber]:02d}E{episode[episodeNumber]:02d}"
@@ -324,56 +318,6 @@ class Prunerr(object):
         popen = subprocess.Popen(popen_cmd, stdin=files, text=True)
 
         return popen
-
-    def daemon(self):
-        """
-        Prune download client items continuously.
-        """
-        # Log only once at the start messages that would be noisy if repeated for every
-        # daemon poll loop.
-        self.quiet = False
-        while True:
-            # Start the clock for the poll loop as early as possible to keep the inner
-            # loop duration as accurate as possible.
-            start = time.time()
-
-            try:
-                # Refresh the list of download items
-                self.update()
-                # Run the `exec` sub-command as the inner loop
-                self.exec_()
-            except (
-                socket.error,
-                error.TransmissionError,
-                arrapi.exceptions.ConnectionFailure,
-            ) as exc:
-                logger.error(
-                    "Connection error while updating from server: %s",
-                    exc,
-                )
-                # Re-connect to external services and retry
-                self.connect()
-                continue
-            else:
-                # Don't repeat noisy messages from now on.
-                self.quiet = True
-            logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
-
-            # Wait for the next interval
-            poll = (
-                self.config["daemon"].get(
-                    "poll",
-                    60,
-                )
-                if self.config["daemon"]
-                else 60
-            )
-            # Loop early if the copy process finishes early
-            while (
-                self.popen is None or self.popen.poll() is None
-            ) and time.time() - start < poll:
-                time.sleep(1)
-            logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
 
     def verify_corrupted(self):
         """
@@ -1145,11 +1089,11 @@ parser_exec = subparsers.add_parser(
 parser_exec.set_defaults(command=exec_)
 
 
-def daemon(prunerr, *args, **kwargs):
-    return prunerr.daemon(*args, **kwargs)
+def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    return runner.daemon(*args, **kwargs)
 
 
-daemon.__doc__ = Prunerr.daemon.__doc__
+daemon.__doc__ = prunerr.runner.PrunerrRunner.daemon.__doc__
 parser_daemon = subparsers.add_parser(
     "daemon",
     help=daemon.__doc__.strip(),

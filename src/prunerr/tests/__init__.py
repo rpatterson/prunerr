@@ -162,11 +162,14 @@ class PrunerrTestCase(
             self.storage_dir / self.SERVARR_STORAGE_RELATIVE / self.SERVARR_DIR_TITLE
         )
 
-        self.set_up_download_item(
-            self.download_client_items_responses[self.download_client_urls[0]][
-                "arguments"
-            ]["torrents"][-1]["name"]
-        )
+        if self.download_client_items_responses[self.download_client_urls[0]][
+            "arguments"
+        ]["torrents"]:
+            self.set_up_download_item(
+                self.download_client_items_responses[self.download_client_urls[0]][
+                    "arguments"
+                ]["torrents"][-1]["name"]
+            )
 
     def set_up_download_item(self, download_item_title):
         """

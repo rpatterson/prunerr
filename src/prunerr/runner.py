@@ -3,6 +3,7 @@ Run Prunerr commands across multiple Servarr instances and download clients.
 """
 
 import os
+import time
 import socket
 import functools
 import contextlib
@@ -128,6 +129,8 @@ class PrunerrRunner:
         with self.EXAMPLE_CONFIG.open() as config_opened:
             return yaml.safe_load(config_opened)
 
+    # Sub-commands
+
     def exec_(self):
         """
         Run the standard series of Prunerr operations once.
@@ -250,6 +253,54 @@ class PrunerrRunner:
             download_client.client.set_session(**kwargs)
 
         return results
+
+    def daemon(self):
+        """
+        Prune download client items continuously.
+        """
+        # Log only once at the start messages that would be noisy if repeated for every
+        # daemon poll loop.
+        self.quiet = False
+        while True:
+            # Start the clock for the poll loop as early as possible to keep the inner
+            # loop duration as accurate as possible.
+            start = time.time()
+
+            try:
+                # Refresh the list of download items
+                self.update()
+                # Run the `exec` sub-command as the inner loop
+                self.exec_()
+            except (
+                socket.error,
+                transmission_rpc.TransmissionError,
+                arrapi.exceptions.ConnectionFailure,
+            ) as exc:
+                logger.error(
+                    "Connection error while updating from server: %s",
+                    exc,
+                )
+                # Re-connect to external services and retry
+            else:
+                # Don't repeat noisy messages from now on.
+                self.quiet = True
+            logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
+
+            # Wait for the next interval
+            poll = (
+                self.config["daemon"].get(
+                    "poll",
+                    60,
+                )
+                if self.config["daemon"]
+                else 60
+            )
+            # Loop early if the copy process finishes early
+            while time.time() - start < poll:
+                time.sleep(1)
+            logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
+
+    # Other methods
 
     def free_space_download_clients(self):
         """

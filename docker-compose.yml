@@ -86,8 +86,6 @@ services:
       # Un-comment to get more verbose `DEBUG` logging
       # DEBUG: "true"
     volumes:
-      # Grant access to the download clients torrent files for `readd_missing_data()`
-      - "./transmission/config/:/config/"
       # Use the Prunerr config from the Prunerr checkout
       - "./home/.config/:/home/prunerr/.config/"
     restart: "unless-stopped"

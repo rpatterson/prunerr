@@ -31,13 +31,12 @@ class PrunerrRunner:
     config = None
     quiet = False
 
-    def __init__(self, config, servarr_name=None, replay=None):
+    def __init__(self, config, replay=None):
         """
         Capture a reference to the global Prunerr configuration file.
         """
         with contextlib.closing(config):
             self.config_file = pathlib.Path(config.name)
-        self.servarr_name = servarr_name
         self.replay = replay
 
         # Initialize any local instance state

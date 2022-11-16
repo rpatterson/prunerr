@@ -52,14 +52,6 @@ https://gitlab.com/rpatterson/prunerr/-/blob/master/src/prunerr/home/.config/pru
 """,
 )
 parser.add_argument(
-    "--servarr-name",
-    "-n",
-    help="""\
-The name of the Sonarr config within the Prunerr config.
-Only applicable to certain sub-commands.\
-""",
-)
-parser.add_argument(
     "--replay",
     "-r",
     action="store_true",
@@ -90,7 +82,7 @@ class Prunerr:
     # Prunerr constants
     PRUNERR_FILE_SUFFIXES = {".prunerr.json", "-servarr-imported.ln"}
 
-    def __init__(self, config, servarrs, url, servarr_name=None, replay=False):
+    def __init__(self, config, servarrs, url, replay=False):
         """
         Do any config post-processing and set initial state.
         """
@@ -155,16 +147,6 @@ class Prunerr:
                     self.config["downloaders"]["download-dir"],
                 )
             ).resolve()
-        self.servarr_name = servarr_name
-        if servarr_name is not None:
-            self.servarr_config = servarr_config = self.servarrs[servarr_name]
-            if "client" not in servarr_config:
-                self.servarr_config["client"] = self.SERVARR_TYPE_MAPS[
-                    servarr_config["type"]
-                ]["client"](
-                    servarr_config["url"],
-                    servarr_config["api-key"],
-                )
 
         # Should all events be handled again, even if previously processed.
         self.replay = replay
@@ -797,8 +779,6 @@ class Prunerr:
         do further manual cleanup after the operation before importing.
         """
         # Normalize and map episode titles to episode data
-        if not self.servarr_name:
-            raise ValueError("The `--servar-name=...` option is required")
         servarr_type_map = self.SERVARR_TYPE_MAPS[self.servarr_config["type"]]
         params = {f"{servarr_type_map['dir_type']}Id": series_id}
         logger.debug(

@@ -195,16 +195,6 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   IOW, when only some episodes from one download item have replaced only some episodes
   from another.  Maybe a partial/mixed status?
 
-- Support download clients on different file-systems, copy completed items:
-
-  There is existing support for copying finished torrents via an arbitrary command, but
-  it's currently unused and thus untested and it's very likely that there are
-  regressions that need fixing.
-
-  This also involves changing ``$ prunerr daemon`` behavior such that it also considers
-  successfully *copied* items as candidates for deletions, not just items whose imported
-  files have been deleted by Servarr, such as when upgrading.
-
 - Send a notification when no download item can be deleted and downloading is paused:
 
   Perhaps we can use the Servarr "Connect" API?

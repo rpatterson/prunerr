@@ -152,7 +152,6 @@ class Prunerr:
         self.replay = replay
 
         # Initial state
-        self.popen = self.copying = None
         self.corrupt = {}
         self.quiet = False
 
@@ -194,108 +193,6 @@ class Prunerr:
                 "\n".join(map(str, self.corrupt.values())),
             )
         self.corrupt.update(self.verify_corrupted())
-
-        if self.config["downloaders"].get("copy"):
-            # Launch copy of most optimal, fully downloaded torrent in the downloads
-            # dir.
-            self._exec_copy(session)
-
-        # Free disk space if needed
-        # TODO: Unify with `self.review_items()`?
-        self.free_space()
-
-    def _exec_copy(self, session):
-        """
-        Launch copy of most optimal, fully downloaded torrent in the downloads dir.
-        """
-        destination = self.config["downloaders"]["copy"]["destination"]
-        command = self.config["downloaders"]["copy"]["command"]
-        imported_dir = self.config["downloaders"]["imported-dir"]
-        retry_codes = self.config["downloaders"]["copy"].get(
-            "daemon-retry-codes",
-            [10, 12, 20, 30, 35, 255],
-        )
-        to_copy = sorted(
-            (
-                torrent
-                for torrent in self.torrents
-                if torrent.status == "seeding"
-                and not os.path.relpath(
-                    torrent.downloadDir,
-                    self.config["downloaders"]["download-dir"],
-                ).startswith(os.pardir + os.sep)
-            ),
-            # 1. Copy lower priority torrents first so they may be deleted
-            # first.
-            # 2. Copy smaller torrents first to avoid huge torrents preventing
-            # timely download of others.
-            key=lambda item: (item.bandwidthPriority, item.totalSize),
-        )
-        if self.popen is not None:
-            if self.popen.poll() is None:
-                if not to_copy or self.copying.hashString == to_copy[0].hashString:
-                    logger.info("Letting running copy finish: %s", self.copying)
-                    to_copy = None
-                else:
-                    logger.info("Terminating running copy: %s", self.copying)
-                    self.popen.terminate()
-            elif self.popen.returncode == 0:
-                # Copy process succeeded
-                # Move a torrent preserving subpath and block until done.
-                self.move_torrent(
-                    self.copying, old_path=session.download_dir, new_path=imported_dir
-                )
-                if to_copy and self.copying.hashString == to_copy[0].hashString:
-                    to_copy.pop(0)
-                self.copying = None
-                self.popen = None
-            elif self.popen.returncode not in retry_codes:
-                logger.error(
-                    "Copy failed with return code %s, pausing %s",
-                    self.popen.returncode,
-                    self.copying,
-                )
-                try:
-                    self.copying.stop()
-                    self.copying.update()
-                except KeyError:
-                    logger.exception("Error pausing %s", self.copying)
-                self.popen = None
-
-        if to_copy:
-            logger.info(
-                "Enabling upload speed limit during copy: %s", session.speed_limit_up
-            )
-            self.client.set_session(speed_limit_up_enabled=True)
-            logger.info("Copying torrent: %s", to_copy[0])
-            self.popen = self.copy(to_copy[0], destination, command)
-            self.copying = to_copy[0]
-        elif self.popen is None:
-            logger.info("Disabling upload speed limit while not copying")
-            self.client.set_session(speed_limit_up_enabled=False)
-
-    def copy(self, torrent, destination, command):
-        """Launch the copy subprocess and return the popen object."""
-        if self.config["downloaders"].get("copy"):
-            raise ValueError("Cannot copy items without appropriate configuration")
-        session = self.client.get_session()
-        session.download_dir = session.download_dir.strip(" `'\"")
-        relative = os.path.relpath(torrent.downloadDir, session.download_dir)
-
-        # Use a temporary file to keep feeding the file list to the
-        # subprocess from blocking us
-        files = tempfile.TemporaryFile(mode="w")
-        files.writelines(
-            os.path.join(relative, subpath) + "\n"
-            for subpath in self.list_torrent_files(torrent)
-        )
-        files.seek(0)
-
-        popen_cmd = command + [session.download_dir, destination]
-        logger.info("Launching copy command: %s", " ".join(popen_cmd))
-        popen = subprocess.Popen(popen_cmd, stdin=files, text=True)
-
-        return popen
 
     def verify_corrupted(self):
         """

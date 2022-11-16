@@ -34,18 +34,6 @@ download-clients:
   ## limit when resuming downloads after previously stopping?  May be useful for QoS to
   ## optimize real download throughput.
   # resume-set-download-bandwidth-limit: false
-  ## Settings that control copying downloaded items to remote servarr hosts.  If
-  ## unset, downloads are left in place such as when download clients are running on
-  ## the same host as the servarr instances.
-  # copy:
-  ## The command to execute to copy competed downloads.  Must accept two arguments: the
-  ## `imported-dir`, and the corresponding destination path on the remote host.  Must
-  ## also accept relative paths for each file in the download item on `/dev/stdin`.
-  ## Expects the same behaviour as the default `$ rsync ...` command.
-  # command: "rsync -tSmP --files-from=-"
-  ## The destination remote host and base path in the format accepted as the second
-  ## argument to `command`.
-  # destination: "servarr.example.com:/media/Library/downloads/"
   ## Workaround an issue with Transmission when starting torrents with no free space.
   ## See the Python docstring for `prunerr.Prunerr.readd_missing_data()` for details.
   # readd-missing-data: true

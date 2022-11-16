@@ -292,7 +292,6 @@ class PrunerrRunner:
                 if "poll" in self.config.get("daemon", {})
                 else 60
             )
-            # Loop early if the copy process finishes early
             while time.time() - start < poll:
                 time.sleep(1)
             logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)

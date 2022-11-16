@@ -136,8 +136,9 @@ class PrunerrRunner:
         """
         results = {}
         # Results relies on preserving key order
-        # Run `review` before sync in case it removes items
-        results["review"] = self.review()
+        if "reviews" in self.config.get("indexers", {}):
+            # Run `review` before sync in case it removes items
+            results["review"] = self.review()
         # Run `sync` before `free-space` in case it makes more items delete-able
         results["sync"] = self.sync()
         results["free-space"] = self.free_space()
@@ -287,11 +288,8 @@ class PrunerrRunner:
 
             # Wait for the next interval
             poll = (
-                self.config["daemon"].get(
-                    "poll",
-                    60,
-                )
-                if self.config["daemon"]
+                self.config["daemon"]["poll"]
+                if "poll" in self.config.get("daemon", {})
                 else 60
             )
             # Loop early if the copy process finishes early

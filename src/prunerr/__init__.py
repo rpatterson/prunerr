@@ -200,10 +200,6 @@ class Prunerr:
             # dir.
             self._exec_copy(session)
 
-        if "reviews" in self.indexer_operations:
-            # Perform any review operations
-            self.review_items()
-
         # Free disk space if needed
         # TODO: Unify with `self.review_items()`?
         self.free_space()

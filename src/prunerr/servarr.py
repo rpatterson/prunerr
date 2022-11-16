@@ -98,17 +98,23 @@ class PrunerrServarrInstance:
     # TODO: Move to config
     HISTORY_WAIT = datetime.timedelta(seconds=120)
 
+    config = None
     client = None
-    download_clients = None
     queue = None
-    history = None
 
-    def __init__(self, runner, config):
+    def __init__(self, runner):
         """
         Capture a references to the runner and individual Servarr configuration.
         """
         self.runner = runner
-        self.config = config
+        self.download_clients = {}
+
+        # Initialize any data cached in instance state across updates
+        self.history = dict(
+            records=dict(download_ids={}, source_titles={}),
+            event_types=dict(download_ids={}, source_titles={}),
+            dirs={},
+        )
 
     def __repr__(self):
         """
@@ -116,10 +122,18 @@ class PrunerrServarrInstance:
         """
         return f"<{type(self).__name__} {self.config['name']!r}>"
 
-    def connect(self):
+    def update(self, config=None):
         """
-        Connect to the Servarr API client and lookup any download clients it defines.
+        Update configuration, connect the API client, and refresh Servarr API data.
+
+        Also retrieves any download clients defined in the Servarr settings and updates
+        the prunerr representations.
         """
+        if config is not None:
+            self.config = config
+        if self.config is None:
+            raise ValueError("No Servarr configuration provided")
+
         logger.debug(
             "Connecting to Servarr instance: %s",
             self.config["name"],
@@ -131,7 +145,7 @@ class PrunerrServarrInstance:
             ),
         )
 
-        self.download_clients = {}
+        download_clients = {}
         logger.debug(
             "Requesting Servarr download clients settings: %r",
             self.config["name"],
@@ -142,30 +156,29 @@ class PrunerrServarrInstance:
             download_client_config = deserialize_servarr_download_client(
                 download_client_config,
             )
-            self.download_clients[
-                download_client_config["url"]
-            ] = PrunerrServarrDownloadClient(
-                servarr=self, config=download_client_config
+            if download_client_config["url"] in self.download_clients:
+                # Preserve any cached state in existing download clients
+                download_clients[download_client_config["url"]] = self.download_clients[
+                    download_client_config["url"]
+                ]
+            else:
+                # Instantiate newly defined download clients
+                download_clients[
+                    download_client_config["url"]
+                ] = PrunerrServarrDownloadClient(self)
+            download_clients[download_client_config["url"]].update(
+                download_client_config
             )
-            self.download_clients[download_client_config["url"]].connect()
+        self.download_clients = download_clients
 
-        self.update()
-        return self.client
-
-    def update(self):
-        """
-        Refresh any Servarr API data cached in instance state.
-        """
+        # Update any data in instance state that should *not* be cached across updates
         self.queue = {}
         for page in self.get_api_paged_records("queue"):
             self.queue.update(
                 (record["downloadId"], record) for record in page["records"]
             )
-        self.history = dict(
-            records=dict(download_ids={}, source_titles={}),
-            event_types=dict(download_ids={}, source_titles={}),
-            dirs={},
-        )
+
+        return self.client
 
     def strip_type_prefix(self, prefixed, servarr_term="item_type"):
         """
@@ -394,15 +407,15 @@ class PrunerrServarrDownloadClient:
     A specific Servar instance's individual specific download client.
     """
 
+    config = None
     download_client = None
     download_item_dirs = None
 
-    def __init__(self, servarr, config):
+    def __init__(self, servarr):
         """
         Capture a references to the servarr instance and download client.
         """
         self.servarr = servarr
-        self.config = config
 
     def __repr__(self):
         """
@@ -413,22 +426,14 @@ class PrunerrServarrDownloadClient:
             f"->{self.download_client.config['url']!r}>"
         )
 
-    def connect(self):
+    def update(self, config=None):
         """
-        Connect to the download client's RPC client.
+        Reconcile Prunerr and Servarr download client configurations and update data.
         """
-        if self.config["url"] in self.servarr.runner.download_clients:
-            self.download_client = self.servarr.runner.download_clients[
-                self.config["url"]
-            ]
-            self.download_client.servarrs[self.servarr.config["url"]] = self
-        else:
-            self.download_client = prunerr.downloadclient.PrunerrDownloadClient(
-                self.servarr.runner,
-                self.config,
-                servarr=self,
-            )
-            self.download_client.connect()
+        if config is not None:
+            self.config = config
+        if self.config is None:
+            raise ValueError("No Servarr configuration provided")
 
         # Assemble the download client paths managed by Servarr
         self.download_item_dirs = {
@@ -440,13 +445,8 @@ class PrunerrServarrDownloadClient:
                 ]
             ).resolve(),
         }
-        self.download_item_dirs["seedingDir"] = prunerr.downloaditem.parallel_to(
-            self.download_client.client.session.download_dir,
-            self.download_item_dirs["downloadDir"],
-            self.download_client.SEEDING_DIR_BASENAME,
-        )
 
-        return self.download_client
+        return self.download_item_dirs
 
     def sync(self):
         """

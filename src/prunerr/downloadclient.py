@@ -28,23 +28,18 @@ class PrunerrDownloadClient:
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
 
+    config = None
     client = None
     items = None
+    operations = None
+    min_free_space = None
 
-    def __init__(self, runner, config, servarr=None):
+    def __init__(self, runner):
         """
         Capture a references to the runner and individual download client configuration.
         """
         self.runner = runner
-        self.config = config
-        self.min_free_space = calc_free_space_margin(runner.config)
         self.servarrs = {}
-        if servarr is not None:
-            self.servarrs[servarr.servarr.config["url"]] = servarr
-        self.operations = prunerr.operations.PrunerrOperations(
-            self,
-            runner.config.get("indexers", {}),
-        )
 
     def __repr__(self):
         """
@@ -52,10 +47,23 @@ class PrunerrDownloadClient:
         """
         return f"<{type(self).__name__} at {self.config['url']!r}>"
 
-    def connect(self):
+    def update(self, config=None):
         """
-        Connect to the download client's RPC client.
+        Update configuration, connect the RPC client, and update the list of items.
         """
+        if config is not None:
+            self.config = config
+        if self.config is None:
+            raise ValueError("No download client configuration provided")
+
+        # Configuration specific to Prunerr, IOW not taken from the download client
+        self.min_free_space = calc_free_space_margin(self.runner.config)
+        self.operations = prunerr.operations.PrunerrOperations(
+            self,
+            self.runner.config.get("indexers", {}),
+        )
+
+        # Connect to the download client's RPC API, also retrieves session data
         split_url = urllib.parse.urlsplit(self.config["url"])
         port = split_url.port
         if not port:
@@ -65,7 +73,6 @@ class PrunerrDownloadClient:
                 port = 443
             else:
                 raise ValueError(f"Could not guess port from URL: {self.config['url']}")
-
         logger.debug(
             "Connecting to download client: %s",
             self.config["url"],
@@ -78,14 +85,23 @@ class PrunerrDownloadClient:
             username=split_url.username,
             password=split_url.password,
         )
-        self.update()
 
-        return self.client
+        # Update any Servarr references or data that depends on the download client
+        # session data
+        for servarr_url in config.get("servarrs", set()):
+            self.servarrs[servarr_url] = self.runner.servarrs[
+                servarr_url
+            ].download_clients[self.config["url"]]
+            self.servarrs[servarr_url].download_item_dirs[
+                "seedingDir"
+            ] = prunerr.downloaditem.parallel_to(
+                self.client.session.download_dir,
+                self.servarrs[servarr_url].download_item_dirs["downloadDir"],
+                self.SEEDING_DIR_BASENAME,
+            )
 
-    def update(self):
-        """
-        Update the list of download items from the download client.
-        """
+        # Retrieve any information from the download client's RPC API needed for all
+        # sub-commands
         logger.debug(
             "Retrieving list of download items from download client: %s",
             self.config["url"],

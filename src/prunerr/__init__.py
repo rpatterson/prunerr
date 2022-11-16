@@ -18,7 +18,6 @@ import re
 import mimetypes
 import string
 
-import yaml
 
 import arrapi
 
@@ -43,10 +42,6 @@ mimetypes.add_type("video/x-divx", ".divx")
 mimetypes.add_type("text/x-nfo", ".nfo")
 
 
-def yaml_arg_type(arg):
-    return yaml.safe_load(argparse.FileType("r")(arg))
-
-
 # Define command line options and arguments
 parser = argparse.ArgumentParser(
     description=__doc__.strip(),
@@ -55,7 +50,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--config",
     "-c",
-    type=yaml_arg_type,
+    type=argparse.FileType("r"),
     default=str(pathlib.Path.home() / ".config" / "prunerr.yml"),
     help="""\
 The path to the Prunerr configuration file. Example:
@@ -1093,7 +1088,7 @@ def normalize_nlp(text):
 
 
 def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    runner.connect()
+    runner.update()
     return runner.review(*args, **kwargs)
 
 
@@ -1109,7 +1104,7 @@ parser_review.set_defaults(command=review)
 
 
 def sync_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    runner.connect()
+    runner.update()
     return runner.sync(*args, **kwargs)
 
 
@@ -1123,7 +1118,7 @@ parser_sync.set_defaults(command=sync_)
 
 
 def free_space(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    runner.connect()
+    runner.update()
     return runner.free_space(*args, **kwargs)
 
 
@@ -1137,7 +1132,7 @@ parser_free_space.set_defaults(command=free_space)
 
 
 def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    runner.connect()
+    runner.update()
     return runner.exec_(*args, **kwargs)
 
 

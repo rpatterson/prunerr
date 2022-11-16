@@ -95,8 +95,10 @@ class PrunerrTestCase(
         self.seeding_dir = self.storage_dir / self.SEEDING_DIR_BASENAME
 
         # Convenient access to the parsed configuration file
-        with self.CONFIG.open() as config_opened:
-            self.config = yaml.safe_load(config_opened)
+        self.config_file = self.CONFIG.open()
+        self.addCleanup(self.config_file.close)
+        self.config = yaml.safe_load(self.config_file)
+        self.config_file.seek(0)
         self.min_free_space = prunerr.downloadclient.calc_free_space_margin(
             self.config,
         )

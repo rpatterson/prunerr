@@ -2,12 +2,10 @@
 Run Prunerr commands across multiple Servarr instances and download clients.
 """
 
-# TODO: Reload config before each daemon loop run but preserve instance state containing
-#       Servarr history
-
 import os
 import socket
 import functools
+import contextlib
 import pathlib
 import logging
 
@@ -29,17 +27,21 @@ class PrunerrRunner:
 
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
 
-    download_clients = None
-    servarrs = None
+    config = None
     quiet = False
 
     def __init__(self, config, servarr_name=None, replay=None):
         """
-        Capture a reference to the global Prunerr configuration.
+        Capture a reference to the global Prunerr configuration file.
         """
-        self.config = config
+        with contextlib.closing(config):
+            self.config_file = pathlib.Path(config.name)
         self.servarr_name = servarr_name
         self.replay = replay
+
+        # Initialize any local instance state
+        self.download_clients = {}
+        self.servarrs = {}
 
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(
@@ -53,39 +55,68 @@ class PrunerrRunner:
         reraise=True,
         before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
     )
-    def connect(self):
+    def update(self):
         """
         Connect to the download and Servarr clients, waiting for reconnection on error.
 
         Aggregate all download clients from all Servarr instances defined in the config.
         """
-        # Start with download clients not connected to a Servarr instance so that if
-        # Servarr instances are connected to the same download client, the reference to
-        # the servarr instance takes precedence.
-        self.download_clients = {}
-        for download_client_url in self.config.get("download-clients", {}).get(
-            "urls", []
-        ):
-            self.download_clients[
-                download_client_url
-            ] = prunerr.downloadclient.PrunerrDownloadClient(
-                self,
-                {"url": download_client_url},
-            )
-            self.download_clients[download_client_url].connect()
+        # Refresh the Prunerr configuration from the file
+        with self.config_file.open(encoding="utf-8") as config_opened:
+            self.config = yaml.safe_load(config_opened)
 
-        # Gather download clients from Servarr configuration via the Servarr API
-        self.servarrs = {}
+        # Update Servarr API clients
+        servarrs = {}
         for servarr_name, servarr_config in self.config.get("servarrs", {}).items():
             servarr_config.setdefault("name", servarr_name)
-            self.servarrs[
-                servarr_config["url"]
-            ] = servarr = prunerr.servarr.PrunerrServarrInstance(self, servarr_config)
-            servarr.connect()
-            self.download_clients.update(
-                (item[0], item[1].download_client)
-                for item in servarr.download_clients.items()
+            if servarr_config["url"] in self.servarrs:
+                servarrs[servarr_config["url"]] = self.servarrs[servarr_config["url"]]
+            else:
+                servarrs[
+                    servarr_config["url"]
+                ] = prunerr.servarr.PrunerrServarrInstance(self)
+            servarrs[servarr_config["url"]].update(servarr_config)
+        self.servarrs = servarrs
+
+        # Update download client RPC clients
+        # Download clients not connected to a Servarr instance
+        download_client_configs = {
+            download_client_url: {"url": download_client_url}
+            for download_client_url in self.config.get("download-clients", {}).get(
+                "urls",
+                [],
             )
+        }
+        # Reconcile with download clients defined in Servarr settings
+        for servarr in self.servarrs.values():
+            for download_client_url in servarr.download_clients.keys():
+                download_client_configs.setdefault(
+                    download_client_url,
+                    {"url": download_client_url},
+                ).setdefault("servarrs", set()).add(servarr.config["url"])
+        # Update the download clients, instantiating if newly defined
+        download_clients = {}
+        for (
+            download_client_url,
+            download_client_config,
+        ) in download_client_configs.items():
+            if download_client_url in self.download_clients:
+                # Preserve any cached state in existing download clients
+                download_clients[download_client_url] = self.download_clients[
+                    download_client_url
+                ]
+            else:
+                # Instantiate newly defined download clients
+                download_clients[
+                    download_client_url
+                ] = prunerr.downloadclient.PrunerrDownloadClient(self)
+            # Associate with Servarr instances
+            for servarr_url in download_client_config.get("servarrs", set()):
+                self.servarrs[servarr_url].download_clients[
+                    download_client_url
+                ].download_client = download_clients[download_client_url]
+            download_clients[download_client_url].update(download_client_config)
+        self.download_clients = download_clients
 
         return self.download_clients
 

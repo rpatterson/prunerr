@@ -45,19 +45,19 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
         """
         Download client configurations are aggregated from Servarr and the config file.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.config)
+        runner = prunerr.runner.PrunerrRunner(config=self.config_file)
         self.assertFalse(
             getattr(runner, "download_clients", None),
-            "Download clients aggregated before `runner.connect(...)`",
+            "Download clients aggregated before `runner.update(...)`",
         )
 
         request_mocks = self.mock_responses()
-        runner.connect()
+        runner.update()
         self.assert_request_mocks(request_mocks)
         self.assertIn(
             "download_clients",
             dir(runner),
-            "Download clients missing after `runner.connect(...)`",
+            "Download clients missing after `runner.update(...)`",
         )
         self.assertIsInstance(
             runner.download_clients,

@@ -114,7 +114,7 @@ expand-template:
 	tox -r -e "build"
 
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
-	mkdir -pv "$(dir $(@))" | tee -a "$(@)"
+	mkdir -pv "$(dir $(@))"
 	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
@@ -141,7 +141,7 @@ expand-template:
 
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
-	mkdir -pv "$(dir $(@))" | tee -a "$(@)"
+	mkdir -pv "$(dir $(@))"
 	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log

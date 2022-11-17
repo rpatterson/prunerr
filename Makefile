@@ -52,7 +52,7 @@ run: build
 	docker compose up
 .PHONY: run-debug
 ### Run a sub-command with a real configuration and post-mortem debugging
-run-debug: build
+run-debug: ./var/log/editable.log
 # Depends on the user/developer placing their real Prunerr config in:
 #     ~/.config/prunerr.yml
 	./.tox/py3/bin/python -m pdb ./.tox/py3/bin/prunerr $(PRUNERR_ARGS)

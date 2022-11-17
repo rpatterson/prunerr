@@ -30,8 +30,19 @@ services:
       # - "./s6/etc/s6-overlay/s6-rc.d/svc-transmission/finish:/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
       # Intended for use in the image
       - "./transmission/config/:/config/"
+      # The volume on which Transmission's `download-dir` is stored
+      - "${DOWNLOAD_VOLUME}:${DOWNLOAD_VOLUME}"
+    # Transmission seems to be very poorly behaved when disk space is exhausted: items
+    # become corrupted, items lose track of their data/files, etc..  Guard against that,
+    # for example if Prunerr stops running for any reason, by shutting it down before
+    # disk space is exhausted.  Abuse the `HEALTHCHECK` to exit PID 1 with 0 status code
+    # before that happens.  The `on-failure` restart policy ensures that `# dockerd`
+    # won't restart the container again.
+    restart: "on-failure"
     healthcheck:
       test: >-
+        test "$(df --output="avail" "${DOWNLOAD_VOLUME}" | tail -n +2)"
+        -gt "${CRITICAL_AVAIL}" || /sbin/shutdown &&
         curl -LI -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
         "http://localhost:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '

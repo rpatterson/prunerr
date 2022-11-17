@@ -31,7 +31,7 @@
 	  {
 	    "bytesCompleted": 2145386496,
             "length": 2147483648,
-            "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+            "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
 	  }
 	],
         "hashString": "72D08E64D0FE455A9ECE08AED0BB646D2632D339",
@@ -44,11 +44,11 @@
         "isStalled": true,
 	"labels": [],
         "leftUntilDone": 2097152,
-        "magnetLink": "magnet:?xt=urn:btih:72D08E64D0FE455A9ECE08AED0BB646D2632D339&dn=Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER&tr=https%3A%2F%2Ftracker.public.example.com%2Fa%2F72d08e64d0fe455a9ece08aed0bb646d2632d339%2Fannounce",
+        "magnetLink": "magnet:?xt=urn:btih:72D08E64D0FE455A9ECE08AED0BB646D2632D339&dn=Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv&tr=https%3A%2F%2Ftracker.public.example.com%2Fa%2F72d08e64d0fe455a9ece08aed0bb646d2632d339%2Fannounce",
         "manualAnnounceTime": -1,
         "maxConnectedPeers": 288,
         "metadataPercentComplete": 1,
-        "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+        "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
         "peer-limit": 288,
 	"peers": [],
         "peersConnected": 0,

@@ -198,10 +198,12 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Determine the correct sibling path for the Prunerr data file.
         """
-        if self.files_parent.is_file():
-            return self.files_parent.with_suffix(self.download_client.DATA_FILE_SUFFIIX)
+        stem = (
+            self.files_parent.stem if self.files_parent.is_file()
+            else self.files_parent.name
+        )
         return self.files_parent.with_name(
-            f"{self.files_parent.name}{self.download_client.DATA_FILE_SUFFIIX}"
+            f"{stem}{self.download_client.DATA_FILE_SUFFIIX}",
         )
 
     @property

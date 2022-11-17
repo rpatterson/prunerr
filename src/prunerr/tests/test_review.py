@@ -71,12 +71,8 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         public_indexer_item = private_indexer_item.with_name(
             public_indexer_before_torrent["name"],
         )
-        public_indexer_item_file = (
-            public_indexer_item.parent
-            / public_indexer_before_torrent["files"][0]["name"]
-        )
         public_indexer_item_data = public_indexer_item.with_name(
-            "{public_indexer_item}{downloadclient.DATA_FILE_SUFFIX}",
+            "{public_indexer_item.stem}{downloadclient.DATA_FILE_SUFFIX}",
         )
         self.assertTrue(
             private_indexer_item.is_dir(),
@@ -96,15 +92,11 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             "Prunerr data file exists prior to running sub-command",
         )
         self.assertTrue(
-            public_indexer_item.is_dir(),
-            "Public indexer item is not a directory while downloading",
-        )
-        self.assertTrue(
-            public_indexer_item_file.is_file(),
-            "Public indexer item file is not a file while downloading",
+            public_indexer_item.is_file(),
+            "Public indexer item is not a file while downloading",
         )
         self.assertEqual(
-            public_indexer_item_file.stat().st_nlink,
+            public_indexer_item.stat().st_nlink,
             1,
             "Public indexer item file has more than one link before importing",
         )

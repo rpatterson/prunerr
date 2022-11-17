@@ -112,6 +112,10 @@ class PrunerrDownloadClient:
                 torrent._client,  # pylint: disable=protected-access
                 torrent,
             )
+            # TODO: Reduce memory consumption, narrow the list of fields requested for
+            # all items.  Maybe also have separate sets of fields for operations done
+            # on the whole list of items (e.g. filtering to find seeding items) and
+            # operations on individual torrents (e.g. review).
             for torrent in self.client.get_torrents()
         ]
         return self.items

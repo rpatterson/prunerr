@@ -147,9 +147,9 @@ def config_cli_logging(
         "true",
         "yes",
         "on",
-    }:  # pragma: no cover
+    }:
         level = logging.DEBUG
-    else:
+    else:  # pragma: no cover
         level = logging.INFO
     logger.setLevel(level)
 

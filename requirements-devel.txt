@@ -33,11 +33,9 @@ dill==0.3.6
     # via pylint
 distlib==0.3.6
     # via virtualenv
-docutils==0.18.1
-    # via
-    #   rstcheck
-    #   rstcheck-core
-exceptiongroup==1.0.1
+docutils==0.19
+    # via rstcheck-core
+exceptiongroup==1.0.4
     # via pytest
 filelock==3.8.0
     # via virtualenv
@@ -45,7 +43,7 @@ flake8==5.0.4
     # via
     #   flake8-black
     #   python-project-structure (./pyproject.toml)
-flake8-black==0.3.3
+flake8-black==0.3.4
     # via python-project-structure (./pyproject.toml)
 identify==2.5.8
     # via pre-commit
@@ -67,13 +65,13 @@ packaging==21.3
     # via
     #   build
     #   pytest
-pathspec==0.10.1
+pathspec==0.10.2
     # via black
 pep517==0.13.0
     # via build
-pip-tools==6.9.0
+pip-tools==6.10.0
     # via python-project-structure (./pyproject.toml)
-platformdirs==2.5.3
+platformdirs==2.5.4
     # via
     #   black
     #   pylint
@@ -87,9 +85,7 @@ pycodestyle==2.9.1
     #   autopep8
     #   flake8
 pydantic==1.10.2
-    # via
-    #   rstcheck
-    #   rstcheck-core
+    # via rstcheck-core
 pyflakes==2.5.0
     # via
     #   autoflake
@@ -106,9 +102,9 @@ pyyaml==6.0
     # via pre-commit
 rich==12.6.0
     # via typer
-rstcheck==6.1.0
+rstcheck==6.1.1
     # via python-project-structure (./pyproject.toml)
-rstcheck-core==1.0.2
+rstcheck-core==1.0.3
     # via rstcheck
 shellingham==1.5.0
     # via typer
@@ -126,17 +122,15 @@ tomli==2.0.1
     #   pytest
 tomlkit==0.11.6
     # via pylint
-typer[all]==0.6.1
+typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.18.3
-    # via
-    #   rstcheck
-    #   rstcheck-core
+types-docutils==0.19.1.1
+    # via rstcheck-core
 typing-extensions==4.4.0
     # via pydantic
-virtualenv==20.16.6
+virtualenv==20.16.7
     # via pre-commit
-wheel==0.38.2
+wheel==0.38.4
     # via pip-tools
 wrapt==1.14.1
     # via astroid

@@ -31,7 +31,7 @@ build-dist: build
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: build
+format:
 	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
@@ -57,7 +57,14 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
+	test ! -x "./.tox/lint/bin/pre-commit" || (
+	    ./.tox/lint/bin/pre-commit uninstall --hook-type pre-push
+	    ./.tox/lint/bin/pre-commit uninstall
+	    ./.tox/lint/bin/pre-commit clean
+	)
 	git clean -dfx -e "var/"
+	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
+	    "./var/log/editable.log"
 
 
 ## Utility targets
@@ -68,8 +75,9 @@ expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template:
 	if [ -e "$(target)" ]
 	then
-	    echo "Template $(template) has been updated"
-	    echo "Reconcile changes and touch $(target)"
+	    echo "WARNING: Template $(template) has been updated:"
+	    echo "Reconcile changes and \`$$ touch $(target)\`:"
+	    diff -u "$(target)" "$(template)" || true
 	    false
 	fi
 	envsubst <"$(template)" >"$(target)"
@@ -81,16 +89,16 @@ expand-template:
 	tox -r -e "build"
 
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
-	mkdir -pv "$(dir $(@))"
-	tox -r --notest -v | tee "$(@)"
+	mkdir -pv "$(dir $(@))" | tee -a "$(@)"
+	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
-	./.tox/py3/bin/pip install -e "./"
+	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
-	mkdir -pv "$(dir $(@))"
-	date >> "$(@)"
+	mkdir -pv "$(dir $(@))" | tee -a "$(@)"
+	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install

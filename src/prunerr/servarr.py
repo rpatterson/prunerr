@@ -175,7 +175,8 @@ class PrunerrServarrInstance:
         self.queue = {}
         for page in self.get_api_paged_records("queue"):
             self.queue.update(
-                (record["downloadId"], record) for record in page["records"]
+                (record["downloadId"], record)
+                for record in page["records"]
                 # `Pending` records have no download client hash yet
                 if record.get("downloadId")
             )

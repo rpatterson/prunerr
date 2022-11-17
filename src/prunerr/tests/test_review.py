@@ -71,8 +71,16 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         public_indexer_item = private_indexer_item.with_name(
             public_indexer_before_torrent["name"],
         )
+        # Sometimes downloading items can be in the downloaded directory instead of the
+        # incomplete directory when moved by the user or previously downloaded but
+        # corrupt, then verified and resumed.
+        self.servarr_downloaded_dir.mkdir(parents=True, exist_ok=True)
+        public_indexer_item = public_indexer_item.rename(
+            self.servarr_downloaded_dir / public_indexer_item.name,
+        )
         public_indexer_item_data = public_indexer_item.with_name(
-            "{public_indexer_item.stem}{downloadclient.DATA_FILE_SUFFIX}",
+            f"{public_indexer_item.stem}"
+            f"{prunerr.downloadclient.PrunerrDownloadClient.DATA_FILE_SUFFIX}",
         )
         self.assertTrue(
             private_indexer_item.is_dir(),
@@ -104,9 +112,9 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             public_indexer_item_data.exists(),
             "Prunerr data file exists prior to running sub-command",
         )
-        self.assertFalse(
-            self.servarr_downloaded_dir.exists(),
-            "The downloaded items directory exists before downloading is complete",
+        self.assertTrue(
+            self.servarr_downloaded_dir.is_dir(),
+            "The downloaded items directory isn't a directory",
         )
         self.assertFalse(
             self.servarr_seeding_dir.exists(),
@@ -156,9 +164,9 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             public_indexer_item_data.exists(),
             "Prunerr data file not deleted by review",
         )
-        self.assertFalse(
-            self.servarr_downloaded_dir.exists(),
-            "The downloaded items directory exists before downloading is complete",
+        self.assertTrue(
+            self.servarr_downloaded_dir.is_dir(),
+            "The downloaded items directory isn't a directory",
         )
         self.assertFalse(
             self.servarr_seeding_dir.exists(),

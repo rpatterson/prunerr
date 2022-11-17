@@ -87,15 +87,16 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         This may be the `incomplete_dir` while the item is downloading.
         """
-        download_dir = pathlib.Path(self.download_dir)
+        files_parent = pathlib.Path(self.download_dir) / self.root_name
         if (
             self.download_client.client.session.incomplete_dir_enabled
-            and not download_dir.is_dir()
+            and not files_parent.exists()
         ):
-            download_dir = pathlib.Path(
-                self.download_client.client.session.incomplete_dir
+            files_parent = (
+                pathlib.Path(self.download_client.client.session.incomplete_dir)
+                / files_parent.name
             )
-        return (download_dir / self.root_name).resolve()
+        return files_parent.resolve()
 
     @property
     def age(self):
@@ -199,11 +200,12 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         Determine the correct sibling path for the Prunerr data file.
         """
         stem = (
-            self.files_parent.stem if self.files_parent.is_file()
+            self.files_parent.stem
+            if self.files_parent.is_file()
             else self.files_parent.name
         )
         return self.files_parent.with_name(
-            f"{stem}{self.download_client.DATA_FILE_SUFFIIX}",
+            f"{stem}{self.download_client.DATA_FILE_SUFFIX}",
         )
 
     @property

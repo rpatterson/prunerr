@@ -1,4 +1,3 @@
-# TODO: Audit after rewrite
 daemon:
   ## The number of seconds to wait between each execution of the order of operations.
   ## Default: 60
@@ -36,9 +35,6 @@ download-clients:
   ## limit when resuming downloads after previously stopping?  May be useful for QoS to
   ## optimize real download throughput.
   # resume-set-download-bandwidth-limit: false
-  ## Workaround an issue with Transmission when starting torrents with no free space.
-  ## See the Python docstring for `prunerr.Prunerr.readd_missing_data()` for details.
-  # readd-missing-data: true
 indexers:
   ## Used to match download items with no corresponding Servarr history from which
   ## the indexer for the item can be found.

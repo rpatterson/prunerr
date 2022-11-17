@@ -133,14 +133,22 @@ class PrunerrRunner:
         Run the standard series of Prunerr operations once.
         """
         results = {}
+
         # Results relies on preserving key order
         if "reviews" in self.config.get("indexers", {}):
             # Run `review` before sync in case it removes items
             results["review"] = self.review()
         # Run `sync` before `free-space` in case it makes more items delete-able
-        results["sync"] = self.sync()
-        results["free-space"] = self.free_space()
-        return results
+        sync_results = self.sync()
+        if sync_results:
+            results["sync"] = sync_results
+        free_space_results = self.free_space()
+        if free_space_results:
+            results["free-space"] = free_space_results
+
+        if results:
+            return results
+        return None
 
     def review(self):
         """

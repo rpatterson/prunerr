@@ -103,9 +103,12 @@ class PrunerrTestCase(
             )
         # Convenient access to parsed mocked API/RPC request responses
         self.servarr_download_client_responses = {}
-        self.servarr_urls = [
-            servarr_config["url"] for servarr_config in self.config["servarrs"].values()
-        ]
+        self.servarr_urls = []
+        if "servarrs" in self.config:
+            self.servarr_urls = [
+                servarr_config["url"]
+                for servarr_config in self.config["servarrs"].values()
+            ]
         for servarr_url in self.servarr_urls:
             servarr_url = urllib.parse.urlsplit(servarr_url)
             with (
@@ -161,9 +164,7 @@ class PrunerrTestCase(
             self.storage_dir / self.SERVARR_STORAGE_RELATIVE / self.SERVARR_DIR_TITLE
         )
 
-        if self.download_client_items_responses[self.download_client_urls[0]][
-            "arguments"
-        ]["torrents"]:
+        if self.download_client_urls:
             self.set_up_download_item(
                 self.download_client_items_responses[self.download_client_urls[0]][
                     "arguments"

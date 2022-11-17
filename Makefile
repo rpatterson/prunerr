@@ -119,11 +119,6 @@ expand-template:
 	fi
 	envsubst <"$(template)" >"$(target)"
 
-.PHONY: debug
-## Capture how to run Prunerr in the Python interactive debugger
-debug: $(PREFIX)/.venv/bin/prunerr
-	"$(<:%/prunerr=%/python)" -m "pdb" "$(<)" "$(PRUNERR_CMD)"
-
 
 ## Real targets
 

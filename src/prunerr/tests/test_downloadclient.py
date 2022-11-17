@@ -45,7 +45,7 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
         """
         Download client configurations are aggregated from Servarr and the config file.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.config_file)
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.assertFalse(
             getattr(runner, "download_clients", None),
             "Download clients aggregated before `runner.update(...)`",

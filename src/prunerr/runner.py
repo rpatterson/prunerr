@@ -6,7 +6,6 @@ import os
 import time
 import socket
 import functools
-import contextlib
 import pathlib
 import logging
 
@@ -35,8 +34,7 @@ class PrunerrRunner:
         """
         Capture a reference to the global Prunerr configuration file.
         """
-        with contextlib.closing(config):
-            self.config_file = pathlib.Path(config.name)
+        self.config_file = pathlib.Path(config)
         self.replay = replay
 
         # Initialize any local instance state

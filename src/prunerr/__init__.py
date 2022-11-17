@@ -5,6 +5,7 @@ Remove Servarr download client items to preserve disk space according to rules.
 
 import os
 import os.path
+import contextlib
 import argparse
 import logging
 import pathlib  # TODO: replace os.path
@@ -170,6 +171,10 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     # generally, err on the side of options and arguments being kwargs, remove the
     # exceptions.
     del cli_kwargs["command"]
+    # Use `argparse` to validate that the config file exists and can be read, then pass
+    # the path into the runner.
+    with contextlib.closing(cli_kwargs["config"]):
+        cli_kwargs["config"] = cli_kwargs["config"].name
     # Separate the arguments for the sub-command
     prunerr_dests = {
         action.dest for action in parser._actions  # pylint: disable=protected-access

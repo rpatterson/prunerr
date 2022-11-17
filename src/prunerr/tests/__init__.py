@@ -95,13 +95,12 @@ class PrunerrTestCase(
         self.seeding_dir = self.storage_dir / self.SEEDING_DIR_BASENAME
 
         # Convenient access to the parsed configuration file
-        self.config_file = self.CONFIG.open()
-        self.addCleanup(self.config_file.close)
-        self.config = yaml.safe_load(self.config_file)
-        self.config_file.seek(0)
-        self.min_free_space = prunerr.downloadclient.calc_free_space_margin(
-            self.config,
-        )
+        with self.CONFIG.open() as config_opened:
+            self.config = yaml.safe_load(config_opened)
+        if "download-clients" in self.config:
+            self.min_free_space = prunerr.downloadclient.calc_free_space_margin(
+                self.config,
+            )
         # Convenient access to parsed mocked API/RPC request responses
         self.servarr_download_client_responses = {}
         self.servarr_urls = [

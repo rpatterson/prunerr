@@ -47,7 +47,7 @@ run: build
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: build
+format:
 	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
@@ -113,11 +113,11 @@ expand-template:
 	tox -r -e "build"
 
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
-	mkdir -pv "$(dir $(@))"
-	tox -r --notest -v | tee "$(@)"
+	mkdir -pv "$(dir $(@))" | tee -a "$(@)"
+	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
-	./.tox/py3/bin/pip install -e "./"
+	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 
 # Docker targets
 ./var/log/docker-build.log: \
@@ -125,13 +125,14 @@ expand-template:
 		./Dockerfile ./docker-compose.yml ./.env
 # Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
 # dockerd`, it ends up owned by `root`.
-	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/"
+	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/" |
+	    tee -a "$(@)"
 	docker compose build --pull \
 	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
-	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"
+	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" | tee -a "$(@)"
 # Ensure that `./.tox/` is also up to date in the container
 	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
-	    --entrypoint="tox" python-project-structure -r --notest -v
+	    --entrypoint="tox" python-project-structure -r --notest -v | tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in
@@ -139,8 +140,8 @@ expand-template:
 
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
-	mkdir -pv "$(dir $(@))"
-	date >> "$(@)"
+	mkdir -pv "$(dir $(@))" | tee -a "$(@)"
+	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install

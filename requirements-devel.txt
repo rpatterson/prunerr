@@ -53,7 +53,7 @@ flake8==5.0.4
     # via
     #   flake8-black
     #   prunerr (./pyproject.toml)
-flake8-black==0.3.3
+flake8-black==0.3.4
     # via prunerr (./pyproject.toml)
 identify==2.5.8
     # via pre-commit

@@ -132,10 +132,10 @@ debug: $(PREFIX)/.venv/bin/prunerr
 
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
-	tox -r --notest -v | tee "$(@)"
+	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
-	./.tox/py3/bin/pip install -e "./"
+	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 
 # Docker targets
 ./var/log/docker-build.log: \
@@ -146,10 +146,10 @@ debug: $(PREFIX)/.venv/bin/prunerr
 	mkdir -pv "./.tox-docker/" "./src/prunerr-docker.egg-info/"
 	docker compose build --pull \
 	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
-	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" >> "$(@)"
+	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" | tee -a "$(@)"
 # Ensure that `./.tox/` is also up to date in the container
 	docker compose run --rm --workdir="/usr/local/src/prunerr/" \
-	    --entrypoint="tox" prunerr-daemon -r --notest -v
+	    --entrypoint="tox" prunerr-daemon -r --notest -v | tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in /usr/bin/apg
@@ -162,7 +162,7 @@ debug: $(PREFIX)/.venv/bin/prunerr
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
 	mkdir -pv "$(dir $(@))"
-	date >> "$(@)"
+	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install

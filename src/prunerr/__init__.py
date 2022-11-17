@@ -6,10 +6,8 @@ Remove Servarr download client items to preserve disk space according to rules.
 import os
 import os.path
 import argparse
-import subprocess
 import logging
 import pathlib  # TODO: replace os.path
-import tempfile
 import pprint
 import mimetypes
 
@@ -62,133 +60,6 @@ subparsers = parser.add_subparsers(
     required=True,
     help="sub-command",
 )
-
-
-class ServarrEventError(ValueError):
-    """
-    Download client state incorrect for Servarr event.
-    """
-
-
-class Prunerr:
-
-    SEASON_EPISODE_TEMPLATE = (
-        "S{episode[seasonNumber]:02d}E{episode[episodeNumber]:02d}"
-    )
-
-    # Prunerr constants
-    PRUNERR_FILE_SUFFIXES = {".prunerr.json", "-servarr-imported.ln"}
-
-    def __init__(self, config, servarrs, url, replay=False):
-        """
-        Do any config post-processing and set initial state.
-        """
-        self.url = url
-        self.servarrs = servarrs
-
-        # Downloader and Servarr client handling
-        self.connect()
-        session = self.client.get_session()
-
-        # Prunerr config processing
-        self.config = config
-
-        # Download client config processing
-        # Set any download client config defaults for Prunerr
-        session_download_path = pathlib.Path(session.download_dir)
-        self.config["downloaders"]["download-dir"] = pathlib.Path(
-            self.config["downloaders"].get("download-dir", session_download_path)
-        )
-        self.config["downloaders"]["imported-dir"] = pathlib.Path(
-            self.config["downloaders"].get(
-                "imported-dir",
-                session_download_path.parent / "imported",
-            )
-        )
-        self.config["downloaders"]["deleted-dir"] = pathlib.Path(
-            self.config["downloaders"].get(
-                "deleted-dir",
-                session_download_path.parent / "deleted",
-            )
-        )
-
-        # Servarr API client and download client settings
-        # Derive the destination directories for this download client for each type of
-        # Servarr instance, e.g. `tvDirectory` vs `movieDirectory`.
-        for servarr_config in self.servarrs.values():
-            servarr_config["downloadDir"] = pathlib.Path(
-                servarr_config["downloadclient"]["fieldValues"][
-                    self.SERVARR_TYPE_MAPS[servarr_config["type"]]["download_dir_field"]
-                ]
-            ).resolve()
-            if (
-                self.config["downloaders"]["download-dir"]
-                not in (servarr_config["downloadDir"] / "child").parents
-            ):
-                # TODO: Should this just be a logged error?
-                raise ValueError(
-                    f"Download client directory in Servarr settings, "
-                    f"{str(servarr_config['downloadDir'])!r}, must be a descendant of "
-                    f"the download client's default download directory, "
-                    f"{str(servarr_config['downloadDir'])!r}"
-                )
-            servarr_config["importedDir"] = (
-                self.config["downloaders"]["imported-dir"]
-                / servarr_config["downloadDir"].relative_to(
-                    self.config["downloaders"]["download-dir"],
-                )
-            ).resolve()
-            servarr_config["deletedDir"] = (
-                self.config["downloaders"]["deleted-dir"]
-                / servarr_config["downloadDir"].relative_to(
-                    self.config["downloaders"]["download-dir"],
-                )
-            ).resolve()
-
-        # Should all events be handled again, even if previously processed.
-        self.replay = replay
-
-        # Initial state
-        self.quiet = False
-    def select_imported_download_id(self, servarr_history, source_title):
-        """
-        Return the first download client item ID from imported events.
-        """
-        if source_title not in servarr_history["event_types"]["source_titles"]:
-            logger.warning(
-                "Import not found in Servarr history: %s",
-                source_title,
-            )
-            return
-        imported_events = servarr_history["event_types"]["source_titles"][source_title]
-        if "downloadFolder_imported" not in imported_events:
-            logger.warning(
-                "No Servarr import history found: %s",
-                source_title,
-            )
-            return
-        for imported_record in imported_events["downloadFolder_imported"]:
-            if "downloadId" in imported_record:
-                return imported_record["downloadId"].lower()
-        logger.warning(
-            "No Servarr grabbed history found, "
-            "could not match to download client item: %s",
-            source_title,
-        )
-
-
-Prunerr.__doc__ = __doc__
-
-
-def get_home():
-    try:
-        # Don't rely on os.environ['HOME'] such as under cron jobs
-        import pwd
-
-        return pwd.getpwuid(os.getuid()).pw_dir
-    except ImportError:
-        # Windows
-        return os.path.expanduser("~")
 
 
 def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring

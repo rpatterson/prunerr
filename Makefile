@@ -55,7 +55,7 @@ run: build
 run-debug: ./var/log/editable.log
 # Depends on the user/developer placing their real Prunerr config in:
 #     ~/.config/prunerr.yml
-	./.tox/py3/bin/python -m pdb ./.tox/py3/bin/prunerr $(PRUNERR_ARGS)
+	DEBUG=true ./.tox/py3/bin/python -m pdb ./.tox/py3/bin/prunerr $(PRUNERR_ARGS)
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers

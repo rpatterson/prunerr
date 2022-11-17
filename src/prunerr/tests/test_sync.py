@@ -4,7 +4,6 @@ Test Prunerr syncing Servarr status to download item location.
 
 import os
 import json
-import unittest
 
 from unittest import mock
 
@@ -551,17 +550,3 @@ class PrunerrSyncTests(tests.PrunerrTestCase):
             1,
             "Wrong Prunerr data Servarr DB id after import",
         )
-
-    @unittest.skip("TODO")
-    def test_sync_user_ignored(self):
-        """
-        Items not automatically imported and ignored by the user are synced correctly.
-
-        For example, if the item is of lower quality than the currently imported item
-        and the user decides to delete it from the Servarr queue instead.  That item
-        should still be moved to `seeding`.  At the moment, this also covers every
-        event type other than `downloadFolderImported` as that is the only event that
-        has it's own handler and does anything other than sync the item's location
-        per-`prunerr.servarr.PrunerrServarrInstance.EVENT_LOCATIONS`.
-        """
-        raise NotImplementedError("TODO")

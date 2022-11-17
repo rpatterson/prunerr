@@ -1,5 +1,6 @@
 daemon:
-  poll: 0
+  # Cover the `time.sleep(1)` part of the `daemon` loop.
+  poll: 1
 servarrs:
   Sonarr:
     url: "http://localhost:8989"

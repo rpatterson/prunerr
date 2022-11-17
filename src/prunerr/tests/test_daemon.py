@@ -4,6 +4,7 @@ Tests covering the Prunerr `daemon` sub-command.
 
 import os
 import pathlib
+import socket
 
 from unittest import mock
 
@@ -33,6 +34,17 @@ class PrunerrDaemonTests(tests.PrunerrTestCase):
 
     RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "daemon"
 
+    def mock_network_retry_response(
+        self,
+        request=None,
+        context=None,
+        response_mock=None,
+    ):  # pylint: disable=unused-argument
+        """
+        Raise an exception while running `exec` that `daemon` catches.
+        """
+        raise socket.error("Temporary network connection error")
+
     def mock_exit_daemon_response(
         self,
         request=None,
@@ -52,6 +64,11 @@ class PrunerrDaemonTests(tests.PrunerrTestCase):
             self.RESPONSES_DIR,
             # Insert a dynamic response mock to add recent dates
             {
+                "http://localhost:8989/api/v3/queue/1?apikey=&blacklist=true": {
+                    "DELETE": {
+                        "0-response": dict(json=self.mock_network_retry_response),
+                    },
+                },
                 "http://localhost:8989/api/v3/system/status?apikey=": {
                     "GET": {
                         "2-response": dict(json=self.mock_exit_daemon_response),

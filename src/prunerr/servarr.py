@@ -135,7 +135,7 @@ class PrunerrServarrInstance:
             raise ValueError("No Servarr configuration provided")
 
         logger.debug(
-            "Connecting to Servarr instance: %s",
+            "Connecting to %s",
             self.config["name"],
         )
         self.client = PrunerrServarrAPIClient(
@@ -147,7 +147,7 @@ class PrunerrServarrInstance:
 
         download_clients = {}
         logger.debug(
-            "Requesting Servarr download clients settings: %r",
+            "Requesting %s download clients settings",
             self.config["name"],
         )
         for download_client_config in self.client.get("downloadclient"):
@@ -176,6 +176,8 @@ class PrunerrServarrInstance:
         for page in self.get_api_paged_records("queue"):
             self.queue.update(
                 (record["downloadId"], record) for record in page["records"]
+                # `Pending` records have no download client hash yet
+                if record.get("downloadId")
             )
 
         return self.client
@@ -213,10 +215,10 @@ class PrunerrServarrInstance:
             or (page_number * 250) <= response["totalRecords"]
         ):
             logger.debug(
-                "Requesting Servarr page %s: %s/api/v3/%s",
-                page_number,
+                "Requesting %s %r page %s",
                 self.config["name"],
                 endpoint,
+                page_number,
             )
             response = self.client.get(
                 endpoint,
@@ -237,7 +239,7 @@ class PrunerrServarrInstance:
         type_map = self.TYPE_MAPS[self.config["type"]]
         params = {f"{type_map['dir_type']}id": dir_id}
         logger.debug(
-            "Requesting %r Servarr media directory history: %s",
+            "Requesting %s media directory history: %s",
             self.config["name"],
             json.dumps(params),
         )
@@ -477,16 +479,16 @@ class PrunerrServarrDownloadClient:
         for servarr_dir in self.download_item_dirs.values():
             if servarr_dir in download_item.path.parents:
                 logger.debug(
-                    "Download item %r is managed by Servarr: %s",
-                    download_item,
+                    "Download item is managed by %s: %r",
                     self.config["name"],
+                    download_item,
                 )
                 break
         else:
             logger.debug(
-                "Download item %r not managed by Servarr: %s",
-                download_item,
+                "Download item not managed by %s: %r",
                 self.config["name"],
+                download_item,
             )
             return None
         download_item.prunerr_data.setdefault("servarr", {})
@@ -546,7 +548,7 @@ class PrunerrServarrDownloadClient:
             )
             if download_record is None:
                 logger.error(
-                    "No %r Servarr history found, skipping: %r",
+                    "No %s history found, skipping: %r",
                     self.servarr.config["name"],
                     download_item,
                 )
@@ -565,9 +567,9 @@ class PrunerrServarrDownloadClient:
         if not self.get_item_servarr_dir(download_item):
             if not self.download_client.runner.quiet:
                 logger.debug(
-                    "Download item not managed by Servarr %r: %s",
+                    "Download item not managed by %s: %r",
                     self.servarr.config["name"],
-                    download_item.name,
+                    download_item,
                 )
             return None
         download_path = download_item.path
@@ -587,7 +589,7 @@ class PrunerrServarrDownloadClient:
             not in dir_history["records"]["download_ids"]
         ):
             logger.info(
-                "Waiting for %r Servarr history:  %r",
+                "Waiting for %r Servarr history: %r",
                 self.servarr.config["name"],
                 download_item,
             )
@@ -667,7 +669,7 @@ class PrunerrServarrDownloadClient:
             self.sync_item_location,
         )
         logger.debug(
-            "Handling %r Servarr %r event: %r",
+            "Handling %s %r event: %r",
             self.servarr.config["name"],
             history_record["eventType"],
             download_item,

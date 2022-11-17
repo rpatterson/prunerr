@@ -133,7 +133,6 @@ debug: $(PREFIX)/.venv/bin/prunerr
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r --notest -v | tee "$(@)"
-	./.tox/py3/bin/python -m "spacy" download "en_core_web_sm"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./"

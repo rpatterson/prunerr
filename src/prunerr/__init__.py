@@ -11,10 +11,7 @@ import logging
 import pathlib  # TODO: replace os.path
 import tempfile
 import pprint
-import json
-import re
 import mimetypes
-import string
 
 
 import prunerr.runner
@@ -505,174 +502,6 @@ class Prunerr:
                     )
                     source_path.link_to(imported_path)
 
-    def rename(self, series_id, download_path):
-        """
-        Rename download item video files based on Sonarr episode titles.
-
-        Useful to automate as much as possible the cleanup of download items whose
-        naming or numbering scheme is wildly different from what Sonarr can handle.  Run
-        this sub-command and then use Sonar's manual import UI to cleanup the rest.
-
-        Best practice is to make a hard linked copy of the download item (`$ cp -alv
-        ...`) in a temporary location on the same filesystem and run this sub-command on
-        that temporary location.  This allows one to undo or redo the operation and also
-        do further manual cleanup after the operation before importing.
-        """
-        # Normalize and map episode titles to episode data
-        servarr_type_map = self.SERVARR_TYPE_MAPS[self.servarr_config["type"]]
-        params = {f"{servarr_type_map['dir_type']}Id": series_id}
-        logger.debug(
-            "Requesting %r Sonarr series title: %s",
-            self.servarr_config["name"],
-            json.dumps(params),
-        )
-        series = self.servarr_config["client"]._raw._get(f"series/{series_id}")
-        series_title_str = normalize_str(series["title"])
-        series_title_nlp = normalize_nlp(series["title"])
-        logger.debug(
-            "Requesting %r Sonarr episode titles: %s",
-            self.servarr_config["name"],
-            json.dumps(params),
-        )
-        episodes = self.servarr_config["client"]._raw._get("episode", **params)
-        episode_titles_str = {}
-        episode_titles_nlp = {}
-        logger.info(
-            "Normalizing %r Sonarr episode titles, may take some time: %s",
-            self.servarr_config["name"],
-            json.dumps(params),
-        )
-        for episode in episodes:
-            episode["seasonEpisode"] = self.SEASON_EPISODE_TEMPLATE.format(
-                episode=episode,
-            )
-            episode["seasonTitle"] = f"{episode['seasonEpisode']} - {episode['title']}"
-
-            # Collect episode titles normalized using dumb string processing
-            title_str = normalize_str(episode["title"])
-            if title_str in series_title_str:
-                logger.warning(
-                    "String normalized episode title matches series title: %r ~ %r",
-                    episode["seasonTitle"],
-                    series["title"],
-                )
-            elif title_str in episode_titles_str:
-                logger.warning(
-                    "Duplicate string normalized episode title: %r ~ %r",
-                    episode["seasonTitle"],
-                    episode_titles_str[title_str]["seasonTitle"],
-                )
-                del episode_titles_str[title_str]
-            else:
-                episode_titles_str[title_str] = episode
-
-            # Collect episode titles normalized using NLP
-            title_nlp = normalize_nlp(episode["title"])
-            if title_nlp in series_title_nlp:
-                logger.warning(
-                    "NLP normalized episode title matches series title: %r ~ %r",
-                    episode["seasonTitle"],
-                    series["title"],
-                )
-            elif title_nlp in episode_titles_nlp:
-                logger.warning(
-                    "Duplicate NLP normalized episode title: %r ~ %r",
-                    episode["seasonTitle"],
-                    episode_titles_nlp[title_nlp]["seasonTitle"],
-                )
-                del episode_titles_nlp[title_nlp]
-            else:
-                episode_titles_nlp[title_nlp] = episode
-
-        # Walk through the video files
-        logger.debug(
-            "Walking download item video files: %s",
-            download_path,
-        )
-        for video_path in download_path.glob("**/*.*"):
-            video_type, _ = mimetypes.guess_type(video_path, strict=False)
-            if video_type is None:
-                logger.warning(
-                    "Could not identify type: %s",
-                    video_path,
-                )
-                continue
-            video_major, _ = video_type.split("/", 1)
-            if video_major.lower() != "video":
-                logger.debug(
-                    "Skipping non-video file: %s",
-                    video_path,
-                )
-                continue
-
-            # Compare normalized episode titles to the normalized file name
-            logger.debug(
-                "Comparing file name to episode titles: %s",
-                video_path,
-            )
-            episode = None
-
-            # Start with dumb normalization, just string processing
-            name_str = normalize_str(video_path.stem)
-            for title_str, episode in sorted(
-                episode_titles_str.items(),
-                # Longer matches first
-                key=lambda item: len(item[0]),
-                reverse=True,
-            ):
-                if title_str in name_str:
-                    logger.debug(
-                        "Matched string normalization for %r: %s",
-                        episode["seasonTitle"],
-                        str(video_path),
-                    )
-                    break
-
-            # Next try smarter but less precise normalization using NLP
-            else:
-                name_nlp = normalize_nlp(video_path.stem)
-                for title_nlp, episode in sorted(
-                    episode_titles_nlp.items(),
-                    # Longer matches first
-                    key=lambda item: len(item[0]),
-                    reverse=True,
-                ):
-                    if title_nlp in name_nlp:
-                        logger.debug(
-                            "Matched NLP normalization for %r: %s",
-                            episode["seasonTitle"],
-                            str(video_path),
-                        )
-                        break
-                else:
-                    logger.warning(
-                        "No episode title match: %s",
-                        str(video_path),
-                    )
-                    continue
-
-            renamed_path = video_path.with_stem(
-                servarr_type_map["rename_template"].format(
-                    series=series,
-                    episode=episode,
-                ),
-            )
-            if renamed_path == video_path:
-                logger.debug(
-                    "Video file for %s already named correctly: %s",
-                    episode["seasonEpisode"],
-                    str(video_path),
-                )
-                continue
-            else:
-                logger.info(
-                    "Renaming for %s: %r -> %r",
-                    episode["seasonEpisode"],
-                    str(video_path),
-                    str(renamed_path),
-                )
-                video_path.rename(renamed_path)
-
 
 Prunerr.__doc__ = __doc__
 
@@ -686,69 +515,6 @@ def get_home():
     except ImportError:
         # Windows
         return os.path.expanduser("~")
-
-
-PUNCT_RE = re.compile("[\\{}]".format("\\".join(punct for punct in string.punctuation)))
-
-
-def normalize_str(text):
-    """
-    Normalize text, such as media titles, into a minimal string for comparison.
-
-    Uses dumb/naive normalization, mostly just stripping punctuation and redundant
-    spaces.
-    """
-    # Normalize case
-    text = text.lower()
-    # Strip leading/trailing whitespace
-    text = text.strip()
-    # Strip out punctuation
-    text = PUNCT_RE.sub("", text)
-    # Cleanup redundant spaces
-    while "  " in text:
-        text = text.replace("  ", " ")
-    # Strip out punctuation
-    return text
-
-
-NLP = None
-STOP_WORDS = {"a", "an", "the", "and", "or", "of", "on", "to"}
-
-
-def normalize_nlp(text):
-    """
-    Normalize text, such as media titles, into a minimal string for comparison.
-
-    Uses natural language processing to remove stop words, normalize
-    inflected/conjugated word forms, etc..
-    """
-    global NLP
-    if NLP is None:
-        import spacy
-
-        NLP = spacy.load("en_core_web_sm")
-        # Spacy's  default stop words are a bit too aggressive for this purpose
-        NLP.Defaults.stop_words = {
-            stop_word
-            for stop_word in NLP.Defaults.stop_words
-            # Do normalize apostrophe versions
-            if "'" in stop_word or "‘" in stop_word or "’" in stop_word
-            # Otherwise only strip out a small subset of stop workds
-            or stop_word in STOP_WORDS
-        }
-    # Handling of possessive punctuation can result in confusion around plural forms
-    doc = NLP(text.replace("'", ""))
-    return " ".join(
-        # Normalize case
-        token.lemma_.lower()
-        for token in doc
-        # Strip out stop words, e.g.: the, a, etc.
-        # Spacy considers numbers to be stop words, but numbers may be meaningful for
-        # matching titles, e.g.: Foo Episode Part 1, Foo Episode Part 2, ...
-        if (token.like_num or not token.is_stop)
-        # Strip out punctuation and redundant spaces
-        and not (token.is_punct or token.is_space)
-    )
 
 
 def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
@@ -848,30 +614,6 @@ parser_relink = subparsers.add_parser(
     description=relink.__doc__.strip(),
 )
 parser_relink.set_defaults(command=relink)
-
-
-def rename(prunerr, *args, **kwargs):
-    prunerr.update()
-    return prunerr.rename(*args, **kwargs)
-
-
-rename.__doc__ = Prunerr.rename.__doc__
-parser_rename = subparsers.add_parser(
-    "rename",
-    help=rename.__doc__.strip(),
-    description=rename.__doc__.strip(),
-)
-parser_rename.add_argument(
-    "series_id",
-    type=int,
-    help="""The DB ID of the Sonarr series whose episode titles to match.""",
-)
-parser_rename.add_argument(
-    "download_path",
-    type=pathlib.Path,
-    help="""The path to the download item whose video files should be renamed.""",
-)
-parser_rename.set_defaults(command=rename)
 
 
 def config_cli_logging(

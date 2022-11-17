@@ -212,6 +212,9 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   The current tests are probably most accurately described as integration tests.  Any
   tests that cover discreet units are welcome.
 
+- Resurrect the ``rename`` command.  See the ``feat(rename): Remove series title rename
+  support`` commit that removed it.
+
 - Support other download client software, not just `Transmission`_:
 
   This would almost certainly require discussion before implementing, because how this

@@ -11,7 +11,6 @@ WORKDIR /usr/local/src/prunerr/
 COPY [ "./", "./" ]
 RUN pip install --no-cache-dir -r "${REQUIREMENTS}"
 RUN pip install --no-cache-dir -e "./"
-RUN python -m spacy download en_core_web_sm
 
 # Add a user whose home directory will contain the configuration file
 RUN adduser --uid "${PUID}" --gid "${PGID}" --disabled-password \

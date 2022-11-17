@@ -191,9 +191,6 @@ class PrunerrRunner:
         # as deleting download items.  As such we can't delegate the whole process to
         # the download clients, only some parts of it.
 
-        # TODO: Aggregate download clients by `file_path.stat().st_dev` to avoid
-        # unnecessary download client session RPC requests?  Premature optimization?
-
         # TODO: Keep track of the required free space to decide when to stop deleting to
         # reduce the number and time cost of download client session RPC requests?
         # Premature optimization?
@@ -223,15 +220,12 @@ class PrunerrRunner:
             "Deleting orphaned files not belonging to any download item to free space",
         )
         for orphan_download_clients, file_path, file_stat in self.find_orphans():
-            first_download_client = next(orphan_download_clients.values())
+            first_download_client = next(iter(orphan_download_clients.values()))
             first_download_client.delete_files((file_path, file_stat))
             results.setdefault(
                 first_download_client.config["url"],
                 [],
             ).append(str(file_path))
-            # Refresh the sessions data including free space
-            for download_client in orphan_download_clients.values():
-                download_client.get_session()
             # Do any download clients still need to free space?
             download_clients = self.free_space_download_clients()
             if not download_clients:

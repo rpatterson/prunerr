@@ -255,8 +255,13 @@ class PrunerrDownloadClient:
         for suffix in self.FILE_SUFFIXES:
             path.with_name(f"{path.name}{suffix}").unlink(missing_ok=True)
 
-        # Refresh the sessions data including free space
-        self.client.get_session()
+        # Refresh the sessions data including free space.
+        # TODO: Until we aggregate download client directories by `*.stat().st_dev`, we
+        # can't know which of their sessions to update when we delete a path.  Maybe
+        # implement?  Premature optimization?
+        for download_client in self.runner.download_clients.values():
+            download_client.client.get_session()
+
         return size
 
     def free_space_maybe_resume(self):

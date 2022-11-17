@@ -3,6 +3,7 @@ Prunerr removes imported items to free space according to configured rules.
 """
 
 import os
+import shutil
 
 from unittest import mock
 
@@ -25,6 +26,10 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         """
         Prunerr removes imported items to free space according to configured rules.
         """
+        shutil.copy2(
+            self.EXAMPLE_VIDEO,
+            self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name,
+        )
         # 0. Verify initial assumptions and conditions
         self.mock_servarr_import_item(self.seeding_item)
         self.assertFalse(

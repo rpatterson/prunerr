@@ -176,32 +176,6 @@ class Prunerr:
             source_title,
         )
 
-    def reimport_seeding(self):
-        """
-        Re-import all seeding torrents managed by the `daemon` command.
-
-        Move all imported torrents back to the downloads directory so they can be
-        re-importied (or re-copied).  Useful to recover from any remote data loss as
-        much as is still possible with what torrents are still local.
-        """
-        self.update()
-        session = self.client.get_session()
-
-        for torrent in self.torrents:
-            if torrent.status != "seeding" or torrent.downloadDir.startswith(
-                session.download_dir
-            ):
-                continue
-
-            self.move_torrent(
-                torrent,
-                old_path=self.config["downloaders"].get(
-                    "imported-dir",
-                    os.path.join(os.path.dirname(session.download_dir), "imported"),
-                ),
-                new_path=session.download_dir,
-            )
-
 
 Prunerr.__doc__ = __doc__
 

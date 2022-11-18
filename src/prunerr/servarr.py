@@ -481,14 +481,14 @@ class PrunerrServarrDownloadClient:
             if servarr_dir in download_item.path.parents:
                 logger.debug(
                     "Download item is managed by %s: %r",
-                    self.config["name"],
+                    self.servarr.config["name"],
                     download_item,
                 )
                 break
         else:
             logger.debug(
                 "Download item not managed by %s: %r",
-                self.config["name"],
+                self.servarr.config["name"],
                 download_item,
             )
             return None

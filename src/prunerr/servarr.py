@@ -84,7 +84,17 @@ class PrunerrServarrInstance:
         downloadIgnored=dict(src="downloadDir", dst="seedingDir"),
         downloadFailed=dict(src="downloadDir", dst="seedingDir"),
         fileDeleted=dict(src="seedingDir", dst="seedingDir"),
+        fileRenamed=dict(src="seedingDir", dst="seedingDir"),
     )
+    EVENT_TYPES = {
+        "grabbed": 1,
+        "downloadFolderImported": 3,
+        "downloadIgnored": 7,
+        "downloadFailed": 4,
+        "fileDeleted": 5,
+        "fileRenamed": 6,
+
+    }
     MAX_PAGE_SIZE = 250
     # Number of seconds to wait for new file import history records to appear in Servarr
     # history.  This should be the maximum amount of time it might take to import a
@@ -201,7 +211,7 @@ class PrunerrServarrInstance:
 
         return prefixed
 
-    def get_api_paged_records(self, endpoint, page_number=1):
+    def get_api_paged_records(self, endpoint, page_number=1, **params):
         """
         Yield each page of the given paged endpoint until exhausted.
 
@@ -216,16 +226,18 @@ class PrunerrServarrInstance:
             or (page_number * response["pageSize"]) <= response["totalRecords"]
         ):
             logger.debug(
-                "Requesting %s %r page %s",
+                "Requesting %s %r page %s with params: %r",
                 self.config["name"],
                 endpoint,
                 page_number,
+                params,
             )
             response = self.client.get(
                 endpoint,
                 # Maximum Servarr page size
                 pageSize=self.MAX_PAGE_SIZE,
                 page=page_number,
+                **params,
             )
             page_number = response["page"] + 1
             yield response
@@ -266,17 +278,21 @@ class PrunerrServarrInstance:
         # TODO: Check for new history since last call
         download_record, indexer_record = self.get_item_history_records(download_item)
         history_page = None
-        for history_page in self.get_api_paged_records(
-                "history",
-                page_number=self.history["page"] + 1,
-        ):
-            self.collate_history_records(
-                history_records=history_page["records"],
-            )
-            self.history["page"] = history_page["page"]
-            download_record, indexer_record = self.get_item_history_records(
-                download_item,
-            )
+        for event_type in ("grabbed", "downloadFolderImported"):
+            for history_page in self.get_api_paged_records(
+                    "history",
+                    page_number=self.history["page"] + 1,
+                    eventType=self.EVENT_TYPES[event_type],
+            ):
+                self.collate_history_records(
+                    history_records=history_page["records"],
+                )
+                self.history["page"] = history_page["page"]
+                download_record, indexer_record = self.get_item_history_records(
+                    download_item,
+                )
+                if indexer_record is not None:
+                    break
             if indexer_record is not None:
                 break
 

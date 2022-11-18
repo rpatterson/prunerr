@@ -555,6 +555,11 @@ class PrunerrServarrDownloadClient:
                 )
                 return download_item.serialize_download_data()
             dir_id = download_record[dir_id_key]
+            if download_record["data"].get("indexer"):
+                download_item.prunerr_data.setdefault(
+                    "indexer",
+                    download_record["data"]["indexer"],
+                )
 
         if dir_id:
             download_item.prunerr_data["dirId"] = dir_id

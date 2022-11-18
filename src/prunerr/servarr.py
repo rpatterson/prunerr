@@ -111,6 +111,7 @@ class PrunerrServarrInstance:
 
         # Initialize any data cached in instance state across updates
         self.history = dict(
+            page=0,
             records=dict(download_ids={}, source_titles={}),
             event_types=dict(download_ids={}, source_titles={}),
             dirs={},
@@ -200,7 +201,7 @@ class PrunerrServarrInstance:
 
         return prefixed
 
-    def get_api_paged_records(self, endpoint):
+    def get_api_paged_records(self, endpoint, page_number=1):
         """
         Yield each page of the given paged endpoint until exhausted.
 
@@ -208,7 +209,6 @@ class PrunerrServarrInstance:
         history, but also useful to conveniently get all pages of a smaller data set.
         """
         response = {}
-        page_number = 1
         while (
             # First page, no response yet
             not response
@@ -266,10 +266,14 @@ class PrunerrServarrInstance:
         # TODO: Check for new history since last call
         download_record, indexer_record = self.get_item_history_records(download_item)
         history_page = None
-        for history_page in self.get_api_paged_records("history"):
+        for history_page in self.get_api_paged_records(
+                "history",
+                page_number=self.history["page"] + 1,
+        ):
             self.collate_history_records(
                 history_records=history_page["records"],
             )
+            self.history["page"] = history_page["page"]
             download_record, indexer_record = self.get_item_history_records(
                 download_item,
             )

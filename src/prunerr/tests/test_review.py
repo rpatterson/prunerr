@@ -44,6 +44,12 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                                             - datetime.timedelta(days=1)
                                         ).timestamp()
                                     },
+                                    {
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                            - datetime.timedelta(days=1)
+                                        ).timestamp()
+                                    },
                                 ],
                             ),
                         ),
@@ -56,15 +62,15 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         ]["POST"][1]["01-torrent-get"]["from_mock_dir"]["json"]["arguments"]["torrents"]
         self.assertEqual(
             [torrent["isPrivate"] for torrent in downloading_before_torrents],
-            [False, True],
+            [False, True, True],
             "Wrong number of download torrents or wrong private vs public indexers",
         )
         self.assertEqual(
             [torrent["bandwidthPriority"] for torrent in downloading_before_torrents],
-            [0, 0],
+            [0, 0, 0],
             "Wrong number of torrents or wrong priorities",
         )
-        public_indexer_before_torrent, _ = downloading_before_torrents
+        public_indexer_before_torrent, _, _ = downloading_before_torrents
         private_indexer_item = self.incomplete_item
         private_indexer_item_file = self.incomplete_item_file
         private_indexer_item_data = self.incomplete_item_data

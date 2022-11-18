@@ -72,8 +72,8 @@
       "labels",
       "editDate"
     ],
-    "ids": [2]
+    "ids": [1]
   },
   "method": "torrent-get",
-  "tag": 5
+  "tag": 7
 }

@@ -227,7 +227,7 @@ class PrunerrServarrInstance:
                 pageSize=self.MAX_PAGE_SIZE,
                 page=page_number,
             )
-            page_number = response["page"]
+            page_number = response["page"] + 1
             yield response
 
     def get_dir_history(self, dir_id):

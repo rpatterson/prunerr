@@ -65,10 +65,25 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         item has multiple files, assumes that all files are under the same top-level
         directory.
         """
-        item_files = self.files()
-        if item_files:
-            return pathlib.Path(item_files[0].name).parts[0]
+        file_roots = [
+            pathlib.Path(item_file.name).parts[0] for item_file in self.files()
+        ]
+        if file_roots:
+            if len(set(file_roots)) > 1:
+                logger.error(
+                    "Files in %r have multiple roots, using: %s",
+                    self,
+                    file_roots[0],
+                )
+            return file_roots[0]
         return self.name
+
+    def is_file(self):
+        """
+        Return `True` if the item had one file at it's root, no directories.
+        """
+        files = self.files()
+        return len(files) == 1 and len(pathlib.Path(files[0].name).parts) == 1
 
     @property
     def path(self):
@@ -199,11 +214,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Determine the correct sibling path for the Prunerr data file.
         """
-        stem = (
-            self.files_parent.stem
-            if self.files_parent.is_file()
-            else self.files_parent.name
-        )
+        stem = self.files_parent.stem if self.is_file() else self.files_parent.name
         return self.files_parent.with_name(
             f"{stem}{self.download_client.DATA_FILE_SUFFIX}",
         )

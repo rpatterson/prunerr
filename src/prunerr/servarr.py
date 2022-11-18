@@ -212,8 +212,8 @@ class PrunerrServarrInstance:
         while (
             # First page, no response yet
             not response
-            # Is history for this Servarr instance exhausted?
-            or (page_number * 250) <= response["totalRecords"]
+            # Are the pages for this endpoint on this Servarr instance exhausted?
+            or (page_number * response["pageSize"]) <= response["totalRecords"]
         ):
             logger.debug(
                 "Requesting %s %r page %s",

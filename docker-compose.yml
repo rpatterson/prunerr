@@ -99,4 +99,6 @@ services:
     volumes:
       # Use the Prunerr config from the Prunerr checkout
       - "./home/.config/:/home/prunerr/.config/"
+      # The volume on which Transmission's `download-dir` is stored
+      - "${DOWNLOAD_VOLUME}:${DOWNLOAD_VOLUME}"
     restart: "unless-stopped"

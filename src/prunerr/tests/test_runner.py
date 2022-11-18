@@ -16,7 +16,7 @@ ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
 
 
 @mock.patch.dict(os.environ, ENV)
-class PrunerrDaemonTests(tests.PrunerrTestCase):
+class PrunerrRunnerTests(tests.PrunerrTestCase):
     """
     Tests covering the `prunerr.runner` module.
     """

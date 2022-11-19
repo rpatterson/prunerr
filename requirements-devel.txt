@@ -55,7 +55,7 @@ flake8==5.0.4
     #   prunerr (./pyproject.toml)
 flake8-black==0.3.4
     # via prunerr (./pyproject.toml)
-identify==2.5.8
+identify==2.5.9
     # via pre-commit
 idna==3.4
     # via requests

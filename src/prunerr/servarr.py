@@ -162,7 +162,10 @@ class PrunerrServarrInstance:
             self.config["name"],
         )
         for download_client_config in self.client.get("downloadclient"):
-            if not download_client_config["enable"]:
+            if (
+                not download_client_config["enable"]
+                or download_client_config["implementation"] != "Transmission"
+            ):
                 continue
             download_client_config = deserialize_servarr_download_client(
                 download_client_config,

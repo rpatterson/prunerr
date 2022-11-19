@@ -27,19 +27,20 @@ Summary
 *******
 
 The ``$ prunerr`` command is intended to serve as a companion to the `Servarr`_ suite of
-applications and services.  It periodically polls the `download clients`_ of `Sonarr`_,
-`Radarr`_, etc..  For each client it "prunes" download items by checking disk space
-compared to download rate and selectively removing items and deleting item data to
-maintain a healthy margin of disk space.  Download items are deleted in an order
-determined by a set of rules and criteria that can be defined on a per-indexer basis.
-This is mostly useful for `BitTorrent`_ download clients in order to maximize ratio on a
-per-indexer/per-tracker basis.
+applications and services and the `Transmission BitTorrent client`_.  It periodically
+polls the `download clients`_ of `Sonarr`_, `Radarr`_, etc..  For each client it
+"prunes" download items by checking disk space compared to download rate and selectively
+removing items and deleting item data to maintain a healthy margin of disk space.
+Download items are deleted in an order determined by a set of rules and criteria that
+can be defined on a per-indexer basis.  This is mostly useful to maximize ratio on a
+per-indexer/per-tracker basis.  IOW, Prunerr "perma-seeds" your Servarr library.
 
-The Servarr state of download items (grabbed, downloading, imported, and/or deleted)
-must be reflected in the download client in order to do the above.  The ``$
-./bin/prunerr sync ...`` sub-command (also run as a part of the ``exec``/``daemon``
-sub-commands) uses the Servarr API to accomplish this.  See the `Sync`_ section below
-for more details
+As Servarr acts on completed download items, be that importing files from them, ignoring
+them, deleting them from the queue, etc., Prunerr moves those items from the Servarr
+download client's ``Directory`` to a parallel ``*/seeding/*`` directory.  Then when
+deleting download items to free space, Prunerr only considers items under that
+directory.  This has the added benefit of reflecting which items have been acted on by
+Servarr in the download client.
 
 Prunerr uses and requires a configuration file which defaults to
 ``~/.config/prunerr.yml``.  See the well-commented sample configuration:
@@ -59,6 +60,8 @@ Order of Operations
 
 Note that polling is required because there is no event we can subscribe to that
 reliably determines disk space margin *as* the download clients are downloading.
+
+#. Move Servarr download item that have been acted on to the ``*/seeding/*`` directory.
 
 #. Review download items:
 
@@ -108,67 +111,6 @@ TODO: Review and update below
    downloading any further data.  This is useful to avoid a number of issues that can
    happen if disk space is fully exhausted, including corrupted download client state
    and/or data.
-
-
-****
-Sync
-****
-
-Prunerr reflects the Servarr state of download items in the state of items in the
-download client.  This is in keeping with the design principles of Servarr applications
-which interpret the external state of download items, media files, etc. rather than rely
-on a representation in a DB or some other external persistent storage.  This allows the
-user to inspect Prunerr/Servarr state in the native UI for the download client, supports
-manual user intervention, and avoids an additional dependency.
-
-Specifically, Prunerr moves the location of download client items as items proceed
-through the Servarr workflow: ``./downloads/**`` -> ``./imported/**`` ->
-``./deleted/**``.  In order to reflect which individual files have been imported and
-where, Prunerr also creates ``./*-ServarrName-import.ln`` symbolic links next to the
-download client item as individual files are imported by Servarr instances.  This way,
-broken symlinks are an indicator of upgraded files.
-
-Prunerr also provides a ``$ ./bin/prunerr sync`` sub-command to introspect the item
-history from Servarr instances and apply any appropriate state that can be determined
-from the Servarr history to the download client items.  This sub-command can be used to
-get any existing download client items in sync as if they had been processed by the ``$
-prunerr daemon ...`` or ``$ prunerr exec`` sub-commands.  The ``sync`` sub-command also
-accepts a ``--replay`` option to ignore state already reflected in the download client
-and re-apply the changes that would have been applied from the beginning of the download
-item's Servarr history if any.  This option is useful to re-synchronize download client
-state with Servarr state when the way Prunerr handles Servarr events changes.
-
-Manual Item Locations
-=====================
-
-In some cases, it can be useful to exempt items from the Prunerr state synchronization
-logic and/or to include items not managed by Servarr into portions of the Prunerr state
-synchronization logic.  You can accomplish some of this using the corresponding
-``./downloads/manual/**``, ``./imported/manual/**``, ``./deleted/manual/**`` paths.
-
-For example, Servarr doesn't support multiple editions of the same movie or episode and
-as such downloading and importing such files must be done manually.  Suppose you've
-previously downloaded an ``SD`` resolution of the director's cut of a movie manually.
-You'd also like to keep the theatrical release which will be managed by Sonarr, so
-you've manually imported the ``SD`` director's cut along side the theatrical release.
-Just a day or 2 later you find a ``HD`` version of the director's cut, manually download
-it and replace the ``SD`` import with this new ``HD`` import.  The ``SD`` download item
-could now be deleted but hasn't met it's private tracker seeding requirements and
-there's no need to delete it before it has to be for disk space.  Move the ``SD``
-download item to the corresponding ``./deleted/manual/**`` location and Prunerr will
-include it in the download item deletion logic even though it's not managed by Servarr.
-
-In an other example, you've found a mislabeled download item that Servarr couldn't
-correctly identify.  You've manually downloaded the item and then had Servarr import it
-via ``Manual Import``.  You can then mode the download item to the corresponding
-``./imported/manual/**`` directory.  Prunerr won't do anything further with this item in
-this location but it can be helpful to keep track of what's been done manually.
-
-Note that the ``.../manual/...`` part of these paths is arbitrary and you may use
-whatever you like.  The important part is that manually managed directories be
-descendants of the corresponding ``download-dir``, ``imported-dir``, or ``deleted-dir``
-ancestor but *not* be descendants of the corresponding download client directory in the
-Servarr settings.
 
 
 ****************
@@ -236,20 +178,15 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
   The above are the most important improvements that Prunerr definitely needs.  See ``#
   TODO: ...`` comments throughout the source for other smaller, potential improvements.
 
-- Fix ``sync`` loop for download items with same name.
-
 - Fix items with character mapping (Samba) treated as orphans.
-
-- Download items removed in Servarr queue but not from download client not getting
-  synced as deleted.
 
 - Document that we prioritize first for free storage space then for seeding.
 
 - Items deleted from download client outside of Prunerr being re-added.
 
 
-.. _`BitTorrent`: https://en.wikipedia.org/wiki/BitTorrent
 .. _`Transmission`: https://transmissionbt.com/
+.. _`Transmission BitTorrent client`: `Transmission`_
 .. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/
 .. _`it seems to be the best`: https://www.reddit.com/r/DataHoarder/comments/3ve1oz/torrent_client_that_can_handle_lots_of_torrents/
 .. _`managing large numbers of torrents efficiently`: https://www.reddit.com/r/trackers/comments/3hiey5/does_anyone_here_seed_large_amounts_10000_of/

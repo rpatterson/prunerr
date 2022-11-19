@@ -30,12 +30,11 @@ class PrunerrRunner:
     config = None
     quiet = False
 
-    def __init__(self, config, replay=None):
+    def __init__(self, config):
         """
         Capture a reference to the global Prunerr configuration file.
         """
         self.config_file = pathlib.Path(config)
-        self.replay = replay
 
         # Initialize any local instance state
         self.download_clients = {}
@@ -132,16 +131,17 @@ class PrunerrRunner:
         """
         Run the standard series of Prunerr operations once.
         """
+        # Results relies on preserving key order
         results = {}
 
-        # Results relies on preserving key order
+        # Run `move` before `review` so review doesn't operate on items that have
+        # already been acted on by Servarr
+        move_results = self.move()
+        if move_results:
+            results["move"] = move_results
         if "reviews" in self.config.get("indexers", {}):
-            # Run `review` before sync in case it removes items
+            # Run `review` before `free-space` in case it removes items
             results["review"] = self.review()
-        # Run `sync` before `free-space` in case it makes more items delete-able
-        sync_results = self.sync()
-        if sync_results:
-            results["sync"] = sync_results
         free_space_results = self.free_space()
         if free_space_results:
             results["free-space"] = free_space_results
@@ -149,6 +149,21 @@ class PrunerrRunner:
         if results:
             return results
         return None
+
+    def move(self):
+        """
+        Move download items that have been acted on by Servarr into the seeding dir.
+        """
+        return {
+            servarr_url: {
+                download_client_url: servarr_download_client.move()
+                for (
+                    download_client_url,
+                    servarr_download_client,
+                ) in servarr.download_clients.items()
+            }
+            for servarr_url, servarr in self.servarrs.items()
+        }
 
     def review(self):
         """
@@ -164,15 +179,6 @@ class PrunerrRunner:
         # Delegate the rest to the download client
         return {
             download_client_url: download_client.review(servarr_queue)
-            for download_client_url, download_client in self.download_clients.items()
-        }
-
-    def sync(self):
-        """
-        Synchronize the state of download client items with Servarr event history.
-        """
-        return {
-            download_client_url: download_client.sync()
             for download_client_url, download_client in self.download_clients.items()
         }
 
@@ -366,9 +372,10 @@ class PrunerrRunner:
         download_item_dirs = {}
         for download_client_url, download_client in self.download_clients.items():
             for servarr_download_client in download_client.servarrs.values():
-                for (
-                    download_item_dir
-                ) in servarr_download_client.download_item_dirs.values():
+                for download_item_dir in (
+                    servarr_download_client.download_dir,
+                    servarr_download_client.seeding_dir,
+                ):
                     download_item_dirs.setdefault(download_item_dir, {})[
                         download_client_url
                     ] = download_client

@@ -47,20 +47,26 @@ The path to the Prunerr configuration file. Example:
 https://gitlab.com/rpatterson/prunerr/-/blob/master/src/prunerr/home/.config/prunerr.yml\
 """,
 )
-parser.add_argument(
-    "--replay",
-    "-r",
-    action="store_true",
-    help="""\
-Also run operations for Servarr events/history that have previously been run.
-""",
-)
 # Define CLI sub-commands
 subparsers = parser.add_subparsers(
     dest="command",
     required=True,
     help="sub-command",
 )
+
+
+def move(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    runner.update()
+    return runner.move(*args, **kwargs)
+
+
+move.__doc__ = prunerr.runner.PrunerrRunner.move.__doc__
+parser_move = subparsers.add_parser(
+    "move",
+    help=move.__doc__.strip(),
+    description=move.__doc__.strip(),
+)
+parser_move.set_defaults(command=move)
 
 
 def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
@@ -77,20 +83,6 @@ parser_review = subparsers.add_parser(
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
 parser_review.set_defaults(command=review)
-
-
-def sync_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    runner.update()
-    return runner.sync(*args, **kwargs)
-
-
-sync_.__doc__ = prunerr.runner.PrunerrRunner.sync.__doc__
-parser_sync = subparsers.add_parser(
-    "sync",
-    help=sync_.__doc__.strip(),
-    description=sync_.__doc__.strip(),
-)
-parser_sync.set_defaults(command=sync_)
 
 
 def free_space(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring

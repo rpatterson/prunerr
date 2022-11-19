@@ -227,8 +227,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         if "prunerr_data" in vars(self):
             return vars(self)["prunerr_data"]
 
-        # Move the data file if the download item files have been moved since the last
-        # `sync`.
+        # Move the data file if the download item files have been moved
         if not self.prunerr_data_path.exists():
             download_dir = pathlib.Path(self.download_dir)
             data_paths = (
@@ -260,11 +259,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         # Load the Prunerr data file
         download_data = dict(path=self.prunerr_data_path, history={})
-        if (
-            not self.download_client.runner.replay
-            and self.prunerr_data_path.exists()
-            and self.prunerr_data_path.stat().st_size
-        ):
+        if self.prunerr_data_path.exists() and self.prunerr_data_path.stat().st_size:
             with self.prunerr_data_path.open() as data_opened:
                 try:
                     download_data = json.load(data_opened)
@@ -337,71 +332,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 data_opened.seek(0)
                 data_opened.write(existing_deserialized)
 
-    def move(self, location):
-        """
-        Move the given download item relative to its old path.
-        """
-        src_path = pathlib.Path(self.download_dir)
-        data_path = self.prunerr_data_path
-        logger.info("Moving %r: %r -> %r", self, self.download_dir, location)
-        self.move_data(location)
-        try:
-            self.move_timeout()
-        except DownloadClientTimeout as exc:
-            logger.error("Moving download item timed out, pausing: %s", exc)
-            self.stop()
-        finally:
-            self.update()
-
-        # Move any files managed by Prunerr that belong to this download item.
-        # Explicit is better than implicit, specific e.g.: if a user has manually
-        # extracted an archive in the old import location we want the orphan logic to
-        # find it after Servarr has upgraded it
-        prunerr_files = set()
-        if self.path.is_file():
-            prunerr_files.update(
-                src_path.parent.glob(
-                    src_path.with_name(
-                        f"{src_path.name}"
-                        f"{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
-                    ),
-                )
-            )
-        else:
-            prunerr_files.update(
-                src_path.glob(
-                    f"*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
-                )
-            )
-            prunerr_files.update(
-                src_path.glob(
-                    f"**/*{self.download_client.SERVARR_IMPORTED_LINK_SUFFIX}",
-                )
-            )
-        if data_path.exists():
-            prunerr_files.add(data_path)
-        for prunerr_file in prunerr_files:
-            prunerr_file.rename(location / prunerr_file.relative_to(src_path))
-            if prunerr_file.parent != pathlib.Path(src_path) and not list(
-                prunerr_file.parent.iterdir()
-            ):
-                prunerr_file.parent.rmdir()  # empty dir
-
-        return location
-
-    def move_timeout(self, move_timeout=5 * 60):
-        """
-        Block until an item's files are no longer in the old location.
-
-        Useful for both moving and deleting.
-        """
-        # Wait until the files are finished moving
-        start = time.time()
-        while list(self.list_files()):
-            if time.time() - start > move_timeout:
-                raise DownloadClientTimeout(f"Timed out waiting for {self} to move")
-            time.sleep(1)
-
     def list_files(self, selected=True):
         """
         Iterate over all download item file paths that exist.
@@ -467,8 +397,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             )
         # The indexer has been added to the Prunerr data, persist it to the Prunerr data
         # file.
-        # TODO: This is redundant for any sub-command that runs `sync` which will write
-        # the Prunerr data file at the end.
         self.serialize_download_data(self.prunerr_data["history"])
 
         # Match by indexer URLs when no indexer name is available
@@ -541,10 +469,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 self.update()
 
         return results
-
-
-class DownloadClientTimeout(Exception):
-    """A download client operation took too long."""
 
 
 class DownloadItemTODOException(Exception):

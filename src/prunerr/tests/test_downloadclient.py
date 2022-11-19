@@ -158,12 +158,12 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
                     "Servarr instance empty config type",
                 )
                 self.assertIn(
-                    "download_item_dirs",
+                    "download_dir",
                     dir(servarr),
                     "Servarr instance missing download dir",
                 )
                 self.assertEqual(
-                    servarr.download_item_dirs["downloadDir"],
+                    servarr.download_dir,
                     self.tmp_path
                     / self.servarr_download_client_responses[servarr_config["url"]][0][
                         "fields"

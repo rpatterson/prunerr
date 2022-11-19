@@ -92,11 +92,9 @@ class PrunerrDownloadClient:
             self.servarrs[servarr_url] = self.runner.servarrs[
                 servarr_url
             ].download_clients[self.config["url"]]
-            self.servarrs[servarr_url].download_item_dirs[
-                "seedingDir"
-            ] = prunerr.downloaditem.parallel_to(
+            self.servarrs[servarr_url].seeding_dir = prunerr.downloaditem.parallel_to(
                 self.client.session.download_dir,
-                self.servarrs[servarr_url].download_item_dirs["downloadDir"],
+                self.servarrs[servarr_url].download_dir,
                 self.SEEDING_DIR_BASENAME,
             )
 
@@ -152,17 +150,6 @@ class PrunerrDownloadClient:
                     raise
                 continue
         return results
-
-    def sync(self):
-        """
-        Synchronize the state of download client items with Servarr event history.
-        """
-        # TODO: Stop after first Servarr that matches?  Try data file and Servarr queue
-        # match for each Servarr first.  IOW, avoid history search as much as possible.
-        return {
-            servarr_url: servarr_download_client.sync()
-            for servarr_url, servarr_download_client in self.servarrs.items()
-        }
 
     # Other, non-sub-command methods
 
@@ -334,10 +321,7 @@ class PrunerrDownloadClient:
         item.
         """
         # TODO: Mark as failed in Servarr?
-        seeding_dirs = [
-            servarr.download_item_dirs["seedingDir"]
-            for servarr in self.servarrs.values()
-        ]
+        seeding_dirs = [servarr.seeding_dir for servarr in self.servarrs.values()]
         return self.sort_items_by_tracker(
             item
             for item in self.items
@@ -361,22 +345,20 @@ class PrunerrDownloadClient:
         """
         Filter items that have not yet been imported by Servarr, order by priority.
         """
-        seeding_dirs = [
-            servarr.download_item_dirs["seedingDir"]
-            for servarr in self.servarrs.values()
-        ]
         return self.sort_items_by_tracker(
             item
             for item in self.items
-            # only those previously synced and moved
+            # only those previously acted on by Servarr and moved
             if item.status == "seeding"
-            and [
-                seeding_dir
-                for seeding_dir in seeding_dirs
-                if seeding_dir in item.path.parents
-            ]
+            and pathlib.Path(self.client.session.download_dir).parent
+            / self.SEEDING_DIR_BASENAME
+            in item.path.parents
             and self.operations.exec_indexer_operations(item)[0]
         )
+
+
+class DownloadClientTimeout(Exception):
+    """A download client operation took too long."""
 
 
 class DownloadClientTODOException(Exception):

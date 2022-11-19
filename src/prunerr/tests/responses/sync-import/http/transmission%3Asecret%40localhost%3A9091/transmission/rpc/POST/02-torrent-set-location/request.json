@@ -1,9 +1,0 @@
-{
-  "arguments": {
-    "ids": [1],
-    "location": "/media/Library/seeding/Sonarr/Videos/Series",
-    "move": true
-  },
-  "method": "torrent-set-location",
-  "tag": 2
-}

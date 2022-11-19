@@ -6,7 +6,6 @@ services:
 
   python-project-structure:
     image: "rpatterson/python-project-structure"
-    container_name: "python-project-structure"
     # Match permissions inside and outside the container
     user: "${PUID:-1000}:${PGID:-100}"
     environment:

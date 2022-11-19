@@ -207,7 +207,6 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         # 5. The import event becomes visible in the Servarr API history.  The item is
         #    moved from `downloads` to `seeding` and the Prunerr data file along with
         #    it.
-        # TODO: Redundant download item update download client request
         import_request_mocks = self.mock_responses(
             tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
             # Insert a dynamic response mock to handle moving imported download items

@@ -297,7 +297,8 @@ class PrunerrRunner:
             # Wait for the next interval
             poll = (
                 self.config["daemon"]["poll"]
-                if "poll" in self.config.get("daemon", {})
+                if self.config.get("daemon") is not None
+                and "poll" in self.config["daemon"]
                 else 60
             )
             while time.time() - start < poll:

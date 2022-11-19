@@ -129,15 +129,10 @@ class PrunerrDownloadClient:
         results = {}
         # Need to make a copy in case review leads to deleting an item and modifying
         # `self.items`.
-        for item in list(self.items):
-            if pathlib.Path(self.client.session.download_dir) not in item.path.parents:
-                # Support exempting items from review, put them in a different location.
-                # Only review items in the client's default download directory.
-                logger.debug(
-                    "Ignoring item not in default download dir: %r",
-                    item,
-                )
-                continue
+        for item in [
+            item for item in self.items
+            if pathlib.Path(self.client.session.download_dir) in item.path.parents
+        ]:
             try:
                 results[item] = item.review(servarr_queue)
             except DownloadClientTODOException:

@@ -1,0 +1,46 @@
+{
+  "page": 1,
+  "pageSize": 250,
+  "sortKey": "date",
+  "sortDirection": "descending",
+  "totalRecords": 0,
+  "records": [
+    {
+      "episodeId": 1,
+      "seriesId": 1,
+      "sourceTitle": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+      "language": {
+	"id": 1,
+	"name": "English"
+      },
+      "quality": {
+	"quality": {
+          "id": 1,
+          "name": "WEBDL-1080p",
+          "source": "web",
+          "resolution": 1080
+	},
+	"revision": {
+          "version": 1,
+          "real": 0,
+          "isRepack": false
+	}
+      },
+      "qualityCutoffNotMet": true,
+      "languageCutoffNotMet": false,
+      "date": "1970-01-02T00:00:00.00000Z",
+      "downloadId": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
+      "eventType": "downloadFolderImported",
+      "data": {
+	"fileId": "1",
+	"droppedPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+	"importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+	"downloadClient": "Transmission",
+	"downloadClientName": "transmission",
+	"preferredWordScore": "1000",
+	"releaseGroup": "RELEASER"
+      },
+      "id": 2
+    }
+  ]
+}

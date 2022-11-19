@@ -172,14 +172,12 @@ class PrunerrServarrInstance:
         self.download_clients = download_clients
 
         # Update any data in instance state that should *not* be cached across updates
-        self.queue = {}
-        for page in self.get_api_paged_records("queue"):
-            self.queue.update(
-                (record["downloadId"], record)
-                for record in page["records"]
-                # `Pending` records have no download client hash yet
-                if record.get("downloadId")
-            )
+        self.queue = {
+            record["downloadId"]: record
+            for record in self.get_api_paged_records("queue")
+            # `Pending` records have no download client hash yet
+            if record.get("downloadId")
+        }
 
         return self.client
 
@@ -212,7 +210,7 @@ class PrunerrServarrInstance:
                 **params,
             )
             page_number = response["page"] + 1
-            yield response
+            yield from response["records"]
 
 
 class PrunerrServarrDownloadClient:
@@ -265,14 +263,29 @@ class PrunerrServarrDownloadClient:
         Move download items that have been acted on by Servarr into the seeding dir.
 
         Move all download items that are seeding, that are in this Servarr instance's
-        download directory, and aren't in this Servarr instance's queue.
+        download directory, and aren't in this Servarr instance's queue.  Also only
+        include items that have some Servarr history events other than `grabbed` to
+        prevent moving manually grabbed items out from under Servarr before it's had a
+        chance to recognize notice them.
         """
         download_items = [
             download_item
             for download_item in self.download_client.items
+            # Skip items still downloading
             if download_item.status == "seeding"
+            # Skip items known by a Servarr instance in it's queue
             and download_item.hashString.upper() not in self.servarr.queue
+            # Skip items not in this Servarr instance's download directory for this
+            # download client
             and self.download_dir in download_item.path.parents
+            # Skip items with no history other than `grabbed` events
+            and [
+                history_record for history_record in self.servarr.get_api_paged_records(
+                    "history",
+                    downloadId=download_item.hashString.upper(),
+                )
+                if history_record["eventType"] != "grabbed"
+            ]
         ]
         if not download_items:
             logger.debug(

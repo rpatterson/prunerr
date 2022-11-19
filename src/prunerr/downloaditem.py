@@ -189,14 +189,14 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         Optionally filter the list by those that are selected in the download client.
         """
-        # Optimization: This is actually what takes most of the time in
-        # `runner.find_orphans()`.
-        files = getattr(self._fields.get("files"), "value", None)
+        # TODO: This is actually what takes most of the time in `runner.find_orphans()`.
+        # Profile, figure out what's taking all the time, and optimize if possible.
+        files = self.files()
         if not files:
             raise ValueError(f"No files found in {self!r}")
 
         for file_ in files:
-            file_path = self.path.parent / file_["name"]
+            file_path = self.path.parent / file_.name
             if file_path.exists():
                 yield file_path
 

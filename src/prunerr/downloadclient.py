@@ -28,7 +28,6 @@ class PrunerrDownloadClient:
     client = None
     items = None
     operations = None
-    min_free_space = None
 
     def __init__(self, runner):
         """
@@ -53,7 +52,7 @@ class PrunerrDownloadClient:
             raise ValueError("No download client configuration provided")
 
         # Configuration specific to Prunerr, IOW not taken from the download client
-        self.min_free_space = calc_free_space_margin(self.runner.config)
+        self.config["min-free-space"] = calc_free_space_margin(self.runner.config)
         self.operations = prunerr.operations.PrunerrOperations(
             self,
             self.runner.config.get("indexers", {}),
@@ -241,7 +240,7 @@ class PrunerrDownloadClient:
                     )
                 ),
             )
-        if self.client.session.download_dir_free_space >= self.min_free_space:
+        if self.client.session.download_dir_free_space >= self.config["min-free-space"]:
             logger.debug(
                 "Sufficient free space to continue downloading: %0.2f %s >= %0.2f %s",
                 *(
@@ -249,7 +248,7 @@ class PrunerrDownloadClient:
                         self.client.session.download_dir_free_space,
                     )
                     + transmission_rpc.utils.format_size(
-                        self.min_free_space,
+                        self.config["min-free-space"],
                     )
                 ),
             )

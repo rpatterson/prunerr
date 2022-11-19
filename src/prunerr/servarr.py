@@ -282,8 +282,8 @@ class PrunerrServarrDownloadClient:
             return None
         logger.info(
             "Moving download items: %r -> %r\n  %s",
-            self.download_dir,
-            self.seeding_dir,
+            str(self.download_dir),
+            str(self.seeding_dir),
             "\n  ".join(repr(download_item) for download_item in download_items),
         )
         self.download_client.client.move_torrent_data(

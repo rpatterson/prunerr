@@ -201,7 +201,7 @@ class PrunerrDownloadClient:
             size = stat.st_size
             logger.info(
                 "Deleting %r: %0.2f %s + %0.2f %s",
-                item,
+                str(path),
                 *(
                     transmission_rpc.utils.format_size(
                         self.client.session.download_dir_free_space,

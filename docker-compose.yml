@@ -5,7 +5,6 @@ version: "3.8"
 services:
 
   transmission:
-    container_name: "transmission"
     image: "linuxserver/transmission"
     # command:
     #   # From `# pgrep -fla transmission`:
@@ -55,12 +54,11 @@ services:
       traefik.http.routers.transmission.tls.certresolver: "letsencrypt"
 
   sonarr:
-    container_name: "sonarr"
     image: "ghcr.io/hotio/sonarr"
     volumes:
       - "./sonarr/config/:/config/"
-    ports:
-      - "8989:8989"
+    # ports:
+    #   - "8989:8989"
     restart: "unless-stopped"
     healthcheck:
       test: >-
@@ -69,12 +67,11 @@ services:
         grep '"appData": *"/config"'
 
   radarr:
-    container_name: "radarr"
     image: "ghcr.io/hotio/radarr"
     volumes:
       - "./radarr/config/:/config/"
-    ports:
-      - "7878:7878"
+    # ports:
+    #   - "7878:7878"
     restart: "unless-stopped"
     healthcheck:
       test: >-
@@ -83,7 +80,6 @@ services:
         grep '"appData": *"/config"'
 
   prunerr-daemon:
-    container_name: "prunerr-daemon"
     image: "rpatterson/prunerr"
     depends_on:
       - "transmission"

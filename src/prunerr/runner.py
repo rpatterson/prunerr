@@ -301,8 +301,9 @@ class PrunerrRunner:
                 and "poll" in self.config["daemon"]
                 else 60
             )
-            while time.time() - start < poll:
-                time.sleep(1)
+            time_left = poll - (time.time() - start)
+            if time_left > 0:
+                time.sleep(time_left)
             logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
 
     # Other methods

@@ -134,7 +134,7 @@ class PrunerrDownloadClient:
             if pathlib.Path(self.client.session.download_dir) in item.path.parents
         ]:
             try:
-                results[item] = item.review(servarr_queue)
+                item_results = item.review(servarr_queue)
             except DownloadClientTODOException:
                 logger.exception(
                     "Un-handled exception reviewing item: %r",
@@ -143,6 +143,8 @@ class PrunerrDownloadClient:
                 if "DEBUG" in os.environ:
                     raise
                 continue
+            if item_results:
+                results[item] = item_results
         return results
 
     # Other, non-sub-command methods

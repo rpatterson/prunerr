@@ -154,16 +154,18 @@ class PrunerrRunner:
         """
         Move download items that have been acted on by Servarr into the seeding dir.
         """
-        return {
-            servarr_url: {
-                download_client_url: servarr_download_client.move()
-                for (
-                    download_client_url,
-                    servarr_download_client,
-                ) in servarr.download_clients.items()
-            }
-            for servarr_url, servarr in self.servarrs.items()
-        }
+        move_results = {}
+        for servarr_url, servarr in self.servarrs.items():
+            for (
+                download_client_url,
+                servarr_download_client,
+            ) in servarr.download_clients.items():
+                download_client_results = servarr_download_client.move()
+                if download_client_results:
+                    move_results.setdefault(servarr_url, {})[
+                        download_client_url
+                    ] = download_client_results
+        return move_results
 
     def review(self):
         """

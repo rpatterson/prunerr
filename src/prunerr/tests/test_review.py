@@ -73,7 +73,6 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         public_indexer_before_torrent, _, _ = downloading_before_torrents
         private_indexer_item = self.incomplete_item
         private_indexer_item_file = self.incomplete_item_file
-        private_indexer_item_data = self.incomplete_item_data
         public_indexer_item = private_indexer_item.with_name(
             public_indexer_before_torrent["name"],
         )
@@ -83,10 +82,6 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         self.servarr_downloaded_dir.mkdir(parents=True, exist_ok=True)
         public_indexer_item = public_indexer_item.rename(
             self.servarr_downloaded_dir / public_indexer_item.name,
-        )
-        public_indexer_item_data = public_indexer_item.with_name(
-            f"{public_indexer_item.stem}"
-            f"{prunerr.downloadclient.PrunerrDownloadClient.DATA_FILE_SUFFIX}",
         )
         self.assertTrue(
             private_indexer_item.is_dir(),
@@ -101,10 +96,6 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             1,
             "Private indexer item file has more than one link before importing",
         )
-        self.assertFalse(
-            private_indexer_item_data.exists(),
-            "Prunerr data file exists prior to running sub-command",
-        )
         self.assertTrue(
             public_indexer_item.is_file(),
             "Public indexer item is not a file while downloading",
@@ -113,10 +104,6 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             public_indexer_item.stat().st_nlink,
             1,
             "Public indexer item file has more than one link before importing",
-        )
-        self.assertFalse(
-            public_indexer_item_data.exists(),
-            "Prunerr data file exists prior to running sub-command",
         )
         self.assertTrue(
             self.servarr_downloaded_dir.is_dir(),
@@ -158,21 +145,9 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             1,
             "Private indexer item file has more than one link before importing",
         )
-        self.assertTrue(
-            private_indexer_item_data.exists(),
-            "Prunerr data file not created by sub-command",
-        )
         self.assertFalse(
             public_indexer_item.exists(),
             "Public indexer item not deleted by review",
-        )
-        self.assertFalse(
-            public_indexer_item_data.exists(),
-            "Prunerr data file not deleted by review",
-        )
-        self.assertTrue(
-            self.servarr_downloaded_dir.is_dir(),
-            "The downloaded items directory isn't a directory",
         )
         self.assertFalse(
             self.servarr_seeding_dir.exists(),

@@ -59,7 +59,6 @@ class PrunerrTestCase(
     STORAGE_RELATIVE = pathlib.PurePath("media", "Library")
     INCOMPLETE_DIR_BASENAME = "incomplete"
     DOWNLOADED_DIR_BASENAME = "downloads"
-    SEEDING_DIR_BASENAME = "seeding"
     EXAMPLE_VIDEO = pathlib.Path(__file__).parent / "example-5s.mkv"
 
     # Servarr path elements
@@ -92,7 +91,10 @@ class PrunerrTestCase(
         self.storage_dir = self.tmp_path / self.STORAGE_RELATIVE
         self.incomplete_dir = self.storage_dir / self.INCOMPLETE_DIR_BASENAME
         self.downloaded_dir = self.storage_dir / self.DOWNLOADED_DIR_BASENAME
-        self.seeding_dir = self.storage_dir / self.SEEDING_DIR_BASENAME
+        self.seeding_dir = (
+            self.storage_dir
+            / prunerr.downloadclient.PrunerrDownloadClient.SEEDING_DIR_BASENAME
+        )
 
         # Convenient access to the parsed configuration file
         with self.CONFIG.open() as config_opened:
@@ -181,22 +183,12 @@ class PrunerrTestCase(
         self.incomplete_item_file = (
             self.incomplete_item / f"{self.download_item_title}.mkv"
         )
-        self.incomplete_item_data = self.incomplete_item.with_name(
-            f"{self.incomplete_item.name}"
-            f"{prunerr.downloadclient.PrunerrDownloadClient.DATA_FILE_SUFFIX}",
-        )
         self.downloaded_item = self.servarr_downloaded_dir / self.download_item_title
         self.downloaded_item_file = (
             self.downloaded_item / self.incomplete_item_file.name
         )
-        self.downloaded_item_data = self.downloaded_item.with_name(
-            self.incomplete_item_data.name,
-        )
         self.seeding_item = self.servarr_seeding_dir / self.download_item_title
         self.seeding_item_file = self.seeding_item / self.incomplete_item_file.name
-        self.seeding_item_data = self.seeding_item.with_name(
-            self.downloaded_item_data.name,
-        )
         self.imported_item_file = (
             self.servarr_import_dir
             / self.SERVARR_IMPORT_PARENT_BASENAME

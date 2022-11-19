@@ -19,7 +19,7 @@ ignore-paths = [
     ".*/src/.+/version.py",
 ]
 # Extend linting to usage of trusted extension packages
-extension-pkg-allow-list = ["lxml", "ciso8601"]
+extension-pkg-allow-list = ["lxml"]
 fail-under = 10
 [tool.pylint.TYPECHECK]
 # Ignore false negatives from external packages

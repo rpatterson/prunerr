@@ -4,17 +4,11 @@ Prunerr interaction with download clients.
 
 import os
 import time
-import copy
 import pathlib
 import json
-import pprint
 import logging
 
-import ciso8601
 import transmission_rpc
-
-import prunerr.utils
-import prunerr.operations
 
 logger = logging.getLogger(__name__)
 
@@ -135,33 +129,20 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             return None
         done_date = self._fields["doneDate"].value
         if not done_date:
-            # Try to find the latest imported record
-            history_records = self.prunerr_data.get("history", {})
-            for history_date in sorted(history_records, reverse=True):
-                imported_record = history_records[history_date]
-                if imported_record["eventType"] == "downloadFolderImported":
-                    logger.warning(
-                        "Missing done date for seconds since done"
-                        ", using Servarr imported date: %r",
-                        self,
-                    )
-                    done_date = imported_record["date"].timestamp()
-                    break
-            else:
-                if self._fields["startDate"].value:
-                    logger.warning(
-                        "Missing done date for seconds since done"
-                        ", using start date: %r",
-                        self,
-                    )
-                    done_date = self._fields["startDate"].value
-                elif self._fields["addedDate"].value:
-                    logger.warning(
-                        "Missing done date for seconds since done"
-                        ", using added date: %r",
-                        self,
-                    )
-                    done_date = self._fields["addedDate"].value
+            if self._fields["startDate"].value:
+                logger.warning(
+                    "Missing done date for seconds since done"
+                    ", using start date: %r",
+                    self,
+                )
+                done_date = self._fields["startDate"].value
+            elif self._fields["addedDate"].value:
+                logger.warning(
+                    "Missing done date for seconds since done"
+                    ", using added date: %r",
+                    self,
+                )
+                done_date = self._fields["addedDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date
 
@@ -209,129 +190,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             return imported / total
         return 0
 
-    @property
-    def prunerr_data_path(self):
-        """
-        Determine the correct sibling path for the Prunerr data file.
-        """
-        stem = self.files_parent.stem if self.is_file() else self.files_parent.name
-        return self.files_parent.with_name(
-            f"{stem}{self.download_client.DATA_FILE_SUFFIX}",
-        )
-
-    @property
-    def prunerr_data(self):
-        """
-        Load the prunerr data file.
-        """
-        if "prunerr_data" in vars(self):
-            return vars(self)["prunerr_data"]
-
-        # Move the data file if the download item files have been moved
-        if not self.prunerr_data_path.exists():
-            download_dir = pathlib.Path(self.download_dir)
-            data_paths = (
-                parallel_to(
-                    self.download_client.client.session.download_dir,
-                    download_dir,
-                    self.download_client.SEEDING_DIR_BASENAME,
-                )
-                / self.prunerr_data_path.name,
-                download_dir / self.prunerr_data_path.name,
-            )
-            if self.download_client.client.session.incomplete_dir_enabled:
-                data_paths += (
-                    pathlib.Path(self.download_client.client.session.incomplete_dir)
-                    / self.prunerr_data_path.name,
-                )
-            src_data_path = max(
-                (data_path for data_path in data_paths if data_path.exists()),
-                key=lambda data_path: data_path.stat().st_mtime,
-                default=None,
-            )
-            if src_data_path is not None:
-                logger.debug(
-                    "Moving newest Prunerr data file: %r -> %r",
-                    str(src_data_path),
-                    str(self.prunerr_data_path),
-                )
-                src_data_path.rename(self.prunerr_data_path)
-
-        # Load the Prunerr data file
-        download_data = dict(path=self.prunerr_data_path, history={})
-        if self.prunerr_data_path.exists() and self.prunerr_data_path.stat().st_size:
-            with self.prunerr_data_path.open() as data_opened:
-                try:
-                    download_data = json.load(data_opened)
-                except json.JSONDecodeError:
-                    logger.exception(
-                        "Failed to deserialize JSON file: %s",
-                        self.prunerr_data_path,
-                    )
-            download_data["path"] = self.prunerr_data_path
-            if "latestImportedDate" in download_data:
-                download_data["latestImportedDate"] = ciso8601.parse_datetime(
-                    download_data["latestImportedDate"],
-                )
-            if download_data["history"] is None:
-                logger.warning(
-                    "No history previously found: %r",
-                    self,
-                )
-                vars(self)["prunerr_data"] = download_data
-                return download_data
-            # Convert loaded JSON to native types where possible
-            download_data["history"] = {
-                ciso8601.parse_datetime(
-                    history_date
-                ): prunerr.utils.deserialize_history(history_record)
-                for history_date, history_record in download_data["history"].items()
-            }
-
-        # Cache the deserialized and normalized data
-        vars(self)["prunerr_data"] = download_data
-        return download_data
-
-    def serialize_download_data(self, download_history=None):
-        """
-        Serialize an item's Prunerr data and write to the Prunerr data file.
-        """
-        download_data = copy.deepcopy(self.prunerr_data)
-        # Convert loaded JSON to native types where possible
-        if download_history is not None:
-            download_history = {
-                history_date.strftime(
-                    prunerr.utils.SERVARR_DATETIME_FORMAT
-                ): prunerr.utils.serialize_history(copy.deepcopy(history_record))
-                for history_date, history_record in download_history.items()
-            }
-        download_data["history"] = download_history
-        if "latestImportedDate" in download_data:
-            download_data["latestImportedDate"] = download_data[
-                "latestImportedDate"
-            ].strftime(prunerr.utils.SERVARR_DATETIME_FORMAT)
-        if "path" in download_data:
-            download_data["path"] = str(download_data["path"])
-        existing_deserialized = ""
-        if self.prunerr_data_path.exists():
-            with self.prunerr_data_path.open("r") as data_read:
-                existing_deserialized = data_read.read()
-        with self.prunerr_data_path.open("w") as data_opened:
-            logger.debug(
-                "Writing Prunerr download item data: %s",
-                self.prunerr_data_path,
-            )
-            try:
-                json.dump(download_data, data_opened, indent=2)
-            except DownloadItemTODOException:
-                logger.exception(
-                    "Failed to serialize to JSON file, %r:\n%s",
-                    str(self.prunerr_data_path),
-                    pprint.pformat(download_data),
-                )
-                data_opened.seek(0)
-                data_opened.write(existing_deserialized)
-
     def list_files(self, selected=True):
         """
         Iterate over all download item file paths that exist.
@@ -370,40 +228,10 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 for action in ("announce", "scrape"):
                     tracker_url = tracker[action]
                     for indexer_url in possible_urls:
+                        # TODO: Switch to just matching on hostname/netloc?  Regex?
                         if tracker_url.startswith(indexer_url):
                             return possible_name
         return None
-
-    def lookup_indexer(self):
-        """
-        Lookup the indexer for this item and cache.
-        """
-        if "indexer" in self.prunerr_data:
-            return self.prunerr_data["indexer"]
-
-        indexer_name = None
-        # Try to find an indexer name from the items Servarr history
-        for servarr_download_client in self.download_client.servarrs.values():
-            if servarr_download_client.get_item_servarr_dir(self):
-                # Also collects the indexer name if possible
-                servarr_download_client.get_item_dir_id(self)
-                indexer_name = self.prunerr_data.get("indexer")
-                if indexer_name is not None:
-                    break
-        else:
-            logger.debug(
-                "No Servarr history found for download item: %r",
-                self,
-            )
-        # The indexer has been added to the Prunerr data, persist it to the Prunerr data
-        # file.
-        self.serialize_download_data(self.prunerr_data["history"])
-
-        # Match by indexer URLs when no indexer name is available
-        if not indexer_name:
-            indexer_name = self.match_indexer_urls()
-
-        return indexer_name
 
     def review(self, servarr_queue):
         """

@@ -51,7 +51,7 @@ class PrunerrOperations:
             return cached_results[operations_type]
 
         indexer_configs = self.indexer_operations.get(operations_type, {})
-        indexer_name = item.lookup_indexer()
+        indexer_name = item.match_indexer_urls()
         if indexer_name not in indexer_configs:
             indexer_name = None
         indexer_idx = list(indexer_configs.keys()).index(indexer_name)

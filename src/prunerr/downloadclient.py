@@ -10,7 +10,6 @@ import logging
 
 import transmission_rpc
 
-import prunerr.utils
 import prunerr.downloaditem
 import prunerr.operations
 
@@ -208,7 +207,7 @@ class PrunerrDownloadClient:
                     )
                     + transmission_rpc.utils.format_size(size)
                     + (
-                        item.lookup_indexer(),
+                        item.match_indexer_urls(),
                         item.bandwidthPriority,
                         item.ratio,
                     )

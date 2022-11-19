@@ -40,7 +40,9 @@ indexers:
   ## the indexer for the item can be found.
   urls:
     ExamplePrivateTracker:
-      - "https://tracker.example.com"
+      - "udp://tracker.private.example.com"
+      - "http://tracker.private.example.com"
+      - "https://tracker.private.example.com"
   ## Apply per-indexer maintenance operations to all download items, e.g.:
   ## - adjust priorities
   ## - reject archives

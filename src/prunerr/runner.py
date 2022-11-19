@@ -370,6 +370,8 @@ class PrunerrRunner:
         # be on different filesystems so we need to aggregate them all across download
         # clients but keep track of which download clients use which directories.
         download_item_dirs = {}
+        # TODO: Consider all orphans under the download client directories, not just the
+        # Servarr managed directories
         for download_client_url, download_client in self.download_clients.items():
             for servarr_download_client in download_client.servarrs.values():
                 for download_item_dir in (

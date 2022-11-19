@@ -152,28 +152,6 @@ class PrunerrDownloadClient:
 
     # Other, non-sub-command methods
 
-    def get_item(self, download_id):
-        """
-        Get a download client item, tolerate missing items while logging the error.
-        """
-        if isinstance(download_id, str):
-            download_id = download_id.lower()
-        try:
-            torrent = self.client.get_torrent(download_id)
-            return prunerr.downloaditem.PrunerrDownloadItem(
-                self,
-                self.client,
-                torrent,
-            )
-        except KeyError:
-            # Can happen if the download client item has been manually deleted
-            logger.error(
-                "Could not find item in download client "
-                "for Servarr imported event: %s",
-                download_id,
-            )
-        return None
-
     def sort_items_by_tracker(self, items):
         """
         Sort the given download items according to the indexer priority operations.

@@ -183,23 +183,6 @@ class PrunerrServarrInstance:
 
         return self.client
 
-    def strip_type_prefix(self, prefixed, servarr_term="item_type"):
-        """
-        Strip the particular Servarr type prefix if present.
-        """
-        # Map the different Servarr applications type terminology
-        servarr_type_map = self.TYPE_MAPS[self.config["type"]]
-        prefix = servarr_type_map[servarr_term]
-        if prefixed.startswith(prefix):
-            stripped = prefixed[len(prefix) :]
-            stripped = f"{stripped[0].lower()}{stripped[1:]}"
-            # Don't strip the prefix for DB IDs in the Servarr API JSON, e.g.:
-            # `movieId`.
-            if stripped != "id":
-                return stripped
-
-        return prefixed
-
     def get_api_paged_records(self, endpoint, page_number=1, **params):
         """
         Yield each page of the given paged endpoint until exhausted.
@@ -362,15 +345,6 @@ def deserialize_servarr_download_client(download_client_config):
         None,
     ).geturl()
     return download_client_config
-
-
-def is_record_newer(comparison_record, test_record):
-    """
-    Return true if the test record's date is newer than the comparison record's date.
-
-    Useful with `functools.partial` to use in `itertools.*` functions.
-    """
-    return test_record["date"] > comparison_record["date"]
 
 
 class ServarrTODOException(Exception):

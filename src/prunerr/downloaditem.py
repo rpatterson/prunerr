@@ -72,13 +72,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             return file_roots[0]
         return self.name
 
-    def is_file(self):
-        """
-        Return `True` if the item had one file at it's root, no directories.
-        """
-        files = self.files()
-        return len(files) == 1 and len(pathlib.Path(files[0].name).parts) == 1
-
     @property
     def path(self):
         """

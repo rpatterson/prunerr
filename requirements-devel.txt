@@ -6,7 +6,7 @@
 #
 arrapi==1.3.1
     # via prunerr (./pyproject.toml)
-astroid==2.12.12
+astroid==2.12.13
     # via pylint
 attrs==22.1.0
     # via pytest

@@ -392,7 +392,6 @@ class PrunerrRunner:
         # such syscalls downstream.
         orphans = []
         for download_item_dir, download_clients in download_item_dirs.items():
-            first_download_client = next(iter(download_clients.values()))
             for dirpath, _, filenames in os.walk(download_item_dir):
                 for filename in filenames:
                     file_path = download_item_dir / dirpath / filename

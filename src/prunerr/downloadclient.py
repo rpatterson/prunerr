@@ -206,7 +206,6 @@ class PrunerrDownloadClient:
 
         # Delete the actual files ourselves to workaround Transmission hanging when
         # deleting the data of large items: e.g. season packs.
-        stem = path.stem if path.is_file() else path.name
         if path.is_dir():
             shutil.rmtree(path, onerror=log_rmtree_error)
         else:

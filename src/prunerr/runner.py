@@ -367,7 +367,7 @@ class PrunerrRunner:
         item_files = set()
         for download_client_url, download_client in self.download_clients.items():
             for download_item in download_client.items:
-                item_files.update(download_item.list_files(selected=False))
+                item_files.update(download_item.list_files())
 
         # Aggregate all the download item directories across all download clients.  Some
         # download item directories may be shared across download clients and some may

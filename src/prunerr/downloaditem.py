@@ -183,22 +183,22 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             return imported / total
         return 0
 
-    def list_files(self, selected=True):
+    def list_files(self):
         """
         Iterate over all download item file paths that exist.
 
         Optionally filter the list by those that are selected in the download client.
         """
-        files = self.files()
+        # Optimization: This is actually what takes most of the time in
+        # `runner.find_orphans()`.
+        files = getattr(self._fields.get("files"), "value", None)
         if not files:
             raise ValueError(f"No files found in {self!r}")
 
-        return (
-            self.path.parent / file_.name
-            for file_ in files
-            if (not selected or file_.selected)
-            and os.path.exists(os.path.join(self.download_dir, file_.name))
-        )
+        for file_ in files:
+            file_path = self.path.parent / file_["name"]
+            if file_path.exists():
+                yield file_path
 
     def list_files_stats(self):
         """
@@ -206,7 +206,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         Useful to avoid redundant `stat` syscalls.
         """
-        for item_file in self.list_files(selected=False):
+        for item_file in self.list_files():
             yield item_file, item_file.stat()
 
     def match_indexer_urls(self):

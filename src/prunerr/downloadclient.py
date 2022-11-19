@@ -21,9 +21,6 @@ class PrunerrDownloadClient:
     An individual, specific download client that Prunerr interacts with.
     """
 
-    DATA_FILE_SUFFIX = "-prunerr.json"
-    SERVARR_IMPORTED_LINK_SUFFIX = "-servarr-imported.ln"
-    FILE_SUFFIXES = {DATA_FILE_SUFFIX, SERVARR_IMPORTED_LINK_SUFFIX}
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
 
@@ -217,9 +214,6 @@ class PrunerrDownloadClient:
         if next(path.parent.iterdir(), None) is None:
             # The directory containging the file is empty
             path.parent.rmdir()
-        # Delete any files managed by Prunerr.
-        for suffix in self.FILE_SUFFIXES:
-            path.with_name(f"{stem}{suffix}").unlink(missing_ok=True)
 
         # Refresh the sessions data including free space.
         # TODO: Until we aggregate download client directories by `*.stat().st_dev`, we

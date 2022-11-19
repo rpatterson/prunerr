@@ -55,6 +55,22 @@ subparsers = parser.add_subparsers(
 )
 
 
+def verify(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    runner.update()
+    runner.verify(*args, **kwargs)
+    # Wait for all verifying torrents to finish when doing a single `verify` run.
+    return runner.resume_verified_items(wait=True)
+
+
+verify.__doc__ = prunerr.runner.PrunerrRunner.verify.__doc__
+parser_verify = subparsers.add_parser(
+    "verify",
+    help=verify.__doc__.strip(),
+    description=verify.__doc__.strip(),
+)
+parser_verify.set_defaults(command=verify)
+
+
 def move(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
     runner.update()
     return runner.move(*args, **kwargs)
@@ -101,7 +117,14 @@ parser_free_space.set_defaults(command=free_space)
 
 def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
     runner.update()
-    return runner.exec_(*args, **kwargs)
+    exec_results = runner.exec_(*args, **kwargs)
+
+    # Wait for all verifying torrents to finish when doing a single `exec` run.
+    resume_results = runner.resume_verified_items(wait=True)
+    if resume_results:
+        exec_results["verify"] = resume_results
+
+    return exec_results
 
 
 exec_.__doc__ = prunerr.runner.PrunerrRunner.exec_.__doc__

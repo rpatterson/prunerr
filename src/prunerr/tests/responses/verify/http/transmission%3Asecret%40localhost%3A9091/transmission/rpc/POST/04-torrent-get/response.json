@@ -1,0 +1,68 @@
+{
+  "arguments": {
+    "torrents": [
+      {
+	"addedDate": 1,
+	"bandwidthPriority": 0,
+	"doneDate": 1,
+	"downloadDir": "/media/Library/seeding/Sonarr/Videos/Series",
+	"error": 3,
+	"errorString": "Please Verify Local Data! Piece #1 is corrupt.",
+	"eta": -1,
+	"files": [
+	  {
+	    "bytesCompleted": 1073741824,
+	    "length": 1073741824,
+	    "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+	  }
+	],
+	"fileStats": [
+	  {
+	    "bytesCompleted": 1073741824,
+	    "priority": 0,
+	    "wanted": true
+	  }
+	],
+	"id": 1,
+	"isFinished": false,
+	"isStalled": true,
+	"leftUntilDone": 0,
+	"metadataPercentComplete": 1,
+	"name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+	"hashString": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
+	"peersConnected": 0,
+	"peersGettingFromUs": 0,
+	"peersSendingToUs": 0,
+	"percentDone": 1,
+	"priorities": [
+	  0
+	],
+	"queuePosition": 1,
+	"rateDownload": 0,
+	"rateUpload": 0,
+	"recheckProgress": 0,
+	"seedRatioLimit": 4,
+	"seedRatioMode": 0,
+	"sizeWhenDone": 1073741824,
+	"startDate": 1,
+	"status": 0,
+	"totalSize": 1073741824,
+	"trackers": [
+	  {
+	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "id": 0,
+	    "scrape": "udp://tracker.foo.example.com:6969/scrape",
+	    "tier": 0
+	  }
+	],
+	"uploadRatio": 1.5000,
+	"uploadedEver": 1073741824,
+	"wanted": [
+	  1
+	],
+	"webseedsSendingToUs": 0
+      }
+    ]
+  },
+  "result": "success"
+}

@@ -35,6 +35,7 @@ class PrunerrDownloadClient:
         """
         self.runner = runner
         self.servarrs = {}
+        self.verifying_items = {}
 
     def __repr__(self):
         """
@@ -321,6 +322,51 @@ class PrunerrDownloadClient:
             in item.path.parents
             and self.operations.exec_indexer_operations(item)[0]
         )
+
+    def verify_corrupt_items(self):
+        """
+        Verify and resume download items flagged as having corrupt data.
+        """
+        corrupt_items = {
+            item.hashString: item
+            for item in self.items
+            if item.status == "stopped"
+            and item.error == 3
+            and (
+                "verif" in item.errorString.lower()
+                or "corrput" in item.errorString.lower()
+            )
+        }
+        if corrupt_items:
+            logger.info(
+                "Verifying corrupt download items:\n  %s",
+                "\n  ".join(repr(item) for item in corrupt_items.values()),
+            )
+            self.client.verify_torrent(list(corrupt_items.keys()))
+            self.verifying_items.update(corrupt_items)
+            return corrupt_items
+        return None
+
+    def resume_verified_items(self):
+        """
+        Resume downloading any previously corrupt items that have finished verifying.
+        """
+        for verifying_item in self.verifying_items.values():
+            verifying_item.update()
+        verified_items = {
+            item_hash: verifying_item
+            for item_hash, verifying_item in self.verifying_items.items()
+            if not verifying_item.status.startswith("check")
+        }
+        if verified_items:
+            logger.info(
+                "Resuming verified download items:\n  %s",
+                "\n  ".join(repr(item) for item in verified_items.values()),
+            )
+            self.client.start_torrent(list(verified_items.keys()))
+            for item_hash in verified_items.keys():
+                del self.verifying_items[item_hash]
+        return verified_items
 
 
 class DownloadClientTimeout(Exception):

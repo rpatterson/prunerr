@@ -134,14 +134,20 @@ class PrunerrRunner:
         # Results relies on preserving key order
         results = {}
 
+        # Start verifying corrupt torrents as early as possible to give them as much
+        # time to finish as possible.
+        self.verify()
+
         # Run `move` before `review` so review doesn't operate on items that have
         # already been acted on by Servarr
         move_results = self.move()
         if move_results:
             results["move"] = move_results
+
+        # Run `review` before `free-space` in case it removes items
         if "reviews" in self.config.get("indexers", {}):
-            # Run `review` before `free-space` in case it removes items
             results["review"] = self.review()
+
         free_space_results = self.free_space()
         if free_space_results:
             results["free-space"] = free_space_results
@@ -149,6 +155,17 @@ class PrunerrRunner:
         if results:
             return results
         return None
+
+    def verify(self):
+        """
+        Verify and resume download items flagged as having corrupt data.
+        """
+        verify_results = {}
+        for download_client_url, download_client in self.download_clients.items():
+            verifying_items = download_client.verify_corrupt_items()
+            if verifying_items:
+                verify_results[download_client_url] = verifying_items
+        return verify_results
 
     def move(self):
         """
@@ -275,6 +292,8 @@ class PrunerrRunner:
             start = time.time()
 
             try:
+                # Resume any corrupt download items that have finished verifying
+                self.resume_verified_items()
                 # Refresh the list of download items
                 self.update()
                 # Run the `exec` sub-command as the inner loop
@@ -406,3 +425,20 @@ class PrunerrRunner:
         orphans.sort(key=lambda orphan: orphan[2].st_size)
 
         return orphans
+
+    def resume_verified_items(self, wait=False):
+        """
+        Resume downloading any previously corrupt items that have finished verifying.
+
+        Optionally wait until all verifying items have finished and resume them all.
+        """
+        resume_results = {}
+        for download_client_url, download_client in self.download_clients.items():
+            resumed_items = list(download_client.resume_verified_items().values())
+            if wait:
+                while download_client.verifying_items:
+                    time.sleep(1)
+                    resumed_items.extend(download_client.resume_verified_items())
+            if resumed_items:
+                resume_results[download_client_url] = resumed_items
+        return resume_results

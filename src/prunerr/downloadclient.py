@@ -233,17 +233,22 @@ class PrunerrDownloadClient:
         if total_remaining_download > self.client.session.download_dir_free_space:
             logger.debug(
                 "Total size of remaining downloads is greater than the available free "
-                "space: %0.2f %s > %0.2f %s",
+                "space: %0.2f %s - %0.2f %s = %0.2f %s",
                 *(
                     transmission_rpc.utils.format_size(total_remaining_download)
                     + transmission_rpc.utils.format_size(
                         self.client.session.download_dir_free_space
                     )
+                    + transmission_rpc.utils.format_size(
+                        total_remaining_download
+                        - self.client.session.download_dir_free_space
+                    )
                 ),
             )
         if self.client.session.download_dir_free_space >= self.config["min-free-space"]:
             logger.debug(
-                "Sufficient free space to continue downloading: %0.2f %s >= %0.2f %s",
+                "Sufficient free space to continue downloading: "
+                "%0.2f %s - %0.2f %s = %0.2f %s",
                 *(
                     transmission_rpc.utils.format_size(
                         self.client.session.download_dir_free_space,
@@ -251,10 +256,30 @@ class PrunerrDownloadClient:
                     + transmission_rpc.utils.format_size(
                         self.config["min-free-space"],
                     )
+                    + transmission_rpc.utils.format_size(
+                        self.client.session.download_dir_free_space
+                        - self.config["min-free-space"],
+                    )
                 ),
             )
             self.resume_downloading(self.client.session)
             return True
+        logger.debug(
+            "Insufficient free space to continue downloading: "
+            "%0.2f %s - %0.2f %s = %0.2f %s",
+            *(
+                transmission_rpc.utils.format_size(
+                    self.config["min-free-space"],
+                )
+                + transmission_rpc.utils.format_size(
+                    self.client.session.download_dir_free_space,
+                )
+                + transmission_rpc.utils.format_size(
+                    self.config["min-free-space"]
+                    - self.client.session.download_dir_free_space,
+                )
+            ),
+        )
         return False
 
     def resume_downloading(self, session):

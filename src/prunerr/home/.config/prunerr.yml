@@ -38,11 +38,10 @@ download-clients:
 indexers:
   ## Used to match download items with no corresponding Servarr history from which
   ## the indexer for the item can be found.
-  urls:
+  hostnames:
     ExamplePrivateTracker:
-      - "udp://tracker.private.example.com"
-      - "http://tracker.private.example.com"
-      - "https://tracker.private.example.com"
+      - "tracker.private.example.com"
+      - "other.tracker.private.example.com"
   ## Apply per-indexer maintenance operations to all download items, e.g.:
   ## - adjust priorities
   ## - reject archives

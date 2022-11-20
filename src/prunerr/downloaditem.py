@@ -5,6 +5,7 @@ Prunerr interaction with download clients.
 import os
 import time
 import pathlib
+import urllib.parse
 import json
 import logging
 
@@ -213,16 +214,18 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Return the indexer name if the download item matches a configured tracker URL.
         """
-        for possible_name, possible_urls in self.download_client.operations.config.get(
-            "urls",
+        for (
+            possible_name,
+            possible_hostnames,
+        ) in self.download_client.operations.config.get(
+            "hostnames",
             {},
         ).items():
             for tracker in self.trackers:
                 for action in ("announce", "scrape"):
-                    tracker_url = tracker[action]
-                    for indexer_url in possible_urls:
-                        # TODO: Switch to just matching on hostname/netloc?  Regex?
-                        if tracker_url.startswith(indexer_url):
+                    tracker_url = urllib.parse.urlsplit(tracker[action])
+                    for indexer_hostname in possible_hostnames:
+                        if tracker_url.hostname == indexer_hostname:
                             return possible_name
         return None
 

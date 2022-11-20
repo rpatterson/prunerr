@@ -14,9 +14,9 @@ download-clients:
   max-download-bandwidth: 100
   min-download-time-margin: 600
 indexers:
-  urls:
+  hostnames:
     ExamplePrivateTracker:
-      - "https://tracker.example.com"
+      - "tracker.example.com"
   reviews:
     - name: "ExamplePrivateTracker"
       operations:

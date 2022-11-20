@@ -32,7 +32,7 @@ class PrunerrOperations:
                 for indexer_config in indexer_configs
             }
             for operations_type, indexer_configs in config.items()
-            if operations_type != "urls"
+            if operations_type != "hostnames"
         }
         if "priorities" not in self.indexer_operations:
             # Load sample Prunerr config file and use for default "priorities" config

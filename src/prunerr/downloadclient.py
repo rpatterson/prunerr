@@ -126,10 +126,8 @@ class PrunerrDownloadClient:
         results = {}
         # Need to make a copy in case review leads to deleting an item and modifying
         # `self.items`.
-        for item in [
-            item for item in self.items
-            if pathlib.Path(self.client.session.download_dir) in item.path.parents
-        ]:
+        download_dir = pathlib.Path(self.client.session.download_dir)
+        for item in [item for item in self.items if download_dir in item.path.parents]:
             try:
                 item_results = item.review(servarr_queue)
             except DownloadClientTODOException:
@@ -337,14 +335,16 @@ class PrunerrDownloadClient:
         """
         Filter items that have not yet been imported by Servarr, order by priority.
         """
+        seeding_dir = (
+            pathlib.Path(self.client.session.download_dir).parent
+            / self.SEEDING_DIR_BASENAME
+        )
         return self.sort_items_by_tracker(
             item
             for item in self.items
             # only those previously acted on by Servarr and moved
             if item.status == "seeding"
-            and pathlib.Path(self.client.session.download_dir).parent
-            / self.SEEDING_DIR_BASENAME
-            in item.path.parents
+            and seeding_dir in item.path.parents
             and self.operations.exec_indexer_operations(item)[0]
         )
 

@@ -326,6 +326,7 @@ class PrunerrServarrDownloadClient:
             download_item._fields["downloadDir"] = download_item._fields[
                 "downloadDir"
             ]._replace(value=self.seeding_dir)
+            vars(download_item).pop("path", None)
         return download_items
 
 

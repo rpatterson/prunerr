@@ -3,6 +3,7 @@ Prunerr interaction with download clients.
 """
 
 import os
+import functools
 import time
 import pathlib
 import urllib.parse
@@ -51,6 +52,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             {field_name: field.value for field_name, field in torrent._fields.items()},
         )
 
+    def update(self, timeout=None):
+        """
+        Update cached values when this download item is updated.
+        """
+        super().update(timeout=timeout)
+        vars(self).pop("path", None)
+
     @property
     def root_name(self):
         """
@@ -73,7 +81,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             return file_roots[0]
         return self.name
 
-    @property
+    @functools.cached_property
     def path(self):
         """
         Return the root path for all files in the download item.
@@ -188,8 +196,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         Optionally filter the list by those that are selected in the download client.
         """
-        # TODO: This is actually what takes most of the time in `runner.find_orphans()`.
-        # Profile, figure out what's taking all the time, and optimize if possible.
         files = self.files()
         if not files:
             raise ValueError(f"No files found in {self!r}")

@@ -177,7 +177,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         imported = 0
         for _, stat in self.list_files_stats():
             total += stat.st_size
-            if stat.st_nlink >= 1:
+            if stat.st_nlink > 1:
                 imported += stat.st_size
         if total:
             return imported / total

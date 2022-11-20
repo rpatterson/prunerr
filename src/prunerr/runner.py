@@ -138,15 +138,17 @@ class PrunerrRunner:
         # time to finish as possible.
         self.verify()
 
-        # Run `move` before `review` so review doesn't operate on items that have
-        # already been acted on by Servarr
+        # Run `review` before `move` so it can make any changes to download items before
+        # they're moved and excluded from future review.
+        # Also run before `free-space` in case it removes items.
+        if "reviews" in self.config.get("indexers", {}):
+            results["review"] = self.review()
+
+        # Run `move` before `free-spacce` so that all download items that could be
+        # eligible for deletion are in the `seeding` directory.
         move_results = self.move()
         if move_results:
             results["move"] = move_results
-
-        # Run `review` before `free-space` in case it removes items
-        if "reviews" in self.config.get("indexers", {}):
-            results["review"] = self.review()
 
         free_space_results = self.free_space()
         if free_space_results:

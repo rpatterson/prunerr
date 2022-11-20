@@ -280,7 +280,8 @@ class PrunerrServarrDownloadClient:
             and self.download_dir in download_item.path.parents
             # Skip items with no history other than `grabbed` events
             and [
-                history_record for history_record in self.servarr.get_api_paged_records(
+                history_record
+                for history_record in self.servarr.get_api_paged_records(
                     "history",
                     downloadId=download_item.hashString.upper(),
                 )

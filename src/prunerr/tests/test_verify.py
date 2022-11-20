@@ -17,9 +17,7 @@ class PrunerrVerifyTests(tests.PrunerrTestCase):
     Prunerr verifies corrupt items and resumes them once verified.
     """
 
-    RESPONSES_DIR = (
-        tests.PrunerrTestCase.RESPONSES_DIR.parent / "verify"
-    )
+    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "verify"
 
     def test_verify_workflow(self):
         """

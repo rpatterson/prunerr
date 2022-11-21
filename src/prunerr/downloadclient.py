@@ -2,7 +2,6 @@
 Prunerr interaction with download clients.
 """
 
-import os
 import pathlib
 import shutil
 import urllib.parse
@@ -43,14 +42,11 @@ class PrunerrDownloadClient:
         """
         return f"<{type(self).__name__} at {self.config['url']!r}>"
 
-    def update(self, config=None):
+    def update(self, config):
         """
         Update configuration, connect the RPC client, and update the list of items.
         """
-        if config is not None:
-            self.config = config
-        if self.config is None:
-            raise ValueError("No download client configuration provided")
+        self.config = config
 
         # Configuration specific to Prunerr, IOW not taken from the download client
         self.config["min-free-space"] = calc_free_space_margin(self.runner.config)
@@ -128,16 +124,7 @@ class PrunerrDownloadClient:
         # `self.items`.
         download_dir = pathlib.Path(self.client.session.download_dir)
         for item in [item for item in self.items if download_dir in item.path.parents]:
-            try:
-                item_results = item.review(servarr_queue)
-            except DownloadClientTODOException:
-                logger.exception(
-                    "Un-handled exception reviewing item: %r",
-                    item,
-                )
-                if "DEBUG" in os.environ:
-                    raise
-                continue
+            item_results = item.review(servarr_queue)
             if item_results:
                 results[item] = item_results
         return results
@@ -284,22 +271,14 @@ class PrunerrDownloadClient:
         """
         Resume downloading if it's been stopped.
         """
-        speed_limit_down = self.runner.config["download-clients"][
-            "max-download-bandwidth"
-        ]
+        speed_limit_down = self.runner.config.get("download-clients", {}).get(
+            "max-download-bandwidth",
+            100,
+        )
         if session.speed_limit_down_enabled and (
             not speed_limit_down or speed_limit_down != session.speed_limit_down
         ):
-            if (
-                self.runner.config["download-clients"].get(
-                    "resume-set-download-bandwidth-limit",
-                    False,
-                )
-                and speed_limit_down
-            ):
-                kwargs = dict(speed_limit_down=speed_limit_down)
-            else:
-                kwargs = dict(speed_limit_down_enabled=False)
+            kwargs = dict(speed_limit_down_enabled=False)
             logger.info("Resuming downloading: %s", kwargs)
             self.client.set_session(**kwargs)
 
@@ -399,12 +378,6 @@ class DownloadClientTimeout(Exception):
     """A download client operation took too long."""
 
 
-class DownloadClientTODOException(Exception):
-    """
-    Placeholder exception until we can determine the correct, narrow list of exceptions.
-    """
-
-
 def calc_free_space_margin(config):
     """
     Calculate an appropriate margin of disk space to keep free.
@@ -416,7 +389,7 @@ def calc_free_space_margin(config):
     """
     return (
         (
-            config["download-clients"]["max-download-bandwidth"]
+            config.get("download-clients", {}).get("max-download-bandwidth", 100)
             # Convert bandwidth bits to bytes
             / 8
         )
@@ -427,12 +400,13 @@ def calc_free_space_margin(config):
         )
         * (
             # Multiply by seconds of download time margin
-            config["download-clients"].get("min-download-time-margin", 3600)
+            config.get("download-clients", {}).get("min-download-time-margin", 3600)
         )
     )
 
 
-def log_rmtree_error(function, path, excinfo):
+# TODO: Not sure how to test this, but if there's a way, we should add coverage
+def log_rmtree_error(function, path, excinfo):  # pragma: no cover
     """
     Inform the user on errors deleting item files but also proceed to delete the rest.
 

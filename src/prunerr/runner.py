@@ -368,7 +368,7 @@ class PrunerrRunner:
                     results.setdefault(
                         download_client_url,
                         [],
-                    ).append(repr(download_item))
+                    ).append(download_item)
                     download_clients = self.free_space_download_clients()
                     break
                 if removed_size:

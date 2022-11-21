@@ -168,3 +168,94 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             self.seeding_item.is_dir(),
             "Seeding item still exists after 'upgraded insufficient' `free-space` run",
         )
+
+    def test_free_space_exec(self):
+        """
+        Prunerr deletes items to free space as a part of the `exec` sub-command.
+        """
+        self.mock_responses(
+            self.RESPONSES_DIR.parent / "free-space-upgraded-insufficient",
+        )
+        runner = prunerr.runner.PrunerrRunner(self.CONFIG)
+        runner.update()
+        exec_results = runner.exec_()
+        self.assertIn(
+            "free-space",
+            exec_results,
+            "Free Space results missing from `exec` sub-command results",
+        )
+        self.assertIn(
+            self.download_client_urls[0],
+            exec_results["free-space"],
+            "Download client free space results missing from `exec` results",
+        )
+        self.assertIsInstance(
+            exec_results["free-space"][self.download_client_urls[0]],
+            list,
+            "Download client free space results wrong type from `exec` results",
+        )
+        self.assertEqual(
+            len(exec_results["free-space"][self.download_client_urls[0]]),
+            1,
+            "Download client free space results wrong number of items",
+        )
+
+    def test_free_space_unregistered(self):
+        """
+        Prunerr deletes unregistered items to free space.
+        """
+        self.incomplete_dir.mkdir(parents=True, exist_ok=True)
+        self.seeding_item.rename(self.incomplete_dir / self.seeding_item.name)
+        unregistered_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "free-space-unregistered",
+        )
+        runner = prunerr.runner.PrunerrRunner(self.CONFIG)
+        runner.update()
+        unregistered_results = runner.free_space()
+        self.assert_request_mocks(unregistered_request_mocks)
+        self.assertIn(
+            self.download_client_urls[0],
+            unregistered_results,
+            "Download client free space results missing from unregistered item results",
+        )
+        self.assertIsInstance(
+            unregistered_results[self.download_client_urls[0]],
+            list,
+            "Download client free space results wrong unregistered item results type",
+        )
+        self.assertEqual(
+            len(unregistered_results[self.download_client_urls[0]]),
+            1,
+            "Free space unregistered item results wrong number of items",
+        )
+
+    def test_free_space_orphans(self):
+        """
+        Prunerr deletes orphaned files to free space.
+        """
+        shutil.copy2(
+            self.EXAMPLE_VIDEO,
+            self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name,
+        )
+        orphans_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "free-space-orphans",
+        )
+        runner = prunerr.runner.PrunerrRunner(self.CONFIG)
+        runner.update()
+        orphans_results = runner.free_space()
+        self.assert_request_mocks(orphans_request_mocks)
+        self.assertIn(
+            self.download_client_urls[0],
+            orphans_results,
+            "Download client free space results missing from orphan results",
+        )
+        self.assertIsInstance(
+            orphans_results[self.download_client_urls[0]],
+            list,
+            "Download client free space results wrong orphan results type",
+        )
+        self.assertEqual(
+            len(orphans_results[self.download_client_urls[0]]),
+            1,
+            "Free space orphan results wrong number of items",
+        )

@@ -10,7 +10,6 @@ from unittest import mock
 
 import prunerr.runner
 import prunerr.downloadclient
-import prunerr.downloaditem
 
 from .. import tests
 
@@ -202,3 +201,29 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
             self.servarr_seeding_dir,
             "Wrong seeding directory for downloaded item",
         )
+
+    def test_download_client_repr(self):
+        """
+        The download client representation provides useful information for debugging.
+        """
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
+        download_client.config = {"url": self.download_client_urls[0]}
+        self.assertIn(
+            self.download_client_urls[0],
+            repr(download_client),
+            "Download client URL missing from Servarr representation",
+        )
+
+    def test_download_client_missing_port(self):
+        """
+        The download client informs the user with an error if the port can't be guessed.
+        """
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        runner.config = self.config
+        download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
+        with self.assertRaises(
+            ValueError,
+            msg="Download client URL without port did not raise and error",
+        ):
+            download_client.update({"url": "foo://transmission.example.com"})

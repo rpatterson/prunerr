@@ -1,0 +1,129 @@
+{
+  "arguments": {
+    "torrents": [
+      {
+	"addedDate": 1,
+	"bandwidthPriority": 0,
+	"doneDate": 0,
+	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
+	"error": 0,
+	"errorString": "",
+	"eta": -1,
+	"files": [
+	  {
+	    "bytesCompleted": 2147483648,
+	    "length": 2147483648,
+	    "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+	  }
+	],
+	"fileStats": [
+	  {
+	    "bytesCompleted": 2147483648,
+	    "priority": 0,
+	    "wanted": true
+	  }
+	],
+	"id": 2,
+	"isFinished": false,
+	"isStalled": true,
+	"leftUntilDone": 0,
+	"metadataPercentComplete": 1,
+	"name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+	"hashString": "72D08E64D0FE455A9ECE08AED0BB646D2632D339",
+	"peersConnected": 1,
+	"peersGettingFromUs": 0,
+	"peersSendingToUs": 0,
+	"percentDone": 1,
+	"priorities": [
+	  0
+	],
+	"queuePosition": 4,
+	"rateDownload": 0,
+	"rateUpload": 0,
+	"recheckProgress": 0,
+	"seedRatioLimit": 4,
+	"seedRatioMode": 0,
+	"sizeWhenDone": 2147483648,
+	"startDate": 0,
+	"status": 6,
+	"totalSize": 2147483648,
+	"trackers": [
+	  {
+	    "announce": "udp://tracker.bar.example.com:6969/announce",
+	    "id": 0,
+	    "scrape": "udp://tracker.bar.example.com:6969/scrape",
+	    "tier": 0
+	  }
+	],
+	"uploadRatio": 0.5000,
+	"uploadedEver": 143310734,
+	"wanted": [
+	  1
+	],
+	"webseedsSendingToUs": 0
+      },
+      {
+	"addedDate": 0,
+	"bandwidthPriority": 0,
+	"doneDate": 0,
+	"downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
+	"error": 0,
+	"errorString": "",
+	"eta": -1,
+	"files": [
+	  {
+	    "bytesCompleted": 1072693248,
+	    "length": 1073741824,
+	    "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+	  }
+	],
+	"fileStats": [
+	  {
+	    "bytesCompleted": 1072693248,
+	    "priority": 0,
+	    "wanted": true
+	  }
+	],
+	"id": 1,
+	"isFinished": false,
+	"isStalled": true,
+	"leftUntilDone": 1048576,
+	"metadataPercentComplete": 1,
+	"name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+	"hashString": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
+	"peersConnected": 0,
+	"peersGettingFromUs": 0,
+	"peersSendingToUs": 0,
+	"percentDone": 0.09,
+	"priorities": [
+	  0
+	],
+	"queuePosition": 1,
+	"rateDownload": 0,
+	"rateUpload": 0,
+	"recheckProgress": 0,
+	"seedRatioLimit": 4,
+	"seedRatioMode": 0,
+	"sizeWhenDone": 1073741824,
+	"startDate": 0,
+	"status": 4,
+	"totalSize": 1073741824,
+	"trackers": [
+	  {
+	    "announce": "udp://tracker.foo.example.com:6969/announce",
+	    "id": 0,
+	    "scrape": "udp://tracker.foo.example.com:6969/scrape",
+	    "tier": 0
+	  }
+	],
+	"uploadRatio": 1.5000,
+	"uploadedEver": 1073741824,
+	"wanted": [
+	  1
+	],
+	"webseedsSendingToUs": 0
+      }
+    ]
+  },
+  "result": "success"
+}

@@ -25,7 +25,7 @@ download-clients:
   ## prune download items based the maximum download bandwidth/speed in Mbps and the
   ## amount of time in seconds at that rate for which download clients should be able to
   ## continue downloading without exhausting disk space.
-  ## 100 Mb/s, e.g. dedicated ethernet
+  ## 100 Mb/s, e.g. dedicated ethernet, default
   max-download-bandwidth: 100
   ## 60 seconds * 60 minutes = 1 hour, default
   # min-download-time-margin: 3600

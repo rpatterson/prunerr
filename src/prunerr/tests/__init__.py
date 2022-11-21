@@ -2,10 +2,12 @@
 Tests for Prunerr.
 """
 
+import sys
 import os
 import functools
 import re
 import pathlib
+import subprocess
 import mimetypes
 import email.utils
 import email.message
@@ -54,6 +56,7 @@ class PrunerrTestCase(
 
     # The set of request responses to mock
     RESPONSES_DIR = pathlib.Path(__file__).parent / "responses" / "default"
+    DOWNLOAD_CLIENT_URL = "http://transmission:secret@localhost:9091/transmission/"
 
     # Download client path elements
     STORAGE_RELATIVE = pathlib.PurePath("media", "Library")
@@ -140,6 +143,7 @@ class PrunerrTestCase(
             self.download_client_urls.update(
                 download_client_config["url"]
                 for download_client_config in servarr_download_client_response
+                if download_client_config["enable"]
             )
         self.download_client_urls = list(self.download_client_urls)
         for download_client_url in self.download_client_urls:
@@ -168,7 +172,7 @@ class PrunerrTestCase(
 
         if self.download_client_urls:
             self.set_up_download_item(
-                self.download_client_items_responses[self.download_client_urls[0]][
+                self.download_client_items_responses[self.DOWNLOAD_CLIENT_URL][
                     "arguments"
                 ]["torrents"][-1]["name"]
             )
@@ -200,6 +204,8 @@ class PrunerrTestCase(
         Copy example files into place to represent download item files.
         """
         download_client_url = urllib.parse.urlsplit(download_client_url)
+        if not download_client_url.port:
+            return
         torrent_list_mocks = sorted(
             (
                 self.RESPONSES_DIR
@@ -269,7 +275,11 @@ class PrunerrTestCase(
                 f"Wrong request body for {response_mock['response_dir']}",
             )
         if callable(response_mock.get("json")):
-            return response_mock["json"](request, context, response_mock=response_mock)
+            return response_mock["json"](
+                request=request,
+                context=context,
+                response_mock=response_mock,
+            )
         return response_mock.get("json")
 
     def mock_responses(
@@ -473,13 +483,29 @@ class PrunerrTestCase(
         request=None,
         context=None,
         response_mock=None,
+        delay=0,
     ):  # pylint: disable=unused-argument
         """
         Simulate the download client changing a download items location.
         """
         location = pathlib.Path(request.json()["arguments"]["location"])
         location.mkdir(parents=True, exist_ok=True)
-        self.downloaded_item.rename(location / self.downloaded_item.name)
+        dst = location / self.downloaded_item.name
+        if delay:
+            # Simulate a delay using a subprocess
+            self.addCleanup(
+                subprocess.Popen(  # pylint: disable=consider-using-with
+                    args=[
+                        sys.executable,
+                        "-c",
+                        "import pathlib; "
+                        f"import time; time.sleep({delay}); "
+                        f"pathlib.Path('{self.downloaded_item}').rename('{dst}');",
+                    ],
+                ).communicate,
+            )
+        else:
+            self.downloaded_item.rename(dst)
         context.headers.update(response_mock.get("headers", {}))
         return response_mock["from_mock_dir"]["json"]
 

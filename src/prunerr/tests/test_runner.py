@@ -25,7 +25,7 @@ class PrunerrRunnerTests(tests.PrunerrTestCase):
     CONFIG = HOME / ".config" / "prunerr.yml"
     ENV = ENV
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "default"
+    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "download-client-only"
 
     def test_runner_empty_config(self):
         """
@@ -37,3 +37,18 @@ class PrunerrRunnerTests(tests.PrunerrTestCase):
             runner.exec_(),
             "Wrong `exec` result from empty config file",
         )
+
+    def test_runner_empty_operations(self):
+        """
+        The runner succeeds when only a download client is defined.
+        """
+        runner = prunerr.runner.PrunerrRunner(
+            self.HOME.parent / "download-client-only" / ".config" / "prunerr.yml",
+        )
+        default_request_mocks = self.mock_responses()
+        runner.update()
+        self.assertIsNone(
+            runner.exec_(),
+            "Wrong `exec` result from empty config file",
+        )
+        self.assert_request_mocks(default_request_mocks)

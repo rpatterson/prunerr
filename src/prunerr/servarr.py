@@ -119,17 +119,14 @@ class PrunerrServarrInstance:
         """
         return f"<{type(self).__name__} {self.config['name']!r}>"
 
-    def update(self, config=None):
+    def update(self, config):
         """
         Update configuration, connect the API client, and refresh Servarr API data.
 
         Also retrieves any download clients defined in the Servarr settings and updates
         the prunerr representations.
         """
-        if config is not None:
-            self.config = config
-        if self.config is None:
-            raise ValueError("No Servarr configuration provided")
+        self.config = config
 
         logger.debug(
             "Connecting to %s",
@@ -238,15 +235,11 @@ class PrunerrServarrDownloadClient:
             f"->{self.download_client.config['url']!r}>"
         )
 
-    def update(self, config=None):
+    def update(self, config):
         """
-        Reconcile Prunerr and Servarr download client configurations and update data.
+        Update download client configuration specific to this Servarr instance.
         """
-        if config is not None:
-            self.config = config
-        if self.config is None:
-            raise ValueError("No Servarr configuration provided")
-
+        self.config = config
         # Assemble the download client paths managed by Servarr
         self.download_dir = pathlib.Path(
             self.config["fieldValues"][
@@ -255,7 +248,6 @@ class PrunerrServarrDownloadClient:
                 ]
             ]
         ).resolve()
-
         return self.download_dir
 
     def move(self, move_timeout=5 * 60):
@@ -339,10 +331,9 @@ def deserialize_servarr_download_client(download_client_config):
         for download_client_config_field in download_client_config["fields"]
         if "value" in download_client_config_field
     }
-    netloc = (
-        f"{download_client_config['fieldValues']['host']}:"
-        f"{download_client_config['fieldValues']['port']}"
-    )
+    netloc = f"{download_client_config['fieldValues']['host']}"
+    if "port" in download_client_config["fieldValues"]:
+        netloc = f"{netloc}:{download_client_config['fieldValues']['port']}"
     if download_client_config["fieldValues"].get("username"):
         if download_client_config["fieldValues"].get("password"):
             netloc = (
@@ -360,9 +351,3 @@ def deserialize_servarr_download_client(download_client_config):
         None,
     ).geturl()
     return download_client_config
-
-
-class ServarrTODOException(Exception):
-    """
-    Placeholder exception until we can determine the correct, narrow list of exceptions.
-    """

@@ -1,0 +1,5 @@
+servarrs:
+  Sonarr:
+    url: "http://localhost:8989"
+    api-key: ""
+    type: "sonarr"

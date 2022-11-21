@@ -3,6 +3,8 @@ Test moving download items that Servarr has acted on.
 """
 
 import os
+import functools
+import pathlib
 import json
 
 from unittest import mock
@@ -213,7 +215,10 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
                         "02-torrent-set-location": dict(
-                            json=self.mock_move_torrent_response,
+                            json=functools.partial(
+                                self.mock_move_torrent_response,
+                                delay=1,
+                            ),
                         ),
                     },
                 },
@@ -349,3 +354,90 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             2,
             "Download item file wrong number of links after import",
         )
+
+    def test_move_exec(self):
+        """
+        Prunerr moves imported items as a part of the `exec` sub-command.
+        """
+        self.mock_download_client_complete_item()
+        self.mock_servarr_import_item()
+        runner = prunerr.runner.PrunerrRunner(
+            pathlib.Path(__file__).parent
+            / "home"
+            / "move-exec"
+            / ".config"
+            / "prunerr.yml",
+        )
+        self.mock_responses(
+            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
+            # Insert a dynamic response mock to handle moving imported download items
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        "02-torrent-set-location": dict(
+                            json=self.mock_move_torrent_response,
+                        ),
+                    },
+                },
+            },
+        )
+        runner.update()
+        exec_results = runner.exec_()
+        self.assertIn(
+            "move",
+            exec_results,
+            "Move results missing from `exec` sub-command results",
+        )
+        self.assertIn(
+            self.servarr_urls[0],
+            exec_results["move"],
+            "Servarr move results missing from `exec` sub-command results",
+        )
+        self.assertIn(
+            self.download_client_urls[0],
+            exec_results["move"][self.servarr_urls[0]],
+            "Download client move results missing from `exec` sub-command results",
+        )
+        self.assertIsInstance(
+            exec_results["move"][self.servarr_urls[0]][self.download_client_urls[0]],
+            list,
+            "Download client move results wrong type from `exec` sub-command results",
+        )
+        self.assertEqual(
+            len(
+                exec_results["move"][self.servarr_urls[0]][self.download_client_urls[0]]
+            ),
+            1,
+            "Download client move results wrong number of items",
+        )
+
+    def test_move_timeout(self):
+        """
+        Prunerr times out moving imported items.
+        """
+        self.mock_download_client_complete_item()
+        self.mock_servarr_import_item()
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        self.mock_responses(
+            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
+            # Insert a dynamic response mock to handle moving imported download items
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        "02-torrent-set-location": dict(
+                            json=functools.partial(
+                                self.mock_move_torrent_response,
+                                delay=1,
+                            ),
+                        ),
+                    },
+                },
+            },
+        )
+        runner.update()
+        servarr = list(runner.servarrs.values())[0]
+        with self.assertRaises(
+            prunerr.downloadclient.DownloadClientTimeout,
+            msg="Long download item move did not time out",
+        ):
+            list(servarr.download_clients.values())[0].move(move_timeout=0)

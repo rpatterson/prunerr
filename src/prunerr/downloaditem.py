@@ -297,9 +297,3 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 self.update()
 
         return results
-
-
-class DownloadItemTODOException(Exception):
-    """
-    Placeholder exception until we can determine the correct, narrow list of exceptions.
-    """

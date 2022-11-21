@@ -42,7 +42,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         Run the CLI script and return any error messages.
         """
         stderr_file = io.StringIO()
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit, msg="CLI error message didn't exit"):
             with contextlib.redirect_stderr(stderr_file):
                 prunerr.main(args=args)
         return stderr_file.getvalue()
@@ -52,7 +52,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         The command line script is self-docummenting.
         """
         stdout_file = io.StringIO()
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit, msg="CLI help message didn't exit"):
             with contextlib.redirect_stdout(stdout_file):
                 prunerr.main(args=["--help"])
         stdout = stdout_file.getvalue()

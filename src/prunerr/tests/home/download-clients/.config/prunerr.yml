@@ -10,6 +10,7 @@ servarrs:
 download-clients:
   urls:
     - "https://transmission.example.com"
+    - "https://transmission.foo.example.com"
   max-download-bandwidth: 100
   min-download-time-margin: 600
 indexers:

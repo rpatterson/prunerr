@@ -198,10 +198,14 @@ class PrunerrRunner:
                 for download_id, record in servarr.queue.items()
             )
         # Delegate the rest to the download client
-        return {
-            download_client_url: download_client.review(servarr_queue)
-            for download_client_url, download_client in self.download_clients.items()
-        }
+        review_results = {}
+        for download_client_url, download_client in self.download_clients.items():
+            download_client_results = download_client.review(servarr_queue)
+            if download_client_results:
+                review_results[download_client_url] = download_client_results
+        if review_results:
+            return review_results
+        return None
 
     def free_space(self):
         """

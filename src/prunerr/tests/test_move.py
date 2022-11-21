@@ -108,8 +108,8 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         )
 
         # 3. The download client finishes downloading the item and moves it into the
-        #    Servarr downloads directory.  Running the `move` sub-command moves the
-        #    Prunerr data file along with the item.
+        #    Servarr downloads directory.  Running the `move` sub-command makes no
+        #    changes.
         self.mock_download_client_complete_item()
         # Ensure the test fixture is correct that the download item has finished
         # downloading in the download client.
@@ -205,8 +205,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         )
 
         # 5. The import event becomes visible in the Servarr API history.  The item is
-        #    moved from `downloads` to `seeding` and the Prunerr data file along with
-        #    it.
+        #    moved from `downloads` to `seeding`.
         import_request_mocks = self.mock_responses(
             tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
             # Insert a dynamic response mock to handle moving imported download items

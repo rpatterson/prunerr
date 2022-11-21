@@ -1,0 +1,31 @@
+servarrs:
+  Sonarr:
+    url: "http://localhost:8989"
+    api-key: ""
+    type: "sonarr"
+  Radarr:
+    url: "http://localhost:7878"
+    api-key: ""
+    type: "radarr"
+indexers:
+  hostnames:
+    ExamplePrivateTracker:
+      - "tracker.private.example.com"
+  reviews:
+    - name: "ExamplePrivateTracker"
+      operations:
+        - type: "or"
+          operations:
+            - type: "value"
+              name: "status"
+              equals: "seeding"
+            - type: "value"
+              name: "age"
+              maximum: 604800
+            - type: "value"
+              name: "rate_total"
+              minimum: 50
+          remove: true
+        - type: "value"
+          name: "bandwidthPriority"
+          equals: 1

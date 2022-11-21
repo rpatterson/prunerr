@@ -1,0 +1,3 @@
+download-clients:
+  urls:
+    - "http://transmission:secret@localhost:9091/transmission/"

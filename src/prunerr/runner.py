@@ -193,10 +193,7 @@ class PrunerrRunner:
         # Combine all Servarr API download queue records.
         servarr_queue = {}
         for servarr in self.servarrs.values():
-            servarr_queue.update(
-                (download_id, dict(record, servarr=servarr))
-                for download_id, record in servarr.queue.items()
-            )
+            servarr_queue.update(servarr.queue)
         # Delegate the rest to the download client
         review_results = {}
         for download_client_url, download_client in self.download_clients.items():

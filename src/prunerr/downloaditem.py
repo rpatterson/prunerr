@@ -21,13 +21,6 @@ def parallel_to(base_path, parallel_path, root_basename):
     """
     base_path = pathlib.Path(base_path)
     common_path = pathlib.Path(os.path.commonpath((base_path.parent, parallel_path)))
-    if common_path == pathlib.Path(os.sep):
-        logger.warning(
-            "The only common path between %r and %r is the filesystem root.  "
-            "This is probably a sign of mis-configuration.",
-            base_path.parent,
-            parallel_path,
-        )
     return (
         common_path
         / root_basename

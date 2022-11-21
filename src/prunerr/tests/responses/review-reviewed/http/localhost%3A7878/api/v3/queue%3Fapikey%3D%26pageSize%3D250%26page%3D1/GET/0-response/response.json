@@ -1,0 +1,46 @@
+{
+  "page": 1,
+  "pageSize": 250,
+  "sortKey": "progress",
+  "sortDirection": "descending",
+  "totalRecords": 0,
+  "records": [
+      {
+	"movieId": 1,
+	"languages": [
+          {
+            "id": 1,
+            "name": "English"
+          }
+	],
+	"quality": {
+          "quality": {
+            "id": 1,
+            "name": "WEBDL-1080p",
+            "source": "web",
+            "resolution": 1080,
+            "modifier": "none"
+          },
+          "revision": {
+            "version": 1,
+            "real": 0,
+            "isRepack": false
+          }
+	},
+	"customFormats": [],
+	"size": 1073741824,
+	"title": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
+	"sizeleft": 1048576,
+	"status": "downloading",
+	"trackedDownloadStatus": "ok",
+	"trackedDownloadState": "downloading",
+	"statusMessages": [],
+	"downloadId": "909C9B954B414A87B1DCF6E2FB09650FCC35DE57",
+	"protocol": "torrent",
+	"downloadClient": "transmission",
+	"indexer": "ExamplePrivateTracker",
+	"outputPath": "/media/Library/downloads/Sonarr/Videos/Series/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
+	"id": 1
+      }
+  ]
+}

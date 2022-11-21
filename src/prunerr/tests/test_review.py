@@ -4,7 +4,9 @@ Prunerr performs various configurable action on download items accorging to rule
 
 import os
 import functools
+import pathlib
 import datetime
+import logging
 
 from unittest import mock
 
@@ -153,3 +155,120 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             self.servarr_seeding_dir.exists(),
             "The seeding items directory exists before Servarr import",
         )
+
+        # 2. Run the `review` sub-command again.  Since all changes have already been
+        # made, no further changes are made.
+        reviewed_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "review-reviewed",
+            # Insert a dynamic response mock to add recent dates
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        "01-torrent-get": dict(
+                            json=functools.partial(
+                                self.mock_get_torrent_response,
+                                [
+                                    {
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                        ).timestamp()
+                                    },
+                                    {
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                        ).timestamp()
+                                    },
+                                ],
+                            ),
+                        ),
+                    },
+                },
+            },
+        )
+        prunerr.main(args=[f"--config={self.CONFIG}", "review"])
+        self.assert_request_mocks(reviewed_request_mocks)
+        (private_indexer_reviewed_torrent, _) = reviewed_request_mocks[
+            "http://transmission:secret@localhost:9091/transmission/rpc"
+        ]["POST"][1]["01-torrent-get"]["from_mock_dir"]["json"]["arguments"]["torrents"]
+        self.assertEqual(
+            private_indexer_reviewed_torrent["isPrivate"],
+            True,
+            "Private indexer download item missing the private torrent flag",
+        )
+        self.assertEqual(
+            private_indexer_reviewed_torrent["bandwidthPriority"],
+            1,
+            "Private indexer download item wrong bandwidth priority",
+        )
+        self.assertTrue(
+            private_indexer_item.is_dir(),
+            "Private indexer item is not a directory while downloading",
+        )
+        self.assertTrue(
+            private_indexer_item_file.is_file(),
+            "Private indexer item file is not a file while downloading",
+        )
+        self.assertEqual(
+            private_indexer_item_file.stat().st_nlink,
+            1,
+            "Private indexer item file has more than one link before importing",
+        )
+        self.assertFalse(
+            public_indexer_item.exists(),
+            "Public indexer item not deleted by review",
+        )
+        self.assertFalse(
+            self.servarr_seeding_dir.exists(),
+            "The seeding items directory exists before Servarr import",
+        )
+
+    def test_review_edge_cases(self):
+        """
+        Review of a download item without a queue record logs a warning.
+
+        Also covers deleting download item without a blacklisting it and a review
+        without any configured change in the request mock assertions.
+        """
+        runner = prunerr.runner.PrunerrRunner(
+            config=pathlib.Path(__file__).parent
+            / "home"
+            / "review-edge-cases"
+            / ".config"
+            / "prunerr.yml",
+        )
+        self.mock_responses(
+            self.RESPONSES_DIR.parent / "review-edge-cases",
+        )
+        runner.update()
+        with self.assertLogs(
+            prunerr.downloaditem.logger,
+            level=logging.WARNING,
+        ) as logged_msgs:
+            runner.review()
+        self.assertIn(
+            "not in any Servarr queue",
+            logged_msgs.records[0].message,
+            "Wrong logged record message",
+        )
+
+    def test_review_edge_cases_quiet(self):
+        """
+        Second Review of a download item without a queue record doesn't logs a warning.
+        """
+        runner = prunerr.runner.PrunerrRunner(
+            config=pathlib.Path(__file__).parent
+            / "home"
+            / "review-edge-cases"
+            / ".config"
+            / "prunerr.yml",
+        )
+        runner.quiet = True
+        self.mock_responses(
+            self.RESPONSES_DIR.parent / "review-edge-cases",
+        )
+        runner.update()
+        with self.assertNoLogs(
+            prunerr.downloaditem.logger,
+            level=logging.WARNING,
+        ):
+            runner.review()

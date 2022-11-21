@@ -1,0 +1,77 @@
+{
+    "page": 1,
+    "pageSize": 250,
+    "sortKey": "progress",
+    "sortDirection": "descending",
+    "totalRecords": 1,
+    "records": [
+      {
+	"seriesId": 1,
+	"episodeId": 2,
+	"language": {
+          "id": 1,
+          "name": "English"
+	},
+	"quality": {
+          "quality": {
+            "id": 1,
+            "name": "WEBDL-1080p",
+            "source": "web",
+            "resolution": 1080
+          },
+          "revision": {
+            "version": 1,
+            "real": 0,
+            "isRepack": false
+          }
+	},
+	"size": 2147483648,
+	"title": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+	"sizeleft": 2097152,
+	"status": "downloading",
+	"trackedDownloadStatus": "ok",
+	"trackedDownloadState": "downloading",
+	"statusMessages": [],
+	"downloadId": "72D08E64D0FE455A9ECE08AED0BB646D2632D339",
+	"protocol": "torrent",
+	"downloadClient": "transmission",
+	"indexer": "ExamplePublicTracker",
+	"outputPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+	"id": 2
+      },
+      {
+	"seriesId": 1,
+	"episodeId": 1,
+	"language": {
+          "id": 1,
+          "name": "English"
+	},
+	"quality": {
+          "quality": {
+            "id": 1,
+            "name": "WEBDL-1080p",
+            "source": "web",
+            "resolution": 1080
+          },
+          "revision": {
+            "version": 1,
+            "real": 0,
+            "isRepack": false
+          }
+	},
+	"size": 1073741824,
+	"title": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+	"sizeleft": 1048576,
+	"status": "downloading",
+	"trackedDownloadStatus": "ok",
+	"trackedDownloadState": "downloading",
+	"statusMessages": [],
+	"downloadId": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
+	"protocol": "torrent",
+	"downloadClient": "transmission",
+	"indexer": "ExamplePrivateTracker",
+	"outputPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+	"id": 1
+      }
+    ]
+}

@@ -26,6 +26,11 @@ class PrunerrOperations:
         self.download_client = download_client
         self.config = config
 
+        if "priorities" not in config:
+            # Load sample Prunerr config file and use for default "priorities" config
+            config["priorities"] = [
+                self.download_client.runner.example_confg["indexers"]["priorities"][-1]
+            ]
         self.indexer_operations = {
             operations_type: {
                 indexer_config["name"]: indexer_config
@@ -34,11 +39,6 @@ class PrunerrOperations:
             for operations_type, indexer_configs in config.items()
             if operations_type != "hostnames"
         }
-        if "priorities" not in self.indexer_operations:
-            # Load sample Prunerr config file and use for default "priorities" config
-            self.indexer_operations["priorities"] = [
-                self.download_client.runner.example_confg["indexers"]["priorities"][-1]
-            ]
 
         self.seen_empty_files = set()
 

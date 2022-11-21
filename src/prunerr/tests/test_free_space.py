@@ -4,6 +4,7 @@ Prunerr removes imported items to free space according to configured rules.
 
 import os
 import shutil
+import logging
 
 from unittest import mock
 
@@ -258,4 +259,23 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             len(orphans_results[self.download_client_urls[0]]),
             1,
             "Free space orphan results wrong number of items",
+        )
+
+    def test_free_remaining_downloads(self):
+        """
+        Prunerr logs how much space is required for remaining downloads.
+        """
+        remaining_downloads_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "free-space-remaining",
+        )
+        with self.assertLogs(
+            prunerr.downloadclient.logger,
+            level=logging.DEBUG,
+        ) as logged_msgs:
+            prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
+        self.assert_request_mocks(remaining_downloads_request_mocks)
+        self.assertIn(
+            "greater than the available free",
+            logged_msgs.records[-2].message,
+            "Wrong logged record message",
         )

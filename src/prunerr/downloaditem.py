@@ -61,9 +61,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         item has multiple files, assumes that all files are under the same top-level
         directory.
         """
-        file_roots = [
-            pathlib.Path(item_file.name).parts[0] for item_file in self.files()
-        ]
+        file_roots = [pathlib.Path(item_file.name).parts[0] for item_file in self.files]
         if file_roots:
             if len(set(file_roots)) > 1:
                 logger.error(
@@ -157,55 +155,14 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
         ) / (done_date - self._fields["addedDate"].value)
 
-    @property
-    def size_imported(self):
-        """
-        The total size of item files that have been imported by Servarr.
-
-        IOW, the sum of sizes of all item file that have more than one hard link.
-        """
-        return sum(
-            stat.st_size for path, stat in self.list_files_stats() if stat.st_nlink >= 1
-        )
-
-    @property
-    def size_imported_proportion(self):
-        """
-        The proportion of total size of files that have been imported by Servarr.
-        """
-        total = 0
-        imported = 0
-        for _, stat in self.list_files_stats():
-            total += stat.st_size
-            if stat.st_nlink > 1:
-                imported += stat.st_size
-        if total:
-            return imported / total
-        return 0
-
-    def list_files(self):
+    @functools.cached_property
+    def files(self):  # pylint: disable=invalid-overridden-method
         """
         Iterate over all download item file paths that exist.
 
         Optionally filter the list by those that are selected in the download client.
         """
-        files = self.files()
-        if not files:
-            raise ValueError(f"No files found in {self!r}")
-
-        for file_ in files:
-            file_path = self.path.parent / file_.name
-            if file_path.exists():
-                yield file_path
-
-    def list_files_stats(self):
-        """
-        Yield the path and stat for all item files.
-
-        Useful to avoid redundant `stat` syscalls.
-        """
-        for item_file in self.list_files():
-            yield item_file, item_file.stat()
+        return [PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()]
 
     def match_indexer_urls(self):
         """
@@ -290,3 +247,47 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 self.update()
 
         return results
+
+
+class PrunerrDownloadItemFile:
+    """
+    Combine Prunerr's download item file access and the RPC client library's.
+    """
+
+    def __init__(self, download_item, rpc_file):
+        """
+        Capture a reference to the RPC client library item file.
+        """
+        self.download_item = download_item
+        self.rpc_file = rpc_file
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.rpc_file, name)
+        except AttributeError:
+            return getattr(self.stat, name)
+
+    @functools.cached_property
+    def path(self):
+        """
+        Assemble a `pathlib` path for this item file only as needed and only once.
+        """
+        return self.download_item.path.parent / self.rpc_file.name
+
+    @functools.cached_property
+    def stat(self):
+        """
+        Lookup item file `stat` metadata only as needed and only once.
+        """
+        if self.path.exists():
+            return self.path.stat()
+        return None
+
+    @functools.cached_property
+    def size_imported(self):
+        """
+        Return the file's size if the file has more than one hard link.
+        """
+        if self.stat is not None and self.st_nlink > 1:
+            return self.st_size
+        return 0

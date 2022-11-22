@@ -170,8 +170,7 @@ class PrunerrOperations:
         aggregation = operation_config.get("aggregation", "portion")
         total = operation_config.get("total", "size_when_done")
 
-        item_files = download_item.files()
-        if not item_files:
+        if not download_item.files:
             if download_item.hashString.upper() not in self.seen_empty_files:
                 logger.debug(
                     "Download item contains no files: %r",
@@ -186,11 +185,11 @@ class PrunerrOperations:
             for pattern in patterns:
                 matching_files.extend(
                     item_file
-                    for item_file in item_files
+                    for item_file in download_item.files
                     if re.fullmatch(pattern, item_file.name)
                 )
         else:
-            matching_files = item_files
+            matching_files = download_item.files
 
         if aggregation == "count":
             sort_value = len(matching_files)

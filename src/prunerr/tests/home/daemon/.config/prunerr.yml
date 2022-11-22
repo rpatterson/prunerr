@@ -94,8 +94,9 @@ indexers:
             - type: "value"
               name: "ratio"
               minimum: 1.0
-        - type: "value"
-          name: "size_imported_proportion"
+        - type: "files"
+          name: "size_imported"
+          aggregation: "portion"
           reversed: true
           filter: true
           minimum: 0.9
@@ -110,8 +111,9 @@ indexers:
           name: "size_when_done"
     - name: null
       operations:
-        - type: "value"
-          name: "size_imported_proportion"
+        - type: "files"
+          name: "size_imported"
+          aggregation: "portion"
           reversed: true
         - type: "value"
           name: "ratio"

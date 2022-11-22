@@ -109,31 +109,3 @@ class PrunerrDownloadItemTests(tests.PrunerrTestCase):
             0,
             "Wrong download item total download rate",
         )
-
-    def test_download_item_size_imported(self):
-        """
-        Download items provide access to the total size of imported files.
-        """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
-        self.mock_responses()
-        runner.update()
-        download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
-        self.assertEqual(
-            download_items[1].size_imported,
-            0,
-            "Wrong download item total size of imported files",
-        )
-
-    def test_download_item_no_files(self):
-        """
-        Download items provide access to the total size of imported files.
-        """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
-        self.mock_responses()
-        runner.update()
-        download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
-        with self.assertRaises(
-            ValueError,
-            msg="Download item without files doesn't raise an error",
-        ):
-            list(download_items[0].list_files())

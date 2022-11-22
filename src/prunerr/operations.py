@@ -134,8 +134,6 @@ class PrunerrOperations:
         value = getattr(item, operation_config["name"], missing_value)
         if value is not missing_value:
             return value
-        if callable(getattr(item, "get", None)):
-            return item.get(operation_config["name"])
         return None
 
     def exec_operation_or(self, operation_config, item):

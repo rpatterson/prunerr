@@ -86,6 +86,15 @@
 	"name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
 	"hashString": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
 	"peersConnected": 0,
+        "peersFrom": {
+	  "fromCache": 0,
+          "fromDht": 0,
+          "fromIncoming": 0,
+          "fromLpd": 0,
+          "fromLtep": 0,
+          "fromPex": 0,
+          "fromTracker": 0
+	},
 	"peersGettingFromUs": 0,
 	"peersSendingToUs": 0,
 	"percentDone": 0.09,

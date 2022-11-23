@@ -46,7 +46,7 @@ run: build
 	docker compose up
 
 .PHONY: release
-### Publish installable Python packages to PyPI
+### Publish installable Python packages to PyPI and container images to Docker Hub
 release: ~/.pypirc ./var/log/docker-login.log test-docker
 # Prevent uploading unintended distributions
 	rm -v ./dist/*
@@ -93,11 +93,9 @@ upgrade:
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
 	docker compose down --rmi "all" -v || true
-	test ! -x "./.tox/lint/bin/pre-commit" || (
-	    ./.tox/lint/bin/pre-commit uninstall --hook-type pre-push
-	    ./.tox/lint/bin/pre-commit uninstall
-	    ./.tox/lint/bin/pre-commit clean
-	)
+	./.tox/lint/bin/pre-commit uninstall --hook-type pre-push || true
+	./.tox/lint/bin/pre-commit uninstall || true
+	./.tox/lint/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
 	    "./var/log/editable.log" "./var/log/docker-build.log"

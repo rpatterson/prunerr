@@ -7,9 +7,7 @@ services:
   ## Container for use by end users
   python-project-structure:
     image: "merpatterson/python-project-structure"
-    build:
-      context: "./"
-      pull: true
+    build: "./"
     # Make the run-time user configurable in `./.env`
     user: "${PUID:-1000}:${PGID:-100}"
     restart: "unless-stopped"

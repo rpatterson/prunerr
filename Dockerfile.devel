@@ -2,7 +2,7 @@
 
 # Stay as close to the end user image as possible without sacrificing development
 # efficiency.
-FROM rpatterson/python-project-structure
+FROM merpatterson/python-project-structure
 
 USER "root"
 WORKDIR "/usr/local/src/python-project-structure/"

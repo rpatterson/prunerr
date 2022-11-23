@@ -6,7 +6,7 @@ services:
 
   ## Container for use by end users
   python-project-structure:
-    image: "rpatterson/python-project-structure"
+    image: "merpatterson/python-project-structure"
     build:
       context: "./"
       pull: true

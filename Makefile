@@ -73,8 +73,6 @@ test: build format test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: ./var/log/docker-build.log
-	ls -al ./.tox*/
-	whoami
 	docker compose run --rm python-project-structure.devel
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm --entrypoint="python" python-project-structure \

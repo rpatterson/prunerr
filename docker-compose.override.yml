@@ -13,6 +13,7 @@ services:
     build:
       context: "./"
       dockerfile: "./Dockerfile.devel"
+    user: "${PUID:-1000}:${PGID:-100}"
     volumes:
       # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/python-project-structure/"

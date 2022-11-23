@@ -56,6 +56,7 @@ release: ~/.pypirc ./var/log/docker-login.log test-docker
 	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	docker push "merpatterson/python-project-structure"
+	docker compose up docker-pushrm
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -135,7 +136,7 @@ expand-template:
 		./requirements.txt ./requirements-devel.txt \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore \
 		./docker-compose.yml ./docker-compose.override.yml \
-		./.env
+		./.env ./README.md
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	docker compose build --pull python-project-structure | tee -a "$(@)"

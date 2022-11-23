@@ -20,3 +20,24 @@ services:
       # If created by `# dockerd`, it ends up owned by `root`.
       - "./.tox-docker/:/usr/local/src/python-project-structure/.tox"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+
+  ## Contianers used during release
+
+  pandoc:
+    image: "pandoc/core"
+    user: "${PUID:-1000}:${PGID:-100}"
+    volumes:
+      - "./:/data/"
+    command: >-
+      "./README.rst" -f "rst" -t "markdown" -o "./README.md"
+
+  docker-pushrm:
+    image: "chko/docker-pushrm"
+    depends_on:
+      - "pandoc"
+    env_file: "./.env"
+    volumes:
+      - "./:/data/"
+    command: >-
+      --file "/data/README.md" --short "Python project structure foundation or template"
+      --debug "merpatterson/python-project-structure"

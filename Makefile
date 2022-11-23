@@ -11,10 +11,10 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
-# Options affecting target behavior
+# Options controlling behavior
+TWINE_UPLOAD_AGS=-r "testpypi"
 export PUID=1000
 export PGID=100
-REQUIREMENTS=./requirements-devel.txt
 
 # Derived values
 VENVS = $(shell tox -l)
@@ -45,6 +45,19 @@ run: build
 	docker compose down
 	docker compose up
 
+.PHONY: release
+### Publish installable Python packages to PyPI
+release: ~/.pypirc ./var/log/docker-login.log test-docker
+# Prevent uploading unintended distributions
+	rm -v ./dist/*
+	$(MAKE) build-dist
+# https://twine.readthedocs.io/en/latest/#using-twine
+	./.tox/py3/bin/twine check dist/*
+	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
+# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+	docker push "merpatterson/python-project-structure"
+	docker compose up docker-pushrm
+
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
 format:
@@ -60,8 +73,7 @@ test: build format test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: ./var/log/docker-build.log
-	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
-	    --entrypoint="tox" python-project-structure
+	docker compose run --rm python-project-structure.devel
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm --entrypoint="python" python-project-structure \
 	    -c 'import pythonprojectstructure; print(pythonprojectstructure)'
@@ -122,17 +134,13 @@ expand-template:
 # Docker targets
 ./var/log/docker-build.log: \
 		./requirements.txt ./requirements-devel.txt \
-		./Dockerfile ./docker-compose.yml ./.env
-# Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
-# dockerd`, it ends up owned by `root`.
-	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/" |
-	    tee -a "$(@)"
-	docker compose build --pull \
-	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
-	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" | tee -a "$(@)"
-# Ensure that `./.tox/` is also up to date in the container
-	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
-	    --entrypoint="tox" python-project-structure -r --notest -v | tee -a "$(@)"
+		./Dockerfile ./Dockerfile.devel ./.dockerignore \
+		./docker-compose.yml ./docker-compose.override.yml \
+		./.env ./README.md
+# Workaround issues with local images and the development image depending on the end
+# user image.  It seems that `depends_on` isn't sufficient.
+	docker compose build --pull python-project-structure | tee -a "$(@)"
+	docker compose build | tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in
@@ -149,7 +157,16 @@ expand-template:
 ./.git/hooks/pre-push: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install --hook-type pre-push
 
-
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+
+# User-created pre-requisites
+~/.pypirc: .SHELLFLAGS = -eu -o pipefail -c
+~/.pypirc:
+	echo "You must create your ~/.pypirc file:
+	    https://packaging.python.org/en/latest/specifications/pypirc/"
+	false
+./var/log/docker-login.log:
+	docker login
+	date | tee -a "$(@)"

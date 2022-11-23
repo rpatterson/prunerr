@@ -96,3 +96,6 @@ ENV/
 
 # Emacs editor settings
 /.dir-locals.el
+
+# Project-specific build artifacts
+/README.md

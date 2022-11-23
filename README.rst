@@ -28,6 +28,8 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
   $ sudo pip3 install python-project-structure
 
+Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage details.
+
 
 Motivation
 ==========
@@ -57,4 +59,7 @@ template.
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installing/
 
-.. _Makefile: ./Makefile
+.. _Makefile: https://github.com/rpatterson/python-project-structure/blob/master/Makefile
+.. _the example ./docker-compose.yml file: https://github.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
+
+.. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure

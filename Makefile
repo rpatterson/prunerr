@@ -11,6 +11,9 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Options controlling behavior
+TWINE_UPLOAD_AGS=-r "testpypi"
+
 # Derived values
 VENVS = $(shell tox -l)
 
@@ -28,6 +31,16 @@ build: ./var/log/init-setup.log ./var/log/recreate.log
 ### Build installable Python packages, mostly to check build locally
 build-dist: build
 	./.tox/build/bin/python -m build
+
+.PHONY: release
+### Publish installable Python packages to PyPI
+release: test ~/.pypirc
+# Prevent uploading unintended distributions
+	rm -v ./dist/*
+	$(MAKE) build-dist
+# https://twine.readthedocs.io/en/latest/#using-twine
+	./.tox/py3/bin/twine check dist/*
+	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -106,7 +119,13 @@ expand-template:
 ./.git/hooks/pre-push: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install --hook-type pre-push
 
-
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+
+# User-created pre-requisites
+~/.pypirc: .SHELLFLAGS = -eu -o pipefail -c
+~/.pypirc:
+	echo "You must create your ~/.pypirc file:
+	    https://packaging.python.org/en/latest/specifications/pypirc/"
+	false

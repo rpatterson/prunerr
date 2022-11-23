@@ -47,13 +47,15 @@ run: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: test ~/.pypirc
+release: ~/.pypirc ./var/log/docker-login.log test-docker
 # Prevent uploading unintended distributions
 	rm -v ./dist/*
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*
 	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
+# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+	docker push "merpatterson/python-project-structure"
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -164,3 +166,6 @@ expand-template:
 	echo "You must create your ~/.pypirc file:
 	    https://packaging.python.org/en/latest/specifications/pypirc/"
 	false
+./var/log/docker-login.log:
+	docker login
+	date | tee -a "$(@)"

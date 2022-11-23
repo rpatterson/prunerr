@@ -10,8 +10,7 @@ COPY [ "./requirements.txt", "./" ]
 RUN pip install --no-cache-dir -r "./requirements.txt"
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
-COPY [ "./", "./" ]
-RUN pip install --no-cache-dir "./"
+RUN --mount=source=./,target=./,rw,type=bind pip install --no-cache-dir "./"
 
 # Stay as close to the common/standard Python user run-time environment as possible.
 # Match permissions inside and outside the container.  Default to the common/standard

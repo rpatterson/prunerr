@@ -15,6 +15,7 @@ RUN pip install -v --no-cache-dir -r "./requirements-devel.txt"
 # re-installing and for easier debugging.  Done as root to install into the container's
 # system Python then change the ownership back to the unprivileged user to make it
 # writeable.
+COPY [ "./", "./" ]
 RUN pip install -v --no-cache-dir -e "./" && \
     chown -R 1000:1000 "./"
 # Back to the unprivileged user for best run-time behavior.

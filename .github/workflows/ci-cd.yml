@@ -54,7 +54,7 @@ jobs:
         uses: "actions/cache@master"
         env:
           # Increment to force clearing the cache
-          cache-name: "cache-tox-envs-v2"
+          cache-name: "cache-tox-envs-v1"
         with:
           path: "./.tox"
           # Never get a cache hit to force always caching the upgraded dependencies

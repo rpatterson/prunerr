@@ -14,7 +14,6 @@ PS1?=$$
 # Options affecting target behavior
 export PUID=1000
 export PGID=100
-REQUIREMENTS=./requirements-devel.txt
 
 # Derived values
 VENVS = $(shell tox -l)
@@ -60,8 +59,7 @@ test: build format test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: ./var/log/docker-build.log
-	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
-	    --entrypoint="tox" python-project-structure
+	docker compose run --rm python-project-structure.devel
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm --entrypoint="python" python-project-structure \
 	    -c 'import pythonprojectstructure; print(pythonprojectstructure)'
@@ -122,17 +120,10 @@ expand-template:
 # Docker targets
 ./var/log/docker-build.log: \
 		./requirements.txt ./requirements-devel.txt \
-		./Dockerfile ./docker-compose.yml ./.env
-# Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
-# dockerd`, it ends up owned by `root`.
-	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/" |
-	    tee -a "$(@)"
-	docker compose build --pull \
-	    --build-arg "PUID=$(PUID)" --build-arg "PGID=$(PGID)" \
-	    --build-arg "REQUIREMENTS=$(REQUIREMENTS)" | tee -a "$(@)"
-# Ensure that `./.tox/` is also up to date in the container
-	docker compose run --rm --workdir="/usr/local/src/python-project-structure/" \
-	    --entrypoint="tox" python-project-structure -r --notest -v | tee -a "$(@)"
+		./Dockerfile ./Dockerfile.devel ./.dockerignore \
+		./docker-compose.yml ./docker-compose.override.yml \
+		./.env
+	docker compose build | tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

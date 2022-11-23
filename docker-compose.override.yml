@@ -5,11 +5,18 @@ version: "3.8"
 
 services:
 
-  python-project-structure:
-    build: "./"
+  ## Container for use by developers
+  python-project-structure.devel:
+    image: "rpatterson/python-project-structure:devel"
+    depends_on:
+      - "python-project-structure"
+    build:
+      context: "./"
+      dockerfile: "./Dockerfile.devel"
     volumes:
-      # For development, test changes without rebuilding the image
+      # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/python-project-structure/"
-      # Use separate Python artifacts inside the image and locally on the host
+      # Ensure access permissions to build artifacts inside docker.
+      # If created by `# dockerd`, it ends up owned by `root`.
+      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
-      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"

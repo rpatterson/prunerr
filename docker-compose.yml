@@ -4,11 +4,12 @@ version: "3.8"
 
 services:
 
+  ## Container for use by end users
   python-project-structure:
     image: "rpatterson/python-project-structure"
-    # Match permissions inside and outside the container
+    build:
+      context: "./"
+      pull: true
+    # Make the run-time user configurable in `./.env`
     user: "${PUID:-1000}:${PGID:-100}"
-    environment:
-      # Find the same configuration file even when run as another user, e.g. `root`.
-      HOME: "/home/python-project-structure"
     restart: "unless-stopped"

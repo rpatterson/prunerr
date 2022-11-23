@@ -135,6 +135,10 @@ expand-template:
 		./Dockerfile ./Dockerfile.devel ./.dockerignore \
 		./docker-compose.yml ./docker-compose.override.yml \
 		./.env
+# Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
+# dockerd`, it ends up owned by `root`.
+	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/" |
+	    tee -a "$(@)"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	docker compose build --pull python-project-structure | tee -a "$(@)"

@@ -75,6 +75,9 @@ test: build format test-docker
 test-docker: ./var/log/docker-build.log
 	id
 	ls -an ./.tox*/
+	docker compose run --rm --entrypoint="id" python-project-structure.devel
+	docker compose run --rm --entrypoint="ls" python-project-structure.devel \
+	    -an ./.tox*/
 	docker compose run --rm python-project-structure.devel
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm --entrypoint="python" python-project-structure \

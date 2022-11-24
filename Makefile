@@ -62,8 +62,7 @@ run: build-docker
 release: test-docker
 # Release Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm --entrypoint="make" python-project-structure.devel \
-	    release-python
+	docker compose run --rm python-project-structure.devel make release-python
 # Release the container images from the local host
 	$(MAKE) release-docker
 .PHONY: release-python
@@ -95,8 +94,7 @@ format: build-local
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test: build-docker
 # Run from the development Docker container for consistency
-	docker compose run --rm --entrypoint="make" python-project-structure.devel \
-	    format test-local
+	docker compose run --rm python-project-structure.devel make format test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local
@@ -104,11 +102,10 @@ test-local: build-local
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker
-	docker compose run --rm --entrypoint="make" python-project-structure.devel \
-	    test-local
+	docker compose run --rm python-project-structure.devel make test-local
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run --rm --entrypoint="python" python-project-structure \
-	    -c 'import pythonprojectstructure; print(pythonprojectstructure)'
+	docker compose run --rm python-project-structure \
+	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: ./var/log/editable.log
@@ -173,6 +170,9 @@ expand-template:
 # user image.  It seems that `depends_on` isn't sufficient.
 	docker compose build --pull python-project-structure | tee -a "$(@)"
 	docker compose build | tee -a "$(@)"
+# Prepare the testing environment and tools as much as possible to reduce development
+# iteration time when using the image.
+	docker compose run --rm python-project-structure.devel make build-local
 
 # Local environment variables from a template
 ./.env: ./.env.in

@@ -13,22 +13,28 @@ services:
     build:
       context: "./"
       dockerfile: "./Dockerfile.devel"
+    environment:
+      # Make the run-time user configurable in `./.env`
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-${PUID:-1000}}"
     volumes:
       # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/python-project-structure/"
+      # Preserve caches caches between container runs
+      - "./home/:/home/python-project-structure/"
       # Ensure access permissions to build artifacts inside docker.
       # If created by `# dockerd`, it ends up owned by `root`.
       - "./var-docker/:/usr/local/src/python-project-structure/var/"
       - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
       # PyPI release publishing credentials
-      - "~/.pypirc:/home/python-project-structure/.pypirc"
+      - "${HOME}/.pypirc:/home/python-project-structure/.pypirc"
 
   ## Contianers used during release
 
   pandoc:
     image: "pandoc/core"
-    user: "${PUID:-1000}:${PGID:-100}"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     volumes:
       - "./:/data/"
     command: >-

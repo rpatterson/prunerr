@@ -8,6 +8,10 @@ services:
   python-project-structure:
     image: "merpatterson/python-project-structure"
     build: "./"
-    # Make the run-time user configurable in `./.env`
-    user: "${PUID:-1000}:${PGID:-100}"
+    environment:
+      # Make the run-time user configurable in `./.env` to match permissions inside and
+      # outside the container.  Default to the common/standard main/first user and group
+      # IDs
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-${PUID:-1000}}"
     restart: "unless-stopped"

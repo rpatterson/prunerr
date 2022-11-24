@@ -18,8 +18,11 @@ services:
       - "./:/usr/local/src/python-project-structure/"
       # Ensure access permissions to build artifacts inside docker.
       # If created by `# dockerd`, it ends up owned by `root`.
-      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox"
+      - "./var-docker/:/usr/local/src/python-project-structure/var/"
+      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      # PyPI release publishing credentials
+      - "~/.pypirc:/home/python-project-structure/.pypirc"
 
   ## Contianers used during release
 

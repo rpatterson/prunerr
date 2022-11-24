@@ -3,6 +3,6 @@ repos:
     hooks:
     - id: "test"
       name: "test"
-      entry: "make test-docker"
+      entry: "make test"
       language: "python"
       pass_filenames: false

@@ -26,41 +26,65 @@ VENVS = $(shell tox -l)
 ### Default target
 all: build
 
+# Strive for as much consistency as possible in development tasks between the local host
+# and inside containers.  To that end, most of the `*-docker` container target recipes
+# should run the corresponding `*-local` local host target recipes inside the
+# development container.  Top level targets, like `test`, should run as much as possible
+# inside the development container.
+
 .PHONY: build
-### Perform any currently necessary local set-up common to most operations
-build: ./var/log/init-setup.log ./var/log/recreate.log ./var/log/docker-build.log
+### Set up everything for development from a checkout, local and in containers
+build: ./var/log/init-setup.log build-local build-docker
+.PHONY: build-local
+### Set up for development locally, directly on the host
+build-local: ./var/log/recreate.log
+.PHONY: build-docker
+### Set up for development in Docker containers
+build-docker: ./var/log/docker-build.log
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
-build-dist: build
+build-dist: build-local
 	./.tox/build/bin/python -m build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
-start: build
+start: build-docker
 	docker compose down
 	docker compose up -d
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging
-run: build
+run: build-docker
 	docker compose down
 	docker compose up
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: ~/.pypirc ./var/log/docker-login.log test-docker
+release: test-docker
+# Release Python packages/distributions from the development Docker container for
+# consistency/reproducibility.
+	docker compose run --rm --entrypoint="make" python-project-structure.devel \
+	    release-python
+# Release the container images from the local host
+	$(MAKE) release-docker
+.PHONY: release-python
+### Publish installable Python packages to PyPI
+release-python: ~/.pypirc
 # Prevent uploading unintended distributions
 	rm -v ./dist/*
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*
 	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
+.PHONY: release-docker
+### Publish container images to Docker Hub
+release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	docker push "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format:
+format: build-local
 	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
@@ -68,16 +92,23 @@ format:
 	./.tox/lint/bin/black ./
 
 .PHONY: test
-### Run the full suite of tests, coverage checks, and linters
-test: build format test-docker
+### Format the code and run the full suite of tests, coverage checks, and linters
+test: build-docker
+# Run from the development Docker container for consistency
+	docker compose run --rm --entrypoint="make" python-project-structure.devel \
+	    format test-local
+.PHONY: test-local
+### Run the full suite of tests on the local host
+test-local: build-local
+	tox
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
-test-docker: ./var/log/docker-build.log
-	docker compose run --rm python-project-structure.devel
+test-docker: build-docker
+	docker compose run --rm --entrypoint="make" python-project-structure.devel \
+	    test-local
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm --entrypoint="python" python-project-structure \
 	    -c 'import pythonprojectstructure; print(pythonprojectstructure)'
-
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: ./var/log/editable.log
@@ -92,7 +123,7 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	docker compose down --rmi "all" -v || true
+	docker compose --remove-orphans down --rmi "all" -v || true
 	./.tox/lint/bin/pre-commit uninstall --hook-type pre-push || true
 	./.tox/lint/bin/pre-commit uninstall || true
 	./.tox/lint/bin/pre-commit clean || true
@@ -120,25 +151,24 @@ expand-template:
 ## Real targets
 
 ./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
-	tox -r -e "build"
+	tox -e "build"
 
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
-	tox -r --notest -v | tee -a "$(@)"
+	tox -e "ALL" -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 
 # Docker targets
 ./var/log/docker-build.log: \
-		./requirements.txt ./requirements-devel.txt \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore \
 		./docker-compose.yml ./docker-compose.override.yml \
 		./.env
-# Ensure access permissions to the `./.tox/` directory inside docker.  If created by `#
-# dockerd`, it ends up owned by `root`.
-	mkdir -pv "./.tox-docker/" "./src/python_project_structure-docker.egg-info/" |
-	    tee -a "$(@)"
+# Ensure access permissions to build artifacts in container volumes.
+# If created by `# dockerd`, they end up owned by `root`.
+	mkdir -pv "./var-docker/" "./.tox-docker/" \
+	    "./src/python_project_structure-docker.egg-info/" | tee -a "$(@)"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	docker compose build --pull python-project-structure | tee -a "$(@)"

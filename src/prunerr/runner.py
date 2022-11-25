@@ -7,6 +7,7 @@ import time
 import socket
 import functools
 import pathlib
+import json
 import logging
 
 import yaml
@@ -44,6 +45,10 @@ class PrunerrRunner:
         retry=tenacity.retry_if_exception_type(
             (
                 socket.error,
+                # Can be raised by `transmission_rpc` when deserializing JSON
+                ValueError,
+                # Can be raised by `transmission_rpc` when a response is interrupted
+                json.JSONDecodeError,
                 transmission_rpc.error.TransmissionError,
                 arrapi.exceptions.ConnectionFailure,
             )

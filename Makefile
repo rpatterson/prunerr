@@ -97,7 +97,7 @@ expand-template:
 ## Real targets
 
 ./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
-	tox -r -e "build"
+	tox -e "build"
 
 ./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"

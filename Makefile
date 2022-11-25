@@ -69,7 +69,7 @@ release: test-docker
 ### Publish installable Python packages to PyPI
 release-python: ~/.pypirc
 # Prevent uploading unintended distributions
-	rm -v ./dist/*
+	rm -vf ./dist/*
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*

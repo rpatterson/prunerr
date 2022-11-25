@@ -159,9 +159,8 @@ expand-template:
 
 # Docker targets
 ./var/log/docker-build.log: \
-		./Dockerfile ./Dockerfile.devel ./.dockerignore \
-		./docker-compose.yml ./docker-compose.override.yml \
-		./.env
+		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
+		./docker-compose.yml ./docker-compose.override.yml ./.env
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "./var-docker/" "./.tox-docker/" \

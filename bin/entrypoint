@@ -13,7 +13,7 @@ fi
 
 
 main() {
-    if [ -z "${PUID}" ]
+    if [ ! -z "${PUID}" ]
     then
 	if [ "$(id -u)" != "0" ]
 	then
@@ -26,9 +26,7 @@ main() {
 	adduser --uid "${PUID}" --gid "${PGID:-${PUID}}" --disabled-password \
 		--gecos "Python Project Structure,,," "python-project-structure"
 	# Delegate the rest to the `CMD`
-	shell=${1}
-	shift
-	exec su -s "${shell}" - "python-project-structure" "${@}"
+	exec su -P -c "exec ${*}" - "python-project-structure"
     fi
 
     # Delegate the rest to the `CMD`

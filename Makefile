@@ -70,8 +70,8 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	./.tox/lint/bin/pre-commit uninstall --hook-type pre-push || true
-	./.tox/lint/bin/pre-commit uninstall || true
+	./.tox/lint/bin/pre-commit uninstall \
+	    --hook-type "pre-commit" --hook-type "pre-push" || true
 	./.tox/lint/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
@@ -107,15 +107,13 @@ expand-template:
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
+./var/log/init-setup.log: ./.git/hooks/pre-commit
 	mkdir -pv "$(dir $(@))"
 	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
-	./.tox/lint/bin/pre-commit install
-
-./.git/hooks/pre-push: ./var/log/recreate.log
-	./.tox/lint/bin/pre-commit install --hook-type pre-push
+	./.tox/lint/bin/pre-commit install \
+	    --hook-type "pre-commit" --hook-type "pre-push"
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

@@ -28,6 +28,7 @@ services:
       - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
       # PyPI release publishing credentials
+      - "${HOME}/.gnupg:/home/python-project-structure/.gnupg"
       - "${HOME}/.pypirc:/home/python-project-structure/.pypirc"
 
   ## Contianers used during release

@@ -25,6 +25,11 @@ main() {
 	# directory can be looked up.
 	adduser --uid "${PUID}" --gid "${PGID:-${PUID}}" --disabled-password \
 		--gecos "Python Project Structure,,," "python-project-structure"
+	# Fix the TTY ownership if the session is interactive
+	if tty_dev=$(tty)
+	then
+	    chown -c "python-project-structure" "${tty_dev}"
+	fi
 	# Delegate the rest to the `CMD`
 	exec gosu "python-project-structure" "${@}"
     fi

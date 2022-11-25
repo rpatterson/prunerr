@@ -26,7 +26,7 @@ main() {
 	adduser --uid "${PUID}" --gid "${PGID:-${PUID}}" --disabled-password \
 		--gecos "Python Project Structure,,," "python-project-structure"
 	# Delegate the rest to the `CMD`
-	exec su -P -c "exec ${*}" - "python-project-structure"
+	exec gosu "python-project-structure" "${@}"
     fi
 
     # Delegate the rest to the `CMD`

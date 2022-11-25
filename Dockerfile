@@ -4,6 +4,7 @@
 FROM python:3
 
 # Put the `ENTRYPOINT` on the `$PATH`
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
 WORKDIR "/usr/local/src/python-project-structure/"

@@ -59,18 +59,16 @@ run: build-docker
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: test-docker
-# Release Python packages/distributions from the development Docker container for
-# consistency/reproducibility.
-	docker compose run --rm python-project-structure.devel make release-python
-# Release the container images from the local host
-	$(MAKE) release-docker
+release: test-docker release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: ~/.pypirc
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
-	$(MAKE) build-dist
+# Build Python packages/distributions from the development Docker container for
+# consistency/reproducibility.
+	docker compose run --rm python-project-structure.devel make build-dist
+# Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*
 	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*

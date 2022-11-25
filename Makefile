@@ -40,6 +40,8 @@ build-dist: build
 .PHONY: release
 ### Publish installable Python packages to PyPI
 release: test ~/.pypirc
+# Increment the version in VCS
+	./.tox/py3/bin/cz bump --check-consistency
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 	$(MAKE) build-dist
@@ -71,12 +73,15 @@ test-debug: ./var/log/editable.log
 upgrade:
 	touch "./pyproject.toml"
 	$(MAKE) "test"
+# Update VCS hooks from remotes to the latest tag.
+	./.tox/lint/bin/pre-commit autoupdate
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
 	./.tox/lint/bin/pre-commit uninstall \
-	    --hook-type "pre-commit" --hook-type "pre-push" || true
+	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
+	    || true
 	./.tox/lint/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
@@ -118,7 +123,11 @@ expand-template:
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install \
-	    --hook-type "pre-commit" --hook-type "pre-push"
+	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+
+# Capture any project initialization tasks for reference.  Not actually usable.
+ ./pyproject.toml:
+	./.tox/py3/bin/cz init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

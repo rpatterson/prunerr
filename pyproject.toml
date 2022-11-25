@@ -7,6 +7,14 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 write_to = "src/pythonprojectstructure/version.py"
 local_scheme = "no-local-version"
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+version_files = ["src/pythonprojectstructure/version.py"]
+tag_format = "v$version"
+update_changelog_on_bump = true
+annotated_tag = true
+gpg_sign = true
 
 [tool.pylint.MASTER]
 # Auto-detect the number of processors available to use from:

@@ -14,4 +14,7 @@ services:
       # IDs
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
+    volumes:
+      # Preserve caches caches between container runs
+      - "./home/:/home/python-project-structure/"
     restart: "unless-stopped"

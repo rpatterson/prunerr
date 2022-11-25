@@ -12,7 +12,12 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Options controlling behavior
+VCS_BRANCH=$(git branch --show-current)
+ifeq ($(VCS_BRANCH),master)
+TWINE_UPLOAD_AGS=-r "pypi"
+else
 TWINE_UPLOAD_AGS=-r "testpypi"
+endif
 
 # Derived values
 VENVS = $(shell tox -l)

@@ -8,7 +8,7 @@ astroid==2.12.13
     # via pylint
 attrs==22.1.0
     # via pytest
-autoflake==1.7.7
+autoflake==2.0.0
     # via python-project-structure (./pyproject.toml)
 autopep8==2.0.0
     # via python-project-structure (./pyproject.toml)
@@ -61,7 +61,7 @@ identify==2.5.9
     # via pre-commit
 idna==3.4
     # via requests
-importlib-metadata==5.0.0
+importlib-metadata==5.1.0
     # via
     #   keyring
     #   twine
@@ -118,7 +118,7 @@ pycparser==2.21
     # via cffi
 pydantic==1.10.2
     # via rstcheck-core
-pyflakes==3.0.0
+pyflakes==3.0.1
     # via
     #   autoflake
     #   flake8
@@ -180,7 +180,7 @@ types-docutils==0.19.1.1
     # via rstcheck-core
 typing-extensions==4.4.0
     # via pydantic
-urllib3==1.26.12
+urllib3==1.26.13
     # via
     #   requests
     #   twine
@@ -192,7 +192,7 @@ wheel==0.38.4
     # via pip-tools
 wrapt==1.14.1
     # via astroid
-zipp==3.10.0
+zipp==3.11.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

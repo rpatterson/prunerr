@@ -41,9 +41,9 @@ jobs:
           # Increment to force clearing the cache
           cache-name: "tox-v1"
         with:
-          path:
-            - "./.tox"
-            - "./.tox-*"
+          path: |
+            ./.tox
+            ./.tox-*
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
           key: >-

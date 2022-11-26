@@ -31,6 +31,8 @@ package_dir = "src"
 # Auto-detect the number of processors available to use from:
 #     $ pylint --generate-rcfile
 jobs = 0
+enable-all-extensions = true
+output-format = "colorized,json:pylint.json"
 ignore-paths = [
 # Managed by tools, best to use `# pylint: disable=...` inline comments for any other
 # ignores.

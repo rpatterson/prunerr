@@ -153,8 +153,7 @@ clean:
 	    || true
 	./.tox/lint/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
-	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
-	    "./var/log/editable.log" "./var/log/docker-build.log"
+	rm -rfv "./var/log/"
 
 
 ## Utility targets
@@ -191,7 +190,7 @@ expand-template:
 		./docker-compose.yml ./docker-compose.override.yml ./.env
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
-	mkdir -pv "./var-docker/" "./.tox-docker/" \
+	mkdir -pv "$(dir $(@))" "./var-docker/" "./.tox-docker/" \
 	    "./src/python_project_structure-docker.egg-info/" | tee -a "$(@)"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.

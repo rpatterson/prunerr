@@ -12,7 +12,7 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Options controlling behavior
-VCS_BRANCH=$(git branch --show-current)
+VCS_BRANCH:=$(shell git branch --show-current)
 
 # Derived values
 VENVS = $(shell tox -l)

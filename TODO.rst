@@ -18,3 +18,5 @@ Nice to Have
 ************
 
 #. Documentation via Sphinx with CI to publish to RTFD.
+
+#. Container image variants: e.g. slim/alpine

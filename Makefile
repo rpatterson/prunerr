@@ -37,13 +37,23 @@ build: ./var/log/init-setup.log ./var/log/recreate.log
 build-dist: build
 	./.tox/build/bin/python -m build
 
+.PHONY: check-push
+### Perform any checks that should only be run before pushing
+check-push: build
+	./.tox/py3/bin/towncrier check
+
 .PHONY: release
 ### Publish installable Python packages to PyPI
 release: test ~/.pypirc
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/py3/bin/semantic-release print-version --current)
+	next_version=$$(./.tox/py3/bin/semantic-release print-version --next)
+# Update the release notes/changelog
+	./.tox/py3/bin/towncrier build --yes
+	git commit -s -m \
+	    "build(release): Update changelog v${current_version} -> v${next_version}"
 # Increment the version in VCS
 	./.tox/py3/bin/semantic-release version
-# Update the changelog
-	./.tox/py3/bin/cz changelog
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts

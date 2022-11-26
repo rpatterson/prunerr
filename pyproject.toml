@@ -22,6 +22,10 @@ tag_format = "v$version"
 update_changelog_on_bump = true
 annotated_tag = true
 gpg_sign = true
+# https://towncrier.readthedocs.io/en/stable/#quick-start
+[tool.towncrier]
+package = "pythonprojectstructure"
+package_dir = "src"
 
 [tool.pylint.MASTER]
 # Auto-detect the number of processors available to use from:

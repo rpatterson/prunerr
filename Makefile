@@ -102,8 +102,7 @@ clean:
 	    || true
 	./.tox/lint/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
-	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
-	    "./var/log/editable.log"
+	rm -rfv "./var/log/"
 
 
 ## Utility targets

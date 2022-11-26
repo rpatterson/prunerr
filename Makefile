@@ -64,7 +64,7 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: test-docker release-python release-docker
+release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: ./var/log/recreate.log ~/.pypirc

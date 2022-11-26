@@ -12,7 +12,7 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Options controlling behavior
-TWINE_UPLOAD_AGS=-r "testpypi"
+VCS_BRANCH:=$(shell git branch --show-current)
 export PUID=1000
 export PGID=100
 
@@ -57,27 +57,54 @@ run: build-docker
 	docker compose down
 	docker compose up
 
+.PHONY: check-push
+### Perform any checks that should only be run before pushing
+check-push: build
+	./.tox/py3/bin/towncrier check
+
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: test-docker release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ~/.pypirc
+release-python: ./var/log/recreate.log ~/.pypirc
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/py3/bin/semantic-release print-version --current)
+	next_version=$$(./.tox/py3/bin/semantic-release print-version --next)
+# Update the release notes/changelog
+	./.tox/py3/bin/towncrier build --yes
+	git commit --no-verify -s -m \
+	    "build(release): Update changelog v${current_version} -> v${next_version}"
+# Increment the version in VCS
+	./.tox/py3/bin/semantic-release version
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure.devel make build-dist
-# Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*
-	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
+# Publish from the local host outside a container for access to user credentials:
+# https://twine.readthedocs.io/en/latest/#using-twine
+# Only release on `master` or `develop` to avoid duplicate uploads
+ifeq ($(VCS_BRANCH), master)
+# Ensure the release commit and tag are on the remote before publishing release
+# artifacts
+	git push --no-verify --tags origin $(VCS_BRANCH)
+	./.tox/py3/bin/twine upload -s -r "pypi" dist/*
+else ifeq ($(VCS_BRANCH), develop)
+	git push --no-verify --tags origin $(VCS_BRANCH)
+# Release to the test PyPI server on the `develop` branch
+	./.tox/py3/bin/twine upload -s -r "testpypi" dist/*
+endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
 release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+ifeq ($(VCS_BRANCH), master)
 	docker push "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
+endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -114,13 +141,16 @@ test-debug: ./var/log/editable.log
 upgrade:
 	touch "./pyproject.toml"
 	$(MAKE) PUID=$(PUID) "test"
+# Update VCS hooks from remotes to the latest tag.
+	./.tox/lint/bin/pre-commit autoupdate
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
 	docker compose --remove-orphans down --rmi "all" -v || true
-	./.tox/lint/bin/pre-commit uninstall --hook-type pre-push || true
-	./.tox/lint/bin/pre-commit uninstall || true
+	./.tox/lint/bin/pre-commit uninstall \
+	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
+	    || true
 	./.tox/lint/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -vf "./var/log/init-setup.log" "./var/log/recreate.log" \
@@ -176,15 +206,17 @@ expand-template:
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/init-setup.log: ./.git/hooks/pre-commit ./.git/hooks/pre-push
+./var/log/init-setup.log: ./.git/hooks/pre-commit
 	mkdir -pv "$(dir $(@))"
 	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
-	./.tox/lint/bin/pre-commit install
+	./.tox/lint/bin/pre-commit install \
+	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
-./.git/hooks/pre-push: ./var/log/recreate.log
-	./.tox/lint/bin/pre-commit install --hook-type pre-push
+# Capture any project initialization tasks for reference.  Not actually usable.
+ ./pyproject.toml:
+	./.tox/py3/bin/cz init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

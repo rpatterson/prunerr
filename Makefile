@@ -39,13 +39,13 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./.git/hooks/pre-commit ~/.pypirc
+release: ./var/log/recreate.log ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/py3/bin/semantic-release print-version --current)
 	next_version=$$(./.tox/py3/bin/semantic-release print-version --next)
 # Update the release notes/changelog
 	./.tox/py3/bin/towncrier build --yes
-	git commit -s -m \
+	git commit --no-verify -s -m \
 	    "build(release): Update changelog v${current_version} -> v${next_version}"
 # Increment the version in VCS
 	./.tox/py3/bin/semantic-release version
@@ -59,10 +59,10 @@ release: ./.git/hooks/pre-commit ~/.pypirc
 ifeq ($(VCS_BRANCH), master)
 # Ensure the release commit and tag are on the remote before publishing release
 # artifacts
-	git push --tags origin $(VCS_BRANCH)
+	git push --no-verify --tags origin $(VCS_BRANCH)
 	./.tox/py3/bin/twine upload -s -r "pypi" dist/*
 else ifeq ($(VCS_BRANCH), develop)
-	git push --tags origin $(VCS_BRANCH)
+	git push --no-verify --tags origin $(VCS_BRANCH)
 # Release to the test PyPI server on the `develop` branch
 	./.tox/py3/bin/twine upload -s -r "testpypi" dist/*
 endif

@@ -3,14 +3,21 @@
 requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
+# Get the Python dist/package version from VCS `v#.#.#` tags dynamically:
 # https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
 [tool.setuptools_scm]
 write_to = "src/pythonprojectstructure/version.py"
 local_scheme = "no-local-version"
+# Parse commit messages according to conventional commits to decide wether the next versin
+# tag should be a major, minor or patch bump and create the VCS tag:
+# https://python-semantic-release.readthedocs.io/en/latest/
+[tool.semantic_release]
+version_source = "tag_only"
+# VCS hooks to enforce that commit messages comply with conventional commits and
+# changelog generation:
+# https://commitizen-tools.github.io/commitizen/
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.1.0"
-version_files = ["src/pythonprojectstructure/version.py"]
 tag_format = "v$version"
 update_changelog_on_bump = true
 annotated_tag = true

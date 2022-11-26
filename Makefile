@@ -41,9 +41,12 @@ build-dist: build
 ### Publish installable Python packages to PyPI
 release: test ~/.pypirc
 # Increment the version in VCS
-	./.tox/py3/bin/cz bump --check-consistency
+	./.tox/py3/bin/semantic-release version
+# Update the changelog
+	./.tox/py3/bin/cz changelog
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
+# Build the actual release artifacts
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*

@@ -13,11 +13,6 @@ PS1?=$$
 
 # Options controlling behavior
 VCS_BRANCH=$(git branch --show-current)
-ifeq ($(VCS_BRANCH),master)
-TWINE_UPLOAD_AGS=-r "pypi"
-else
-TWINE_UPLOAD_AGS=-r "testpypi"
-endif
 
 # Derived values
 VENVS = $(shell tox -l)
@@ -60,7 +55,13 @@ release: test ~/.pypirc
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/py3/bin/twine check dist/*
-	./.tox/py3/bin/twine upload -s $(TWINE_UPLOAD_AGS) dist/*
+# Only release on `master` or `develop` to avoid duplicate uploads
+ifeq ($(VCS_BRANCH), master)
+	./.tox/py3/bin/twine upload -s -r "pypi" dist/*
+else ifeq ($(VCS_BRANCH), develop)
+# Release to the test PyPI server on the `develop` branch
+	./.tox/py3/bin/twine upload -s -r "testpypi" dist/*
+endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers

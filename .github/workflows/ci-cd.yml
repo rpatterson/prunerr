@@ -121,3 +121,11 @@ jobs:
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
           TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
           DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+
+      - name: "Create GitHub Release"
+        uses: "softprops/action-gh-release@master"
+        if: "startsWith(github.ref, 'refs/tags/')"
+        with:
+          files: |
+            dist/*
+          body_path: "NEWS.rst"

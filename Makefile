@@ -14,6 +14,9 @@ PS1?=$$
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+ifeq ($(USER_FULL_NAME),)
+USER_FULL_NAME=$(USER_NAME)
+endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
 # Options controlling behavior

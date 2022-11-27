@@ -14,6 +14,9 @@ PS1?=$$
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+ifeq ($(USER_FULL_NAME),)
+USER_FULL_NAME=$(USER_NAME)
+endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
@@ -76,7 +79,7 @@ release-python: ./var/log/recreate.log ~/.gitconfig ~/.pypirc
 # Update the release notes/changelog
 	./.tox/py3/bin/towncrier build --yes
 	git commit --no-verify -s -m \
-	    "build(release): Update changelog v${current_version} -> v${next_version}"
+	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
 	./.tox/py3/bin/semantic-release version
 # Prevent uploading unintended distributions

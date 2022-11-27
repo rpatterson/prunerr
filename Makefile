@@ -14,9 +14,6 @@ PS1?=$$
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 
-# Derived values
-VENVS = $(shell tox -l)
-
 
 ## Top-level targets
 

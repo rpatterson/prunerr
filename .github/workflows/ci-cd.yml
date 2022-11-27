@@ -11,10 +11,16 @@ jobs:
         python-version: ["3.10"]
     steps:
 
+      # Global set up
+
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
         with:
           fetch-depth: 0
+
+      - name: "Add user installs to PATH"
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       # Cache build artifacts to speed up CI runs
 
@@ -41,8 +47,10 @@ jobs:
           cache-name: "tox-v1"
         with:
           path: |
+            ~/.local
             ./.tox
             ./.tox-*
+            ./var/log
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
           key: >-

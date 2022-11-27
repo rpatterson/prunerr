@@ -68,5 +68,30 @@ jobs:
       - name: "Run the tests and code checks inside the built container"
         run: "make test-docker"
 
+      # Upload build artifacts
+      # https://github.com/actions/upload-artifact#usage
+
+      - name: "Archive test suite reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "test-suite-reports"
+          path: "pytest*"
+
+      - name: "Archive code coverage reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "code-coverage-reports"
+          path: |
+            coverage*
+            htmlcov
+
+      - name: "Archive linter reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "linter-reports"
+          path: "pylint*"
+
+      # Release and publish
+
       - name: "Bump version and publish release artifacts if on `master`/`develop`"
         run: "make release"

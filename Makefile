@@ -13,8 +13,8 @@ PS1?=$$
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
-export PUID=1000
-export PGID=100
+PUID:=$(shell id -u)
+PGID:=$(shell id -g)
 
 # Derived values
 VENVS = $(shell tox -l)
@@ -202,7 +202,8 @@ expand-template:
 
 # Local environment variables from a template
 ./.env: ./.env.in
-	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+	$(MAKE) "PUID=$(PUID)" "PGID=$(PGID)" \
+	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit

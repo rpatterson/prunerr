@@ -56,7 +56,7 @@ jobs:
       # platforms
 
       - name: "Build the container image in which to run the tests"
-        run: "make PUID=1001 build-docker"
+        run: "make build-docker"
 
       - name: "Run the tests and code checks inside the built container"
         run: "make test-docker"

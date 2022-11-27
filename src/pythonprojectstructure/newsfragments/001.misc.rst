@@ -1,1 +1,0 @@
-Automated versioning and release publishing.

@@ -134,9 +134,9 @@ test-local: ./var/log/install-tox.log build-local
 test-docker: build-docker
 	docker compose run --rm python-project-structure.devel make test-local
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run --rm --entrypoint="python" python-project-structure \
-	    -m pythonprojectstructure --help
-	docker compose run --rm python-project-structure --help
+	docker compose run --rm python-project-structure \
+	    python -m pythonprojectstructure --help
+	docker compose run --rm python-project-structure python-project-structure --help
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: ./var/log/editable.log

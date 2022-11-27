@@ -133,6 +133,7 @@ expand-template:
 # Perform any one-time local checkout set up
 ./var/log/init-setup.log: ./.git/hooks/pre-commit
 	mkdir -pv "$(dir $(@))"
+	which tox || pip install tox
 	date | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log

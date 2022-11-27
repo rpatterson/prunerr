@@ -78,7 +78,7 @@ jobs:
           path: "pytest*"
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
-        uses: "dorny/test-reporter@master"
+        uses: "dorny/test-reporter@main"
         if: "success() || failure()"    # run this step even if previous step failed
         with:
           name: "PyTest Test Suite"
@@ -94,7 +94,7 @@ jobs:
             htmlcov
       # https://github.com/marketplace/actions/codecov#usage
       - name: "Publish code coverage report"
-        uses: "codecov/codecov-action@master"
+        uses: "codecov/codecov-action@main"
 
       - name: "Archive linter reports"
         uses: "actions/upload-artifact@master"

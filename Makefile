@@ -11,6 +11,11 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Values derived from the environment
+USER_NAME:=$(shell id -u -n)
+USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
+
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 
@@ -36,7 +41,7 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./var/log/recreate.log ~/.pypirc
+release: ./var/log/recreate.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/py3/bin/semantic-release print-version --current)
 	next_version=$$(./.tox/py3/bin/semantic-release print-version --next)
@@ -150,5 +155,8 @@ expand-template:
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 
 # User-created pre-requisites
+~/.gitconfig:
+	git config --global user.name "$(USER_FULL_NAME)"
+	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template

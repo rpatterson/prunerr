@@ -178,7 +178,7 @@ expand-template:
 		./var/log/install-tox.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
-	tox -e "ALL" -r --notest -v | tee -a "$(@)"
+	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
@@ -189,7 +189,8 @@ expand-template:
 		./docker-compose.yml ./docker-compose.override.yml ./.env
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
-	mkdir -pv "$(dir $(@))" "./var-docker/" "./.tox-docker/" \
+	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" "./.tox-docker/" \
+	    "./src/python_project_structure.egg-info/" \
 	    "./src/python_project_structure-docker.egg-info/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.

@@ -5,6 +5,12 @@ version: "3.8"
 
 services:
 
+  ## Configuration specific to this checkout
+  python-project-structure:
+    volumes:
+      # Preserve caches caches between container runs
+      - "./home/:/home/python-project-structure/"
+
   ## Container for use by developers
   python-project-structure.devel:
     image: "merpatterson/python-project-structure:devel"

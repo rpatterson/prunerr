@@ -24,6 +24,7 @@ lib64/
 parts/
 sdist/
 var/
+var-*/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -45,10 +46,12 @@ htmlcov/
 .tox-*/
 .coverage
 .coverage.*
+coverage.*
 .cache
 nosetests.xml
-coverage.xml
+pytest-junit.xml
 *,cover
+pylint.*
 .hypothesis/
 
 # Translations
@@ -96,3 +99,6 @@ ENV/
 
 # Emacs editor settings
 /.dir-locals.el
+
+# Project-specific build artifacts
+/README.md

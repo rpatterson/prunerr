@@ -1,0 +1,22 @@
+## Container image for use by developers
+
+# Stay as close to the end user image as possible without sacrificing development
+# efficiency.
+FROM merpatterson/python-project-structure
+
+WORKDIR "/usr/local/src/python-project-structure/"
+# Install the development dependencies with fixed versions in a separate layer to
+# optimize build times because this step takes the most time and changes the least
+# frequently.  Also be more verbose now that the audience is developers.
+COPY [ "./requirements-devel.txt", "./" ]
+RUN pip install -v --no-cache-dir -r "./requirements-devel.txt"
+# Install this package in editable/development mode so that changes take effect without
+# re-installing and for easier debugging.  Done as root to install into the container's
+# system Python then change the ownership back to the unprivileged user to make it
+# writeable.
+COPY [ "./", "./" ]
+RUN pip install -v --no-cache-dir -e "./"
+
+# Remain in the checkout `WORKDIR` and make the primary testing tool for the default
+# command to run.
+CMD [ "tox" ]

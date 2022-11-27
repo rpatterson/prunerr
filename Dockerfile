@@ -1,21 +1,23 @@
-# From https://hub.docker.com/_/python
+## Container image for use by end users
+
+# Stay as close to a vanilla Python environment as possible
 FROM python:3
 
-# Add a user whose home directory will contain the configuration file
-ARG PUID=1000
-ARG PGID=100
-ARG REQUIREMENTS=./requirements.txt
+# Put the `ENTRYPOINT` on the `$PATH`
+RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
-# Add a user whose home directory will contain the configuration file
-RUN adduser --uid "${PUID}" --gid "${PGID}" --disabled-password \
-    --gecos "Python Project Structure,,," "python-project-structure"
+WORKDIR "/usr/local/src/python-project-structure/"
+# Install dependencies with fixed versions in a separate layer to optimize build times
+# because this step takes the most time and changes the least frequently.
+COPY [ "./requirements.txt", "./" ]
+RUN pip install --no-cache-dir -r "./requirements.txt"
+# Install this package in the most common/standard Python way while still being able to
+# build the image locally.
+RUN --mount=source=./,target=./,rw,type=bind pip install --no-cache-dir "./"
 
-# Install the application and dependencies
-WORKDIR /usr/local/src/python-project-structure/
-COPY [ "./${REQUIREMENTS}", "./${REQUIREMENTS}" ]
-RUN pip install --no-cache-dir -r "${REQUIREMENTS}"
-COPY [ "./", "./" ]
-RUN pip install --no-cache-dir -e "./"
-
-USER $PUID:$PGID
-WORKDIR /home/python-project-structure/
+# Find the same home directory even when run as another user, e.g. `root`.
+ENV HOME="/home/python-project-structure"
+WORKDIR "/home/python-project-structure/"
+ENTRYPOINT [ "entrypoint" ]
+CMD [ "python-project-structure" ]

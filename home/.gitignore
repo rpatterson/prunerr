@@ -1,0 +1,4 @@
+/.pypirc
+/.cache
+/.local/share/virtualenv
+/.bash_history

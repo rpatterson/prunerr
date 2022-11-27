@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Perform any required volatile run-time initialization
+
+set -eu -o pipefail
+shopt -s inherit_errexit
+if [ ! -z "${DEBUG:=}" ]
+then
+    # Echo commands for easier debugging
+    PS4='$0:$LINENO+'
+    set -x
+fi
+
+
+main() {
+    if [ ! -z "${PUID}" ]
+    then
+	if [ "$(id -u)" != "0" ]
+	then
+	    set +x
+	    echo "ERROR: Can't create a user when not run as root"
+	    false
+	fi
+	# Add a user to the `passwd` DB so that the `~python-project-structure/` HOME
+	# directory can be looked up.
+	adduser --uid "${PUID}" --disabled-password \
+		--gecos "Python Project Structure,,," "python-project-structure"
+	# Fix the TTY ownership if the session is interactive
+	if tty_dev=$(tty)
+	then
+	    chown -c "${PUID}" "${tty_dev}"
+	fi
+	# Delegate the rest to the `CMD`
+	exec gosu "${PUID}:${PGID:-${PUID}}" "${@}"
+    fi
+
+    # Delegate the rest to the `CMD`
+    exec "$@"
+}
+
+
+main "$@"

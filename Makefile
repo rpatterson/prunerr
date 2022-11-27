@@ -51,7 +51,7 @@ release: ./var/log/recreate.log ~/.gitconfig ~/.pypirc
 # Update the release notes/changelog
 	./.tox/py3/bin/towncrier build --yes
 	git commit --no-verify -s -m \
-	    "build(release): Update changelog v${current_version} -> v${next_version}"
+	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
 	./.tox/py3/bin/semantic-release version
 # Prevent uploading unintended distributions

@@ -13,8 +13,8 @@ PS1?=$$
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
-export PUID=1000
-export PGID=100
+export PUID:=$(shell id -u)
+export PGID:=$(shell id -g)
 
 # Derived values
 VENVS = $(shell tox -l)

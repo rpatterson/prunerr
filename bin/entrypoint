@@ -23,15 +23,15 @@ main() {
 	fi
 	# Add a user to the `passwd` DB so that the `~python-project-structure/` HOME
 	# directory can be looked up.
-	adduser --uid "${PUID}" --gid "${PGID:-${PUID}}" --disabled-password \
+	adduser --uid "${PUID}" --disabled-password \
 		--gecos "Python Project Structure,,," "python-project-structure"
 	# Fix the TTY ownership if the session is interactive
 	if tty_dev=$(tty)
 	then
-	    chown -c "python-project-structure" "${tty_dev}"
+	    chown -c "${PUID}" "${tty_dev}"
 	fi
 	# Delegate the rest to the `CMD`
-	exec gosu "python-project-structure" "${@}"
+	exec gosu "${PUID}:${PGID:-${PUID}}" "${@}"
     fi
 
     # Delegate the rest to the `CMD`

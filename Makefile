@@ -31,7 +31,7 @@ all: build
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers
-build: ./var/log/init-setup.log build-local build-docker
+build: ./.git/hooks/pre-commit build-local build-docker
 .PHONY: build-local
 ### Set up for development locally, directly on the host
 build-local: ./var/log/recreate.log
@@ -119,7 +119,7 @@ test: build-docker
 	docker compose run --rm python-project-structure.devel make format test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
-test-local: build-local
+test-local: ./var/log/install-tox.log build-local
 	tox
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
@@ -171,10 +171,12 @@ expand-template:
 
 ## Real targets
 
-./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
+./requirements.txt: ./var/log/install-tox.log ./pyproject.toml ./setup.cfg ./tox.ini
 	tox -e "build"
 
-./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
+./var/log/recreate.log: \
+		./var/log/install-tox.log \
+		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -e "ALL" -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
@@ -203,10 +205,9 @@ expand-template:
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/init-setup.log: ./.git/hooks/pre-commit
+./var/log/install-tox.log:
 	mkdir -pv "$(dir $(@))"
-	which tox || pip install tox
-	date | tee -a "$(@)"
+	(which tox || pip install tox) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install \

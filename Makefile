@@ -23,7 +23,7 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./var/log/init-setup.log ./var/log/recreate.log
+build: ./var/log/recreate.log ./.git/hooks/pre-commit
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
 build-dist: build
@@ -75,7 +75,7 @@ format:
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: build format
+test: ./var/log/install-tox.log build format
 	tox
 
 .PHONY: test-debug
@@ -120,10 +120,12 @@ expand-template:
 
 ## Real targets
 
-./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini
+./requirements.txt: ./var/log/install-tox.log ./pyproject.toml ./setup.cfg ./tox.ini
 	tox -e "build"
 
-./var/log/recreate.log: ./requirements.txt ./requirements-devel.txt ./tox.ini
+./var/log/recreate.log: \
+		./var/log/install-tox.log \
+		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -e "ALL" -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
@@ -131,10 +133,9 @@ expand-template:
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/init-setup.log: ./.git/hooks/pre-commit
+./var/log/install-tox.log:
 	mkdir -pv "$(dir $(@))"
-	which tox || pip install tox
-	date | tee -a "$(@)"
+	(which tox || pip install tox) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/lint/bin/pre-commit install \

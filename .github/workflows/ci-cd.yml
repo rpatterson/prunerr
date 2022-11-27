@@ -96,7 +96,7 @@ jobs:
       - name: "Publish code coverage report"
         uses: "codecov/codecov-action@main"
         with:
-          file: "coverage.xml"
+          files: "coverage.xml"
           fail_ci_if_error: true
 
       - name: "Archive linter reports"

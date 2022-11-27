@@ -223,11 +223,9 @@ expand-template:
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 
 # User-created pre-requisites
-~/.pypirc: .SHELLFLAGS = -eu -o pipefail -c
-~/.pypirc:
-	echo "You must create your ~/.pypirc file:
-	    https://packaging.python.org/en/latest/specifications/pypirc/"
-	false
+~/.pypirc: ./home/.pypirc.in
+	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/docker-login.log:
-	docker login
+	docker login -u "merpatterson" -p "$(DOCKER_PASS)"
 	date | tee -a "$(@)"

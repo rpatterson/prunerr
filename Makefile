@@ -49,7 +49,7 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
 build-dist: build-local
-	./.tox/build/bin/python -m build
+	./.tox/py3/bin/pyproject-build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -65,30 +65,30 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build
-	./.tox/py3/bin/towncrier check
+	./.tox/build/bin/towncrier check
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/recreate.log ~/.gitconfig ~/.pypirc
+release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/py3/bin/semantic-release print-version --current)
-	next_version=$$(./.tox/py3/bin/semantic-release print-version --next)
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	next_version=$$(./.tox/build/bin/semantic-release print-version --next)
 # Update the release notes/changelog
-	./.tox/py3/bin/towncrier build --yes
+	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -s -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/py3/bin/semantic-release version
+	./.tox/build/bin/semantic-release version
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure.devel make build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/py3/bin/twine check dist/*
+	./.tox/build/bin/twine check dist/*
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
@@ -96,11 +96,11 @@ ifeq ($(VCS_BRANCH), master)
 # Ensure the release commit and tag are on the remote before publishing release
 # artifacts
 	git push --no-verify --tags origin $(VCS_BRANCH)
-	./.tox/py3/bin/twine upload -s -r "pypi" dist/*
+	./.tox/build/bin/twine upload -s -r "pypi" dist/*
 else ifeq ($(VCS_BRANCH), develop)
 	git push --no-verify --tags origin $(VCS_BRANCH)
 # Release to the test PyPI server on the `develop` branch
-	./.tox/py3/bin/twine upload -s -r "testpypi" dist/*
+	./.tox/build/bin/twine upload -s -r "testpypi" dist/*
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
@@ -114,11 +114,11 @@ endif
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
 format: build-local
-	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
+	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
-	./.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
-	./.tox/lint/bin/black ./
+	./.tox/py3/bin/autopep8 -v -i -r --exclude "var" ./
+	./.tox/py3/bin/black ./
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
@@ -147,16 +147,16 @@ upgrade:
 	touch "./pyproject.toml"
 	$(MAKE) PUID=$(PUID) "test"
 # Update VCS hooks from remotes to the latest tag.
-	./.tox/lint/bin/pre-commit autoupdate
+	./.tox/build/bin/pre-commit autoupdate
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
 	docker compose --remove-orphans down --rmi "all" -v || true
-	./.tox/lint/bin/pre-commit uninstall \
+	./.tox/build/bin/pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
-	./.tox/lint/bin/pre-commit clean || true
+	./.tox/build/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -rfv "./var/log/"
 
@@ -179,8 +179,12 @@ expand-template:
 
 ## Real targets
 
-./requirements.txt: ./var/log/install-tox.log ./pyproject.toml ./setup.cfg ./tox.ini
+./requirements.txt: \
+		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
+		./requirements-build.txt.in
 	tox -e "build"
+# Avoid a tox recreation loop
+	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
 
 ./var/log/recreate.log: \
 		./var/log/install-tox.log \
@@ -190,10 +194,15 @@ expand-template:
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
+./var/log/recreate-build.log: \
+		./var/log/install-tox.log ./requirements-build.txt ./tox.ini
+	mkdir -pv "$(dir $(@))"
+	tox -r -e "build" --notest -v | tee -a "$(@)"
 
 # Docker targets
 ./var/log/docker-build.log: \
-		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
+		./Dockerfile ./Dockerfile.devel ./.dockerignore \
+		./requirements.txt ./requirements-devel.txt ./bin/entrypoint \
 		./docker-compose.yml ./docker-compose.override.yml ./.env
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
@@ -206,6 +215,8 @@ expand-template:
 	docker compose build | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
+	test -e "./var-docker/log/recreate-build.log" ||
+	    ln -v "./var/log/recreate-build.log" "./var-docker/log/recreate-build.log"
 	docker compose run --rm python-project-structure.devel make build-local
 
 # Local environment variables from a template
@@ -219,12 +230,12 @@ expand-template:
 	(which tox || pip install tox) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
-	./.tox/lint/bin/pre-commit install \
+	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:
-	./.tox/py3/bin/cz init
+	./.tox/build/bin/cz init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

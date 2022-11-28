@@ -1,0 +1,20 @@
+# Build, release and development tools that can operate totally independently and are
+# used outside the Docker container in the developer's localhost environment.
+
+# VCS hooks to enforce passint tests, test coverage, style and linting
+pre-commit
+
+# Release libraries and tools.
+# Manage fixed/pinned versions in `./requirements*.txt`.  Has to be installed outside
+# the container so that the resulting version pins can be baked into the container
+# image.
+pip-tools
+# Parse commit messages according to conventional commits to decide wether the next
+# version tag should be a major, minor or patch bump and create the VCS tag.
+python-semantic-release
+# VCS hooks to enforce that commit messages comply with conventional commits
+commitizen
+# Generate release notes/changelogs
+towncrier
+# Publish releas artifacts to remotes
+twine

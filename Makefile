@@ -66,12 +66,14 @@ release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 ifeq ($(VCS_BRANCH), master)
 # Ensure the release commit and tag are on the remote before publishing release
 # artifacts
-	git push --no-verify --tags origin $(VCS_BRANCH)
 	./.tox/build/bin/twine upload -s -r "pypi" dist/*
-else ifeq ($(VCS_BRANCH), develop)
+# The VCS remote shouldn't reflect the release until the release has been successfully
+# published
 	git push --no-verify --tags origin $(VCS_BRANCH)
+else ifeq ($(VCS_BRANCH), develop)
 # Release to the test PyPI server on the `develop` branch
 	./.tox/build/bin/twine upload -s -r "testpypi" dist/*
+	git push --no-verify --tags origin $(VCS_BRANCH)
 endif
 
 .PHONY: format

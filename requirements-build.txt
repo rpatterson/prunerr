@@ -92,7 +92,7 @@ pep517==0.13.0
     # via build
 pip-tools==6.10.0
     # via -r ./requirements-build.txt.in
-pkginfo==1.9.1
+pkginfo==1.9.2
     # via twine
 platformdirs==2.5.4
     # via virtualenv

@@ -25,10 +25,10 @@ VCS_BRANCH:=$(shell git branch --show-current)
 RELEASE_PUBLISH=false
 SEMANTIC_RELEASE_VERSION_ARGS=
 PYPI_REPO=testpypi
-ifeq ($(VCS_BRANCH), master)
+ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
-else ifeq ($(VCS_BRANCH), develop)
+else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 endif

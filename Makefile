@@ -72,7 +72,12 @@ check-push: build
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
+release-python: ./var/log/gpg-import.log ~/.gitconfig ~/.pypirc \
+		./var/log/recreate-build.log
+ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
+# Import the private signing key from CI secrets
+	$(MAKE) ./var/log/gpg-import.log
+endif
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 	next_version=$$(./.tox/build/bin/semantic-release print-version --next)
@@ -247,6 +252,59 @@ expand-template:
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
+GPG_SIGNING_KEYID=
+./home/.gnupg/ci-cd-signing-subkey.asc:
+# We need a private key in the CI/CD environment for signing release commits and
+# artifacts.  Use a subkey so that it can be revoked without affecting your main key.
+# If the private signing subkey were protected/encrypted with a passphrase, then we'd
+# need both the exported private signing subkey *and* that passphrase in CI/CD secrets.
+# To my mind, that defeats the purpose of protecting private keys with passphrases, so I
+# prefer to just add exported private signing subkey to CI in unprotected/un-encrypted
+# form.  Unfortunately, `$ gpg` makes this very hard to do so other developers using
+# this template may prefer to do it the other way and also add a passphrase in CI
+# secrets.  This recipe captures what I had to do to export an unprotected/un-encrypted
+# private signing subkey.  It's very fragile and not widely tested so it should probably
+# only be used for reference.  It worked for me but the risk is leaking your main
+# private key so double and triple check all your assumptions and results.
+# 1. Create a signing subkey: https://wiki.debian.org/Subkeys#How.3F
+# 2. Get the long key ID for that private subkey:
+#	gpg --list-secret-keys --keyid-format "LONG"
+# 3. Export *just* that private subkey and verify that the main secret key packet is the
+#    GPG dummy packet and that the only other private key included is the intended
+#    subkey:
+#	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
+#	    gpg --list-packets
+# We need to remove the password from the exported private subkey.  Unfortunately, `$
+# gpg` lost the ability to do this non-interactively some time back which makes this
+# quite a PITA.
+# 4. Import the exported key into a temporary GNU PG directory:
+	rm -rfv "$(dir $(@))"
+	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
+	    gpg --homedir "$(dir $(@))" --import
+# 5. Remove the password from the exported private subkey:
+#    https://lists.gnupg.org/pipermail/gnupg-users/2017-December/059617.html
+	gpg --homedir "$(dir $(@))" --edit-key "$(GPG_SIGNING_KEYID)!" passwd
+# 6. Confirm the private subkey is no longer password protected in the temporary GNU PG
+#    directory:
+	echo "Test signature content" >"$(dir $(@))test-sig.txt"
+	gpgconf --kill gpg-agent
+	gpg --homedir "$(dir $(@))" --local-user "$(GPG_SIGNING_KEYID)!" \
+	    --sign "$(dir $(@))/test-sig.txt"
+# 7. At long last we can export *just* the private signing subkey without password
+#    protection:
+	gpg --homedir "$(dir $(@))" --armor --export-secret-subkeys \
+	    "$(GPG_SIGNING_KEYID)!" >"$(@)"
+# 8. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI
+./var/log/gpg-import.log: .SHELLFLAGS = -eu -o pipefail -c
+./var/log/gpg-import.log:
+# 9. In each CI run, import the private signing key from the CI secrets
+	if [ -z "$(GPG_SIGNING_PRIVATE_KEY)" ]
+	then
+	    echo "The GPG_SIGNING_PRIVATE_KEY env var is required,"
+	    echo "or '$$ touch $(@)' to bypass this and test releases locally"
+	    false
+	fi
+	echo -n "$(GPG_SIGNING_PRIVATE_KEY)" | gpg --import | tee -a "$(@)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c

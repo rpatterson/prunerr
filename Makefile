@@ -64,8 +64,6 @@ release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
 ifeq ($(VCS_BRANCH), master)
-# Ensure the release commit and tag are on the remote before publishing release
-# artifacts
 	./.tox/build/bin/twine upload -s -r "pypi" dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published

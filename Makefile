@@ -23,12 +23,14 @@ USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
 RELEASE_PUBLISH=false
+SEMANTIC_RELEASE_VERSION_ARGS=
 PYPI_REPO=testpypi
 ifeq ($(VCS_BRANCH), master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH), develop)
 RELEASE_PUBLISH=true
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 endif
 
 
@@ -56,13 +58,16 @@ check-push: build
 release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	next_version=$$(./.tox/build/bin/semantic-release print-version --next)
+	next_version=$$(
+	    ./.tox/build/bin/semantic-release print-version
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/build/bin/semantic-release version
+	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts

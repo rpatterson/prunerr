@@ -78,7 +78,7 @@ release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 	next_version=$$(./.tox/build/bin/semantic-release print-version --next)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier build --yes
-	git commit --no-verify -s -m \
+	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version
@@ -93,8 +93,6 @@ release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
 ifeq ($(VCS_BRANCH), master)
-# Ensure the release commit and tag are on the remote before publishing release
-# artifacts
 	./.tox/build/bin/twine upload -s -r "pypi" dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published

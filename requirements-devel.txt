@@ -89,7 +89,7 @@ pyflakes==3.0.1
     #   flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.6
+pylint==2.15.7
     # via python-project-structure (./pyproject.toml)
 pyparsing==3.0.9
     # via packaging

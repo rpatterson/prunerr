@@ -21,6 +21,15 @@ USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
+# Only publish releases from the `master` or `develop` branches
+RELEASE_PUBLISH=false
+PYPI_REPO=testpypi
+ifeq ($(VCS_BRANCH), master)
+RELEASE_PUBLISH=true
+PYPI_REPO=pypi
+else ifeq ($(VCS_BRANCH), develop)
+RELEASE_PUBLISH=true
+endif
 
 
 ## Top-level targets
@@ -60,17 +69,13 @@ release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
+ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-ifeq ($(VCS_BRANCH), master)
-	./.tox/build/bin/twine upload -s -r "pypi" dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-	git push --no-verify --tags origin $(VCS_BRANCH)
-else ifeq ($(VCS_BRANCH), develop)
-# Release to the test PyPI server on the `develop` branch
-	./.tox/build/bin/twine upload -s -r "testpypi" dist/*
 	git push --no-verify --tags origin $(VCS_BRANCH)
 endif
 

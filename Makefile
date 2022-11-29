@@ -306,7 +306,7 @@ GPG_SIGNING_KEYID=
 	gpg --homedir "$(dir $(@))" --armor --export-secret-subkeys \
 	    "$(GPG_SIGNING_KEYID)!" >"$(@)"
 # 8. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI
-./var/log/gpg-import.log: .SHELLFLAGS = -eu -o pipefail -c
+#./var/log/gpg-import.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/gpg-import.log:
 # 9. In each CI run, import the private signing key from the CI secrets
 	if [ -z "$(GPG_SIGNING_PRIVATE_KEY)" ]
@@ -315,7 +315,8 @@ GPG_SIGNING_KEYID=
 	    echo "or '$$ touch $(@)' to bypass this and test releases locally"
 	    false
 	fi
-	echo -n "$(GPG_SIGNING_PRIVATE_KEY)" | gpg --import | tee -a "$(@)"
+	echo -n "$(GPG_SIGNING_PRIVATE_KEY)" | cat
+	false
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c

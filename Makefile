@@ -111,9 +111,12 @@ else ifeq ($(VCS_BRANCH), develop)
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
-release-docker: ./var/log/docker-login.log build-docker
+release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 ifeq ($(VCS_BRANCH), master)
+ifneq ($(DOCKER_PASS),)
+	$(MAKE) ./var/log/docker-login.log
+endif
 	docker push "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
 endif

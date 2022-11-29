@@ -50,7 +50,7 @@ release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 	next_version=$$(./.tox/build/bin/semantic-release print-version --next)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier build --yes
-	git commit --no-verify -s -m \
+	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version

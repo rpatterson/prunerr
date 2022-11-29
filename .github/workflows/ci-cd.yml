@@ -122,9 +122,10 @@ jobs:
           TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
           DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
 
+      # https://github.com/softprops/action-gh-release#-external-release-notes
       - name: "Create GitHub Release"
         uses: "softprops/action-gh-release@master"
-        if: "startsWith(github.ref, 'refs/tags/')"
+        if: "github.ref == 'refs/heads/master'"
         with:
           files: |
             dist/*

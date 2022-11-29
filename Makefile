@@ -23,6 +23,17 @@ PGID:=$(shell id -g)
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
+# Only publish releases from the `master` or `develop` branches
+RELEASE_PUBLISH=false
+SEMANTIC_RELEASE_VERSION_ARGS=
+PYPI_REPO=testpypi
+ifeq ($(VCS_BRANCH),master)
+RELEASE_PUBLISH=true
+PYPI_REPO=pypi
+else ifeq ($(VCS_BRANCH),develop)
+RELEASE_PUBLISH=true
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
+endif
 
 
 ## Top-level targets
@@ -75,13 +86,16 @@ release: release-python release-docker
 release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	next_version=$$(./.tox/build/bin/semantic-release print-version --next)
+	next_version=$$(
+	    ./.tox/build/bin/semantic-release print-version
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/build/bin/semantic-release version
+	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
@@ -89,24 +103,20 @@ release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 	docker compose run --rm python-project-structure.devel make build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
+ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-ifeq ($(VCS_BRANCH), master)
-	./.tox/build/bin/twine upload -s -r "pypi" dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-	git push --no-verify --tags origin $(VCS_BRANCH)
-else ifeq ($(VCS_BRANCH), develop)
-# Release to the test PyPI server on the `develop` branch
-	./.tox/build/bin/twine upload -s -r "testpypi" dist/*
 	git push --no-verify --tags origin $(VCS_BRANCH)
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
 release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-ifeq ($(VCS_BRANCH), master)
+ifeq ($(RELEASE_PUBLISH),true)
 	docker push "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
 endif

@@ -264,7 +264,7 @@ expand-template:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 GPG_SIGNING_KEYID=
-./home/.gnupg/ci-cd-signing-subkey.asc:
+./var/ci-cd-signing-subkey.asc:
 # We need a private key in the CI/CD environment for signing release commits and
 # artifacts.  Use a subkey so that it can be revoked without affecting your main key.
 # If the private signing subkey were protected/encrypted with a passphrase, then we'd

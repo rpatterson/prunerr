@@ -269,7 +269,7 @@ expand-template:
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log:
-	printenv "DOCKER_PASS" | docker-login -u "merpatterson" --password-stdin |
+	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin |
 	    tee -a "$(@)"
 
 # GPG signing key creation and management in CI

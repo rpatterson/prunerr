@@ -306,18 +306,11 @@ export GPG_PASSPHRASE=
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
 ./var/log/gpg-import.log:
 # In each CI run, import the private signing key from the CI secrets
-	gnupg_tmp_dir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
-	gpg --list-secret-keys --keyid-format LONG
 # "Unlock" the signing key for the remainder of this CI run:
-# https://medium.com/@jon_gille/decrypting-secrets-in-your-ci-cd-pipeline-c57da11e1794
-	while pgrep -la gpg-agent
-	do
-	    gpgconf --kill gpg-agent
-	done
-	gpg-agent --daemon --allow-preset-passphrase --max-cache-ttl 3153600000
-	cat ~/.gnupg/gpg-agent.conf || true
-	pgrep -la gpg-agent
-	printenv 'GPG_PASSPHRASE' |
-	    /usr/lib/gnupg2/gpg-preset-passphrase --preset "$(GPG_SIGNING_KEYID)"
+	printenv 'GPG_PASSPHRASE' >"./var/ci-cd-signing-subkey.passphrase"
+	true | gpg --batch --pinentry-mode "loopback" \
+	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
+	    --sign | gpg --list-packets
+	true | gpg --sign | gpg --list-packets

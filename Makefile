@@ -99,7 +99,7 @@ endif
 	)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier build --yes
-	git commit --no-verify -S -m \
+	GIT_TRACE=1 git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
@@ -313,4 +313,3 @@ export GPG_PASSPHRASE=
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
 	    --sign | gpg --list-packets
-	true | gpg --sign | gpg --list-packets

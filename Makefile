@@ -11,6 +11,9 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Project-specific variables
+GPG_SIGNING_KEYID=2EFF7CCE6828E359
+
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
@@ -262,7 +265,13 @@ expand-template:
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
-GPG_SIGNING_KEYID=
+~/.pypirc: ./home/.pypirc.in
+	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+./var/log/docker-login.log:
+	printenv "DOCKER_PASS" | docker-login -u "merpatterson" --password-stdin |
+	    tee -a "$(@)"
+
+# GPG signing key creation and management in CI
 export GPG_PASSPHRASE=
 ./var/ci-cd-signing-subkey.asc:
 # We need a private key in the CI/CD environment for signing release commits and
@@ -306,8 +315,11 @@ export GPG_PASSPHRASE=
 	printenv "GPG_SIGNING_PRIVATE_KEY" |
 	    gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "$${gnupg_tmp_dir}/.passphrase" --import | tee -a "$(@)"
-~/.pypirc: ./home/.pypirc.in
-	$(MAKE) "template=$(<)" "target=$(@)" expand-template
-./var/log/docker-login.log:
-	printenv "DOCKER_PASS" | docker-login -u "merpatterson" --password-stdin |
-	    tee -a "$(@)"
+	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
+	gpg --list-secret-keys --keyid-format LONG
+# "Unlock" the signing key for the remainder of this CI run
+	gpgconf --kill gpg-agent
+	gpg-agent --daemon --allow-preset-passphrase --max-cache-ttl 3153600000
+	set +x
+	/usr/lib/gnupg2/gpg-preset-passphrase --preset \
+	    --passphrase "$(GPG_PASSPHRASE)" "$(GPG_SIGNING_KEYID)"

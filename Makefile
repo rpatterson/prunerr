@@ -317,8 +317,12 @@ export GPG_PASSPHRASE=
 	    --passphrase-file "$${gnupg_tmp_dir}/.passphrase" --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	gpg --list-secret-keys --keyid-format LONG
-# "Unlock" the signing key for the remainder of this CI run
-	gpgconf --kill gpg-agent
+# "Unlock" the signing key for the remainder of this CI run:
+# https://medium.com/@jon_gille/decrypting-secrets-in-your-ci-cd-pipeline-c57da11e1794
+	while pgrep gpg-agent
+	do
+	    gpgconf --kill gpg-agent
+	done
 	gpg-agent --daemon --allow-preset-passphrase --max-cache-ttl 3153600000
 	set +x
 	/usr/lib/gnupg2/gpg-preset-passphrase --preset \

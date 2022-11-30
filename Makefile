@@ -312,10 +312,12 @@ export GPG_PASSPHRASE=
 	gpg --list-secret-keys --keyid-format LONG
 # "Unlock" the signing key for the remainder of this CI run:
 # https://medium.com/@jon_gille/decrypting-secrets-in-your-ci-cd-pipeline-c57da11e1794
-	while pgrep gpg-agent
+	while pgrep -la gpg-agent
 	do
 	    gpgconf --kill gpg-agent
 	done
 	gpg-agent --daemon --allow-preset-passphrase --max-cache-ttl 3153600000
+	cat ~/.gnupg/gpg-agent.conf || true
+	pgrep -la gpg-agent
 	printenv 'GPG_PASSPHRASE' |
 	    /usr/lib/gnupg2/gpg-preset-passphrase --preset "$(GPG_SIGNING_KEYID)"

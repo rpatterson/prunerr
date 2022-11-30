@@ -21,6 +21,17 @@ USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
+# Only publish releases from the `master` or `develop` branches
+RELEASE_PUBLISH=false
+SEMANTIC_RELEASE_VERSION_ARGS=
+PYPI_REPO=testpypi
+ifeq ($(VCS_BRANCH),master)
+RELEASE_PUBLISH=true
+PYPI_REPO=pypi
+else ifeq ($(VCS_BRANCH),develop)
+RELEASE_PUBLISH=true
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
+endif
 
 
 ## Top-level targets
@@ -35,51 +46,52 @@ build: ./var/log/recreate.log ./.git/hooks/pre-commit
 .PHONY: build-dist
 ### Build installable Python packages, mostly to check build locally
 build-dist: build
-	./.tox/build/bin/python -m build
+	./.tox/py3/bin/pyproject-build
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build
-	./.tox/py3/bin/towncrier check
+	./.tox/build/bin/towncrier check
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./var/log/recreate.log ~/.gitconfig ~/.pypirc
+release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/py3/bin/semantic-release print-version --current)
-	next_version=$$(./.tox/py3/bin/semantic-release print-version --next)
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	next_version=$$(
+	    ./.tox/build/bin/semantic-release print-version \
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
 # Update the release notes/changelog
-	./.tox/py3/bin/towncrier build --yes
-	git commit --no-verify -s -m \
+	./.tox/build/bin/towncrier build --yes
+	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/py3/bin/semantic-release version
+	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts
 	$(MAKE) build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/py3/bin/twine check dist/*
+	./.tox/build/bin/twine check dist/*
+ifeq ($(RELEASE_PUBLISH),true)
+# Publish from the local host outside a container for access to user credentials:
+# https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-ifeq ($(VCS_BRANCH), master)
-# Ensure the release commit and tag are on the remote before publishing release
-# artifacts
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" dist/*
+# The VCS remote shouldn't reflect the release until the release has been successfully
+# published
 	git push --no-verify --tags origin $(VCS_BRANCH)
-	./.tox/py3/bin/twine upload -s -r "pypi" dist/*
-else ifeq ($(VCS_BRANCH), develop)
-	git push --no-verify --tags origin $(VCS_BRANCH)
-# Release to the test PyPI server on the `develop` branch
-	./.tox/py3/bin/twine upload -s -r "testpypi" dist/*
 endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format:
-	./.tox/lint/bin/autoflake -r -i --remove-all-unused-imports \
+format: build
+	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables ./
-	./.tox/lint/bin/autopep8 -v -i -r --exclude "var" ./
-	./.tox/lint/bin/black ./
+	./.tox/py3/bin/autopep8 -v -i -r --exclude "var" ./
+	./.tox/py3/bin/black ./
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
@@ -97,15 +109,15 @@ upgrade:
 	touch "./pyproject.toml"
 	$(MAKE) "test"
 # Update VCS hooks from remotes to the latest tag.
-	./.tox/lint/bin/pre-commit autoupdate
+	./.tox/build/bin/pre-commit autoupdate
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	./.tox/lint/bin/pre-commit uninstall \
+	./.tox/build/bin/pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
-	./.tox/lint/bin/pre-commit clean || true
+	./.tox/build/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -rfv "./var/log/"
 
@@ -128,8 +140,12 @@ expand-template:
 
 ## Real targets
 
-./requirements.txt: ./var/log/install-tox.log ./pyproject.toml ./setup.cfg ./tox.ini
+./requirements.txt: \
+		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
+		./requirements-build.txt.in
 	tox -e "build"
+# Avoid a tox recreation loop
+	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
 
 ./var/log/recreate.log: \
 		./var/log/install-tox.log \
@@ -139,6 +155,10 @@ expand-template:
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
+./var/log/recreate-build.log: \
+		./var/log/install-tox.log ./requirements-build.txt ./tox.ini
+	mkdir -pv "$(dir $(@))"
+	tox -r -e "build" --notest -v | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
 ./var/log/install-tox.log:
@@ -146,12 +166,12 @@ expand-template:
 	(which tox || pip install tox) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
-	./.tox/lint/bin/pre-commit install \
+	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:
-	./.tox/py3/bin/cz init
+	./.tox/build/bin/cz init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

@@ -118,13 +118,15 @@ jobs:
           # Requires the secrets to be added to GitHub either through the web UI or the
           # GitHub CLI tool:
           # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+          GPG_SIGNING_PRIVATE_KEY: ${{ secrets.GPG_SIGNING_PRIVATE_KEY }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
           TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
           DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
 
+      # https://github.com/softprops/action-gh-release#-external-release-notes
       - name: "Create GitHub Release"
         uses: "softprops/action-gh-release@master"
-        if: "startsWith(github.ref, 'refs/tags/')"
+        if: "(github.ref == 'refs/heads/master') || (github.ref == 'refs/heads/master')"
         with:
           files: |
             dist/*

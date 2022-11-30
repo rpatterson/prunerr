@@ -11,6 +11,9 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Project-specific variables
+GPG_SIGNING_KEYID=2EFF7CCE6828E359
+
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
@@ -83,7 +86,11 @@ check-push: build
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
+release-python: ~/.gitconfig ~/.pypirc ./var/log/recreate-build.log
+ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
+# Import the private signing key from CI secrets
+	$(MAKE) ./var/log/gpg-import.log
+endif
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 	next_version=$$(
@@ -114,9 +121,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
-release-docker: ./var/log/docker-login.log build-docker
+release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-ifeq ($(VCS_BRANCH), master)
+ifeq ($(RELEASE_PUBLISH),true)
+ifneq ($(DOCKER_PASS),)
+	$(MAKE) ./var/log/docker-login.log
+endif
 	docker push "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
 endif
@@ -212,7 +222,8 @@ expand-template:
 
 # Docker targets
 ./var/log/docker-build.log: \
-		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
+		./Dockerfile ./Dockerfile.devel ./.dockerignore \
+		./requirements.txt ./requirements-devel.txt ./bin/entrypoint \
 		./docker-compose.yml ./docker-compose.override.yml ./.env
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
@@ -225,6 +236,8 @@ expand-template:
 	docker compose build | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
+	test -e "./var-docker/log/recreate-build.log" ||
+	    ln -v "./var/log/recreate-build.log" "./var-docker/log/recreate-build.log"
 	docker compose run --rm python-project-structure.devel make build-local
 
 # Local environment variables from a template
@@ -255,7 +268,50 @@ expand-template:
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
-./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/docker-login.log:
-	docker login -u "merpatterson" -p "$(DOCKER_PASS)"
-	date | tee -a "$(@)"
+	printenv "DOCKER_PASS" | docker-login -u "merpatterson" --password-stdin |
+	    tee -a "$(@)"
+
+# GPG signing key creation and management in CI
+export GPG_PASSPHRASE=
+./var/ci-cd-signing-subkey.asc:
+# We need a private key in the CI/CD environment for signing release commits and
+# artifacts.  Use a subkey so that it can be revoked without affecting your main key.
+# This recipe captures what I had to do to export a private signing subkey.  It's not
+# widely tested so it should probably only be used for reference.  It worked for me but
+# the risk is leaking your main private key so double and triple check all your
+# assumptions and results.
+# 1. Create a signing subkey with a NEW, SEPARATE passphrase:
+#    https://wiki.debian.org/Subkeys#How.3F
+# 2. Get the long key ID for that private subkey:
+#	gpg --list-secret-keys --keyid-format "LONG"
+# 3. Export *just* that private subkey and verify that the main secret key packet is the
+#    GPG dummy packet and that the only other private key included is the intended
+#    subkey:
+#	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
+#	    gpg --list-packets
+# 4. Export that key as text to a file:
+	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" >"$(@)"
+# 5. Confirm that the exported key can be imported into a temporary GNU PG directory and
+#    that temporary directory can then be used to sign files:
+#	gnupg_homedir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
+#	printenv 'GPG_PASSPHRASE' >"$${gnupg_homedir}/.passphrase"
+#	gpg --homedir "$${gnupg_homedir}" --batch --import <"$(@)"
+#	echo "Test signature content" >"$${gnupg_homedir}/test-sig.txt"
+#	gpgconf --kill gpg-agent
+#	gpg --homedir "$${gnupg_homedir}" --batch --pinentry-mode "loopback" \
+#	    --passphrase-file "$${gnupg_homedir}/.passphrase" \
+#	    --local-user "$(GPG_SIGNING_KEYID)!" --sign "$${gnupg_homedir}/test-sig.txt"
+#	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
+# 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
+# passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
+./var/log/gpg-import.log:
+# In each CI run, import the private signing key from the CI secrets
+	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
+	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
+	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
+# "Unlock" the signing key for the remainder of this CI run:
+	printenv 'GPG_PASSPHRASE' >"./var/ci-cd-signing-subkey.passphrase"
+	true | gpg --batch --pinentry-mode "loopback" \
+	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
+	    --sign | gpg --list-packets

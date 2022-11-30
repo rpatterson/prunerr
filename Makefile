@@ -83,8 +83,7 @@ check-push: build
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/gpg-import.log ~/.gitconfig ~/.pypirc \
-		./var/log/recreate-build.log
+release-python: ~/.gitconfig ~/.pypirc ./var/log/recreate-build.log
 ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
@@ -306,19 +305,11 @@ GPG_SIGNING_KEYID=
 	gpg --homedir "$(dir $(@))" --armor --export-secret-subkeys \
 	    "$(GPG_SIGNING_KEYID)!" >"$(@)"
 # 8. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI
-./var/log/gpg-import.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/gpg-import.log:
 # 9. In each CI run, import the private signing key from the CI secrets
-	if [ -z "$(GPG_SIGNING_PRIVATE_KEY)" ]
-	then
-	    echo "The GPG_SIGNING_PRIVATE_KEY env var is required,"
-	    echo "or '$$ touch $(@)' to bypass this and test releases locally"
-	    false
-	fi
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --import | tee -a "$(@)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
-./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/docker-login.log:
-	docker login -u "merpatterson" -p "$(DOCKER_PASS)"
-	date | tee -a "$(@)"
+	printenv "DOCKER_PASS" | docker-login -u "merpatterson" --password-stdin |
+	    tee -a "$(@)"

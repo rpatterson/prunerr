@@ -99,7 +99,7 @@ endif
 	)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier build --yes
-	GIT_TRACE=1 git commit --no-verify -S -m \
+	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
@@ -308,6 +308,7 @@ export GPG_PASSPHRASE=
 # In each CI run, import the private signing key from the CI secrets
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
+	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
 # "Unlock" the signing key for the remainder of this CI run:
 	printenv 'GPG_PASSPHRASE' >"./var/ci-cd-signing-subkey.passphrase"
 	true | gpg --batch --pinentry-mode "loopback" \

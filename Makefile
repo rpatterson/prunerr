@@ -87,7 +87,7 @@ release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 	next_version=$$(
-	    ./.tox/build/bin/semantic-release print-version
+	    ./.tox/build/bin/semantic-release print-version \
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
 	)
 # Update the release notes/changelog

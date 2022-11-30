@@ -295,26 +295,19 @@ export GPG_PASSPHRASE=
 #    that temporary directory can then be used to sign files:
 #	gnupg_homedir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
 #	printenv 'GPG_PASSPHRASE' >"$${gnupg_homedir}/.passphrase"
-#	gpg --homedir "$${gnupg_homedir}" --batch --pinentry-mode "loopback" \
-#	    --passphrase-file "$${gnupg_homedir}/.passphrase" --import <"$(@)"
+#	gpg --homedir "$${gnupg_homedir}" --batch --import <"$(@)"
 #	echo "Test signature content" >"$${gnupg_homedir}/test-sig.txt"
 #	gpgconf --kill gpg-agent
 #	gpg --homedir "$${gnupg_homedir}" --batch --pinentry-mode "loopback" \
 #	    --passphrase-file "$${gnupg_homedir}/.passphrase" \
 #	    --local-user "$(GPG_SIGNING_KEYID)!" --sign "$${gnupg_homedir}/test-sig.txt"
-#	gpg --batch --pinentry-mode "loopback" \
-#	    --passphrase-file "$${gnupg_homedir}/.passphrase" \
-#	    --local-user "$(GPG_SIGNING_KEYID)!" \
-#	    --verify "$${gnupg_homedir}/test-sig.txt.gpg"
+#	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
 ./var/log/gpg-import.log:
 # In each CI run, import the private signing key from the CI secrets
 	gnupg_tmp_dir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
-	printenv 'GPG_PASSPHRASE' >"$${gnupg_tmp_dir}/.passphrase"
-	printenv "GPG_SIGNING_PRIVATE_KEY" |
-	    gpg --batch --pinentry-mode "loopback" \
-	    --passphrase-file "$${gnupg_tmp_dir}/.passphrase" --import | tee -a "$(@)"
+	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	gpg --list-secret-keys --keyid-format LONG
 # "Unlock" the signing key for the remainder of this CI run:
@@ -324,6 +317,5 @@ export GPG_PASSPHRASE=
 	    gpgconf --kill gpg-agent
 	done
 	gpg-agent --daemon --allow-preset-passphrase --max-cache-ttl 3153600000
-	set +x
-	/usr/lib/gnupg2/gpg-preset-passphrase --preset \
-	    --passphrase "$(GPG_PASSPHRASE)" "$(GPG_SIGNING_KEYID)"
+	printenv 'GPG_PASSPHRASE' |
+	    /usr/lib/gnupg2/gpg-preset-passphrase --preset "$(GPG_SIGNING_KEYID)"

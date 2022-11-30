@@ -315,7 +315,7 @@ GPG_SIGNING_KEYID=
 	    echo "or '$$ touch $(@)' to bypass this and test releases locally"
 	    false
 	fi
-	printf '%s' "$(GPG_SIGNING_PRIVATE_KEY)" | gpg --import | tee -a "$(@)"
+	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --import | tee -a "$(@)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c

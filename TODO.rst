@@ -10,8 +10,6 @@ Required
 High Priority
 *************
 
-#. Add badges to `<./README.rst>`_: test coverage, CI status, etc.
-
 Nice to Have
 ************
 

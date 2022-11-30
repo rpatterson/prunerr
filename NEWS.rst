@@ -1,3 +1,9 @@
+Pythonprojectstructure 0.6.1b2.dev1 (2022-11-30)
+================================================
+
+No significant changes.
+
+
 Pythonprojectstructure 0.6.1.dev40 (2022-11-30)
 ===============================================
 

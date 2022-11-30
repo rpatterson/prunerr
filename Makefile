@@ -301,10 +301,11 @@ export GPG_PASSPHRASE=
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
 ./var/log/gpg-import.log:
 # In each CI run, import the private signing key from the CI secrets
-	printenv 'GPG_PASSPHRASE' >"~/.gnupg/.passphrase"
+	gnupg_tmp_dir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
+	printenv 'GPG_PASSPHRASE' >"$${gnupg_tmp_dir}/.passphrase"
 	printenv "GPG_SIGNING_PRIVATE_KEY" |
 	    gpg --batch --pinentry-mode "loopback" \
-	    --passphrase-file "~/.gnupg/.passphrase" --import | tee -a "$(@)"
+	    --passphrase-file "$${gnupg_tmp_dir}/.passphrase" --import | tee -a "$(@)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log:

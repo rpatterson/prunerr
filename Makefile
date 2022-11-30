@@ -263,20 +263,16 @@ expand-template:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 GPG_SIGNING_KEYID=
+export GPG_PASSPHRASE=
 ./var/ci-cd-signing-subkey.asc:
 # We need a private key in the CI/CD environment for signing release commits and
 # artifacts.  Use a subkey so that it can be revoked without affecting your main key.
-# If the private signing subkey were protected/encrypted with a passphrase, then we'd
-# need both the exported private signing subkey *and* that passphrase in CI/CD secrets.
-# To my mind, that defeats the purpose of protecting private keys with passphrases, so I
-# prefer to just add exported private signing subkey to CI in unprotected/un-encrypted
-# form.  Unfortunately, `$ gpg` makes this very hard to do so other developers using
-# this template may prefer to do it the other way and also add a passphrase in CI
-# secrets.  This recipe captures what I had to do to export an unprotected/un-encrypted
-# private signing subkey.  It's very fragile and not widely tested so it should probably
-# only be used for reference.  It worked for me but the risk is leaking your main
-# private key so double and triple check all your assumptions and results.
-# 1. Create a signing subkey: https://wiki.debian.org/Subkeys#How.3F
+# This recipe captures what I had to do to export a private signing subkey.  It's not
+# widely tested so it should probably only be used for reference.  It worked for me but
+# the risk is leaking your main private key so double and triple check all your
+# assumptions and results.
+# 1. Create a signing subkey with a NEW, SEPARATE passphrase:
+#    https://wiki.debian.org/Subkeys#How.3F
 # 2. Get the long key ID for that private subkey:
 #	gpg --list-secret-keys --keyid-format "LONG"
 # 3. Export *just* that private subkey and verify that the main secret key packet is the
@@ -284,30 +280,31 @@ GPG_SIGNING_KEYID=
 #    subkey:
 #	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
 #	    gpg --list-packets
-# We need to remove the password from the exported private subkey.  Unfortunately, `$
-# gpg` lost the ability to do this non-interactively some time back which makes this
-# quite a PITA.
-# 4. Import the exported key into a temporary GNU PG directory:
-	rm -rfv "$(dir $(@))"
-	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
-	    gpg --homedir "$(dir $(@))" --import
-# 5. Remove the password from the exported private subkey:
-#    https://lists.gnupg.org/pipermail/gnupg-users/2017-December/059617.html
-	gpg --homedir "$(dir $(@))" --edit-key "$(GPG_SIGNING_KEYID)!" passwd
-# 6. Confirm the private subkey is no longer password protected in the temporary GNU PG
-#    directory:
-	echo "Test signature content" >"$(dir $(@))test-sig.txt"
-	gpgconf --kill gpg-agent
-	gpg --homedir "$(dir $(@))" --local-user "$(GPG_SIGNING_KEYID)!" \
-	    --sign "$(dir $(@))/test-sig.txt"
-# 7. At long last we can export *just* the private signing subkey without password
-#    protection:
-	gpg --homedir "$(dir $(@))" --armor --export-secret-subkeys \
-	    "$(GPG_SIGNING_KEYID)!" >"$(@)"
-# 8. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI
+# 4. Export that key as text to a file:
+	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" >"$(@)"
+# 5. Confirm that the exported key can be imported into a temporary GNU PG directory and
+#    that temporary directory can then be used to sign files:
+#	gnupg_homedir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
+#	printenv 'GPG_PASSPHRASE' >"$${gnupg_homedir}/.passphrase"
+#	gpg --homedir "$${gnupg_homedir}" --batch --pinentry-mode "loopback" \
+#	    --passphrase-file "$${gnupg_homedir}/.passphrase" --import <"$(@)"
+#	echo "Test signature content" >"$${gnupg_homedir}/test-sig.txt"
+#	gpgconf --kill gpg-agent
+#	gpg --homedir "$${gnupg_homedir}" --batch --pinentry-mode "loopback" \
+#	    --passphrase-file "$${gnupg_homedir}/.passphrase" \
+#	    --local-user "$(GPG_SIGNING_KEYID)!" --sign "$${gnupg_homedir}/test-sig.txt"
+#	gpg --batch --pinentry-mode "loopback" \
+#	    --passphrase-file "$${gnupg_homedir}/.passphrase" \
+#	    --local-user "$(GPG_SIGNING_KEYID)!" \
+#	    --verify "$${gnupg_homedir}/test-sig.txt.gpg"
+# 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
+# passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
 ./var/log/gpg-import.log:
-# 9. In each CI run, import the private signing key from the CI secrets
-	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --import | tee -a "$(@)"
+# In each CI run, import the private signing key from the CI secrets
+	printenv 'GPG_PASSPHRASE' >"~/.gnupg/.passphrase"
+	printenv "GPG_SIGNING_PRIVATE_KEY" |
+	    gpg --batch --pinentry-mode "loopback" \
+	    --passphrase-file "~/.gnupg/.passphrase" --import | tee -a "$(@)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log:

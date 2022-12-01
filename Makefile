@@ -299,7 +299,6 @@ else
 	fi
 endif
 	chmod +x "$(@)"
-	"$(@)" -t "$(CODECOV_TOKEN)" --dryRun
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:

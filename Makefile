@@ -35,11 +35,13 @@ SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 DOCKER_BUILD_ARGS=
+GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(VCS_BRANCH),master)
 SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
+GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
@@ -135,6 +137,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
+ifneq ($(GITHUB_TOKEN),)
+# Create a GitHub release
+	gh release create "v$${next_version}" $(GITHUB_RELEASE_ARGS) \
+	    --notes-file "./NEWS.rst" ./dist/*
+endif
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub

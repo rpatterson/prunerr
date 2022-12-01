@@ -25,6 +25,7 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
+- Command-line console script with sub-command boilerplate
 - A `Makefile`_ for local development build and maintenance tasks
 
 The intended use is to add this repository as a VCS remote for your project.  Thus

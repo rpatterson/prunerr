@@ -121,7 +121,7 @@ endif
 release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	docker push -a "merpatterson/python-project-structure"
-	docker compose up docker-pushrm
+	docker compose run --rm docker-pushrm
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers

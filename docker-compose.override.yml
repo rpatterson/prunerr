@@ -48,7 +48,9 @@ services:
     image: "chko/docker-pushrm"
     depends_on:
       - "pandoc"
-    env_file: "./.env"
+    environment:
+      DOCKER_USER: "${DOCKER_USER:-merpatterson}"
+      DOCKER_PASS: "${DOCKER_PASS}"
     volumes:
       - "./:/data/"
     command: >-

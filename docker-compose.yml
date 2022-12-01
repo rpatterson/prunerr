@@ -6,7 +6,7 @@ services:
 
   ## Container for use by end users
   python-project-structure:
-    image: "merpatterson/python-project-structure"
+    image: "merpatterson/python-project-structure:${VERSION:-latest}"
     build: "./"
     environment:
       # Make the run-time user configurable in `./.env` to match permissions inside and

@@ -4,7 +4,7 @@
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
-.SHELLFLAGS:=-xeu -o pipefail -c
+.SHELLFLAGS:=-eu -o pipefail -c
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -13,6 +13,7 @@ PS1?=$$
 
 # Project-specific variables
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
+CODECOV_TOKEN=
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -23,6 +24,9 @@ endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
+# OS Detection
+UNAME_KERNEL_NAME:=$(shell uname)
+OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
@@ -37,6 +41,9 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 endif
+
+# Done with `$(shell ...)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
 
 
 ## Top-level targets
@@ -89,7 +96,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ~/.gitconfig ~/.pypirc ./var/log/recreate-build.log
+release-python: ~/.gitconfig ~/.pypirc ~/.local/bin/codecov ./var/log/recreate-build.log
+# Upload any build or test artifacts to CI/CD providers
+ifneq ($(CODECOV_TOKEN),)
+	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
+endif
 ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
@@ -255,6 +266,31 @@ expand-template:
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+
+~/.local/bin/codecov:
+	mkdir -pv "$(dir $(@))"
+# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
+ifeq ($(UNAME_KERNEL_NAME),Darwin)
+	curl --output-dir "$(dir $(@))" -Os \
+	    "https://uploader.codecov.io/latest/macos/codecov"
+else ifeq ($(UNAME_KERNEL_NAME),Linux)
+ifeq ($(OS_ALPINE_VERSION),)
+	curl --output-dir "$(dir $(@))" -Os \
+	    "https://uploader.codecov.io/latest/linux/codecov"
+else
+	wget --directory-prefix="$(dir $(@))" \
+	    "https://uploader.codecov.io/latest/alpine/codecov"
+endif
+else
+	if $$(which "$(notdir $(@))")
+	then
+	    ln -v --backup=numbered $$(which "$(notdir $(@))") "$(@)"
+	else
+	    echo "Could not determine how to install Codecov uploader"
+	fi
+endif
+	chmod +x "$(@)"
+	"$(@)" -t "$(CODECOV_TOKEN)" --dryRun
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:

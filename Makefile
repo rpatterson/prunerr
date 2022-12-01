@@ -90,9 +90,9 @@ endif
 format: build
 	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables ./
-	./.tox/py3/bin/autopep8 -v -i -r --exclude "var" ./
-	./.tox/py3/bin/black ./
+		--remove-unused-variables "./src/pythonprojectstructure/"
+	./.tox/py3/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
+	./.tox/py3/bin/black "./src/pythonprojectstructure/"
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters

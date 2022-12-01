@@ -52,6 +52,8 @@ software projects.  It includes:
 - Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build and maintenance tasks
 - `Docker`_ container images for users and development
+- `Makefile`_ recipes/targets used for both local development and on CI/CD platforms
+- A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
 developers can merge changes from this repository as we make changes related to Python
@@ -118,3 +120,5 @@ template.
 
 .. _`Docker`: https://docs.docker.com/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
+
+.. _`GitHub Actions`: https://docs.github.com/en/actions

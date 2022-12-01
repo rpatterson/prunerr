@@ -35,7 +35,7 @@ colorama==0.4.6
     # via
     #   commitizen
     #   twine
-commitizen==2.37.0
+commitizen==2.37.1
     # via -r ./requirements-build.txt.in
 cryptography==38.0.4
     # via secretstorage
@@ -90,7 +90,7 @@ packaging==21.3
     #   python-semantic-release
 pep517==0.13.0
     # via build
-pip-tools==6.10.0
+pip-tools==6.11.0
     # via -r ./requirements-build.txt.in
 pkginfo==1.9.2
     # via twine

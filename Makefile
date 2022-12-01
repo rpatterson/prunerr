@@ -31,15 +31,17 @@ OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
-SEMANTIC_RELEASE_VERSION_ARGS=
 PYPI_REPO=testpypi
+DOCKER_BUILD_ARGS=
 ifeq ($(VCS_BRANCH),master)
+SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
+DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
-SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 endif
 
 # Done with `$(shell ...)`, echo recipe commands going forward
@@ -244,8 +246,7 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	docker buildx build --pull \
-	    --tag "merpatterson/python-project-structure:latest" \
+	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
 	    --tag "merpatterson/python-project-structure:v$${current_version}" \
 	    "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"

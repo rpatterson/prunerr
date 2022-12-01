@@ -98,6 +98,7 @@ endif
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
 	)
 # Update the release notes/changelog
+	./.tox/build/bin/towncrier check
 	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
@@ -136,9 +137,9 @@ endif
 format: build-local
 	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables ./
-	./.tox/py3/bin/autopep8 -v -i -r --exclude "var" ./
-	./.tox/py3/bin/black ./
+		--remove-unused-variables "./src/pythonprojectstructure/"
+	./.tox/py3/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
+	./.tox/py3/bin/black "./src/pythonprojectstructure/"
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters

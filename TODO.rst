@@ -10,10 +10,6 @@ Required
 High Priority
 *************
 
-#. Release Docker images with CI.
-
-#. Add badges to `<./README.rst>`_: test coverage, CI status, etc.
-
 Nice to Have
 ************
 

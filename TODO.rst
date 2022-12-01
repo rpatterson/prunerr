@@ -10,6 +10,8 @@ Required
 High Priority
 *************
 
+#. Docker image version?
+
 Nice to Have
 ************
 

@@ -20,6 +20,18 @@ Python project structure foundation or template
           :alt: Python code style
           :target: https://github.com/psf/black
 
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure?logo=docker
+          :alt: Docker Hub image version (latest semver)
+          :target: https://hub.docker.com/r/merpatterson/python-project-structure
+       .. figure:: https://img.shields.io/docker/pulls/merpatterson/python-project-structure?logo=docker
+          :alt: Docker Hub image pulls count
+          :target: https://hub.docker.com/r/merpatterson/python-project-structure
+       .. figure:: https://img.shields.io/docker/stars/merpatterson/python-project-structure?logo=docker
+	  :alt: Docker Hub stars
+          :target: https://hub.docker.com/r/merpatterson/python-project-structure
+       .. figure:: https://img.shields.io/docker/image-size/merpatterson/python-project-structure?logo=docker
+	  :alt: Docker Hub image size (latest semver)
+          :target: https://hub.docker.com/r/merpatterson/python-project-structure
 
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
 software projects.  It includes:

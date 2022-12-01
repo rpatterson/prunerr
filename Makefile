@@ -4,7 +4,7 @@
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
-.SHELLFLAGS:=-xeu -o pipefail -c
+.SHELLFLAGS:=-eu -o pipefail -c
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -13,6 +13,7 @@ PS1?=$$
 
 # Project-specific variables
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
+CODECOV_TOKEN=
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -23,20 +24,30 @@ endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
+# OS Detection
+UNAME_KERNEL_NAME:=$(shell uname)
+OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
-SEMANTIC_RELEASE_VERSION_ARGS=
 PYPI_REPO=testpypi
+DOCKER_BUILD_ARGS=
+GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(VCS_BRANCH),master)
+SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
+DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
+GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
-SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 endif
+
+# Done with `$(shell ...)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
 
 
 ## Top-level targets
@@ -79,7 +90,7 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build
-	./.tox/build/bin/towncrier check
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
@@ -89,7 +100,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ~/.gitconfig ~/.pypirc ./var/log/recreate-build.log
+release-python: ~/.gitconfig ~/.pypirc ~/.local/bin/codecov ./var/log/recreate-build.log
+# Upload any build or test artifacts to CI/CD providers
+ifneq ($(CODECOV_TOKEN),)
+	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
+endif
 ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
@@ -101,7 +116,7 @@ endif
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
 	)
 # Update the release notes/changelog
-	./.tox/build/bin/towncrier check
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
@@ -122,6 +137,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
+ifneq ($(GITHUB_TOKEN),)
+# Create a GitHub release
+	gh release create "v$${next_version}" $(GITHUB_RELEASE_ARGS) \
+	    --notes-file "./NEWS.rst" ./dist/*
+endif
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
@@ -131,7 +151,7 @@ ifneq ($(DOCKER_PASS),)
 	$(MAKE) ./var/log/docker-login.log
 endif
 	docker push -a "merpatterson/python-project-structure"
-	docker compose up docker-pushrm
+	docker compose run --rm docker-pushrm
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -233,8 +253,7 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	docker buildx build --pull \
-	    --tag "merpatterson/python-project-structure:latest" \
+	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
 	    --tag "merpatterson/python-project-structure:v$${current_version}" \
 	    "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
@@ -255,6 +274,31 @@ expand-template:
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+
+~/.local/bin/codecov:
+	mkdir -pv "$(dir $(@))"
+# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
+ifeq ($(UNAME_KERNEL_NAME),Darwin)
+	curl --output-dir "$(dir $(@))" -Os \
+	    "https://uploader.codecov.io/latest/macos/codecov"
+else ifeq ($(UNAME_KERNEL_NAME),Linux)
+ifeq ($(OS_ALPINE_VERSION),)
+	curl --output-dir "$(dir $(@))" -Os \
+	    "https://uploader.codecov.io/latest/linux/codecov"
+else
+	wget --directory-prefix="$(dir $(@))" \
+	    "https://uploader.codecov.io/latest/alpine/codecov"
+endif
+else
+	if $$(which "$(notdir $(@))")
+	then
+	    ln -v --backup=numbered $$(which "$(notdir $(@))") "$(@)"
+	else
+	    echo "Could not determine how to install Codecov uploader"
+	fi
+endif
+	chmod +x "$(@)"
+	"$(@)" -t "$(CODECOV_TOKEN)" --dryRun
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:

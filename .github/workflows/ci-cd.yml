@@ -64,6 +64,8 @@ jobs:
       # platforms
 
       - name: "Build the container image in which to run the tests"
+        env:
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make build-docker"
 
       - name: "Run the tests and code checks inside the built container"
@@ -95,13 +97,6 @@ jobs:
           path: |
             coverage*
             htmlcov
-      # https://github.com/marketplace/actions/codecov#usage
-      - name: "Publish code coverage report"
-        uses: "codecov/codecov-action@main"
-        with:
-          files: |
-            coverage.xml
-          fail_ci_if_error: true
 
       - name: "Archive linter reports"
         uses: "actions/upload-artifact@master"
@@ -113,24 +108,17 @@ jobs:
       # Release and publish
 
       - name: "Bump version and publish release artifacts if on `master`/`develop`"
-        run: "make release"
         env:
+          # Enable the GitHub CLI
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Requires the secrets to be added to GitHub either through the web UI or the
           # GitHub CLI tool:
           # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
-          GPG_SIGNING_PRIVATE_KEY: ${{ secrets.GPG_SIGNING_PRIVATE_KEY }}
-          PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-          TEST_PYPI_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
-          DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
-
-      # https://github.com/softprops/action-gh-release#-external-release-notes
-      - name: "Create GitHub Release"
-        uses: "softprops/action-gh-release@v1"
-        if: "(github.ref == 'refs/heads/develop') || (github.ref == 'refs/heads/master')"
-        with:
-          files: |
-            dist/*
-          body_path: "NEWS.rst"
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+          PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+          TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        run: "make release"
 
       # TODO: Push container image to GHCR? I don't currently need this but I can easily
       #       imagine the value in it.

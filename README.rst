@@ -50,7 +50,11 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- A `Makefile`_ for local development build and maintenance tasks
+- A `Makefile`_ for local development build, test and maintenance tasks
+- `Docker`_ container images for users and development
+- Targets/recipes in the `Makefile`_ to automate releases
+- `Makefile`_ recipes/targets used for both local development and on CI/CD platforms
+- A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
 developers can merge changes from this repository as we make changes related to Python
@@ -115,4 +119,7 @@ template.
 .. _Makefile: https://github.com/rpatterson/python-project-structure/blob/master/Makefile
 .. _the example ./docker-compose.yml file: https://github.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
 
+.. _`Docker`: https://docs.docker.com/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
+
+.. _`GitHub Actions`: https://docs.github.com/en/actions

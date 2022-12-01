@@ -190,12 +190,9 @@ expand-template:
 
 ## Real targets
 
-./requirements.txt: \
-		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
-		./requirements-build.txt.in
+./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini ./requirements-build.txt.in
+	$(MAKE) "./var/log/recreate-build.log"
 	tox -e "build"
-# Avoid a tox recreation loop
-	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
 
 ./var/log/recreate.log: \
 		./var/log/install-tox.log \
@@ -226,8 +223,6 @@ expand-template:
 	docker compose build | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
-	test -e "./var-docker/log/recreate-build.log" ||
-	    ln -v "./var/log/recreate-build.log" "./var-docker/log/recreate-build.log"
 	docker compose run --rm python-project-structure.devel make build-local
 
 # Local environment variables from a template

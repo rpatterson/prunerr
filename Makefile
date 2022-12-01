@@ -95,6 +95,21 @@ release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 	    ./.tox/build/bin/semantic-release print-version \
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
 	)
+	if [ -z "$${next_version}" ]
+	then
+ifeq ($(VCS_BRANCH),master)
+# Pushing the last prerelease on `develop` to `master` means "Publish the last
+# prerelease as a final release".
+	    next_version=$$(
+	        ./.tox/build/bin/semantic-release print-version \
+	        --next --patch $(SEMANTIC_RELEASE_VERSION_ARGS)
+	    )
+else
+	    set +x
+	    echo "CRITICAL: Could not determine the next version"
+	    false
+endif
+	fi
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 	./.tox/build/bin/towncrier build --yes

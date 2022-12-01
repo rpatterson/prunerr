@@ -83,7 +83,10 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: release-python release-docker
+release: release-python
+ifeq ($(RELEASE_PUBLISH),true)
+	$(MAKE) release-docker
+endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: ~/.gitconfig ~/.pypirc ./var/log/recreate-build.log
@@ -108,7 +111,7 @@ endif
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure.devel make build-dist
+	docker compose run --rm python-project-structure-devel make build-dist
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
 ifeq ($(RELEASE_PUBLISH),true)
@@ -124,13 +127,11 @@ endif
 ### Publish container images to Docker Hub
 release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-ifeq ($(RELEASE_PUBLISH),true)
 ifneq ($(DOCKER_PASS),)
 	$(MAKE) ./var/log/docker-login.log
 endif
-	docker push "merpatterson/python-project-structure"
+	docker push -a "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
-endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -145,7 +146,7 @@ format: build-local
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test: build-docker
 # Run from the development Docker container for consistency
-	docker compose run --rm python-project-structure.devel make format test-local
+	docker compose run --rm python-project-structure-devel make format test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: ./var/log/install-tox.log build-local
@@ -153,7 +154,7 @@ test-local: ./var/log/install-tox.log build-local
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker
-	docker compose run --rm python-project-structure.devel make test-local
+	docker compose run --rm python-project-structure-devel make test-local
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm python-project-structure \
 	    python -m pythonprojectstructure --help
@@ -201,12 +202,9 @@ expand-template:
 
 ## Real targets
 
-./requirements.txt: \
-		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
-		./requirements-build.txt.in
+./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini ./requirements-build.txt.in
+	$(MAKE) "./var/log/recreate-build.log"
 	tox -e "build"
-# Avoid a tox recreation loop
-	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
 
 ./var/log/recreate.log: \
 		./var/log/install-tox.log \
@@ -225,7 +223,8 @@ expand-template:
 ./var/log/docker-build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore \
 		./requirements.txt ./requirements-devel.txt ./bin/entrypoint \
-		./docker-compose.yml ./docker-compose.override.yml ./.env
+		./docker-compose.yml ./docker-compose.override.yml ./.env \
+		./var/log/recreate-build.log
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" "./.tox-docker/" \
@@ -233,13 +232,15 @@ expand-template:
 	    "./src/python_project_structure-docker.egg-info/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
-	docker compose build --pull python-project-structure | tee -a "$(@)"
-	docker compose build | tee -a "$(@)"
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	docker buildx build --pull \
+	    --tag "merpatterson/python-project-structure:latest" \
+	    --tag "merpatterson/python-project-structure:v$${current_version}" \
+	    "./" | tee -a "$(@)"
+	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
-	test -e "./var-docker/log/recreate-build.log" ||
-	    ln -v "./var/log/recreate-build.log" "./var-docker/log/recreate-build.log"
-	docker compose run --rm python-project-structure.devel make build-local
+	docker compose run --rm python-project-structure-devel make build-local
 
 # Local environment variables from a template
 ./.env: ./.env.in

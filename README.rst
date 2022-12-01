@@ -20,9 +20,18 @@ Python project structure foundation or template
           :alt: Python code style
           :target: https://github.com/psf/black
 
-     - .. figure:: https://github.com/rpatterson/python-project-structure/workflows/Run%20linter,%20tests%20and,%20and%20release/badge.svg
+     - .. figure:: https://img.shields.io/github/v/release/rpatterson/python-project-structure?logo=github
+	  :alt: GitHub release (latest SemVer)
+	  :target: https://github.com/rpatterson/python-project-structure/releases
+       .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/ci-cd.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/python-project-structure/
+       .. figure:: https://codecov.io/github/rpatterson/python-project-structure/branch/master/graph/badge.svg?token=GNKVQ8VYOU 
+          :alt: Codecov test coverage
+	  :target: https://codecov.io/github/rpatterson/python-project-structure
+       .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github
+	  :alt: GitHub repo stars
+	  :target: https://codecov.io/github/rpatterson/python-project-structure
 
      - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure?logo=docker
           :alt: Docker Hub image version (latest semver)

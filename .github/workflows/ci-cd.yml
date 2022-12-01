@@ -1,4 +1,4 @@
-name: "Run linter, tests and, and release"
+name: "CI/CD"
 
 on: ["push"]
 

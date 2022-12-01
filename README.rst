@@ -26,7 +26,8 @@ software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
 - Command-line console script with sub-command boilerplate
-- A `Makefile`_ for local development build and maintenance tasks
+- A `Makefile`_ for local development build, test and maintenance tasks
+- Targets/recipes in the `Makefile`_ to automate releases
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
 developers can merge changes from this repository as we make changes related to Python

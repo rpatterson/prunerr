@@ -23,14 +23,14 @@ USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
 RELEASE_PUBLISH=false
-SEMANTIC_RELEASE_VERSION_ARGS=
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 PYPI_REPO=testpypi
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
+SEMANTIC_RELEASE_VERSION_ARGS=
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
-SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 endif
 
 

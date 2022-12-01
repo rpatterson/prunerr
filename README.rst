@@ -5,23 +5,20 @@ Python project structure foundation or template
 ------------------------------------------------------------------------------
 
 .. list-table::
+   :class: borderless align-right
 
    * - .. figure:: https://img.shields.io/pypi/v/python-project-structure.svg?logo=pypi&label=PyPI&logoColor=gold
           :alt: PyPI latest release version
           :target: https://pypi.org/project/python-project-structure/
-          :class: align-right
        .. figure:: https://img.shields.io/pypi/dm/python-project-structure.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold
           :alt: PyPI downloads per month
           :target: https://pypi.org/project/python-project-structure/
-          :class: align-right
        .. figure:: https://img.shields.io/pypi/pyversions/python-project-structure.svg?logo=python&label=Python&logoColor=gold
           :alt: PyPI Python versions
           :target: https://pypi.org/project/python-project-structure/
-          :class: align-right
        .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
           :alt: Python code style
           :target: https://github.com/psf/black
-          :class: align-right
 
 
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_

@@ -64,6 +64,8 @@ jobs:
       # platforms
 
       - name: "Build the container image in which to run the tests"
+        env:
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make build-docker"
 
       - name: "Run the tests and code checks inside the built container"

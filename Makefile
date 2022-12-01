@@ -131,7 +131,7 @@ ifneq ($(DOCKER_PASS),)
 	$(MAKE) ./var/log/docker-login.log
 endif
 	docker push -a "merpatterson/python-project-structure"
-	docker compose up docker-pushrm
+	docker compose run --rm docker-pushrm
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers

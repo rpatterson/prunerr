@@ -50,8 +50,9 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- A `Makefile`_ for local development build and maintenance tasks
+- A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development
+- Targets/recipes in the `Makefile`_ to automate releases
 - `Makefile`_ recipes/targets used for both local development and on CI/CD platforms
 - A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
 

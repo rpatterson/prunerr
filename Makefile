@@ -90,7 +90,7 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build
-	./.tox/build/bin/towncrier check
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
@@ -116,7 +116,7 @@ endif
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
 	)
 # Update the release notes/changelog
-	./.tox/build/bin/towncrier check
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"

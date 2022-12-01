@@ -37,8 +37,9 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- A `Makefile`_ for local development build and maintenance tasks
+- A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development
+- Targets/recipes in the `Makefile`_ to automate releases
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
 developers can merge changes from this repository as we make changes related to Python

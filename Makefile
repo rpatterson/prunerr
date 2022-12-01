@@ -80,7 +80,10 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: release-python release-docker
+release: release-python
+ifeq ($(RELEASE_PUBLISH),true)
+	$(MAKE) release-docker
+endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
@@ -117,10 +120,8 @@ endif
 ### Publish container images to Docker Hub
 release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-ifeq ($(RELEASE_PUBLISH),true)
 	docker push "merpatterson/python-project-structure"
 	docker compose up docker-pushrm
-endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers

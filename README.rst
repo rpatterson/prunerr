@@ -38,6 +38,7 @@ software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build and maintenance tasks
+- `Docker`_ container images for users and development
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
 developers can merge changes from this repository as we make changes related to Python
@@ -89,4 +90,5 @@ template.
 .. _Makefile: https://github.com/rpatterson/python-project-structure/blob/master/Makefile
 .. _the example ./docker-compose.yml file: https://github.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
 
+.. _`Docker`: https://docs.docker.com/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure

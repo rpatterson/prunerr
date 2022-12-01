@@ -117,6 +117,7 @@ endif
 	)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	./.tox/build/bin/towncrier build --draft --yes >"./NEWS-release.rst"
 	./.tox/build/bin/towncrier build --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
@@ -140,7 +141,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 ifneq ($(GITHUB_TOKEN),)
 # Create a GitHub release
 	gh release create "v$${next_version}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS.rst" ./dist/*
+	    --notes-file "./NEWS-release.rst" ./dist/*
 endif
 endif
 .PHONY: release-docker

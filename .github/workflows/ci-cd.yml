@@ -125,7 +125,7 @@ jobs:
 
       # https://github.com/softprops/action-gh-release#-external-release-notes
       - name: "Create GitHub Release"
-        uses: "softprops/action-gh-release@master"
+        uses: "softprops/action-gh-release@v1"
         if: "(github.ref == 'refs/heads/develop') || (github.ref == 'refs/heads/master')"
         with:
           files: |

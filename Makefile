@@ -121,7 +121,7 @@ endif
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build
+	./.tox/build/bin/towncrier build \
 	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --draft --yes \
 	    >"./NEWS-release.rst"
 	./.tox/build/bin/towncrier build \

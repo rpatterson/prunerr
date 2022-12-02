@@ -4,7 +4,7 @@
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
-.SHELLFLAGS:=-xeu -o pipefail -c
+.SHELLFLAGS:=-eu -o pipefail -c
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -35,6 +35,9 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
 SEMANTIC_RELEASE_NEXT_VERSION=
+
+# Done with `$(shell ...)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
 
 
 ## Top-level targets

@@ -24,16 +24,24 @@ PGID:=$(shell id -g)
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
+RELEASE_BUMP_VERSION=false
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 DOCKER_BUILD_ARGS=
+CI=false
 ifeq ($(VCS_BRANCH),master)
+ifeq ($(CI),true)
+RELEASE_BUMP_VERSION=true
+endif
 SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 else ifeq ($(VCS_BRANCH),develop)
+ifeq ($(CI),true)
+RELEASE_BUMP_VERSION=true
+endif
 RELEASE_PUBLISH=true
 endif
 
@@ -65,7 +73,7 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ./var/log/recreate-build.log
-ifeq ($(RELEASE_PUBLISH),true)
+ifeq ($(RELEASE_BUMP_VERSION),true)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)

@@ -243,9 +243,9 @@ expand-template:
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
 	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
-	    --tag "merpatterson/python-project-structure:v$${current_version}" \
-	    --tag "merpatterson/python-project-structure:v$${minor_version}" \
-	    --tag "merpatterson/python-project-structure:v$${major_version}" \
+	    --tag "merpatterson/python-project-structure:$${current_version}" \
+	    --tag "merpatterson/python-project-structure:$${minor_version}" \
+	    --tag "merpatterson/python-project-structure:$${major_version}" \
 	    "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development

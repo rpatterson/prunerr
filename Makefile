@@ -46,10 +46,6 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
 build: ./var/log/recreate.log ./.git/hooks/pre-commit
-.PHONY: build-dist
-### Build installable Python packages, mostly to check build locally
-build-dist: build
-	./.tox/py3/bin/pyproject-build
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -81,7 +77,7 @@ release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts
-	$(MAKE) build-dist
+	./.tox/py3/bin/pyproject-build
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
 ifeq ($(RELEASE_PUBLISH),true)

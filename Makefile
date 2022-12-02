@@ -4,7 +4,7 @@
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
-.SHELLFLAGS:=-xeu -o pipefail -c
+.SHELLFLAGS:=-eu -o pipefail -c
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -36,6 +36,10 @@ DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
+SEMANTIC_RELEASE_NEXT_VERSION=
+
+# Done with `$(shell ...)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
 
 
 ## Top-level targets
@@ -59,10 +63,6 @@ build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./var/log/docker-build.log
-.PHONY: build-dist
-### Build installable Python packages, mostly to check build locally
-build-dist: build-local
-	./.tox/py3/bin/pyproject-build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -82,46 +82,40 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: release-python
+release:
+	SEMANTIC_RELEASE_NEXT_VERSION=$$(
+	    ./.tox/build/bin/semantic-release print-version \
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
+	if [ -z "$${SEMANTIC_RELEASE_NEXT_VERSION}" ]
+	then
+# No release necessary for the commits since the last release.
+	    exit
+	fi
+	$(MAKE) SEMANTIC_RELEASE_NEXT_VERSION="$${SEMANTIC_RELEASE_NEXT_VERSION}" \
+	    release-python
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
-### Publish installable Python packages to PyPI
+### Publish installable Python packages to PyPI<
 release-python: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	next_version=$$(
-	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
-	)
-	if [ -z "$${next_version}" ]
-	then
-ifeq ($(VCS_BRANCH),master)
-# Pushing the last prerelease on `develop` to `master` means "Publish the last
-# prerelease as a final release".
-	    next_version=$$(
-	        ./.tox/build/bin/semantic-release print-version \
-	        --next --patch $(SEMANTIC_RELEASE_VERSION_ARGS)
-	    )
-else
-	    set +x
-	    echo "CRITICAL: Could not determine the next version"
-	    false
-endif
-	fi
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build --yes
+	./.tox/build/bin/towncrier build \
+	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --yes
 	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
+	    "build(release): Update changelog v$${current_version} -> v$${SEMANTIC_RELEASE_NEXT_VERSION}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel make build-dist
+	docker compose run --rm python-project-structure-devel \
+	    ./.tox/py3/bin/pyproject-build
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
 ifeq ($(RELEASE_PUBLISH),true)

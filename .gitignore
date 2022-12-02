@@ -102,3 +102,4 @@ ENV/
 
 # Project-specific build artifacts
 /README.md
+/NEWS-release.rst

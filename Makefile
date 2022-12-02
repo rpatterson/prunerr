@@ -45,6 +45,7 @@ GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
+SEMANTIC_RELEASE_NEXT_VERSION=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -71,10 +72,6 @@ build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./var/log/docker-build.log
-.PHONY: build-dist
-### Build installable Python packages, mostly to check build locally
-build-dist: build-local
-	./.tox/py3/bin/pyproject-build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -94,7 +91,18 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: release-python
+release:
+	SEMANTIC_RELEASE_NEXT_VERSION=$$(
+	    ./.tox/build/bin/semantic-release print-version \
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
+	if [ -z "$${SEMANTIC_RELEASE_NEXT_VERSION}" ]
+	then
+# No release necessary for the commits since the last release.
+	    exit
+	fi
+	$(MAKE) SEMANTIC_RELEASE_NEXT_VERSION="$${SEMANTIC_RELEASE_NEXT_VERSION}" \
+	    release-python
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) release-docker
 endif
@@ -111,38 +119,23 @@ ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 endif
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	next_version=$$(
-	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
-	)
-	if [ -z "$${next_version}" ]
-	then
-ifeq ($(VCS_BRANCH),master)
-# Pushing the last prerelease on `develop` to `master` means "Publish the last
-# prerelease as a final release".
-	    next_version=$$(
-	        ./.tox/build/bin/semantic-release print-version \
-	        --next --patch $(SEMANTIC_RELEASE_VERSION_ARGS)
-	    )
-else
-	    set +x
-	    echo "CRITICAL: Could not determine the next version"
-	    false
-endif
-	fi
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build --draft --yes >"./NEWS-release.rst"
-	./.tox/build/bin/towncrier build --yes
+	./.tox/build/bin/towncrier build \
+	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --draft --yes \
+	    >"./NEWS-release.rst"
+	./.tox/build/bin/towncrier build \
+	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --yes
 	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
+	    "build(release): Update changelog v$${current_version} -> v$${SEMANTIC_RELEASE_NEXT_VERSION}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel make build-dist
+	docker compose run --rm python-project-structure-devel \
+	    ./.tox/py3/bin/pyproject-build
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
 ifeq ($(RELEASE_PUBLISH),true)
@@ -155,7 +148,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	git push --no-verify --tags origin $(VCS_BRANCH)
 ifneq ($(GITHUB_TOKEN),)
 # Create a GitHub release
-	gh release create "v$${next_version}" $(GITHUB_RELEASE_ARGS) \
+	gh release create "v$${SEMANTIC_RELEASE_NEXT_VERSION}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/*
 endif
 endif

@@ -34,7 +34,6 @@ PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
-SEMANTIC_RELEASE_NEXT_VERSION=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -48,7 +47,32 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./var/log/recreate.log ./.git/hooks/pre-commit
+build: build-bump ./var/log/recreate.log ./.git/hooks/pre-commit
+.PHONY: build-bump
+### Bump the package version if on a branch that should trigger a release
+build-bump: ./var/log/recreate-build.log
+ifeq ($(RELEASE_PUBLISH),true)
+	next_version=$$(
+	    ./.tox/build/bin/semantic-release print-version \
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
+	if [ -z "$${next_version}" ]
+	then
+# No release necessary for the commits since the last release.
+	    exit
+	fi
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+# Update the release notes/changelog
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	git diff --cached --exit-code ||
+	    echo "CRITICAL: Cannot bump version with staged changes"
+	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
+	git commit --no-verify -S -m \
+	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
+# Increment the version in VCS
+	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
+endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -58,25 +82,6 @@ check-push: build
 .PHONY: release
 ### Publish installable Python packages to PyPI
 release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
-	SEMANTIC_RELEASE_NEXT_VERSION=$$(
-	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
-	)
-	if [ -z "$${SEMANTIC_RELEASE_NEXT_VERSION}" ]
-	then
-# No release necessary for the commits since the last release.
-	    exit
-	fi
-# Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-# Update the release notes/changelog
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build \
-	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --yes
-	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${SEMANTIC_RELEASE_NEXT_VERSION}"
-# Increment the version in VCS
-	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts

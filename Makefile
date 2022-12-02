@@ -238,8 +238,14 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	minor_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	major_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
 	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
 	    --tag "merpatterson/python-project-structure:v$${current_version}" \
+	    --tag "merpatterson/python-project-structure:v$${minor_version}" \
+	    --tag "merpatterson/python-project-structure:v$${major_version}" \
 	    "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development

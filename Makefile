@@ -82,17 +82,15 @@ check-push: build
 .PHONY: release
 ### Publish installable Python packages to PyPI
 release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
-# Prevent uploading unintended distributions
-	rm -vf ./dist/*
-# Build the actual release artifacts
-	./.tox/py3/bin/pyproject-build
+# Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
+	./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check dist/*
+	./.tox/build/bin/twine check ./dist/* ./.tox/dist/*
 ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -165,6 +163,8 @@ expand-template:
 		./var/log/install-tox.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
+# Prevent uploading unintended distributions
+	rm -vf ./dist/* ./.tox/dist/* | tee -a "$(@)"
 	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log

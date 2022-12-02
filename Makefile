@@ -57,19 +57,25 @@ check-push: build
 ### Publish installable Python packages to PyPI
 release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 # Collect the versions involved in this release according to conventional commits
+ifeq ($(VCS_BRANCH),master)
+	semantic_release_version_args=
+else
+	semantic_release_version_args=--prerelease
+endif
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	    --next $${semantic_release_version_args}
 	)
 	if [ -z "$${next_version}" ]
 	then
 ifeq ($(VCS_BRANCH),master)
 # Pushing the last prerelease on `develop` to `master` means "Publish the last
 # prerelease as a final release".
+	    semantic_release_version_args+=" --patch"
 	    next_version=$$(
 	        ./.tox/build/bin/semantic-release print-version \
-	        --next --patch $(SEMANTIC_RELEASE_VERSION_ARGS)
+	        --next $${semantic_release_version_args}
 	    )
 else
 	    set +x
@@ -79,11 +85,11 @@ endif
 	fi
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build --yes
+	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
+	./.tox/build/bin/semantic-release version $${semantic_release_version_args}
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts

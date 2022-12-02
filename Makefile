@@ -66,10 +66,10 @@ all: build
 build: ./.git/hooks/pre-commit build-local build-docker
 .PHONY: build-local
 ### Set up for development locally, directly on the host
-build-local: build-bump ./var/log/recreate.log
+build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./var/log/docker-build.log
+build-docker: build-bump ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ./var/log/recreate-build.log
@@ -109,7 +109,7 @@ run: build-docker
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build
+check-push: build-docker
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 
 .PHONY: release

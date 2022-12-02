@@ -4,7 +4,7 @@
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
-.SHELLFLAGS:=-xeu -o pipefail -c
+.SHELLFLAGS:=-eu -o pipefail -c
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -22,16 +22,22 @@ USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
+SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 PYPI_REPO=testpypi
 ifeq ($(VCS_BRANCH),master)
+SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 SEMANTIC_RELEASE_VERSION_ARGS=
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
+SEMANTIC_RELEASE_NEXT_VERSION=
+
+# Done with `$(shell ...)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
 
 
 ## Top-level targets
@@ -43,10 +49,6 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
 build: ./var/log/recreate.log ./.git/hooks/pre-commit
-.PHONY: build-dist
-### Build installable Python packages, mostly to check build locally
-build-dist: build
-	./.tox/py3/bin/pyproject-build
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -56,38 +58,29 @@ check-push: build
 .PHONY: release
 ### Publish installable Python packages to PyPI
 release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
-# Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	next_version=$$(
+	SEMANTIC_RELEASE_NEXT_VERSION=$$(
 	    ./.tox/build/bin/semantic-release print-version \
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
 	)
-	if [ -z "$${next_version}" ]
+	if [ -z "$${SEMANTIC_RELEASE_NEXT_VERSION}" ]
 	then
-ifeq ($(VCS_BRANCH),master)
-# Pushing the last prerelease on `develop` to `master` means "Publish the last
-# prerelease as a final release".
-	    next_version=$$(
-	        ./.tox/build/bin/semantic-release print-version \
-	        --next --patch $(SEMANTIC_RELEASE_VERSION_ARGS)
-	    )
-else
-	    set +x
-	    echo "CRITICAL: Could not determine the next version"
-	    false
-endif
+# No release necessary for the commits since the last release.
+	    exit
 	fi
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build --yes
+	./.tox/build/bin/towncrier build \
+	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --yes
 	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
+	    "build(release): Update changelog v$${current_version} -> v$${SEMANTIC_RELEASE_NEXT_VERSION}"
 # Increment the version in VCS
 	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Build the actual release artifacts
-	$(MAKE) build-dist
+	./.tox/py3/bin/pyproject-build
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check dist/*
 ifeq ($(RELEASE_PUBLISH),true)

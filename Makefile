@@ -34,7 +34,6 @@ PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
-SEMANTIC_RELEASE_NEXT_VERSION=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -48,7 +47,36 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./var/log/recreate.log ./.git/hooks/pre-commit
+build: build-bump ./var/log/recreate.log ./.git/hooks/pre-commit
+.PHONY: build-bump
+### Bump the package version if on a branch that should trigger a release
+build-bump: ./var/log/recreate-build.log
+ifeq ($(RELEASE_PUBLISH),true)
+	next_version=$$(
+	    ./.tox/build/bin/semantic-release print-version \
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
+	if [ -z "$${next_version}" ]
+	then
+# No release necessary for the commits since the last release.
+	    exit
+	fi
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+# Update the release notes/changelog
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	if ! git diff --cached --exit-code
+	then
+	    set +x
+	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
+	fi
+	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
+	git commit --no-verify -S -m \
+	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
+# Increment the version in VCS
+	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
+endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -58,36 +86,21 @@ check-push: build
 .PHONY: release
 ### Publish installable Python packages to PyPI
 release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
-	SEMANTIC_RELEASE_NEXT_VERSION=$$(
-	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
-	)
-	if [ -z "$${SEMANTIC_RELEASE_NEXT_VERSION}" ]
-	then
-# No release necessary for the commits since the last release.
-	    exit
-	fi
-# Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-# Update the release notes/changelog
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build \
-	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --yes
-	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${SEMANTIC_RELEASE_NEXT_VERSION}"
-# Increment the version in VCS
-	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
-# Prevent uploading unintended distributions
-	rm -vf ./dist/*
-# Build the actual release artifacts
-	./.tox/py3/bin/pyproject-build
+# Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
+	./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check dist/*
+	./.tox/build/bin/twine check ./dist/* ./.tox/dist/*
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -160,6 +173,8 @@ expand-template:
 		./var/log/install-tox.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
+# Prevent uploading unintended distributions
+	rm -vf ./dist/* ./.tox/dist/* | tee -a "$(@)"
 	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log

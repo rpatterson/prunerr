@@ -31,18 +31,26 @@ OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
+RELEASE_BUMP_VERSION=false
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 DOCKER_BUILD_ARGS=
+CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(VCS_BRANCH),master)
+ifeq ($(CI),true)
+RELEASE_BUMP_VERSION=true
+endif
 SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
+ifeq ($(CI),true)
+RELEASE_BUMP_VERSION=true
+endif
 RELEASE_PUBLISH=true
 endif
 
@@ -67,14 +75,14 @@ all: build
 build: ./.git/hooks/pre-commit build-local build-docker
 .PHONY: build-local
 ### Set up for development locally, directly on the host
-build-local: build-bump ./var/log/recreate.log
+build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./var/log/docker-build.log
+build-docker: build-bump ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ./var/log/recreate-build.log
-ifeq ($(RELEASE_PUBLISH),true)
+ifeq ($(RELEASE_BUMP_VERSION),true)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
 	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
@@ -88,8 +96,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	git diff --cached --exit-code ||
+	if ! git diff --cached --exit-code
+	then
+	    set +x
 	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
+	fi
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
@@ -110,7 +122,7 @@ run: build-docker
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build
+check-push: build-docker
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 
 .PHONY: release
@@ -138,6 +150,12 @@ endif
 	    ./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox-docker/dist/*
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine

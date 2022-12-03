@@ -68,7 +68,7 @@ build-local: ./var/log/recreate.log
 build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./var/log/recreate-build.log ./var/log/docker-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
 ifeq ($(VCS_BRANCH),master)
 	semantic_release_version_args=

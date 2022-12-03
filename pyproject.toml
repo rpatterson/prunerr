@@ -10,6 +10,8 @@ build-backend = "setuptools.build_meta"
 # tag should be a major, minor or patch bump and create the VCS tag:
 # https://python-semantic-release.readthedocs.io/en/latest/
 write_to = "src/pythonprojectstructure/version.py"
+# Uncomment to test uploading to PyPI locally
+# local_scheme = "no-local-version"
 [tool.semantic_release]
 version_source = "tag_only"
 # VCS hooks to enforce that commit messages comply with conventional commits and

@@ -69,7 +69,7 @@ build: ./.git/hooks/pre-commit build-local build-docker
 build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: build-bump ./var/log/docker-build.log
+build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log

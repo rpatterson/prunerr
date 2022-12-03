@@ -50,7 +50,7 @@ all: build
 build: build-bump ./var/log/recreate.log ./.git/hooks/pre-commit
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_PUBLISH),true)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
@@ -85,7 +85,7 @@ check-push: build
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
+release: ./var/log/recreate-build.log ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
 	./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine

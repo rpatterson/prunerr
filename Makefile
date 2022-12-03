@@ -81,7 +81,7 @@ build-local: ./var/log/recreate.log
 build-docker: build-bump ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
@@ -134,7 +134,7 @@ endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		~/.gitconfig ~/.pypirc ~/.local/bin/codecov \
+		~/.pypirc ~/.local/bin/codecov \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
 ifneq ($(CODECOV_TOKEN),)

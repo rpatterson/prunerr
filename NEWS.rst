@@ -1,3 +1,9 @@
+Pythonprojectstructure 0.6.2-beta.5 (2022-12-03)
+================================================
+
+No significant changes.
+
+
 Pythonprojectstructure 0.6.2-beta.4 (2022-12-03)
 ================================================
 

@@ -65,8 +65,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	git diff --cached --exit-code ||
+	if ! git diff --cached --exit-code
+	then
+	    set +x
 	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
+	fi
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
@@ -86,6 +90,12 @@ release: ./var/log/recreate-build.log ~/.gitconfig ~/.pypirc
 	./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox/dist/*
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine

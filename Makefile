@@ -72,7 +72,7 @@ build-local: ./var/log/recreate.log
 build-docker: build-bump ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
@@ -123,10 +123,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
-### Publish installable Python packages to PyPI<
-release-python: \
-		./var/log/docker-build.log ./var/log/recreate-build.log \
-		~/.gitconfig ~/.pypirc
+### Publish installable Python packages to PyPI
+release-python: ./var/log/docker-build.log ./var/log/recreate-build.log ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel \

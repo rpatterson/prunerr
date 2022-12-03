@@ -67,7 +67,7 @@ jobs:
         env:
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-        run: "make -e build-docker"
+        run: "make -e build-bump build-docker"
 
       - name: "Run the tests and code checks inside the built container"
         run: "make test-docker"

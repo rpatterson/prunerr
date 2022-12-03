@@ -35,7 +35,6 @@ RELEASE_BUMP_VERSION=false
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
-DOCKER_BUILD_ARGS=
 CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(VCS_BRANCH),master)
@@ -45,7 +44,6 @@ endif
 SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
-DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 ifeq ($(CI),true)
@@ -78,7 +76,7 @@ build: ./.git/hooks/pre-commit build-local build-docker
 build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: build-bump ./var/log/docker-build.log
+build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
@@ -134,7 +132,7 @@ check-push: build-docker
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
-ifeq ($(RELEASE_PUBLISH),true)
+ifeq ($(VCS_BRANCH),master)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
@@ -289,15 +287,15 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	minor_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
-	major_version=$$(
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
-	    --tag "merpatterson/python-project-structure:$${current_version}" \
-	    --tag "merpatterson/python-project-structure:$${minor_version}" \
-	    --tag "merpatterson/python-project-structure:$${major_version}" \
-	    "./" | tee -a "$(@)"
+	docker buildx build --pull\
+	    --tag "merpatterson/python-project-structure:$${current_version}"\
+	    --tag "merpatterson/python-project-structure:$${minor_version}"\
+	    --tag "merpatterson/python-project-structure:$${major_version}"\
+	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.

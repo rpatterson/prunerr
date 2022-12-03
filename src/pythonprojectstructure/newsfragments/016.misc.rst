@@ -1,0 +1,1 @@
+Fix wrong prerelease Docker image tags

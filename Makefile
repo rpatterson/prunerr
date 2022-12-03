@@ -28,7 +28,6 @@ RELEASE_BUMP_VERSION=false
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
-DOCKER_BUILD_ARGS=
 CI=false
 ifeq ($(VCS_BRANCH),master)
 ifeq ($(CI),true)
@@ -37,7 +36,6 @@ endif
 SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
-DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 else ifeq ($(VCS_BRANCH),develop)
 ifeq ($(CI),true)
 RELEASE_BUMP_VERSION=true
@@ -254,15 +252,19 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	minor_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
-	major_version=$$(
+	build_args="\
+	    --tag merpatterson/python-project-structure:$${current_version}"
+ifeq ($(VCS_BRANCH),master)
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
-	    --tag "merpatterson/python-project-structure:$${current_version}" \
-	    --tag "merpatterson/python-project-structure:$${minor_version}" \
-	    --tag "merpatterson/python-project-structure:$${major_version}" \
-	    "./" | tee -a "$(@)"
+	build_args+="\
+	    --tag merpatterson/python-project-structure:$${minor_version}\
+	    --tag merpatterson/python-project-structure:$${major_version}\
+	    --tag merpatterson/python-project-structure:latest"
+endif
+	docker buildx build --pull $${build_args} "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.

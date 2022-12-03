@@ -106,6 +106,8 @@ ifeq ($(RELEASE_BUMP_VERSION),true)
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
+	./.tox/build/bin/towncrier build --version "$${next_version}" --draft --yes \
+	    >"./NEWS-release.rst"
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"

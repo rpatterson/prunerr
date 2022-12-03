@@ -117,7 +117,7 @@ check-push: build-docker
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
-ifeq ($(RELEASE_PUBLISH),true)
+ifeq ($(VCS_BRANCH),master)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
@@ -252,19 +252,15 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-	build_args="\
-	    --tag merpatterson/python-project-structure:$${current_version}"
-ifeq ($(VCS_BRANCH),master)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	build_args+="\
-	    --tag merpatterson/python-project-structure:$${minor_version}\
-	    --tag merpatterson/python-project-structure:$${major_version}\
-	    --tag merpatterson/python-project-structure:latest"
-endif
-	docker buildx build --pull $${build_args} "./" | tee -a "$(@)"
+	docker buildx build --pull\
+	    --tag "merpatterson/python-project-structure:$${current_version}"\
+	    --tag "merpatterson/python-project-structure:$${minor_version}"\
+	    --tag "merpatterson/python-project-structure:$${major_version}"\
+	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.

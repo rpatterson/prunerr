@@ -82,6 +82,10 @@ build-docker: build-bump ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
+ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
+# Import the private signing key from CI secrets
+	$(MAKE) ./var/log/gpg-import.log
+endif
 ifeq ($(RELEASE_BUMP_VERSION),true)
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \

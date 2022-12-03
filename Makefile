@@ -31,21 +31,28 @@ OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
+RELEASE_BUMP_VERSION=false
 SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 DOCKER_BUILD_ARGS=
+CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(VCS_BRANCH),master)
+ifeq ($(CI),true)
+RELEASE_BUMP_VERSION=true
+endif
 SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 DOCKER_BUILD_ARGS=--tag "merpatterson/python-project-structure:latest"
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
+ifeq ($(CI),true)
+RELEASE_BUMP_VERSION=true
+endif
 RELEASE_PUBLISH=true
 endif
-SEMANTIC_RELEASE_NEXT_VERSION=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -71,7 +78,36 @@ build: ./.git/hooks/pre-commit build-local build-docker
 build-local: ./var/log/recreate.log
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./var/log/docker-build.log
+build-docker: build-bump ./var/log/docker-build.log
+.PHONY: build-bump
+### Bump the package version if on a branch that should trigger a release
+build-bump: ./var/log/recreate-build.log
+ifeq ($(RELEASE_BUMP_VERSION),true)
+	next_version=$$(
+	    ./.tox/build/bin/semantic-release print-version \
+	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	)
+	if [ -z "$${next_version}" ]
+	then
+# No release necessary for the commits since the last release.
+	    exit
+	fi
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+# Update the release notes/changelog
+	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	if ! git diff --cached --exit-code
+	then
+	    set +x
+	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
+	fi
+	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
+	git commit --no-verify -S -m \
+	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
+# Increment the version in VCS
+	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
+endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -86,29 +122,20 @@ run: build-docker
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build
+check-push: build-docker
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release:
-	SEMANTIC_RELEASE_NEXT_VERSION=$$(
-	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
-	)
-	if [ -z "$${SEMANTIC_RELEASE_NEXT_VERSION}" ]
-	then
-# No release necessary for the commits since the last release.
-	    exit
-	fi
-	$(MAKE) SEMANTIC_RELEASE_NEXT_VERSION="$${SEMANTIC_RELEASE_NEXT_VERSION}" \
-	    release-python
+release: release-python
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ~/.gitconfig ~/.pypirc ~/.local/bin/codecov ./var/log/recreate-build.log
+release-python: \
+		~/.gitconfig ~/.pypirc ~/.local/bin/codecov \
+		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
 ifneq ($(CODECOV_TOKEN),)
 	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
@@ -117,39 +144,31 @@ ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
-# Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-# Update the release notes/changelog
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
-	./.tox/build/bin/towncrier build \
-	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --draft --yes \
-	    >"./NEWS-release.rst"
-	./.tox/build/bin/towncrier build \
-	    --version "$${SEMANTIC_RELEASE_NEXT_VERSION}" --yes
-	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${SEMANTIC_RELEASE_NEXT_VERSION}"
-# Increment the version in VCS
-	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
-# Prevent uploading unintended distributions
-	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel \
-	    ./.tox/py3/bin/pyproject-build
+	    ./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check dist/*
+	./.tox/build/bin/twine check ./dist/* ./.tox-docker/dist/*
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
 ifneq ($(GITHUB_TOKEN),)
 # Create a GitHub release
-	gh release create "v$${SEMANTIC_RELEASE_NEXT_VERSION}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-release.rst" ./dist/*
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
+	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/dist/*
 endif
 endif
 .PHONY: release-docker
@@ -239,6 +258,8 @@ expand-template:
 		./var/log/install-tox.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
+# Prevent uploading unintended distributions
+	rm -vf ./dist/* ./.tox/dist/* | tee -a "$(@)"
 	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
@@ -262,8 +283,14 @@ expand-template:
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	minor_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	major_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
 	docker buildx build --pull $(DOCKER_BUILD_ARGS) \
-	    --tag "merpatterson/python-project-structure:v$${current_version}" \
+	    --tag "merpatterson/python-project-structure:$${current_version}" \
+	    --tag "merpatterson/python-project-structure:$${minor_version}" \
+	    --tag "merpatterson/python-project-structure:$${major_version}" \
 	    "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development

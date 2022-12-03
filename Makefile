@@ -82,11 +82,7 @@ endif
 	if [ -z "$${next_version}" ]
 	then
 ifeq ($(VCS_BRANCH),master)
-	    semantic_release_version_args+=" --patch"
-	    next_version=$$(
-	        ./.tox/build/bin/semantic-release print-version \
-	        --next $${semantic_release_version_args}
-	    )
+	    next_version=$$(./.tox/py3/bin/python ./bin/get-base-version)
 else
 # No release necessary for the commits since the last release.
 	    exit

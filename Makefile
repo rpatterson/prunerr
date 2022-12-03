@@ -47,7 +47,7 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: build-bump ./var/log/recreate.log ./.git/hooks/pre-commit
+build: ./var/log/recreate.log ./.git/hooks/pre-commit
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log

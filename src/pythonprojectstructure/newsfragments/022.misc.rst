@@ -1,0 +1,2 @@
+Trigger new release to workaround mistakenly uploaded 0.7.0 release from local
+development.

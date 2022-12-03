@@ -1,1 +1,0 @@
-Fix release from ``master`` getting the wrong final version.

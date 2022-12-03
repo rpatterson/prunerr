@@ -95,7 +95,10 @@ endif
 	if [ -z "$${next_version}" ]
 	then
 ifeq ($(VCS_BRANCH),master)
-	    next_version=$$(./.tox/py3/bin/python ./bin/get-base-version)
+	    next_version=$$(
+	        docker compose run --rm python-project-structure-devel \
+	        ./.tox/py3/bin/python ./bin/get-base-version
+	    )
 else
 # No release necessary for the commits since the last release.
 	    exit

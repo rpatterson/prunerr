@@ -65,6 +65,7 @@ jobs:
 
       - name: "Build the container image in which to run the tests"
         env:
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make -e build-docker"
 

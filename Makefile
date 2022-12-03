@@ -25,7 +25,6 @@ PGID:=$(shell id -g)
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
 RELEASE_BUMP_VERSION=false
-SEMANTIC_RELEASE_VERSION_ARGS=--prerelease
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 CI=false
@@ -33,7 +32,6 @@ ifeq ($(VCS_BRANCH),master)
 ifeq ($(CI),true)
 RELEASE_BUMP_VERSION=true
 endif
-SEMANTIC_RELEASE_VERSION_ARGS=
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
@@ -72,14 +70,27 @@ build-docker: ./var/log/docker-build.log
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
+ifeq ($(VCS_BRANCH),master)
+	semantic_release_version_args=
+else
+	semantic_release_version_args="--prerelease"
+endif
 	next_version=$$(
 	    ./.tox/build/bin/semantic-release print-version \
-	    --next $(SEMANTIC_RELEASE_VERSION_ARGS)
+	    --next $${semantic_release_version_args}
 	)
 	if [ -z "$${next_version}" ]
 	then
+ifeq ($(VCS_BRANCH),master)
+	    semantic_release_version_args+=" --patch"
+	    next_version=$$(
+	        ./.tox/build/bin/semantic-release print-version \
+	        --next $${semantic_release_version_args}
+	    )
+else
 # No release necessary for the commits since the last release.
 	    exit
+endif
 	fi
 # Collect the versions involved in this release according to conventional commits
 	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
@@ -95,7 +106,7 @@ ifeq ($(RELEASE_BUMP_VERSION),true)
 	git commit --no-verify -S -m \
 	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/build/bin/semantic-release version $(SEMANTIC_RELEASE_VERSION_ARGS)
+	./.tox/build/bin/semantic-release version $${semantic_release_version_args}
 endif
 
 .PHONY: start

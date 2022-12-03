@@ -4,4 +4,13 @@ Pythonprojectstructure 0.6.3-beta.1 (2022-12-03)
 Misc
 ----
 
+- #22
+
+
+Pythonprojectstructure 0.6.3-beta.1 (2022-12-03)
+================================================
+
+Misc
+----
+
 - #21

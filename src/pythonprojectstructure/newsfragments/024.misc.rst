@@ -1,1 +1,1 @@
-Fix redundant runs for pushing tags.
+Fix container entrypoint initialization output included in ``stdout``.

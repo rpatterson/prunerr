@@ -1,0 +1,1 @@
+Fix container entrypoint initialization output included in ``stdout``.

@@ -18,13 +18,13 @@ main() {
 	if [ "$(id -u)" != "0" ]
 	then
 	    set +x
-	    echo "ERROR: Can't create a user when not run as root"
+	    echo "ERROR: Can't create a user when not run as root" 1>&2
 	    false
 	fi
 	# Add a user to the `passwd` DB so that the `~python-project-structure/` HOME
 	# directory can be looked up.
 	adduser --uid "${PUID}" --disabled-password \
-		--gecos "Python Project Structure,,," "python-project-structure"
+		--gecos "Python Project Structure,,," "python-project-structure" 1>&2
 	# Fix the TTY ownership if the session is interactive
 	if tty_dev=$(tty)
 	then

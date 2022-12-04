@@ -1,0 +1,2 @@
+Switch from ``$ semantic-release`` to ``$ cz`` for conventional commits and semantic
+releases.

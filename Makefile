@@ -77,12 +77,14 @@ build-local: ./var/log/recreate.log
 build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/recreate-build.log ./var/log/docker-build.log
+build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
 ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 ifeq ($(VCS_BRANCH),master)
 	semantic_release_version_args=
 else
@@ -95,17 +97,16 @@ endif
 	if [ -z "$${next_version}" ]
 	then
 ifeq ($(VCS_BRANCH),master)
-	    next_version=$$(
-	        docker compose run --rm python-project-structure-devel \
-	        ./.tox/py3/bin/python ./bin/get-base-version
+	    next_version_type=$$(
+	        ./.tox/build/bin/python ./bin/get-base-version "$${current_version}"
 	    )
+	    next_version="$${next_version_type% *}"
+	    semantic_release_version_args+=" --$${next_version_type#* }"
 else
 # No release necessary for the commits since the last release.
 	    exit
 endif
 	fi
-# Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 	if ! git diff --cached --exit-code

@@ -48,6 +48,8 @@ build: ./var/log/recreate.log ./.git/hooks/pre-commit
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_PUBLISH),true)
+# Collect the versions involved in this release according to conventional commits
+	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 ifeq ($(VCS_BRANCH),master)
 	semantic_release_version_args=
 else
@@ -60,14 +62,16 @@ endif
 	if [ -z "$${next_version}" ]
 	then
 ifeq ($(VCS_BRANCH),master)
-	    next_version=$$(./.tox/py3/bin/python ./bin/get-base-version)
+	    next_version_type=$$(
+	        ./.tox/build/bin/python ./bin/get-base-version "$${current_version}"
+	    )
+	    next_version="$${next_version_type% *}"
+	    semantic_release_version_args+=" --$${next_version_type#* }"
 else
 # No release necessary for the commits since the last release.
 	    exit
 endif
 	fi
-# Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 	if ! git diff --cached --exit-code

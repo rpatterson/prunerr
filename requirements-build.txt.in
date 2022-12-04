@@ -10,9 +10,8 @@ pre-commit
 # image.
 pip-tools
 # Parse commit messages according to conventional commits to decide wether the next
-# version tag should be a major, minor or patch bump and create the VCS tag.
-python-semantic-release
-# VCS hooks to enforce that commit messages comply with conventional commits
+# version tag should be a major, minor or patch bump and create the VCS tag.  Also VCS
+# hooks to enforce that commit messages comply with conventional commits
 commitizen
 # Generate release notes/changelogs
 towncrier

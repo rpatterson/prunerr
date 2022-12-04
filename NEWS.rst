@@ -1,3 +1,9 @@
+Pythonprojectstructure 0.7.2-beta.1 (2022-12-04)
+================================================
+
+No significant changes.
+
+
 Pythonprojectstructure 0.7.1 (2022-12-04)
 =========================================
 

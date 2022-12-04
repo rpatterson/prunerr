@@ -3,24 +3,21 @@
 requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
-# Get the Python dist/package version from VCS `v#.#.#` tags dynamically:
-# https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
 [tool.setuptools_scm]
-# Parse commit messages according to conventional commits to decide wether the next versin
-# tag should be a major, minor or patch bump and create the VCS tag:
-# https://python-semantic-release.readthedocs.io/en/latest/
+# Use VCS tags as the sole authority on versions.  Dynamically determine the current
+# version from VCS tags:
+# https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
 write_to = "src/pythonprojectstructure/version.py"
 # Uncomment to test uploading to PyPI locally
 # local_scheme = "no-local-version"
-[tool.semantic_release]
-version_source = "tag_only"
-# VCS hooks to enforce that commit messages comply with conventional commits and
-# changelog generation:
-# https://commitizen-tools.github.io/commitizen/
 [tool.commitizen]
+# Parse commit messages according to conventional commits to decide wether the next
+# versin tag should be a major, minor or patch bump and create the VCS tag.  Also
+# provides VCS hooks to enforce that commit messages comply with conventional commits:
+# https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
+version = "0.7.1"
 tag_format = "v$version"
-update_changelog_on_bump = true
 annotated_tag = true
 gpg_sign = true
 # https://towncrier.readthedocs.io/en/stable/#quick-start

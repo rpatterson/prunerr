@@ -71,29 +71,26 @@ build-docker: ./var/log/docker-build.log
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
 # Collect the versions involved in this release according to conventional commits
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
-ifeq ($(VCS_BRANCH),master)
-	semantic_release_version_args=
-else
-	semantic_release_version_args="--prerelease"
+	cz_bump_args="--check-consistency --no-verify"
+ifneq ($(VCS_BRANCH),master)
+	cz_bump_args+=" --prerelease beta"
 endif
-	next_version=$$(
-	    ./.tox/build/bin/semantic-release print-version \
-	    --next $${semantic_release_version_args}
-	)
-	if [ -z "$${next_version}" ]
+	exit_code=0
+	cz_bump_stdout=$$(./.tox/build/bin/cz bump $${cz_bump_args} --dry-run) ||
+	    exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
-ifeq ($(VCS_BRANCH),master)
-	    next_version_type=$$(
-	        ./.tox/build/bin/python ./bin/get-base-version "$${current_version}"
-	    )
-	    next_version="$${next_version_type% *}"
-	    semantic_release_version_args+=" --$${next_version_type#* }"
-else
-# No release necessary for the commits since the last release.
+# No release necessary for the commits since the last release, don't publish a release
 	    exit
-endif
+	elif (( $$exit_code != 0 ))
+	then
+# Commitizen returned an unexpected exit status code, fail
+	    exit $$exit_code
 	fi
+	next_version="$$(
+	    echo "$${cz_bump_stdout}" |
+	    sed -nE 's|bump: *version *(.+) *→ *(.+)|\2|p'
+	)"
 # Update the release notes/changelog
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
 	if ! git diff --cached --exit-code
@@ -102,11 +99,10 @@ endif
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
+# Build and stage the release notes to be commited by `$ cz bump`
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
-	git commit --no-verify -S -m \
-	    "build(release): Update changelog v$${current_version} -> v$${next_version}"
 # Increment the version in VCS
-	./.tox/build/bin/semantic-release version $${semantic_release_version_args}
+	./.tox/build/bin/cz bump $${cz_bump_args}
 endif
 
 .PHONY: start
@@ -262,7 +258,7 @@ expand-template:
 	    "./src/python_project_structure-docker.egg-info/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
-	current_version=$$(./.tox/build/bin/semantic-release print-version --current)
+	current_version=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'

@@ -1,6 +1,14 @@
 name: "CI/CD"
 
-on: ["push"]
+on:
+  # Only run when branches are pushed, and not when tags are pushed, to allow manual
+  # creation of tags to manually control bumped versions:
+  # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
+  push:
+    branches:
+      - "**"
+    tags:
+      - "!**"
 
 jobs:
 

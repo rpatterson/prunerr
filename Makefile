@@ -78,9 +78,11 @@ endif
 	exit_code=0
 	cz_bump_stdout=$$(./.tox/build/bin/cz bump $${cz_bump_args} --dry-run) ||
 	    exit_code=$$?
+	rm -fv "./var/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
+	    echo "true" >"./var/cz-bump-no-release.txt"
 	    exit
 	elif (( $$exit_code != 0 ))
 	then
@@ -143,6 +145,10 @@ release-python: ./var/log/docker-build.log ./var/log/recreate-build.log ~/.pypir
 	    false
 	fi
 ifeq ($(RELEASE_PUBLISH),true)
+	if [ -e "./var/cz-bump-no-release.txt" ]
+	then
+	    exit
+	fi
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads

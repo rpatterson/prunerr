@@ -1,11 +1,14 @@
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
-image: "python:latest"
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
+default:
+  image: docker:latest
+  services:
+    - docker:dind
 
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
 #
@@ -17,17 +20,19 @@ cache:
     - ".tox"
     - ".tox-*"
 
+# Delegate to the `./Makefile` as much as possible to keep as much portable between CI
+# platforms
+
 stages:
   - "build"
   - "test"
   - "release"
 
-# Delegate to the `./Makefile` as much as possible to keep as much portable between CI
-# platforms
-
 build-job:
   stage: "build"
   script:
+    - "apk update"
+    - "apk add make bash git gettext py3-pip"
     - "make -e build-bump build-docker"
 
 test-job:

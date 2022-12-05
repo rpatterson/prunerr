@@ -60,18 +60,9 @@ build-test-release-job:
       coverage_report:
         coverage_format: "cobertura"
         path: "coverage.xml"
-  release:
-    tag_name: "$CI_COMMIT_TAG"
-    description: './NEWS-release.rst'
-    # TODO: GitLab release with assets
-    # assets:
-    #   links:
-    #     - name: "Python `sdist` tarball"
-    #       url: TODO
-    #       filepath: ".tox/dist/*"
 
 
-# TODO: Cache Docker build cache and `./.tox*` directories?
+# TODO: Cache Docker build cache and `./.tox*` directories but not on `master`
 
 # TODO: Push container image to GitLab container registry? I don't currently need this
 #       but I can easily imagine the value in it.

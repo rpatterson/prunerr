@@ -186,9 +186,19 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
+	current_version=$$(./.tox/build/bin/cz version --project)
+ifeq ($(GITLAB_CI),true)
+	docker compose run --rm gitlab-release-cli release-cli create \
+	    --description "./NEWS-release.rst"
+	    --tag-name "v$${current_version}"
+# assets:
+#   links:
+#     - name: "Python `sdist` tarball"
+#       url: TODO
+#       filepath: ".tox/dist/*"
+endif
 ifneq ($(GITHUB_TOKEN),)
 # Create a GitHub release
-	current_version=$$(./.tox/build/bin/cz version --project)
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/dist/*
 endif

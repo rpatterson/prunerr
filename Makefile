@@ -130,7 +130,7 @@ format: build
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: ./var/log/install-tox.log build format
+test: build format
 	tox
 
 .PHONY: test-debug
@@ -162,7 +162,7 @@ clean:
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
-expand-template: /usr/bin/envsubst
+expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
@@ -183,7 +183,7 @@ expand-template: /usr/bin/envsubst
 	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
 
 ./var/log/recreate.log: \
-		./var/log/install-tox.log \
+		./var/log/host-install.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
@@ -193,14 +193,27 @@ expand-template: /usr/bin/envsubst
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 ./var/log/recreate-build.log: \
-		./var/log/install-tox.log ./requirements-build.txt ./tox.ini
+		./var/log/host-install.log ./requirements-build.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r -e "build" --notest -v | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/install-tox.log:
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
-	(which tox || pip install tox) | tee -a "$(@)"
+	(
+	    if ! which pip
+	    then
+	        if which apk
+	        then
+	            apk update
+	            apk add "gettext" "py3-pip"
+	        else
+	            sudo apt-get update
+	            sudo apt-get install -y "gettext-base" "python3-pip"
+	        fi
+	    fi
+	    which tox || pip install tox
+	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \
@@ -220,8 +233,3 @@ expand-template: /usr/bin/envsubst
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
-
-# Specific to Debian-based OSes
-/usr/bin/envsubst:
-	apt-get update
-	apt-get install -y "gettext-base"

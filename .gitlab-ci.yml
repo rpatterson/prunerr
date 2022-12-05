@@ -9,6 +9,8 @@ default:
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PUID: "1000"
+  PGID: "1000"
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
 #

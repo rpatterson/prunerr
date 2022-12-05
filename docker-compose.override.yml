@@ -56,3 +56,14 @@ services:
     command: >-
       --file "/data/README.md" --short "Python project structure foundation or template"
       --debug "merpatterson/python-project-structure"
+
+  ## Container for use by end users
+  dind:
+    image: "docker:dind"
+    privileged: true
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./:/usr/local/src/python-project-structure/"
+      - "./var-dind/:/usr/local/src/python-project-structure/var/"
+      - "./.tox-dind/:/usr/local/src/python-project-structure/.tox/"
+    working_dir: "/usr/local/src/python-project-structure/"

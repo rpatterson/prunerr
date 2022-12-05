@@ -219,7 +219,7 @@ test: build-docker
 	docker compose run --rm python-project-structure-devel make format test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
-test-local: ./var/log/install-tox.log build-local
+test-local: build-local
 	tox
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
@@ -259,7 +259,7 @@ clean:
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
-expand-template: /usr/bin/envsubst
+expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
@@ -277,7 +277,7 @@ expand-template: /usr/bin/envsubst
 	tox -e "build"
 
 ./var/log/recreate.log: \
-		./var/log/install-tox.log \
+		./var/log/host-install.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
@@ -287,7 +287,7 @@ expand-template: /usr/bin/envsubst
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 ./var/log/recreate-build.log: \
-		./var/log/install-tox.log ./requirements-build.txt ./tox.ini
+		./var/log/host-install.log ./requirements-build.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r -e "build" --notest -v | tee -a "$(@)"
 
@@ -325,9 +325,22 @@ expand-template: /usr/bin/envsubst
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/install-tox.log:
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
-	(which tox || pip install tox) | tee -a "$(@)"
+	(
+	    if ! which pip
+	    then
+	        if which apk
+	        then
+	            apk update
+	            apk add "gettext" "py3-pip"
+	        else
+	            sudo apt-get update
+	            sudo apt-get install -y "gettext-base" "python3-pip"
+	        fi
+	    fi
+	    which tox || pip install tox
+	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \
@@ -418,8 +431,3 @@ export GPG_PASSPHRASE=
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
 	    --sign | gpg --list-packets
-
-# Specific to Debian-based OSes
-/usr/bin/envsubst:
-	apt-get update
-	apt-get install -y "gettext-base"

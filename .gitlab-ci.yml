@@ -35,6 +35,7 @@ build-job:
   script:
     - "apk update"
     - "apk add make bash git gettext py3-pip"
+    - "chown -Rc ${PUID}:${PGID} ./"
     - "make -e build-bump build-docker"
 
 test-job:

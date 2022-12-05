@@ -1,1 +1,0 @@
-Fix redundant runs for pushing tags.

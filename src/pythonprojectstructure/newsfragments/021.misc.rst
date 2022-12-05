@@ -1,1 +1,0 @@
-Fix release from ``master`` in docker development container, missing ``venv`` build.

@@ -1,2 +1,0 @@
-Fix CI trying to publish a release when ``$ cz bump`` had decided there were no commits
-requiring a release.

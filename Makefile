@@ -162,7 +162,7 @@ clean:
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
-expand-template:
+expand-template: /usr/bin/envsubst
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
@@ -220,3 +220,8 @@ expand-template:
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+
+# Specific to Debian-based OSes
+/usr/bin/envsubst:
+	apt-get update
+	apt-get install -y "gettext-base"

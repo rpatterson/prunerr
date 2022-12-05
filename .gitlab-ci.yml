@@ -35,8 +35,12 @@ release-job:
   stage: "release"
   script:
     - "make -e release"
+  artifacts:
+    paths:
+      - "NEWS-release.rst"
   release:
     tag_name: "$CI_COMMIT_TAG"
+    description: './NEWS-release.rst'
     # TODO: GitLab release with assets
     # assets:
     #   links:

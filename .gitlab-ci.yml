@@ -1,8 +1,11 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 default:
-  image: docker:latest
+  image: "docker:latest"
   services:
-    - docker:dind
+    - "docker:dind"
+  before_script:
+    # Add user installs to PATH
+    - 'export PATH="/home/runner/.local/bin:$PATH"'
 
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
 # Change pip's cache directory to be inside the project directory since we can
@@ -39,7 +42,7 @@ build-job:
     # Add an unprivileged user to cover those use cases and more closely match local
     # development
     - "addgroup -g ${PGID} runner"
-    - "adduser -u ${PUID} -G runner -D runner"
+    - "adduser -u ${PUID} -G runner -g 'CI Runner,,,' -D runner"
     - "chown -Rc ${PUID}:${PGID} ./"
     # Hand off the rest to `$ make` as the unprivileged user
     - "su runner -c 'make -e build-bump build-docker'"

@@ -21,7 +21,7 @@ USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
-USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
+USER_EMAIL=$(USER_NAME)@$(shell hostname -f)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
 # OS Detection

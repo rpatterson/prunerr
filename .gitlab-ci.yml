@@ -38,9 +38,9 @@ build-job:
     - "apk add make bash git gettext py3-pip"
     # Add an unprivileged user to cover those use cases and more closely match local
     # development
-    - "addgroup -g ${PGID} runner"
-    - "adduser -u ${PUID} -G ${PGID} -D runner"
-    - "chown -Rc ${PUID}:${PGID} ./"
+    - "addgroup -g $PGID runner"
+    - "adduser -u $PUID -G $PGID -D runner"
+    - "chown -Rc $PUID:$PGID ./"
     # Hand off the rest to `$ make` as the unprivileged user
     - "su runner -c 'make -e build-bump build-docker'"
 

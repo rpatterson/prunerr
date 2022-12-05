@@ -1,0 +1,133 @@
+name: "CI/CD"
+
+on:
+  # Only run when branches are pushed, and not when tags are pushed, to allow manual
+  # creation of tags to manually control bumped versions:
+  # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
+  push:
+    branches:
+      - "**"
+    tags:
+      - "!**"
+
+jobs:
+
+  ci-cd:
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+    steps:
+
+      # Global set up
+
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+        with:
+          fetch-depth: 0
+
+      - name: "Add user installs to PATH"
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      # Cache build artifacts to speed up CI runs
+
+      - name: "Cache Docker build cache"
+        # Don't use any cache for the final release to expose any clean build issues
+        # before final releases are published.
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        env:
+          # Increment to force clearing the cache
+          cache-name: "docker-build-v1"
+        with:
+          path: |
+            /var/lib/docker
+          # Never get a cache hit to force always caching the current build cache
+          key: "${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ github.sha }}"
+          # Always re-use the cache and then update
+          restore-keys: "${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-"
+
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        env:
+          # Increment to force clearing the cache
+          cache-name: "tox-v1"
+        with:
+          path: |
+            ~/.local
+            ./.tox
+            ./.tox-*
+            ./var/log
+          # Never get a cache hit to force always caching any upgraded dependencies
+          # Use hashFiles to force venv recreation when dependencies change
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          # Always re-use the cache and then upgrade
+          restore-keys: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+
+      # Delegate the rest to the `./Makefile` to keep as much portable between CI
+      # platforms
+
+      - name: "Build the container image in which to run the tests"
+        env:
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        run: "make -e build-bump build-docker"
+
+      - name: "Run the tests and code checks inside the built container"
+        run: "make test-docker"
+
+      # Upload build artifacts
+      # https://github.com/actions/upload-artifact#usage
+
+      - name: "Archive test suite reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "test-suite-reports"
+          path: |
+            pytest*
+      # https://github.com/marketplace/actions/test-reporter#example
+      - name: "Publish test suite report"
+        uses: "dorny/test-reporter@main"
+        if: "success() || failure()"    # run this step even if previous step failed
+        with:
+          name: "PyTest Test Suite"
+          path: |
+            pytest-junit.xml
+          reporter: "java-junit"
+
+      - name: "Archive code coverage reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "code-coverage-reports"
+          path: |
+            coverage*
+            htmlcov
+
+      - name: "Archive linter reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "linter-reports"
+          path: |
+            pylint*
+
+      # Release and publish
+
+      - name: "Bump version and publish release artifacts if on `master`/`develop`"
+        env:
+          # Enable the GitHub CLI
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          # Requires the secrets to be added to GitHub either through the web UI or the
+          # GitHub CLI tool:
+          # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+          CODECOV_TOKEN: "e64aa7da-be83-4e3c-b9ee-504ece56711c"
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+          PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+          TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        run: "make -e release"
+      # TODO: Push container image to GHCR? I don't currently need this but I can easily
+      #       imagine the value in it.

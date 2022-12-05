@@ -9,8 +9,8 @@ default:
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PUID: "1000"
-  PGID: "1000"
+  PUID: "1001"
+  PGID: "1001"
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
 #
@@ -33,15 +33,21 @@ stages:
 build-job:
   stage: "build"
   script:
+    # Install packages into container required to hand off to `$ make`
     - "apk update"
     - "apk add make bash git gettext py3-pip"
+    # Add an unprivileged user to cover those use cases and more closely match local
+    # development
+    - "addgroup runner -g ${PGID}"
+    - "adduser runner -u ${PUID} -G ${PGID} -D"
     - "chown -Rc ${PUID}:${PGID} ./"
-    - "make -e build-bump build-docker"
+    # Hand off the rest to `$ make` as the unprivileged user
+    - "su runner -c 'make -e build-bump build-docker'"
 
 test-job:
   stage: "test"
   script:
-    - "make -e test-docker"
+    - "su runner -c 'make -e test-docker'"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:
@@ -61,7 +67,7 @@ test-job:
 release-job:
   stage: "release"
   script:
-    - "make -e release"
+    - "su runner -c 'make -e release'"
   artifacts:
     paths:
       - "NEWS-release.rst"

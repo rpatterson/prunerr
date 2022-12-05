@@ -259,7 +259,7 @@ clean:
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
-expand-template:
+expand-template: /usr/bin/envsubst
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
@@ -418,3 +418,8 @@ export GPG_PASSPHRASE=
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
 	    --sign | gpg --list-packets
+
+# Specific to Debian-based OSes
+/usr/bin/envsubst:
+	apt-get update
+	apt-get install -y "gettext-base"

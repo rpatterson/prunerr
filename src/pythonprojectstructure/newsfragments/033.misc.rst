@@ -1,0 +1,1 @@
+Fix GitLab CI/CD release publishing

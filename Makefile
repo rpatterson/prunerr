@@ -29,7 +29,13 @@ UNAME_KERNEL_NAME:=$(shell uname)
 OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
 # Options controlling behavior
+ifeq ($(GITLAB_CI),true)
+VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+else ifeq ($(GITHUB_ACTIONS),true)
+VCS_BRANCH=$(GITHUB_REF_NAME)
+else
 VCS_BRANCH:=$(shell git branch --show-current)
+endif
 # Only publish releases from the `master` or `develop` branches
 RELEASE_BUMP_VERSION=false
 RELEASE_PUBLISH=false

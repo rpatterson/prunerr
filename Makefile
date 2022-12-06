@@ -82,7 +82,7 @@ build-docker: ./var/log/docker-build.log
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
 	printenv "GPG_SIGNING_PRIVATE_KEY" | wc -l
 ifeq ($(RELEASE_BUMP_VERSION),true)
-ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
+ifeq ($(CI),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
@@ -156,10 +156,8 @@ release-python: \
 		~/.pypirc ~/.local/bin/codecov \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
-ifneq ($(CODECOV_TOKEN),)
+ifeq ($(CI),true)
 	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
-endif
-ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
@@ -208,7 +206,7 @@ endif
 ### Publish container images to Docker Hub
 release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-ifneq ($(DOCKER_PASS),)
+ifeq ($(CI),true)
 	$(MAKE) ./var/log/docker-login.log
 endif
 	docker push -a "merpatterson/python-project-structure"

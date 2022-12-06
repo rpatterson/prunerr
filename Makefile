@@ -185,7 +185,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-	git push --no-verify --tags origin $(VCS_BRANCH)
+	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 ifeq ($(GITLAB_CI),true)
 	docker compose run --rm gitlab-release-cli release-cli create \

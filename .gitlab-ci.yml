@@ -8,6 +8,10 @@ default:
     - 'export PATH="/home/runner/.local/bin:$PATH"'
 
 variables:
+  # Options that affect GitLab CI/CD runner behavior
+  GIT_FETCH_EXTRA_FLAGS: "--tags --prune"
+
+
   # Secrets from the GitLab CI/CD Variables UI:
   CODECOV_TOKEN: "$CODECOV_TOKEN"
   DOCKER_PASS: "$DOCKER_PASS"
@@ -49,8 +53,6 @@ build-test-release-job:
     # Install packages into container required to hand off to `$ make`
     - "apk update"
     - "apk add make bash git gettext py3-pip gnupg"
-    - "git tag"
-    - "git branch -a"
     # Add an unprivileged user to cover those use cases and more closely match local
     # development
     - "addgroup -g $PGID runner"

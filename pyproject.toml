@@ -20,8 +20,9 @@ version = "0.8.0"
 tag_format = "v$version"
 annotated_tag = true
 gpg_sign = true
-# https://towncrier.readthedocs.io/en/stable/#quick-start
+bump_message = "build(release): $current_version → $new_version"
 [tool.towncrier]
+# https://towncrier.readthedocs.io/en/stable/#quick-start
 package = "pythonprojectstructure"
 package_dir = "src"
 

@@ -20,6 +20,19 @@ Python project structure foundation or template
           :alt: Python code style
           :target: https://github.com/psf/black
 
+     - .. figure:: https://gitlab.com/rpatterson/python-project-structure/-/badges/release.svg
+	  :alt: GitLab latest release
+	  :target: https://gitlab.com/rpatterson/python-project-structure/-/releases
+       .. figure:: https://gitlab.com/rpatterson/python-project-structure/badges/master/pipeline.svg
+          :alt: GitLab CI/CD pipeline status
+          :target: https://gitlab.com/rpatterson/python-project-structure/-/commits/master
+       .. figure:: https://gitlab.com/rpatterson/python-project-structure/badges/master/coverage.svg
+          :alt: GitLab coverage report
+	  :target: https://gitlab.com/rpatterson/python-project-structure/-/commits/master
+       .. figure:: https://img.shields.io/gitlab/stars/rpatterson/python-project-structure?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
+	  :alt: GitLab repo stars
+	  :target: https://gitlab.com/rpatterson/python-project-structure
+
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub release (latest SemVer)
 	  :target: https://github.com/rpatterson/python-project-structure/releases
@@ -31,7 +44,7 @@ Python project structure foundation or template
 	  :target: https://codecov.io/github/rpatterson/python-project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub repo stars
-	  :target: https://codecov.io/github/rpatterson/python-project-structure
+	  :target: https://github.com/rpatterson/python-project-structure/
 
      - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)

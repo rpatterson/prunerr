@@ -34,7 +34,7 @@ docutils==0.19
     # via rstcheck-core
 exceptiongroup==1.0.4
     # via pytest
-filelock==3.8.0
+filelock==3.8.2
     # via
     #   tox
     #   virtualenv
@@ -89,7 +89,7 @@ pyflakes==3.0.1
     #   flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.7
+pylint==2.15.8
     # via python-project-structure (./pyproject.toml)
 pyparsing==3.0.9
     # via packaging
@@ -131,7 +131,7 @@ typing-extensions==4.4.0
     # via
     #   pydantic
     #   setuptools-scm
-virtualenv==20.17.0
+virtualenv==20.17.1
     # via tox
 wrapt==1.14.1
     # via astroid

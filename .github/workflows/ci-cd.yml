@@ -73,6 +73,7 @@ jobs:
 
       - name: "Build the container image in which to run the tests"
         env:
+          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make -e build-bump build-docker"
@@ -118,12 +119,13 @@ jobs:
 
       - name: "Bump version and publish release artifacts if on `master`/`develop`"
         env:
+          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
           # Enable the GitHub CLI
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           # Requires the secrets to be added to GitHub either through the web UI or the
           # GitHub CLI tool:
           # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
-          CODECOV_TOKEN: "e64aa7da-be83-4e3c-b9ee-504ece56711c"
+          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
           TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"

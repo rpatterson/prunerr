@@ -21,7 +21,7 @@ USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
-USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
+USER_EMAIL=$(USER_NAME)@$(shell hostname -f)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
 # OS Detection
@@ -29,25 +29,28 @@ UNAME_KERNEL_NAME:=$(shell uname)
 OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
 # Options controlling behavior
-VCS_BRANCH:=$(shell git branch --show-current)
+# Support older git versions:
+# https://github.com/actions/checkout/pull/128/files#diff-3d2b59189eeedc2d428ddd632e97658fe310f587f7cb63b01f9b98ffc11c0197L4893
+VCS_BRANCH:=$(shell git rev-parse --symbolic-full-name --verify --quiet HEAD | cut -d "/" -f3-)
 # Only publish releases from the `master` or `develop` branches
 RELEASE_BUMP_VERSION=false
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
+DOCKER_PUSH=false
 CI=false
+GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
+ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
-ifeq ($(CI),true)
 RELEASE_BUMP_VERSION=true
-endif
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
+DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
-ifeq ($(CI),true)
 RELEASE_BUMP_VERSION=true
-endif
 RELEASE_PUBLISH=true
+endif
 endif
 
 # Done with `$(shell ...)`, echo recipe commands going forward
@@ -79,7 +82,7 @@ build-docker: ./var/log/docker-build.log
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifeq ($(RELEASE_BUMP_VERSION),true)
-ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
+ifeq ($(CI),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
@@ -144,7 +147,7 @@ check-push: build-docker
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(DOCKER_PUSH),true)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
@@ -153,10 +156,10 @@ release-python: \
 		~/.pypirc ~/.local/bin/codecov \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
-ifneq ($(CODECOV_TOKEN),)
+ifeq ($(GITLAB_CI),true)
 	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
 endif
-ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
+ifeq ($(CI),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
@@ -184,9 +187,17 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
-ifneq ($(GITHUB_TOKEN),)
-# Create a GitHub release
 	current_version=$$(./.tox/build/bin/cz version --project)
+ifeq ($(GITLAB_CI),true)
+	docker compose run --rm gitlab-release-cli release-cli create \
+	    --description "./NEWS-release.rst"
+	    --tag-name "v$${current_version}"
+# assets:
+#   links:
+#     - name: "Python `sdist` tarball"
+#       url: TODO
+#       filepath: ".tox/dist/*"
+# Create a GitHub release
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/dist/*
 endif
@@ -195,7 +206,7 @@ endif
 ### Publish container images to Docker Hub
 release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-ifneq ($(DOCKER_PASS),)
+ifeq ($(CI),true)
 	$(MAKE) ./var/log/docker-login.log
 endif
 	docker push -a "merpatterson/python-project-structure"
@@ -217,7 +228,7 @@ test: build-docker
 	docker compose run --rm python-project-structure-devel make format test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
-test-local: ./var/log/install-tox.log build-local
+test-local: build-local
 	tox
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
@@ -257,7 +268,7 @@ clean:
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
-expand-template:
+expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
@@ -275,7 +286,7 @@ expand-template:
 	tox -e "build"
 
 ./var/log/recreate.log: \
-		./var/log/install-tox.log \
+		./var/log/host-install.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
@@ -285,7 +296,7 @@ expand-template:
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 ./var/log/recreate-build.log: \
-		./var/log/install-tox.log ./requirements-build.txt ./tox.ini
+		./var/log/host-install.log ./requirements-build.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r -e "build" --notest -v | tee -a "$(@)"
 
@@ -323,9 +334,22 @@ expand-template:
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/install-tox.log:
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
-	(which tox || pip install tox) | tee -a "$(@)"
+	(
+	    if ! which pip
+	    then
+	        if which apk
+	        then
+	            apk update
+	            apk add "gettext" "py3-pip" "gnupg" "github-cli"
+	        else
+	            sudo apt-get update
+	            sudo apt-get install -y "gettext-base" "python3-pip" "gnupg" "gh"
+	        fi
+	    fi
+	    which tox || pip install tox
+	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \

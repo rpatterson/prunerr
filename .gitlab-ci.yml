@@ -7,13 +7,24 @@ default:
     # Add user installs to PATH
     - 'export PATH="/home/runner/.local/bin:$PATH"'
 
-# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
-# Change pip's cache directory to be inside the project directory since we can
-# only cache local items.
 variables:
+  # Secrets from the GitLab CI/CD Variables UI:
+  CODECOV_TOKEN: "${CODECOV_TOKEN}"
+  DOCKER_PASS: "${DOCKER_PASS}"
+  GPG_PASSPHRASE: "${GPG_PASSPHRASE}"
+  GPG_SIGNING_PRIVATE_KEY: "${GPG_SIGNING_PRIVATE_KEY}"
+  PYPI_PASSWORD: "${PYPI_PASSWORD}"
+  TEST_PYPI_PASSWORD: "${TEST_PYPI_PASSWORD}"
+
+  # Change pip's cache directory to be inside the project directory since we can only
+  # cache local items:
+  # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+  # Variables controlling behavior
   PUID: "1001"
   PGID: "1001"
+
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
 #

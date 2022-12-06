@@ -21,3 +21,14 @@ ENV HOME="/home/python-project-structure"
 WORKDIR "/home/python-project-structure/"
 ENTRYPOINT [ "entrypoint" ]
 CMD [ "python-project-structure" ]
+
+# https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/python-project-structure"
+LABEL org.opencontainers.image.documentation="https://gitlab.com/rpatterson/python-project-structure"
+LABEL org.opencontainers.image.source="https://gitlab.com/rpatterson/python-project-structure"
+LABEL org.opencontainers.image.title="python-project-structure"
+LABEL org.opencontainers.image.description="Python project structure foundation or template, CLI console scripts."
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
+LABEL org.opencontainers.image.vendor="rpatterson.net"
+LABEL org.opencontainers.image.base.name="hub.docker.com/_/python:3"

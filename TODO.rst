@@ -16,3 +16,5 @@ Nice to Have
 #. Documentation via Sphinx with CI to publish to RTFD.
 
 #. Container image variants: e.g. slim/alpine
+
+#. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.

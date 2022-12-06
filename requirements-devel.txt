@@ -34,7 +34,7 @@ docutils==0.19
     # via rstcheck-core
 exceptiongroup==1.0.4
     # via pytest
-filelock==3.8.1
+filelock==3.8.2
     # via
     #   tox
     #   virtualenv
@@ -131,7 +131,7 @@ typing-extensions==4.4.0
     # via
     #   pydantic
     #   setuptools-scm
-virtualenv==20.17.0
+virtualenv==20.17.1
     # via tox
 wrapt==1.14.1
     # via astroid

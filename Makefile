@@ -81,6 +81,9 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
+	echo VCS_BRANCH=$(VCS_BRANCH)
+	echo GITLAB_CI=$(GITLAB_CI)
+	echo RELEASE_BUMP_VERSION=$(RELEASE_BUMP_VERSION)
 ifeq ($(RELEASE_BUMP_VERSION),true)
 ifeq ($(CI),true)
 # Import the private signing key from CI secrets

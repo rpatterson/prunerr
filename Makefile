@@ -22,9 +22,7 @@ PUID:=$(shell id -u)
 PGID:=$(shell id -g)
 
 # Options controlling behavior
-# Support older git versions:
-# https://github.com/actions/checkout/pull/128/files#diff-3d2b59189eeedc2d428ddd632e97658fe310f587f7cb63b01f9b98ffc11c0197L4893
-VCS_BRANCH:=$(shell git rev-parse --symbolic-full-name --verify --quiet HEAD | cut -d "/" -f3-)
+VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
 RELEASE_BUMP_VERSION=false
 RELEASE_PUBLISH=false

@@ -85,7 +85,7 @@ platformdirs==2.5.4
     # via virtualenv
 pre-commit==2.20.0
     # via -r ./requirements-build.txt.in
-prompt-toolkit==3.0.34
+prompt-toolkit==3.0.36
     # via questionary
 pycparser==2.21
     # via cffi

@@ -149,7 +149,9 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
+ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub

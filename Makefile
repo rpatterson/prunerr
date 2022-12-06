@@ -38,6 +38,7 @@ VCS_BRANCH:=$(shell git branch --show-current)
 endif
 # Only publish releases from the `master` or `develop` branches
 RELEASE_PUBLISH=false
+TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 DOCKER_PUSH=false
 CI=false
@@ -46,6 +47,7 @@ GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
+TOWNCRIER_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
@@ -110,7 +112,9 @@ endif
 	    sed -nE 's|bump: *version *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	./.tox/build/bin/towncrier check \
+	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
 	    set +x

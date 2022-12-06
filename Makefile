@@ -80,6 +80,7 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
+	printenv "GPG_SIGNING_PRIVATE_KEY" | wc -l
 ifeq ($(RELEASE_BUMP_VERSION),true)
 ifneq ($(GPG_SIGNING_PRIVATE_KEY),)
 # Import the private signing key from CI secrets

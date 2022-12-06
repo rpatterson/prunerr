@@ -343,10 +343,10 @@ expand-template: ./var/log/host-install.log
 	        if which apk
 	        then
 	            apk update
-	            apk add "gettext" "py3-pip"
+	            apk add "gettext" "py3-pip" "gnupg"
 	        else
 	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip"
+	            sudo apt-get install -y "gettext-base" "python3-pip" "gnupg"
 	        fi
 	    fi
 	    which tox || pip install tox

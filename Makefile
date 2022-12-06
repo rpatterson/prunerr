@@ -12,6 +12,7 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Project-specific variables
+VCS_REMOTE_AUTH=
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 CODECOV_TOKEN=
 
@@ -192,6 +193,16 @@ ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
+ifneq ($(VCS_REMOTE_AUTH),)
+# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
+# variable value should be prefixed with the token name as a HTTP `user:password`
+# authentication string:
+# https://stackoverflow.com/a/73426417/624787
+	git-remote set-url "origin" "$$(
+	    git-remote get-url "origin" |
+	    sed -nE 's|(https?://)(.+)|\1$(VCS_REMOTE_AUTH)@\2|p'
+	)"
+endif
 	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 ifeq ($(GITLAB_CI),true)

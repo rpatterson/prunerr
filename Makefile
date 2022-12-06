@@ -149,7 +149,9 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
+ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
@@ -198,10 +200,12 @@ ifneq ($(VCS_REMOTE_AUTH),)
 # variable value should be prefixed with the token name as a HTTP `user:password`
 # authentication string:
 # https://stackoverflow.com/a/73426417/624787
-	git-remote set-url "origin" "$$(
+	set +x
+	git remote set-url "origin" "$$(
 	    git-remote get-url "origin" |
 	    sed -nE 's|(https?://)(.+)|\1$(VCS_REMOTE_AUTH)@\2|p'
 	)"
+	set -x
 endif
 	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)

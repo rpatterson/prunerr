@@ -31,7 +31,7 @@ Python project structure foundation or template
 	  :target: https://codecov.io/github/rpatterson/python-project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub repo stars
-	  :target: https://codecov.io/github/rpatterson/python-project-structure
+	  :target: https://github.com/rpatterson/python-project-structure/
 
      - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)

@@ -18,3 +18,16 @@ Nice to Have
 #. Container image variants: e.g. slim/alpine
 
 #. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
+
+#. `Docker image dynamic LABEL's
+   <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::
+
+     org.opencontainers.image.version version of the packaged software
+     org.opencontainers.image.revision Source control revision identifier for the packaged software.
+     org.opencontainers.image.ref.name Name of the reference for a target (string).
+     org.opencontainers.image.base.digest Digest of the image this image is based on (string)
+     This SHOULD be the immediate image sharing zero-indexed layers with the image, such as from a Dockerfile FROM statement.
+     This SHOULD NOT reference any other images used to generate the contents of the image (e.g., multi-stage Dockerfile builds).
+     This SHOULD be the immediate image sharing zero-indexed layers with the image, such as from a Dockerfile FROM statement.
+     This SHOULD NOT reference any other images used to generate the contents of the image (e.g., multi-stage Dockerfile builds).
+     If the image.base.name annotation is specified, the image.base.digest annotation SHOULD be the digest of the manifest referenced by the image.ref.name annotation.

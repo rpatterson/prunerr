@@ -47,7 +47,6 @@ build: ./var/log/recreate.log ./.git/hooks/pre-commit
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
-ifeq ($(RELEASE_PUBLISH),true)
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -83,7 +82,6 @@ endif
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
-endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -103,11 +101,11 @@ release: ./var/log/recreate-build.log ~/.pypirc
 	    echo "CRITICAL: Checkout is not clean, not publishing release"
 	    false
 	fi
-ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./var/cz-bump-no-release.txt" ]
 	then
 	    exit
 	fi
+ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads

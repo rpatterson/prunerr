@@ -20,7 +20,9 @@ endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
 # Options controlling behavior
-VCS_BRANCH:=$(shell git branch --show-current)
+# Support older git versions:
+# https://github.com/actions/checkout/pull/128/files#diff-3d2b59189eeedc2d428ddd632e97658fe310f587f7cb63b01f9b98ffc11c0197L4893
+VCS_BRANCH:=$(shell git rev-parse --symbolic-full-name --verify --quiet HEAD | cut -d "/" -f3-)
 # Only publish releases from the `master` or `develop` branches
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
@@ -128,7 +130,7 @@ format: build
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: ./var/log/install-tox.log build format
+test: build format
 	tox
 
 .PHONY: test-debug
@@ -160,7 +162,7 @@ clean:
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template: .SHELLFLAGS = -eu -o pipefail -c
-expand-template:
+expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
 	    echo "WARNING: Template $(template) has been updated:"
@@ -181,7 +183,7 @@ expand-template:
 	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
 
 ./var/log/recreate.log: \
-		./var/log/install-tox.log \
+		./var/log/host-install.log \
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
@@ -191,14 +193,27 @@ expand-template:
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
 ./var/log/recreate-build.log: \
-		./var/log/install-tox.log ./requirements-build.txt ./tox.ini
+		./var/log/host-install.log ./requirements-build.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 	tox -r -e "build" --notest -v | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/install-tox.log:
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
-	(which tox || pip install tox) | tee -a "$(@)"
+	(
+	    if ! which pip
+	    then
+	        if which apk
+	        then
+	            apk update
+	            apk add "gettext" "py3-pip"
+	        else
+	            sudo apt-get update
+	            sudo apt-get install -y "gettext-base" "python3-pip"
+	        fi
+	    fi
+	    which tox || pip install tox
+	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \

@@ -36,20 +36,21 @@ VCS_BRANCH:=$(shell git rev-parse --symbolic-full-name --verify --quiet HEAD | c
 RELEASE_BUMP_VERSION=false
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
+DOCKER_PUSH=false
 CI=false
+GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
+ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
-ifeq ($(CI),true)
 RELEASE_BUMP_VERSION=true
-endif
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
+DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
-ifeq ($(CI),true)
 RELEASE_BUMP_VERSION=true
-endif
 RELEASE_PUBLISH=true
+endif
 endif
 
 # Done with `$(shell ...)`, echo recipe commands going forward
@@ -147,7 +148,7 @@ check-push: build-docker
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(DOCKER_PUSH),true)
 	$(MAKE) release-docker
 endif
 .PHONY: release-python
@@ -156,8 +157,10 @@ release-python: \
 		~/.pypirc ~/.local/bin/codecov \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
-ifeq ($(CI),true)
+ifeq ($(GITLAB_CI),true)
 	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
+endif
+ifeq ($(CI),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
@@ -195,8 +198,6 @@ ifeq ($(GITLAB_CI),true)
 #     - name: "Python `sdist` tarball"
 #       url: TODO
 #       filepath: ".tox/dist/*"
-endif
-ifneq ($(GITHUB_TOKEN),)
 # Create a GitHub release
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/dist/*
@@ -342,10 +343,10 @@ expand-template: ./var/log/host-install.log
 	        if which apk
 	        then
 	            apk update
-	            apk add "gettext" "py3-pip" "gnupg"
+	            apk add "gettext" "py3-pip" "gnupg" "github-cli"
 	        else
 	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip" "gnupg"
+	            sudo apt-get install -y "gettext-base" "python3-pip" "gnupg" "gh"
 	        fi
 	    fi
 	    which tox || pip install tox

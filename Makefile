@@ -37,7 +37,6 @@ else
 VCS_BRANCH:=$(shell git branch --show-current)
 endif
 # Only publish releases from the `master` or `develop` branches
-RELEASE_BUMP_VERSION=false
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 DOCKER_PUSH=false
@@ -46,13 +45,11 @@ GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
-RELEASE_BUMP_VERSION=true
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
-RELEASE_BUMP_VERSION=true
 RELEASE_PUBLISH=true
 endif
 endif
@@ -85,10 +82,6 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
-	echo VCS_BRANCH=$(VCS_BRANCH)
-	echo GITLAB_CI=$(GITLAB_CI)
-	echo RELEASE_BUMP_VERSION=$(RELEASE_BUMP_VERSION)
-ifeq ($(RELEASE_BUMP_VERSION),true)
 ifeq ($(CI),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
@@ -133,7 +126,6 @@ endif
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
-endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -182,11 +174,11 @@ endif
 	    echo "CRITICAL: Checkout is not clean, not publishing release"
 	    false
 	fi
-ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./var/cz-bump-no-release.txt" ]
 	then
 	    exit
 	fi
+ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads

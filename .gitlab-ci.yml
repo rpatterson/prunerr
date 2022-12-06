@@ -8,6 +8,10 @@ default:
     - 'export PATH="/home/runner/.local/bin:$PATH"'
 
 variables:
+  # Options that affect GitLab CI/CD runner behavior
+  GIT_FETCH_EXTRA_FLAGS: "--tags --prune"
+
+
   # Secrets from the GitLab CI/CD Variables UI:
   CODECOV_TOKEN: "$CODECOV_TOKEN"
   DOCKER_PASS: "$DOCKER_PASS"

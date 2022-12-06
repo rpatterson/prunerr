@@ -24,20 +24,13 @@ PGID:=$(shell id -g)
 # Options controlling behavior
 VCS_BRANCH:=$(shell git branch --show-current)
 # Only publish releases from the `master` or `develop` branches
-RELEASE_BUMP_VERSION=false
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 CI=false
 ifeq ($(VCS_BRANCH),master)
-ifeq ($(CI),true)
-RELEASE_BUMP_VERSION=true
-endif
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
-ifeq ($(CI),true)
-RELEASE_BUMP_VERSION=true
-endif
 RELEASE_PUBLISH=true
 endif
 
@@ -69,7 +62,6 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
-ifeq ($(RELEASE_BUMP_VERSION),true)
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -105,7 +97,6 @@ endif
 	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
-endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -144,11 +135,11 @@ release-python: ./var/log/docker-build.log ./var/log/recreate-build.log ~/.pypir
 	    echo "CRITICAL: Checkout is not clean, not publishing release"
 	    false
 	fi
-ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./var/cz-bump-no-release.txt" ]
 	then
 	    exit
 	fi
+ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads

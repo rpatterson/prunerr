@@ -90,7 +90,9 @@ endif
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build
+ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI

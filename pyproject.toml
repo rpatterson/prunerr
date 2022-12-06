@@ -19,7 +19,6 @@ name = "cz_conventional_commits"
 version = "0.8.1b1"
 tag_format = "v$version"
 annotated_tag = true
-gpg_sign = true
 bump_message = "build(release): $current_version → $new_version"
 [tool.towncrier]
 # https://towncrier.readthedocs.io/en/stable/#quick-start

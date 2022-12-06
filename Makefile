@@ -38,6 +38,7 @@ VCS_BRANCH:=$(shell git branch --show-current)
 endif
 # Only publish releases from the `master` or `develop` branches
 RELEASE_PUBLISH=false
+TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 DOCKER_PUSH=false
 CI=false
@@ -46,6 +47,7 @@ GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
+TOWNCRIER_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
@@ -110,7 +112,9 @@ endif
 	    sed -nE 's|bump: *version *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	./.tox/build/bin/towncrier check \
+	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -185,7 +189,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-	git push --no-verify --tags origin $(VCS_BRANCH)
+	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 ifeq ($(GITLAB_CI),true)
 	docker compose run --rm gitlab-release-cli release-cli create \

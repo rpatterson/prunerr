@@ -49,6 +49,12 @@ stages:
 
 build-test-release-job:
   stage: "build-test-release"
+  rules:
+    # Run only for branches, not tags:
+    # https://stackoverflow.com/a/68130421/624787
+    - if: "$CI_COMMIT_TAG"
+      when: "never"
+    - when: "always"
   script:
     # Install packages into container required to hand off to `$ make`
     - "apk update"

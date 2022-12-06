@@ -286,7 +286,16 @@ expand-template: ./var/log/host-install.log
 
 ./requirements.txt: ./pyproject.toml ./setup.cfg ./tox.ini ./requirements-build.txt.in
 	$(MAKE) "./var/log/recreate-build.log"
+ifeq ($(CI),true)
+# Don't update dependencies in CI/CD so that the release of new versions don't break
+# CI/CD runs.
+	touch "$(@)"
+else
+# Only upgrade dependencies locally during local development to ensure changes in
+# dependencies are reflected in the frozen versions and to notify developers that new
+# versions are available.
 	tox -e "build"
+endif
 
 ./var/log/recreate.log: \
 		./var/log/host-install.log \

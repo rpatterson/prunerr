@@ -42,7 +42,7 @@ jobs:
           cache-name: "docker-build-v1"
         with:
           path: |
-            /var/lib/docker
+            ./var/lib/docker
           # Never get a cache hit to force always caching the current build cache
           key: "${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ github.sha }}"
           # Always re-use the cache and then update

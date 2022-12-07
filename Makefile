@@ -42,10 +42,18 @@ RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
+DOCKER_BUILD_ARGS=--pull
 DOCKER_PUSH=false
 CI=false
 GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
+ifeq ($(CI),true)
+ifneq ($(VCS_BRANCH),master)
+DOCKER_BUILD_ARGS+= \
+--cache-to type=local,dest=./var/lib/docker \
+--cache-from type=local,src=./var/lib/docker .
+endif
+endif
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
@@ -360,7 +368,11 @@ endif
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker buildx build --pull\
+ifeq ($(CI),true)
+# https://docs.docker.com/build/building/cache/backends/local/#synopsis
+	docker buildx create --use --driver=docker-container
+endif
+	docker buildx build $(DOCKER_BUILD_ARGS)\
 	    --tag "merpatterson/python-project-structure:$${current_version}"\
 	    --tag "merpatterson/python-project-structure:$${minor_version}"\
 	    --tag "merpatterson/python-project-structure:$${major_version}"\

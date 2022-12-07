@@ -123,7 +123,7 @@ endif
 	fi
 	next_version="$$(
 	    echo "$${cz_bump_stdout}" |
-	    sed -nE 's|bump: *version *(.+) *→ *(.+)|\2|p'
+	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
 	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"

@@ -90,6 +90,7 @@ ifneq ($(VCS_REMOTE_AUTH),)
 # variable value should be prefixed with the token name as a HTTP `user:password`
 # authentication string:
 # https://stackoverflow.com/a/73426417/624787
+	set +x
 	git config "remote.origin.pushurl" &&
 	    git remote set-url --push --delete "origin" '.*'
 	git remote set-url --push "origin" "$$(
@@ -97,7 +98,6 @@ ifneq ($(VCS_REMOTE_AUTH),)
 	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
 	)"
 	set -x
-	git remote -v show "origin"
 	git push --no-verify --tags "origin"
 endif
 # Collect the versions involved in this release according to conventional commits

@@ -203,7 +203,7 @@ ifneq ($(VCS_REMOTE_AUTH),)
 	set +x
 	git remote set-url "origin" "$$(
 	    git remote get-url "origin" |
-	    sed -nE 's|(https?://)([^@/]+@\|)(.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
+	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
 	)"
 	set -x
 endif

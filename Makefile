@@ -384,11 +384,12 @@ endif
 	    then
 	        if which apk
 	        then
-	            apk update
-	            apk add "gettext" "py3-pip" "gnupg" "github-cli"
+	            sudo apk update
+	            sudo apk add "gettext" "py3-pip" "gnupg" "github-cli" "curl"
 	        else
 	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip" "gnupg" "gh"
+	            sudo apt-get install -y \
+	                "gettext-base" "python3-pip" "gnupg" "gh" "curl"
 	        fi
 	    fi
 	    which tox || pip install tox

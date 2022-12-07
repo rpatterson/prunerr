@@ -168,7 +168,7 @@ release-python: \
 ifeq ($(GITLAB_CI),true)
 	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
 endif
-ifeq ($(CI),true)
+ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif

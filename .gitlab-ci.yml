@@ -37,9 +37,9 @@ variables:
 # them in a virtualenv and cache it as well.
 cache:
   paths:
-    - ".cache/pip"
-    - ".tox"
-    - ".tox-*"
+    - "./.cache/pip"
+    - "./.tox"
+    - "./.tox-*"
     - "./var/lib/docker"
 
 # Delegate to the `./Makefile` as much as possible to keep as much portable between CI
@@ -72,19 +72,19 @@ build-test-release-job:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "pytest*"
-      - "pytest-junit.xml"
-      - "coverage*"
-      - "htmlcov"
-      - "pylint*"
+      - "./pytest*"
+      - "./pytest-junit.xml"
+      - "./coverage*"
+      - "./htmlcov"
+      - "./pylint*"
       - "./.tox-docker/dist/*"
       - "./dist/*"
-      - "NEWS-release.rst"
+      - "./NEWS-release.rst"
     reports:
-      junit: "pytest-junit.xml"
+      junit: "./pytest-junit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "coverage.xml"
+        path: "./coverage.xml"
 
 
 # TODO: Cache Docker build cache and `./.tox*` directories but not on `master`

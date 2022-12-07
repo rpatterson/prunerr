@@ -200,13 +200,17 @@ ifneq ($(VCS_REMOTE_AUTH),)
 # variable value should be prefixed with the token name as a HTTP `user:password`
 # authentication string:
 # https://stackoverflow.com/a/73426417/624787
+	git remote get-url "origin"
+	echo $$(
+	    git remote get-url "origin" |
+	    sed -nE 's|(https?://)([^@/]+@\|)(.+)|\1secret@\3|p'
+	)
 	set +x
 	git remote set-url "origin" "$$(
 	    git remote get-url "origin" |
 	    sed -nE 's|(https?://)([^@/]+@\|)(.+)|\1secret@\3|p'
 	)"
 	set -x
-	git remote get-url "origin"
 endif
 	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)

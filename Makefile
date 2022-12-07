@@ -203,9 +203,10 @@ ifneq ($(VCS_REMOTE_AUTH),)
 	set +x
 	git remote set-url "origin" "$$(
 	    git remote get-url "origin" |
-	    sed -nE 's|(https?://)([^@/]+@\|)(.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
+	    sed -nE 's|(https?://)([^@/]+@\|)(.+)|\1secret@\3|p'
 	)"
 	set -x
+	git remote get-url "origin"
 endif
 	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)

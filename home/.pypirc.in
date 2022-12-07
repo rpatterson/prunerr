@@ -2,6 +2,7 @@
 index-servers =
     pypi
     testpypi
+    gitlab
 
 [pypi]
 username = __token__

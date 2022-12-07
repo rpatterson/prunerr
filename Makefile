@@ -12,7 +12,7 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Project-specific variables
-VCS_REMOTE_AUTH=
+VCS_REMOTE_PUSH_URL=
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 CODECOV_TOKEN=
 
@@ -85,7 +85,7 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
-ifneq ($(VCS_REMOTE_AUTH),)
+ifneq ($(VCS_REMOTE_PUSH_URL),)
 # Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
 # variable value should be prefixed with the token name as a HTTP `user:password`
 # authentication string:
@@ -93,10 +93,7 @@ ifneq ($(VCS_REMOTE_AUTH),)
 	set +x
 	git config "remote.origin.pushurl" &&
 	    git remote set-url --push --delete "origin" '.*'
-	git remote set-url --push "origin" "$$(
-	    git remote get-url "origin" |
-	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
-	)"
+	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
 	set -x
 	git push --no-verify --tags "origin"
 endif

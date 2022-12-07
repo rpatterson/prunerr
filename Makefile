@@ -98,6 +98,7 @@ ifneq ($(VCS_REMOTE_AUTH),)
 	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
 	)"
 	set -x
+	git remote -v show "origin"
 	git push --no-verify --tags "origin"
 endif
 # Collect the versions involved in this release according to conventional commits

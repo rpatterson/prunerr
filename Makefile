@@ -215,17 +215,17 @@ ifeq ($(RELEASE_PUBLISH),true)
 	\"name\":\"PyPI\",\
 	\"url\":\"https://pypi.org/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
 	\"link_type\":\"package\"\
-	}'"
+	}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"GitLab-PyPI-Package-Registry\",\
 	\"url\":\"$(CI_SERVER_URL)/$(CI_PROJECT_PATH)/-/packages/\",\
 	\"link_type\":\"package\"\
-	}'"
+	}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"Docker-Hub-Container-Registry\",\
 	\"url\":\"https://hub.docker.com/r/merpatterson/$(CI_PROJECT_NAME)/tags\",\
 	\"link_type\":\"image\"\
-	}'"
+	}"
 	docker compose run --rm gitlab-release-cli release-cli create \
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    $${release_cli_args}

@@ -10,7 +10,7 @@ bleach==5.0.1
     # via readme-renderer
 build==0.9.0
     # via pip-tools
-certifi==2022.9.24
+certifi==2022.12.7
     # via requests
 cffi==1.15.1
     # via cryptography
@@ -81,7 +81,7 @@ pip-tools==6.11.0
     # via -r ./requirements-build.txt.in
 pkginfo==1.9.2
     # via twine
-platformdirs==2.5.4
+platformdirs==2.6.0
     # via virtualenv
 pre-commit==2.20.0
     # via -r ./requirements-build.txt.in

@@ -42,18 +42,10 @@ RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
-DOCKER_BUILD_ARGS=--pull
 DOCKER_PUSH=false
 CI=false
 GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
-ifeq ($(CI),true)
-ifneq ($(VCS_BRANCH),master)
-DOCKER_BUILD_ARGS+= \
---cache-to type=local,dest=./var/lib/docker \
---cache-from type=local,src=./var/lib/docker
-endif
-endif
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
@@ -372,12 +364,28 @@ ifeq ($(CI),true)
 # https://docs.docker.com/build/building/cache/backends/local/#synopsis
 	docker buildx create --use --driver=docker-container
 endif
-	docker buildx build $(DOCKER_BUILD_ARGS)\
+	docker_build_args=--pull
+ifeq ($(CI),true)
+ifneq ($(VCS_BRANCH),master)
+	docker_build_args+=" \
+	    --cache-to type=local,dest=./var/lib/docker,mode=max \
+	    --cache-from type=local,src=./var/lib/docker"
+endif
+endif
+	docker buildx build $${docker_build_args} \
 	    --tag "merpatterson/python-project-structure:$${current_version}"\
 	    --tag "merpatterson/python-project-structure:$${minor_version}"\
 	    --tag "merpatterson/python-project-structure:$${major_version}"\
 	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker buildx build $(DOCKER_BUILD_ARGS) \
+	docker_build_args=--pull
+ifeq ($(CI),true)
+ifneq ($(VCS_BRANCH),master)
+	docker_build_args+=" \
+	    --cache-to type=local,dest=./var/lib/docker-devel,mode=max \
+	    --cache-from type=local,src=./var/lib/docker-devel"
+endif
+endif
+	docker buildx build $${docker_build_args} \
 	    --tag "merpatterson/python-project-structure-devel:latest" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development

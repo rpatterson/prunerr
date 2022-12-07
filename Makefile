@@ -377,7 +377,9 @@ endif
 	    --tag "merpatterson/python-project-structure:$${minor_version}"\
 	    --tag "merpatterson/python-project-structure:$${major_version}"\
 	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker compose build python-project-structure-devel | tee -a "$(@)"
+	docker buildx build $(DOCKER_BUILD_ARGS) \
+	    --tag "merpatterson/python-project-structure-devel:latest" \
+	    "./Dockerfile.devel" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
 	docker compose run --rm python-project-structure-devel make build-local

@@ -85,10 +85,6 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
-ifeq ($(RELEASE_PUBLISH),true)
-# Import the private signing key from CI secrets
-	$(MAKE) ./var/log/gpg-import.log
-endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -96,6 +92,8 @@ ifneq ($(VCS_BRANCH),master)
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 	cz_bump_args+=" --gpg-sign"
+# Import the private signing key from CI secrets
+	$(MAKE) ./var/log/gpg-import.log
 endif
 	exit_code=0
 	cz_bump_stdout=$$(./.tox/build/bin/cz bump $${cz_bump_args} --dry-run) ||

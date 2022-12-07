@@ -211,22 +211,23 @@ ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/dist/*
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${current_version}"
-	for package_file in ./dist/* ./.tox-docker/dist/*
-	do
-	    package_name="$$(basename "$${package_file}")"
-	    link_type="other"
-	    if ! [[ "$${package_name}" == *.whl || "$${package_name}" == *.tar.gz ]]
-	    then
-	        continue
-	    fi
-	    release_cli_args+=" --assets-link {\
-	\"name\":\"$${package_name}\",\
-	\"url\":\"$${package_registry_url}/$${package_name}\",\
+	release_cli_args+=" --assets-link {\
+	\"name\":\"PyPI\",\
+	\"url\":\"https://pypi.org/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
 	\"link_type\":\"package\"\
 	}'"
-	done
+	release_cli_args+=" --assets-link {\
+	\"name\":\"GitLab-PyPI-Package-Registry\",\
+	\"url\":\"$(CI_SERVER_URL)/$(CI_PROJECT_PATH)/-/packages/\",\
+	\"link_type\":\"package\"\
+	}'"
+	release_cli_args+=" --assets-link {\
+	\"name\":\"Docker-Hub-Container-Registry\",\
+	\"url\":\"https://hub.docker.com/r/merpatterson/$(CI_PROJECT_NAME)/tags\",\
+	\"link_type\":\"image\"\
+	}'"
 	docker compose run --rm gitlab-release-cli release-cli create \
-	    --server-url "https://gitlab.com" --project-id "$(CI_PROJECT_ID)" \
+	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    $${release_cli_args}
 # Create a GitHub release
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \

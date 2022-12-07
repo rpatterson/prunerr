@@ -85,9 +85,18 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
-ifeq ($(RELEASE_PUBLISH),true)
-# Import the private signing key from CI secrets
-	$(MAKE) ./var/log/gpg-import.log
+ifneq ($(VCS_REMOTE_AUTH),)
+# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
+# variable value should be prefixed with the token name as a HTTP `user:password`
+# authentication string:
+# https://stackoverflow.com/a/73426417/624787
+	set +x
+	git remote set-url "origin" "$$(
+	    git remote get-url "origin" |
+	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
+	)"
+	set -x
+	git push --no-verify --tags "origin"
 endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -96,6 +105,8 @@ ifneq ($(VCS_BRANCH),master)
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 	cz_bump_args+=" --gpg-sign"
+# Import the private signing key from CI secrets
+	$(MAKE) ./var/log/gpg-import.log
 endif
 	exit_code=0
 	cz_bump_stdout=$$(./.tox/build/bin/cz bump $${cz_bump_args} --dry-run) ||
@@ -195,23 +206,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-ifneq ($(VCS_REMOTE_AUTH),)
-# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
-# variable value should be prefixed with the token name as a HTTP `user:password`
-# authentication string:
-# https://stackoverflow.com/a/73426417/624787
-	git remote get-url "origin"
-	echo $$(
-	    git remote get-url "origin" |
-	    sed -nE 's|(https?://)([^@/]+@\|)(.+)|\1secret@\3|p'
-	)
-	set +x
-	git remote set-url "origin" "$$(
-	    git remote get-url "origin" |
-	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
-	)"
-	set -x
-endif
 	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 ifeq ($(GITLAB_CI),true)

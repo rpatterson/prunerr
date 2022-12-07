@@ -91,7 +91,10 @@ ifneq ($(VCS_REMOTE_AUTH),)
 # authentication string:
 # https://stackoverflow.com/a/73426417/624787
 	set +x
-	git remote set-url "origin" "$(VCS_REMOTE_AUTH)"
+	git remote set-url "origin" "$$(
+	    git remote get-url "origin" |
+	    sed -nE 's|(https?://)([^/]+@\|)([^@/]+/.+)|\1$(VCS_REMOTE_AUTH)@\3|p'
+	)"
 	set -x
 	git push --no-verify --tags "origin"
 endif

@@ -41,6 +41,7 @@ endif
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
+PYPI_HOSTNAME=test.pypi.org
 DOCKER_PUSH=false
 CI=false
 GITLAB_CI=false
@@ -50,6 +51,7 @@ ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 TOWNCRIER_COMPARE_BRANCH=master
 PYPI_REPO=pypi
+PYPI_HOSTNAME=pypi.org
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
@@ -213,7 +215,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"PyPI\",\
-	\"url\":\"https://pypi.org/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
+	\"url\":\"https://$(PYPI_HOSTNAME)/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
 	\"link_type\":\"package\"\
 	}"
 	release_cli_args+=" --assets-link {\

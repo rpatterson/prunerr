@@ -381,7 +381,8 @@ endif
 	    --tag "merpatterson/python-project-structure-devel:latest" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
-# iteration time when using the image.
+# iteration time when using the image.  This also creates the `*.tar.gz` sdist inside
+# the container when tox builds it to create its virtualenvs.
 	docker compose run --rm python-project-structure-devel make build-local
 
 # Local environment variables from a template

@@ -76,6 +76,8 @@ build-test-release-job:
       - "coverage*"
       - "htmlcov"
       - "pylint*"
+      - "./.tox-docker/dist/*"
+      - "./dist/*"
       - "NEWS-release.rst"
     reports:
       junit: "pytest-junit.xml"

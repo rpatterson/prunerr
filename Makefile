@@ -208,14 +208,29 @@ ifeq ($(RELEASE_PUBLISH),true)
 	git push --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 ifeq ($(GITLAB_CI),true)
+	release_cli_args=--description "./NEWS-release.rst"
+	release_cli_args+= --tag-name "v$${current_version}"
+	package_registry_url="$(CI_API_V4_URL)/projects/$(CI_PROJECT_ID)/packages/generic/$(CI_PROJECT_NAME)/$${current_version}"
+	for package_file in ./dist/* ./.tox-docker/dist/*
+	do
+	    package_name=$$(basename "$${package_file}")
+	    link_type="other"
+	    if [[ "$${package_name}" == *.whl || "$${package_name}" == *.tar.gz ]]
+	    then
+	        link_type="package"
+	    fi
+	    curl --header "JOB-TOKEN: $(CI_JOB_TOKEN)" \
+	        --upload-file "$${package_file}" \
+	        "$${package_registry_url}/$${package_name}"
+	    release_cli_args+= --assets-link '{ \
+	        "name": "$${package_name}", \
+	        "url":"$${package_registry_url}/$${package_name}", \
+	        "link_type": "$${link_type}" \
+	    }'
+	done
 	docker compose run --rm gitlab-release-cli release-cli create \
-	    --description "./NEWS-release.rst"
-	    --tag-name "v$${current_version}"
-# assets:
-#   links:
-#     - name: "Python `sdist` tarball"
-#       url: TODO
-#       filepath: ".tox/dist/*"
+	    --server-url "https://gitlab.com" --project-id "$(CI_PROJECT_ID)" \
+	    $${release_cli_args}
 # Create a GitHub release
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/dist/*

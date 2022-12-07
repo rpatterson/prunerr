@@ -51,7 +51,7 @@ ifeq ($(CI),true)
 ifneq ($(VCS_BRANCH),master)
 DOCKER_BUILD_ARGS+= \
 --cache-to type=local,dest=./var/lib/docker \
---cache-from type=local,src=./var/lib/docker .
+--cache-from type=local,src=./var/lib/docker
 endif
 endif
 ifeq ($(GITLAB_CI),true)

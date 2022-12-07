@@ -129,10 +129,6 @@ endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: ./var/log/docker-build.log ./var/log/recreate-build.log ~/.pypirc
-# Build Python packages/distributions from the development Docker container for
-# consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel \
-	    ./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox-docker/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
@@ -273,7 +269,8 @@ expand-template: ./var/log/host-install.log
 	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
-# iteration time when using the image.
+# iteration time when using the image.  This also creates the `*.tar.gz` sdist inside
+# the container when tox builds it to create its virtualenvs.
 	docker compose run --rm python-project-structure-devel make build-local
 
 # Local environment variables from a template

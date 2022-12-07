@@ -68,6 +68,7 @@ software projects.  It includes:
 - `Docker`_ container images for users and development
 - Targets/recipes in the `Makefile`_ to automate releases
 - `Makefile`_ recipes/targets used for both local development and on CI/CD platforms
+- A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes/targets
 - A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
@@ -135,5 +136,7 @@ template.
 
 .. _`Docker`: https://docs.docker.com/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
+
+.. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
 
 .. _`GitHub Actions`: https://docs.github.com/en/actions

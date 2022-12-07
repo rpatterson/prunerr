@@ -70,5 +70,5 @@ services:
 
   gitlab-release-cli:
     image: "registry.gitlab.com/gitlab-org/release-cli:latest"
-    # environment:
-    #   CI_JOB_TOKEN: "${CI_JOB_TOKEN}"
+    environment:
+      CI_JOB_TOKEN: "${CI_JOB_TOKEN}"

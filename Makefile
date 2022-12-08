@@ -189,7 +189,7 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    ./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/* ./.tox-docker/dist/*
+	./.tox/build/bin/twine check ./dist/* ./.tox-docker/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -204,7 +204,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/* ./.tox-docker/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags origin "HEAD:$(VCS_BRANCH)"

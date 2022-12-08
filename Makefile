@@ -211,7 +211,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	git push -o ci.skip --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
-	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/dist/*
+	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/.pkg/dist/*
 	release_cli_args="--description $$(realpath ./NEWS-release.rst)"
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
@@ -234,7 +234,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    create $${release_cli_args}
 # Create a GitHub release
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/dist/*
+	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/.pkg/dist/*
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub

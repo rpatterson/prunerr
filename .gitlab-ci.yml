@@ -76,7 +76,7 @@ build-test-release-job:
       - "./coverage*"
       - "./htmlcov"
       - "./pylint*"
-      - "./.tox-docker/dist/*"
+      - "./.tox-docker/.pkg/dist/*"
       - "./dist/*"
       - "./NEWS-release.rst"
     reports:

@@ -362,12 +362,32 @@ endif
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker buildx build --pull \
+ifeq ($(GITHUB_ACTIONS),true)
+# https://docs.docker.com/build/building/cache/backends/gha/
+	docker buildx create --use --driver=docker-container
+endif
+	docker_build_args=--pull
+ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(VCS_BRANCH),master)
+	docker_build_args+=" \
+	    --cache-to type=gha,scope=$(CI_COMMIT_REF_NAME),mode=max \
+	    --cache-from type=gha,scope=$(CI_COMMIT_REF_NAME)"
+endif
+endif
+	docker buildx build $${docker_build_args} \
 	    --tag "merpatterson/python-project-structure:$${current_version}"\
 	    --tag "merpatterson/python-project-structure:$${minor_version}"\
 	    --tag "merpatterson/python-project-structure:$${major_version}"\
 	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker buildx build --pull \
+	docker_build_args=--pull
+ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(VCS_BRANCH),master)
+	docker_build_args+=" \
+	    --cache-to type=gha,scope=$(CI_COMMIT_REF_NAME)-devel,mode=max \
+	    --cache-from type=gha,scope=$(CI_COMMIT_REF_NAME)-devel"
+endif
+endif
+	docker buildx build $${docker_build_args} \
 	    --tag "merpatterson/python-project-structure-devel:latest" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development

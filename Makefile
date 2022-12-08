@@ -41,6 +41,7 @@ endif
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
+PYPI_HOSTNAME=test.pypi.org
 DOCKER_PUSH=false
 CI=false
 GITLAB_CI=false
@@ -50,6 +51,7 @@ ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 TOWNCRIER_COMPARE_BRANCH=master
 PYPI_REPO=pypi
+PYPI_HOSTNAME=pypi.org
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
@@ -187,7 +189,7 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    ./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/* ./.tox-docker/dist/*
+	./.tox/build/bin/twine check ./dist/* ./.tox-docker/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -202,18 +204,19 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox-docker/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/* ./.tox-docker/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/dist/*
-	release_cli_args="--description ./NEWS-release.rst"
+	release_cli_args="--description $$(realpath ./NEWS-release.rst)"
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"PyPI\",\
-	\"url\":\"https://pypi.org/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
+	\"url\":\"https://$(PYPI_HOSTNAME)/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
 	\"link_type\":\"package\"\
 	}"
 	release_cli_args+=" --assets-link {\
@@ -358,12 +361,14 @@ endif
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker buildx build --pull\
+	docker buildx build --pull \
 	    --tag "merpatterson/python-project-structure:$${current_version}"\
 	    --tag "merpatterson/python-project-structure:$${minor_version}"\
 	    --tag "merpatterson/python-project-structure:$${major_version}"\
 	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker compose build python-project-structure-devel | tee -a "$(@)"
+	docker buildx build --pull \
+	    --tag "merpatterson/python-project-structure-devel:latest" \
+	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
 	docker compose run --rm python-project-structure-devel make build-local

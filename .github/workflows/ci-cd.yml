@@ -23,8 +23,9 @@ jobs:
 
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-        with:
-          fetch-depth: 0
+      # https://github.com/actions/checkout/issues/701#issuecomment-1139627817
+      - name: "Fetch versions from VCS"
+        run: "git fetch --tags origin"
 
       - name: "Add user installs to PATH"
         run: |

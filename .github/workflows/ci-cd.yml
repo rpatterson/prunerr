@@ -32,21 +32,6 @@ jobs:
 
       # Cache build artifacts to speed up CI runs
 
-      - name: "Cache Docker build cache"
-        # Don't use any cache for the final release to expose any clean build issues
-        # before final releases are published.
-        if: "github.ref != 'refs/heads/master'"
-        uses: "actions/cache@master"
-        env:
-          # Increment to force clearing the cache
-          cache-name: "docker-build-v1"
-        with:
-          path: |
-          # Never get a cache hit to force always caching the current build cache
-          key: "${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ github.sha }}"
-          # Always re-use the cache and then update
-          restore-keys: "${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-"
-
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"

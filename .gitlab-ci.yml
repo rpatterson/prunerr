@@ -40,8 +40,6 @@ cache:
     - "./.cache/pip"
     - "./.tox"
     - "./.tox-*"
-    - "./var/lib/docker"
-    - "./var/lib/docker-*"
 
 # Delegate to the `./Makefile` as much as possible to keep as much portable between CI
 # platforms

@@ -361,32 +361,12 @@ endif
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-ifeq ($(CI),true)
-# https://docs.docker.com/build/building/cache/backends/local/#synopsis
-	docker buildx create --use --driver=docker-container
-endif
-	docker_build_args=--pull
-ifeq ($(CI),true)
-ifneq ($(VCS_BRANCH),master)
-	docker_build_args+=" \
-	    --cache-to type=local,dest=./var/lib/docker,mode=max \
-	    --cache-from type=local,src=./var/lib/docker"
-endif
-endif
-	docker buildx build $${docker_build_args} \
+	docker buildx build --pull \
 	    --tag "merpatterson/python-project-structure:$${current_version}"\
 	    --tag "merpatterson/python-project-structure:$${minor_version}"\
 	    --tag "merpatterson/python-project-structure:$${major_version}"\
 	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker_build_args=--pull
-ifeq ($(CI),true)
-ifneq ($(VCS_BRANCH),master)
-	docker_build_args+=" \
-	    --cache-to type=local,dest=./var/lib/docker-devel,mode=max \
-	    --cache-from type=local,src=./var/lib/docker-devel"
-endif
-endif
-	docker buildx build $${docker_build_args} \
+	docker buildx build --pull \
 	    --tag "merpatterson/python-project-structure-devel:latest" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development

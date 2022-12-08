@@ -58,7 +58,7 @@ build-test-release-job:
   script:
     # Install packages into container required to hand off to `$ make`
     - "apk update"
-    - "apk add make bash git gettext py3-pip gnupg curl"
+    - "apk add make bash git gettext py3-pip gnupg curl github-cli"
     # Add an unprivileged user to cover those use cases and more closely match local
     # development
     - "addgroup -g $PGID runner"

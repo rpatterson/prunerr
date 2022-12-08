@@ -233,6 +233,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    create $${release_cli_args}
 # Create a GitHub release
+	git remote add "github" "https://github.com/$(CI_PROJECT_PATH).git"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/.pkg/dist/*
 endif

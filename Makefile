@@ -212,7 +212,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/.pkg/dist/*
-	release_cli_args="--description $$(realpath ./NEWS-release.rst)"
+	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"PyPI\",\

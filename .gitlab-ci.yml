@@ -58,7 +58,6 @@ build-test-release-job:
       when: "never"
     - when: "always"
   script:
-    - "ls -alR ./"
     # Install packages into container required to hand off to `$ make`
     - "apk update"
     - "apk add make bash git gettext py3-pip gnupg curl"

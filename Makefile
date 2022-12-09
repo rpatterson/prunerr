@@ -418,14 +418,14 @@ endif
 	docker_build_args="--pull"
 ifeq ($(GITLAB_CI),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(CI_REGISTRY_IMAGE)-devel:latest"
+	docker pull "$(CI_REGISTRY_IMAGE)-devel:latest" || true
 	docker_build_args+=" --cache-from \
 	    type=registry,ref=$(CI_REGISTRY_IMAGE)-devel:latest"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "ghcr.io/rpatterson/python-project-structure-devel:latest"
+	docker pull "ghcr.io/rpatterson/python-project-structure-devel:latest" || true
 	docker_build_args+=" --cache-from \
 	    type=registry,ref=ghcr.io/rpatterson/python-project-structure-devel:latest"
 endif

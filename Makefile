@@ -29,7 +29,13 @@ PGID:=$(shell id -g)
 UNAME_KERNEL_NAME:=$(shell uname)
 OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
-# Options controlling behavior
+# Safe defaults for testing the release process without publishing to the final/official
+# hosts/indexes/registries:
+RELEASE_PUBLISH=false
+TOWNCRIER_COMPARE_BRANCH=develop
+PYPI_REPO=testpypi
+PYPI_HOSTNAME=test.pypi.org
+# Determine which branch is checked out depending on the environment
 ifeq ($(GITLAB_CI),true)
 VCS_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifeq ($(GITHUB_ACTIONS),true)
@@ -37,11 +43,7 @@ VCS_BRANCH=$(GITHUB_REF_NAME)
 else
 VCS_BRANCH:=$(shell git branch --show-current)
 endif
-# Only publish releases from the `master` or `develop` branches
-RELEASE_PUBLISH=false
-TOWNCRIER_COMPARE_BRANCH=develop
-PYPI_REPO=testpypi
-PYPI_HOSTNAME=test.pypi.org
+# Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
 GITLAB_CI=false
@@ -55,6 +57,7 @@ PYPI_HOSTNAME=pypi.org
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
+# Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 endif
 endif
@@ -306,9 +309,9 @@ expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
-	    echo "WARNING: Template $(template) has been updated:"
-	    echo "Reconcile changes and \`$$ touch $(target)\`:"
 	    diff -u "$(target)" "$(template)" || true
+	    echo "ERROR: Template $(template) has been updated:"
+	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false
 	fi
 	envsubst <"$(template)" >"$(target)"

@@ -126,7 +126,7 @@ tomli==2.0.1
     #   tox
 tomlkit==0.11.6
     # via pylint
-tox==4.0.2
+tox==4.0.3
     # via python-project-structure (./pyproject.toml)
 typer[all]==0.7.0
     # via rstcheck

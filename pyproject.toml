@@ -16,7 +16,7 @@ write_to = "src/pythonprojectstructure/version.py"
 # provides VCS hooks to enforce that commit messages comply with conventional commits:
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
-version = "0.8.2b0"
+version = "0.8.2b1"
 tag_format = "v$version"
 annotated_tag = true
 bump_message = """\

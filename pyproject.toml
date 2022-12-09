@@ -22,7 +22,7 @@ annotated_tag = true
 bump_message = """\
 build(release): Version $current_version → $new_version
 
-[ci skip]
+[actions skip]
 """
 [tool.towncrier]
 # https://towncrier.readthedocs.io/en/stable/#quick-start

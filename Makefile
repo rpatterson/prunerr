@@ -12,9 +12,7 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Project-specific variables
-VCS_REMOTE_PUSH_URL=
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CODECOV_TOKEN=
 CI_REGISTRY_IMAGE=registry.gitlab.com/rpatterson/python-project-structure
 
 # Values derived from the environment
@@ -34,6 +32,8 @@ TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
 # Determine which branch is checked out depending on the environment
+GITLAB_CI=false
+GITHUB_ACTIONS=false
 ifeq ($(GITLAB_CI),true)
 VCS_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifeq ($(GITHUB_ACTIONS),true)
@@ -44,7 +44,6 @@ endif
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
-GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
@@ -59,6 +58,10 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
 endif
+# Address undefined variables warnings when running under local development
+VCS_REMOTE_PUSH_URL=
+CODECOV_TOKEN=
+GH_TOKEN=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x

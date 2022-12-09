@@ -97,16 +97,17 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 	    git remote set-url --push --delete "origin" '.*'
 	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
 	set -x
-# Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "origin"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(GH_TOKEN),)
-	git remote add "github" "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
+# Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
+# mirror.
+	git remote set-url --push --add "origin" \
+	    "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
+endif
+endif
 # Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "github"
-endif
-endif
+	git push -o ci.skip --no-verify --tags "origin"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -243,7 +244,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Create a GitHub release
 # Ensure the tag is in place on the GitHub mirror so we can create the project host
 # release object:
-	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/.pkg/dist/*
 endif

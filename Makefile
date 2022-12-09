@@ -437,24 +437,24 @@ endif
 	(
 	    if ! which codecov
 	    then
-	        mkdir -pv "~/.local/bin/"
+	        mkdir -pv ~/.local/bin/
 # https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
 	        if which brew
 	        then
 # Mac OS X
-	            curl --output-dir "~/.local/bin/" -Os \
+	            curl --output-dir ~/.local/bin/ -Os \
 	                "https://uploader.codecov.io/latest/macos/codecov"
 	        elif which apk
 	        then
 # Alpine
-	            wget --directory-prefix="~/.local/bin/" \
+	            wget --directory-prefix=~/.local/bin/ \
 	                "https://uploader.codecov.io/latest/alpine/codecov"
 	        else
 # Other Linux distributions
-	            curl --output-dir "~/.local/bin/" -Os \
+	            curl --output-dir ~/.local/bin/ -Os \
 	                "https://uploader.codecov.io/latest/linux/codecov"
 	        fi
-	        chmod +x "~/.local/bin/codecov"
+	        chmod +x ~/.local/bin/codecov
 	    fi
 	    if ! which codecov
 	    then

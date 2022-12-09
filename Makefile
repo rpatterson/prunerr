@@ -12,9 +12,8 @@ MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
 # Project-specific variables
-VCS_REMOTE_PUSH_URL=
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CODECOV_TOKEN=
+CI_REGISTRY_IMAGE=registry.gitlab.com/rpatterson/python-project-structure
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -33,6 +32,8 @@ TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
 # Determine which branch is checked out depending on the environment
+GITLAB_CI=false
+GITHUB_ACTIONS=false
 ifeq ($(GITLAB_CI),true)
 VCS_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifeq ($(GITHUB_ACTIONS),true)
@@ -43,7 +44,6 @@ endif
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
-GITLAB_CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
@@ -58,6 +58,10 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
 endif
+# Address undefined variables warnings when running under local development
+VCS_REMOTE_PUSH_URL=
+CODECOV_TOKEN=
+GH_TOKEN=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -87,25 +91,26 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
+	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
 # Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
 # variable value should be prefixed with the token name as a HTTP `user:password`
 # authentication string:
 # https://stackoverflow.com/a/73426417/624787
-	set +x
-	git config "remote.origin.pushurl" &&
-	    git remote set-url --push --delete "origin" '.*'
 	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
-	set -x
-# Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "origin"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(GH_TOKEN),)
-	git remote add "github" "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
-# Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "github"
+# Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
+# mirror.
+	git remote set-url --push --add "origin" \
+	    "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
 endif
+endif
+	set -x
+ifeq ($(RELEASE_PUBLISH),true)
+# Fail fast if there's still no push access
+	git push -o ci.skip --no-verify --tags "origin"
 endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -243,7 +248,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Create a GitHub release
 # Ensure the tag is in place on the GitHub mirror so we can create the project host
 # release object:
-	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/.pkg/dist/*
 endif
@@ -256,6 +260,13 @@ ifeq ($(CI),true)
 endif
 	docker push -a "merpatterson/python-project-structure"
 	docker compose run --rm docker-pushrm
+	docker push -a "$(CI_REGISTRY_IMAGE)"
+	docker push -a "ghcr.io/rpatterson/python-project-structure"
+# Only push the development images to CI/CD platforms for caching
+ifeq ($(CI),true)
+	docker push "$(CI_REGISTRY_IMAGE)-devel"
+	docker push "ghcr.io/rpatterson/python-project-structure-devel"
+endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -372,29 +383,51 @@ endif
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-ifeq ($(GITHUB_ACTIONS),true)
-# https://docs.docker.com/build/building/cache/backends/gha/
-	docker buildx create --use --driver=docker-container
+# Build the end-user container image
+	docker_build_args="--pull"
+ifeq ($(GITLAB_CI),true)
+# Don't cache when building final releases on `master`
+ifneq ($(VCS_BRANCH),master)
+	docker pull "$(CI_REGISTRY_IMAGE):latest" || true
+	docker_build_args+=" --cache-from \
+	    type=registry,ref=$(CI_REGISTRY_IMAGE):latest"
 endif
-	docker_build_args=--pull
+endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-	docker_build_args+=" \
-	    --cache-to type=gha,scope=$(CI_COMMIT_REF_NAME),mode=max \
-	    --cache-from type=gha,scope=$(CI_COMMIT_REF_NAME)"
+# Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
+	docker pull "ghcr.io/rpatterson/python-project-structure:latest" || true
+	docker_build_args+=" --cache-from \
+	    type=registry,ref=ghcr.io/rpatterson/python-project-structure:latest"
 endif
 endif
 	docker buildx build $${docker_build_args} \
-	    --tag "merpatterson/python-project-structure:$${current_version}"\
-	    --tag "merpatterson/python-project-structure:$${minor_version}"\
-	    --tag "merpatterson/python-project-structure:$${major_version}"\
-	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker_build_args=--pull
+	    --tag "merpatterson/python-project-structure:$${current_version}" \
+	    --tag "merpatterson/python-project-structure:$${minor_version}" \
+	    --tag "merpatterson/python-project-structure:$${major_version}" \
+	    --tag "merpatterson/python-project-structure:latest" \
+	    --tag "$(CI_REGISTRY_IMAGE):$${current_version}" \
+	    --tag "$(CI_REGISTRY_IMAGE):$${minor_version}" \
+	    --tag "$(CI_REGISTRY_IMAGE):$${major_version}" \
+	    --tag "$(CI_REGISTRY_IMAGE):latest" \
+	    --tag "ghcr.io/rpatterson/python-project-structure:$${current_version}" \
+	    --tag "ghcr.io/rpatterson/python-project-structure:$${minor_version}" \
+	    --tag "ghcr.io/rpatterson/python-project-structure:$${major_version}" \
+	    --tag "ghcr.io/rpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
+# Build the development image
+	docker_build_args="--pull"
+ifeq ($(GITLAB_CI),true)
+ifneq ($(VCS_BRANCH),master)
+	docker pull "$(CI_REGISTRY_IMAGE)-devel:latest" || true
+	docker_build_args+=" --cache-from \
+	    type=registry,ref=$(CI_REGISTRY_IMAGE)-devel:latest"
+endif
+endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-	docker_build_args+=" \
-	    --cache-to type=gha,scope=$(CI_COMMIT_REF_NAME)-devel,mode=max \
-	    --cache-from type=gha,scope=$(CI_COMMIT_REF_NAME)-devel"
+	docker pull "ghcr.io/rpatterson/python-project-structure-devel:latest" || true
+	docker_build_args+=" --cache-from \
+	    type=registry,ref=ghcr.io/rpatterson/python-project-structure-devel:latest"
 endif
 endif
 	docker buildx build $${docker_build_args} \
@@ -487,6 +520,10 @@ endif
 ./var/log/docker-login.log:
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin |
 	    tee -a "$(@)"
+	printenv "CI_REGISTRY_PASSWORD" |
+	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	printenv "GH_TOKEN" |
+	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
 
 # GPG signing key creation and management in CI
 export GPG_PASSPHRASE=

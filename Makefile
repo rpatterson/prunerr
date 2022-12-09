@@ -454,7 +454,6 @@ endif
 	                "https://uploader.codecov.io/latest/linux/codecov"
 	        fi
 	        chmod +x "~/.local/bin/codecov"
-	        fi
 	    fi
 	    if ! which codecov
 	    then

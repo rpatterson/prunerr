@@ -437,6 +437,7 @@ endif
 	(
 	    if ! which codecov
 	    then
+	        mkdir -pv "~/.local/bin/"
 # https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
 	        if which brew
 	        then

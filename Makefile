@@ -182,7 +182,7 @@ endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		~/.pypirc ./var/log/host-install.log \
+		~/.pypirc ~/.local/bin/codecov \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
@@ -433,6 +433,8 @@ endif
 	    fi
 	    which tox || pip install tox
 	) | tee -a "$(@)"
+./var/log/codecov-install.log:
+	mkdir -pv "$(dir $(@))"
 # Install the code test coverage publishing tool
 	(
 	    if ! which codecov

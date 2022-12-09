@@ -19,17 +19,19 @@ USER_FULL_NAME=$(USER_NAME)
 endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
-# Options controlling behavior
-VCS_BRANCH:=$(shell git branch --show-current)
-# Only publish releases from the `master` or `develop` branches
+# Safe defaults for testing the release process without publishing to the final/official
+# hosts/indexes/registries:
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
+# Only publish releases from the `master` or `develop` branches:
+VCS_BRANCH:=$(shell git branch --show-current)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 TOWNCRIER_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
+# Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 endif
 
@@ -167,9 +169,9 @@ expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
-	    echo "WARNING: Template $(template) has been updated:"
-	    echo "Reconcile changes and \`$$ touch $(target)\`:"
 	    diff -u "$(target)" "$(template)" || true
+	    echo "ERROR: Template $(template) has been updated:"
+	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false
 	fi
 	envsubst <"$(template)" >"$(target)"

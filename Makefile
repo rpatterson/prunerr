@@ -167,9 +167,9 @@ expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
-	    echo "WARNING: Template $(template) has been updated:"
-	    echo "Reconcile changes and \`$$ touch $(target)\`:"
 	    diff -u "$(target)" "$(template)" || true
+	    echo "ERROR: Template $(template) has been updated:"
+	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false
 	fi
 	envsubst <"$(template)" >"$(target)"

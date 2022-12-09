@@ -447,7 +447,7 @@ endif
 	        elif which apk
 	        then
 # Alpine
-	            wget --directory-prefix=~/.local/bin/ \
+	            wget --directory-prefix ~/.local/bin/ \
 	                "https://uploader.codecov.io/latest/alpine/codecov"
 	        else
 # Other Linux distributions

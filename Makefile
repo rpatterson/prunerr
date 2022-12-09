@@ -182,7 +182,7 @@ endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		~/.pypirc ~/.local/bin/codecov \
+		~/.pypirc ./var/log/codecov-install.log \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)

@@ -13,7 +13,8 @@ PS1?=$$
 
 # Project-specific variables
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CI_REGISTRY_IMAGE=registry.gitlab.com/rpatterson/python-project-structure
+GITHUB_REPOSITORY_OWNER=rpatterson
+CI_REGISTRY_IMAGE=registry.gitlab.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)

@@ -456,7 +456,6 @@ endif
 	        fi
 	        chmod +x ~/.local/bin/codecov
 	    fi
-	    echo $$PATH
 	    if ! which codecov
 	    then
 	        set +x

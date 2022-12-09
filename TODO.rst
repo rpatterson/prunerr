@@ -16,3 +16,5 @@ Nice to Have
 #. Documentation via Sphinx with CI to publish to RTFD.
 
 #. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
+
+#. New branches for different frameworks, e.g.: Flask, Pyramid, Django

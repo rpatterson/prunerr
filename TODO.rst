@@ -15,9 +15,11 @@ Nice to Have
 
 #. Documentation via Sphinx with CI to publish to RTFD.
 
-#. Container image variants: e.g. slim/alpine
+#. New branches for different frameworks, e.g.: Flask, Pyramid, Django
 
 #. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
+
+#. Container image variants: e.g. slim/alpine
 
 #. `Docker image dynamic LABEL's
    <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::

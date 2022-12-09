@@ -25,11 +25,14 @@ endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname -f)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
-# OS Detection
-UNAME_KERNEL_NAME:=$(shell uname)
-OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
-# Options controlling behavior
+# Safe defaults for testing the release process without publishing to the final/official
+# hosts/indexes/registries:
+RELEASE_PUBLISH=false
+TOWNCRIER_COMPARE_BRANCH=develop
+PYPI_REPO=testpypi
+PYPI_HOSTNAME=test.pypi.org
+# Determine which branch is checked out depending on the environment
 ifeq ($(GITLAB_CI),true)
 VCS_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifeq ($(GITHUB_ACTIONS),true)
@@ -37,11 +40,7 @@ VCS_BRANCH=$(GITHUB_REF_NAME)
 else
 VCS_BRANCH:=$(shell git branch --show-current)
 endif
-# Only publish releases from the `master` or `develop` branches
-RELEASE_PUBLISH=false
-TOWNCRIER_COMPARE_BRANCH=develop
-PYPI_REPO=testpypi
-PYPI_HOSTNAME=test.pypi.org
+# Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
 GITLAB_CI=false
@@ -55,6 +54,7 @@ PYPI_HOSTNAME=pypi.org
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
+# Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 endif
 endif
@@ -97,7 +97,15 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 	    git remote set-url --push --delete "origin" '.*'
 	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
 	set -x
+# Fail fast if there's still no push access
 	git push -o ci.skip --no-verify --tags "origin"
+endif
+ifneq ($(GITHUB_ACTIONS),true)
+ifneq ($(GH_TOKEN),)
+	git remote add "github" "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
+# Fail fast if there's still no push access
+	git push -o ci.skip --no-verify --tags "github"
+endif
 endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -208,7 +216,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    ./dist/* ./.tox-docker/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-	git push -o ci.skip --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
+	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/.pkg/dist/*
@@ -233,7 +241,9 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    create $${release_cli_args}
 # Create a GitHub release
-	git remote add "github" "https://github.com/$(CI_PROJECT_PATH).git"
+# Ensure the tag is in place on the GitHub mirror so we can create the project host
+# release object:
+	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/.pkg/dist/*
 endif
@@ -306,9 +316,9 @@ expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template: ./var/log/host-install.log
 	if [ -e "$(target)" ]
 	then
-	    echo "WARNING: Template $(template) has been updated:"
-	    echo "Reconcile changes and \`$$ touch $(target)\`:"
 	    diff -u "$(target)" "$(template)" || true
+	    echo "ERROR: Template $(template) has been updated:"
+	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false
 	fi
 	envsubst <"$(template)" >"$(target)"
@@ -402,6 +412,7 @@ endif
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
+# Bootstrap the minimum Python environment
 	(
 	    if ! which pip
 	    then
@@ -409,42 +420,46 @@ endif
 	        then
 	            sudo apk update
 	            sudo apk add "gettext" "py3-pip" "gnupg" "github-cli" "curl"
-	        else
+	        elif which apt-get
+	        then
 	            sudo apt-get update
 	            sudo apt-get install -y \
 	                "gettext-base" "python3-pip" "gnupg" "gh" "curl"
+	        else
+	            set +x
+	            echo "ERROR: OS not supported for installing host dependencies"
+	            false
 	        fi
 	    fi
 	    which tox || pip install tox
 	) | tee -a "$(@)"
+# Install the code test coverage publishing tool
+	(
+	    if ! which codecov
+	    then
+# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
+	        if which brew
+	        then
+# Mac OS X
+	            curl --output-dir "~/.local/bin/" -Os \
+	                "https://uploader.codecov.io/latest/macos/codecov"
+	        elif which apk
+	        then
+# Alpine
+	            wget --directory-prefix="~/.local/bin/" \
+	                "https://uploader.codecov.io/latest/alpine/codecov"
+	        else
+# Other Linux distributions
+	            curl --output-dir "~/.local/bin/" -Os \
+	                "https://uploader.codecov.io/latest/linux/codecov"
+	        fi
+	        chmod +x "~/.local/bin/codecov"
+	        fi
+	    fi
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
-
-~/.local/bin/codecov:
-	mkdir -pv "$(dir $(@))"
-# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
-ifeq ($(UNAME_KERNEL_NAME),Darwin)
-	curl --output-dir "$(dir $(@))" -Os \
-	    "https://uploader.codecov.io/latest/macos/codecov"
-else ifeq ($(UNAME_KERNEL_NAME),Linux)
-ifeq ($(OS_ALPINE_VERSION),)
-	curl --output-dir "$(dir $(@))" -Os \
-	    "https://uploader.codecov.io/latest/linux/codecov"
-else
-	wget --directory-prefix="$(dir $(@))" \
-	    "https://uploader.codecov.io/latest/alpine/codecov"
-endif
-else
-	if $$(which "$(notdir $(@))")
-	then
-	    ln -v --backup=numbered $$(which "$(notdir $(@))") "$(@)"
-	else
-	    echo "Could not determine how to install Codecov uploader"
-	fi
-endif
-	chmod +x "$(@)"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:

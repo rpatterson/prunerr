@@ -25,9 +25,6 @@ endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname -f)
 PUID:=$(shell id -u)
 PGID:=$(shell id -g)
-# OS Detection
-UNAME_KERNEL_NAME:=$(shell uname)
-OS_ALPINE_VERSION:=$(shell cat "/etc/alpine-release" 2>"/dev/null")
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -405,6 +402,7 @@ endif
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
+# Bootstrap the minimum Python environment
 	(
 	    if ! which pip
 	    then
@@ -412,42 +410,46 @@ endif
 	        then
 	            sudo apk update
 	            sudo apk add "gettext" "py3-pip" "gnupg" "github-cli" "curl"
-	        else
+	        elif which apt-get
+	        then
 	            sudo apt-get update
 	            sudo apt-get install -y \
 	                "gettext-base" "python3-pip" "gnupg" "gh" "curl"
+	        else
+	            set +x
+	            echo "ERROR: OS not supported for installing host dependencies"
+	            false
 	        fi
 	    fi
 	    which tox || pip install tox
 	) | tee -a "$(@)"
+# Install the code test coverage publishing tool
+	(
+	    if ! which codecov
+	    then
+# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
+	        if which brew
+	        then
+# Mac OS X
+	            curl --output-dir "~/.local/bin/" -Os \
+	                "https://uploader.codecov.io/latest/macos/codecov"
+	        elif which apk
+	        then
+# Alpine
+	            wget --directory-prefix="~/.local/bin/" \
+	                "https://uploader.codecov.io/latest/alpine/codecov"
+	        else
+# Other Linux distributions
+	            curl --output-dir "~/.local/bin/" -Os \
+	                "https://uploader.codecov.io/latest/linux/codecov"
+	        fi
+	        chmod +x "~/.local/bin/codecov"
+	        fi
+	    fi
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
-
-~/.local/bin/codecov:
-	mkdir -pv "$(dir $(@))"
-# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
-ifeq ($(UNAME_KERNEL_NAME),Darwin)
-	curl --output-dir "$(dir $(@))" -Os \
-	    "https://uploader.codecov.io/latest/macos/codecov"
-else ifeq ($(UNAME_KERNEL_NAME),Linux)
-ifeq ($(OS_ALPINE_VERSION),)
-	curl --output-dir "$(dir $(@))" -Os \
-	    "https://uploader.codecov.io/latest/linux/codecov"
-else
-	wget --directory-prefix="$(dir $(@))" \
-	    "https://uploader.codecov.io/latest/alpine/codecov"
-endif
-else
-	if $$(which "$(notdir $(@))")
-	then
-	    ln -v --backup=numbered $$(which "$(notdir $(@))") "$(@)"
-	else
-	    echo "Could not determine how to install Codecov uploader"
-	fi
-endif
-	chmod +x "$(@)"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
  ./pyproject.toml:

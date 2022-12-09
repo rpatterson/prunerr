@@ -182,11 +182,11 @@ endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		~/.pypirc ~/.local/bin/codecov \
+		~/.pypirc ./var/log/host-install.log \
 		./var/log/docker-build.log ./var/log/recreate-build.log
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
-	~/.local/bin/codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
+	codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
@@ -456,6 +456,13 @@ endif
 	        chmod +x "~/.local/bin/codecov"
 	        fi
 	    fi
+	    if ! which codecov
+	    then
+	        set +x
+	        echo "ERROR: CodeCov CLI tool still not on PATH"
+	        false
+	    fi
+	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./var/log/recreate.log
 	./.tox/build/bin/pre-commit install \

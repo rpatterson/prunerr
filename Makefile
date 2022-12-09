@@ -388,7 +388,7 @@ endif
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(CI_REGISTRY_IMAGE):latest"
+	docker pull "$(CI_REGISTRY_IMAGE):latest" || true
 	docker_build_args+=" --cache-from \
 	    type=registry,ref=$(CI_REGISTRY_IMAGE):latest"
 endif
@@ -396,7 +396,7 @@ endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
 # Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
-	docker pull "ghcr.io/rpatterson/python-project-structure:latest"
+	docker pull "ghcr.io/rpatterson/python-project-structure:latest" || true
 	docker_build_args+=" --cache-from \
 	    type=registry,ref=ghcr.io/rpatterson/python-project-structure:latest"
 endif

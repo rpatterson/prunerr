@@ -1,3 +1,9 @@
+Pythonprojectstructure 0.8.3 (2022-12-09)
+=========================================
+
+No significant changes.
+
+
 Pythonprojectstructure 0.8.3b0 (2022-12-09)
 ===========================================
 

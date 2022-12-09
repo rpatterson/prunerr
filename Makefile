@@ -97,7 +97,15 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 	    git remote set-url --push --delete "origin" '.*'
 	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
 	set -x
+# Fail fast if there's still no push access
 	git push -o ci.skip --no-verify --tags "origin"
+endif
+ifneq ($(GITHUB_ACTIONS),true)
+ifneq ($(GH_TOKEN),)
+	git remote add "github" "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
+# Fail fast if there's still no push access
+	git push -o ci.skip --no-verify --tags "github"
+endif
 endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -208,7 +216,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    ./dist/* ./.tox-docker/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
-	git push -o ci.skip --no-verify --tags origin "HEAD:$(VCS_BRANCH)"
+	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/* ./.tox-docker/.pkg/dist/*
@@ -233,7 +241,9 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    create $${release_cli_args}
 # Create a GitHub release
-	git remote add "github" "https://github.com/$(CI_PROJECT_PATH).git"
+# Ensure the tag is in place on the GitHub mirror so we can create the project host
+# release object:
+	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/* ./.tox-docker/.pkg/dist/*
 endif

@@ -276,6 +276,7 @@ expand-template: ./var/log/host-install.log
 	current_version=$$(./.tox/build/bin/cz version --project)
 	docker_build_args="--build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
+	    --tag merpatterson/python-project-structure:local \
 	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$${current_version}"
 ifeq ($(VCS_BRANCH),master)

@@ -123,10 +123,7 @@ endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: release-python
-ifeq ($(VCS_BRANCH),master)
-	$(MAKE) release-docker
-endif
+release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: ./var/log/docker-build.log ./var/log/recreate-build.log ~/.pypirc
@@ -160,8 +157,21 @@ endif
 ### Publish container images to Docker Hub
 release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	docker push -a "merpatterson/python-project-structure"
+	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
+# Only update tags end users may depend on to be stable from the `master` branch
+	current_version=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
+	docker push "merpatterson/python-project-structure:$${minor_version}"
+	docker push "merpatterson/python-project-structure:$${major_version}"
+	docker push "merpatterson/python-project-structure:latest"
+	docker push "merpatterson/python-project-structure:devel"
 	docker compose run --rm docker-pushrm
+endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -264,16 +274,27 @@ expand-template: ./var/log/host-install.log
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/cz version --project)
+	docker_build_args="--build-arg VERSION=$${current_version}"
+	docker_build_opts="--pull \
+	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
+	    --tag merpatterson/python-project-structure:$${current_version}"
+ifeq ($(VCS_BRANCH),master)
+# Only update tags end users may depend on to be stable from the `master` branch
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker buildx build --pull\
-	    --tag "merpatterson/python-project-structure:$${current_version}"\
-	    --tag "merpatterson/python-project-structure:$${minor_version}"\
-	    --tag "merpatterson/python-project-structure:$${major_version}"\
-	    --tag "merpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
-	docker compose build python-project-structure-devel | tee -a "$(@)"
+	docker_build_opts+=" \
+	    --tag merpatterson/python-project-structure:$${minor_version} \
+	    --tag merpatterson/python-project-structure:$${major_version} \
+	    --tag merpatterson/python-project-structure:latest"
+endif
+	docker buildx build $${docker_build_args} $${docker_build_opts} "./" |
+	    tee -a "$(@)"
+	docker buildx build $${docker_build_args} \
+	    --tag "merpatterson/python-project-structure:devel" \
+	    --tag "merpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
+	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
 	docker compose run --rm python-project-structure-devel make build-local |

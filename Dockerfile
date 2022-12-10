@@ -3,6 +3,8 @@
 # Stay as close to a vanilla Python environment as possible
 FROM python:3
 
+ARG VERSION=
+
 # Put the `ENTRYPOINT` on the `$PATH`
 RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
@@ -32,3 +34,5 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/python:3"
+# Build-time `LABEL`s
+LABEL org.opencontainers.image.version=${VERSION}

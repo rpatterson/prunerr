@@ -21,10 +21,9 @@ Nice to Have
 
 #. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
 
-#. `Docker image dynamic LABEL's
+#. `Docker image build-time LABEL's
    <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::
 
-     org.opencontainers.image.version version of the packaged software
      org.opencontainers.image.revision Source control revision identifier for the packaged software.
      org.opencontainers.image.ref.name Name of the reference for a target (string).
      org.opencontainers.image.base.digest Digest of the image this image is based on (string)

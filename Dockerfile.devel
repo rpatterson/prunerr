@@ -1,8 +1,10 @@
 ## Container image for use by developers
 
+ARG VERSION=
+
 # Stay as close to the end user image as possible without sacrificing development
 # efficiency.
-FROM merpatterson/python-project-structure
+FROM merpatterson/python-project-structure:${VERSION}
 
 WORKDIR "/usr/local/src/python-project-structure/"
 # Install the development dependencies with fixed versions in a separate layer to
@@ -20,3 +22,7 @@ RUN pip install -v --no-cache-dir -e "./"
 # Remain in the checkout `WORKDIR` and make the primary testing tool for the default
 # command to run.
 CMD [ "tox" ]
+
+LABEL org.opencontainers.image.base.name="docker.io/merpatterson/python-project-structure:devel"
+# Build-time `LABEL`s
+LABEL org.opencontainers.image.version=${VERSION}

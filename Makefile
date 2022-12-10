@@ -275,7 +275,7 @@ expand-template: ./var/log/host-install.log
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/cz version --project)
 	docker_build_args="--build-arg VERSION=$${current_version}"
-	docker_build_opts="--pull \
+	docker_build_user_tags=" \
 	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$${current_version}"
 ifeq ($(VCS_BRANCH),master)
@@ -284,13 +284,13 @@ ifeq ($(VCS_BRANCH),master)
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	docker_build_opts+=" \
+	docker_build_user_tags+=" \
 	    --tag merpatterson/python-project-structure:$${minor_version} \
 	    --tag merpatterson/python-project-structure:$${major_version} \
 	    --tag merpatterson/python-project-structure:latest"
 endif
-	docker buildx build $${docker_build_args} $${docker_build_opts} "./" |
-	    tee -a "$(@)"
+	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	    "./" | tee -a "$(@)"
 	docker buildx build $${docker_build_args} \
 	    --tag "merpatterson/python-project-structure:devel" \
 	    --tag "merpatterson/python-project-structure:devel-$(VCS_BRANCH)" \

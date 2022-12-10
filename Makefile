@@ -276,7 +276,8 @@ expand-template: ./var/log/host-install.log
 	docker compose build python-project-structure-devel | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
-	docker compose run --rm python-project-structure-devel make build-local
+	docker compose run --rm python-project-structure-devel make build-local |
+	    tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

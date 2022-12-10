@@ -92,6 +92,7 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
+ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
 # Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
@@ -112,7 +113,6 @@ ifneq ($(GH_TOKEN),)
 endif
 endif
 	set -x
-ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"

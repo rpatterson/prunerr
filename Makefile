@@ -274,7 +274,10 @@ expand-template: ./var/log/host-install.log
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/cz version --project)
-	docker_build_args="--build-arg VERSION=$${current_version}"
+# https://github.com/moby/moby/issues/39003#issuecomment-879441675
+	docker_build_args=" \
+	    --build-arg BUILDKIT_INLINE_CACHE=1 \
+	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
 	    --tag merpatterson/python-project-structure:local \
 	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \

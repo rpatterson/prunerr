@@ -31,4 +31,4 @@ LABEL org.opencontainers.image.description="Python project structure foundation 
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
-LABEL org.opencontainers.image.base.name="hub.docker.com/_/python:3"
+LABEL org.opencontainers.image.base.name="docker.io/library/python:3"

@@ -428,8 +428,7 @@ ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
 	docker pull "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from \
-	    type=registry,ref=$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
+	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
@@ -437,7 +436,7 @@ ifneq ($(VCS_BRANCH),master)
 # Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
 	docker pull "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
-	    type=registry,ref=ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
+	    ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
 endif
 endif
 	docker buildx build $${docker_build_args} $${docker_build_user_tags} \
@@ -447,15 +446,14 @@ endif
 ifeq ($(GITLAB_CI),true)
 ifneq ($(VCS_BRANCH),master)
 	docker pull "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from \
-	    type=registry,ref=$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
+	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
 	docker pull "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
-	    type=registry,ref=ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+	    ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
 endif
 endif
 	docker buildx build $${docker_build_args} $${docker_build_caches} \

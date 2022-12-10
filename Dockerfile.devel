@@ -20,3 +20,5 @@ RUN pip install -v --no-cache-dir -e "./"
 # Remain in the checkout `WORKDIR` and make the primary testing tool for the default
 # command to run.
 CMD [ "tox" ]
+
+LABEL org.opencontainers.image.base.name="docker.io/merpatterson/python-project-structure:devel"

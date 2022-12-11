@@ -442,7 +442,7 @@ ifneq ($(VCS_BRANCH),master)
 	    ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
 endif
 endif
-	docker buildx build $${docker_build_args} $${docker_build_user_tags} \
+	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    $${docker_build_caches} "./" | tee -a "$(@)"
 # Build the development image
 	docker_build_caches=""

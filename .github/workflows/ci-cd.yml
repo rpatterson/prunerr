@@ -116,5 +116,3 @@ jobs:
           TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make -e release"
-      # TODO: Push container image to GHCR? I don't currently need this but I can easily
-      #       imagine the value in it.

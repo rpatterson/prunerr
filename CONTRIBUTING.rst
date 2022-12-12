@@ -13,11 +13,19 @@ up and build required for local development::
   $ make
 
 From there you can begin writing your tests or making other changes and run the tests to
-check your work::
+check your work.  For reproducibility and to expose clean build issues, the tests can be
+run inside the development container.  This is the command run by the VCS hooks and the
+``$ make test`` target as well::
 
-  $ make test
+  $ make test-docker
 
-You can also inspect test failures and errors in `Python's post-mortem debugger`_::
+During the inner loop of development iterations, it may be more efficient to run the
+tests locally directly on your development host::
+
+  $ make test-local
+
+You can also inspect test failures and errors in `Python's post-mortem debugger`_.  This
+also runs locally directly on your development host::
 
   $ make test-debug
 
@@ -28,7 +36,7 @@ Once work is finished and all the tests are passing, project maintainers can mer
 work, bump the version, run all checks and tests to confirm your work, build release
 packages, and publish them to PyPI::
 
-  $ make build-bump test release
+  $ make build-bump test-docker release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements*.txt``. The `Makefile`_ will update those versions

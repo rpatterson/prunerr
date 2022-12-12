@@ -56,9 +56,9 @@ build-bump: ~/.gitconfig ./var/log/recreate-build.log
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
+# Run first in case any input is needed from the developer
 	exit_code=0
-	cz_bump_stdout=$$(./.tox/build/bin/cz bump $${cz_bump_args} --dry-run) ||
-	    exit_code=$$?
+	./.tox/build/bin/cz bump $${cz_bump_args} --dry-run || exit_code=$$?
 	rm -fv "./var/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -71,7 +71,7 @@ endif
 	    exit $$exit_code
 	fi
 	next_version="$$(
-	    echo "$${cz_bump_stdout}" |
+	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|bump: *version *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog

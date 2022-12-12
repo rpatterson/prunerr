@@ -23,10 +23,10 @@ main() {
 	fi
 	if ! id ${PUID}
 	then
-	    # Add a user to the `passwd` DB so that the `~python-project-structure/`
+	    # Add a user to the `passwd` DB so that the `~prunerr/`
 	    # HOME directory can be looked up.
-	    adduser --uid "${PUID}" --disabled-password --gecos \
-		    "Python Project Structure,,," "python-project-structure" 1>&2
+	    adduser --uid "${PUID}" --disabled-password \
+		    --gecos "Prunerr,,," "prunerr" 1>&2
 	fi
 	# Fix the TTY ownership if the session is interactive
 	if tty_dev=$(tty)

@@ -148,7 +148,7 @@ endif
 	)"
 # Update the release notes/changelog
 	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	docker compose run --rm python-project-structure-devel \
+	docker compose run --rm prunerr-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -162,7 +162,7 @@ endif
 	./.tox/build/bin/towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
-	docker compose run --rm python-project-structure-devel \
+	docker compose run --rm prunerr-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
@@ -192,7 +192,7 @@ run-debug: ./var/log/editable.log
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
 ifeq ($(RELEASE_PUBLISH),true)
-	docker compose run --rm python-project-structure-devel \
+	docker compose run --rm prunerr-devel \
 	    towncrier check --compare-with "origin/develop"
 endif
 
@@ -217,7 +217,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel pyproject-build -w
+	docker compose run --rm prunerr-devel pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox-docker/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]

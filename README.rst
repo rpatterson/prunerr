@@ -88,7 +88,8 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
   $ sudo pip3 install python-project-structure
 
-Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage details.
+Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
+details.
 
 
 *****
@@ -103,6 +104,18 @@ See the command-line help for details on options and arguments::
 
   optional arguments:
     -h, --help  show this help message and exit
+
+
+************
+CONTRIBUTING
+************
+
+NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
+GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
+activity.
+
+See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
+development.
 
 
 **********
@@ -134,12 +147,20 @@ template.
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installing/
 
-.. _Makefile: https://github.com/rpatterson/python-project-structure/blob/master/Makefile
-.. _the example ./docker-compose.yml file: https://github.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
-
+.. _`This project is hosted on GitLab`:
+   https://gitlab.com/rpatterson/python-project-structure
+.. _`a mirror on GitHub`:
+   https://github.com/rpatterson/python-project-structure
 .. _`Docker`: https://docs.docker.com/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
 
 .. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
 
 .. _`GitHub Actions`: https://docs.github.com/en/actions
+
+.. _Makefile:
+   https://gitlab.com/rpatterson/python-project-structure/blob/master/Makefile
+.. _`the example ./docker-compose.yml file`:
+   https://gitlab.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
+.. _`the ./CONTRIBUTING.rst file`:
+   https://gitlab.com/rpatterson/python-project-structure/blob/master/CONTRIBUTING.rst

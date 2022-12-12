@@ -21,8 +21,8 @@ RUN --mount=source=./,target=./,rw,type=bind pip install --no-cache-dir "./"
 # Find the same configuration file even when run as another user, e.g. `root`.
 ENV HOME="/home/prunerr/"
 WORKDIR "/home/prunerr/"
-ENTRYPOINT  [ "prunerr" ]
-CMD [ "daemon" ]
+ENTRYPOINT [ "entrypoint" ]
+CMD [ "prunerr", "daemon" ]
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/prunerr"

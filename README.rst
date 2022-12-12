@@ -243,7 +243,7 @@ automated but aren't by anything I could find.  So I added them to Prunerr as we
 .. _`download clients`: https://wiki.servarr.com/radarr/settings#download-clients
 .. _`FlexGet`: https://flexget.com/
 
-.. _pip: https://pip.pypa.io/en/stable/installing/
+.. _pip: https://pip.pypa.io/en/stable/installation/
 
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
 .. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/master/docker-compose.yml

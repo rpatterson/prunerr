@@ -81,6 +81,7 @@ services:
 
   ## Container for use by end users
   prunerr-daemon:
+    image: "merpatterson/prunerr"
     image: "merpatterson/prunerr:local"
     build: "./"
     depends_on:

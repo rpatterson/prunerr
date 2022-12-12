@@ -12,6 +12,8 @@ services:
 
   ## Configuration specific to this checkout
   prunerr-daemon:
+    image: "merpatterson/prunerr:local"
+    build: "./"
     volumes:
       # Preserve caches caches between container runs
       - "./home/:/home/prunerr/"

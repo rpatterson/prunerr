@@ -487,13 +487,10 @@ endif
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 
 # Local environment variables from a template
-./.env: ./.env.in /usr/bin/apg
+./.env: ./.env.in ./var/log/host-install.log
 	export TRANSMISSION_PASS="$$(apg -n 1)"
 	$(MAKE) -e "PUID=$(PUID)" "PGID=$(PGID)" \
 	    "template=$(<)" "target=$(@)" expand-template
-/usr/bin/apg:
-	apt-get update
-	apt-get install -y "$(@:/usr/bin/%=%)"
 
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
@@ -505,12 +502,12 @@ endif
 	        if which apk
 	        then
 	            sudo apk update
-	            sudo apk add "gettext" "py3-pip" "gnupg" "github-cli" "curl"
+	            sudo apk add "gettext" "py3-pip" "gnupg" "github-cli" "curl" "apg"
 	        elif which apt-get
 	        then
 	            sudo apt-get update
 	            sudo apt-get install -y \
-	                "gettext-base" "python3-pip" "gnupg" "gh" "curl"
+	                "gettext-base" "python3-pip" "gnupg" "gh" "curl" "apg"
 	        else
 	            set +x
 	            echo "ERROR: OS not supported for installing host dependencies"

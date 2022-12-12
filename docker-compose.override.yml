@@ -7,6 +7,8 @@ services:
 
   ## Configuration specific to this checkout
   python-project-structure:
+    image: "merpatterson/python-project-structure:local"
+    build: "./"
     volumes:
       # Preserve caches caches between container runs
       - "./home/:/home/python-project-structure/"

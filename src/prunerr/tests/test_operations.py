@@ -257,7 +257,7 @@ class PrunerrDownloadItemTests(tests.PrunerrTestCase):
         self.assertEqual(
             len(logged_msgs.records),
             1,
-            "Wrong number of logged records",
+            "Wrong number of operations logged records",
         )
         self.assertIn(
             "contains no files",

@@ -155,8 +155,9 @@ endif
 # Capture the release notes for *just this* release for creating the GitHub release.
 # Have to run before the real `$ towncrier build` run without the `--draft` option
 # because after that the `newsfragments` will have been deleted.
-	./.tox/build/bin/towncrier build --version "$${next_version}" --draft --yes \
-	    >"./NEWS-release.rst"
+	docker compose run --rm python-project-structure-devel \
+	    towncrier build --version "$${next_version}" --draft --yes \
+	        >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run --rm python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes

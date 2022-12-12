@@ -328,8 +328,8 @@ test-local: build-local
 test-docker: build-docker
 	docker compose run --rm prunerr-devel make test-local
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run --rm prunerr python -m prunerr --help
-	docker compose run --rm prunerr prunerr --help
+	docker compose run --rm prunerr-daemon python -m prunerr --help
+	docker compose run --rm prunerr-daemon prunerr --help
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: ./var/log/editable.log

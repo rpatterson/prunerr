@@ -129,8 +129,7 @@ release: release-python release-docker
 release-python: ./var/log/docker-build.log ./var/log/recreate-build.log ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel \
-	    ./.tox/py3/bin/pyproject-build -w
+	docker compose run --rm python-project-structure-devel pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox-docker/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
@@ -299,10 +298,6 @@ endif
 	    --tag "merpatterson/python-project-structure:devel" \
 	    --tag "merpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
-# Prepare the testing environment and tools as much as possible to reduce development
-# iteration time when using the image.
-	docker compose run --rm python-project-structure-devel make build-local |
-	    tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

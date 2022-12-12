@@ -91,7 +91,7 @@ build-local: ./var/log/recreate.log
 build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./var/log/recreate-build.log ./var/log/docker-build.log
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
@@ -144,8 +144,8 @@ endif
 	)"
 # Update the release notes/changelog
 	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	./.tox/py3/bin/towncrier check \
-	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	docker compose run --rm python-project-structure-devel \
+	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -158,9 +158,14 @@ endif
 	./.tox/build/bin/towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
-	./.tox/py3/bin/towncrier build --version "$${next_version}" --yes
+	docker compose run --rm python-project-structure-devel \
+	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
+# Ensure the container image reflects the version bump but we don't need to update the
+# requirements again.
+	touch "./requirements.txt"
+	$(MAKE) "./var/log/docker-build.log"
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -177,7 +182,8 @@ run: build-docker
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
 ifeq ($(RELEASE_PUBLISH),true)
-	./.tox/py3/bin/towncrier check --compare-with "origin/develop"
+	docker compose run --rm python-project-structure-devel \
+	    towncrier check --compare-with "origin/develop"
 endif
 
 .PHONY: release
@@ -201,8 +207,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel \
-	    ./.tox/py3/bin/pyproject-build -w
+	docker compose run --rm python-project-structure-devel pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox-docker/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
@@ -470,10 +475,6 @@ endif
 	    --tag "ghcr.io/rpatterson/python-project-structure:devel" \
 	    --tag "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
-# Prepare the testing environment and tools as much as possible to reduce development
-# iteration time when using the image.
-	docker compose run --rm python-project-structure-devel make build-local |
-	    tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

@@ -9,11 +9,12 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 Required
 ********
 
-#. Update docs after rewrite
-
 *************
 High Priority
 *************
+
+#. Operations reference, perhaps done dynamically from the CLI help using operation
+   method docstrings.
 
 #. Any documentation improvements!
 
@@ -24,7 +25,8 @@ High Priority
 
 #. Find a good way to review download items that are now only partially hard
    linked. IOW, when only some episodes from one download item have replaced only some
-   episodes from another.  Maybe a partial/mixed status?
+   episodes from another.  Maybe extend the existing operations support to write CSV
+   report files?
 
 #. Send a notification when no download item can be deleted and downloading is paused:
 
@@ -70,8 +72,6 @@ Nice to Have
    TODO: ...`` comments throughout the source for other smaller, potential improvements.
 
 #. Fix items with character mapping (Samba) treated as orphans.
-
-#. Document that we prioritize first for free storage space then for seeding.
 
 #. Items deleted from download client outside of Prunerr being re-added.
 

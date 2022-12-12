@@ -76,7 +76,7 @@ endif
 	)"
 # Update the release notes/changelog
 	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	./.tox/build/bin/towncrier check \
+	./.tox/py3/bin/towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -85,7 +85,7 @@ endif
 	    false
 	fi
 # Build and stage the release notes to be commited by `$ cz bump`
-	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
+	./.tox/py3/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 
@@ -93,7 +93,7 @@ endif
 ### Perform any checks that should only be run before pushing
 check-push: build
 ifeq ($(RELEASE_PUBLISH),true)
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	./.tox/py3/bin/towncrier check --compare-with "origin/develop"
 endif
 
 .PHONY: release

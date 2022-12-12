@@ -53,7 +53,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         stdout = stdout_file.getvalue()
         self.assertIn(
             pythonprojectstructure.__doc__.strip(),
-            stdout,
+            stdout.replace("\n", " "),
             "The console script name missing from --help output",
         )
 

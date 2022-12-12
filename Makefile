@@ -348,5 +348,5 @@ endif
 	$(MAKE) "template=$(<)" "target=$(@)" expand-template
 ./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/docker-login.log:
-	docker login -u "merpatterson" -p "$(DOCKER_PASS)"
+	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"

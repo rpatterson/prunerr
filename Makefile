@@ -86,7 +86,7 @@ endif
 	fi
 	next_version="$$(
 	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
-	    sed -nE 's|bump: *version *(.+) *→ *(.+)|\2|p'
+	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
 	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"

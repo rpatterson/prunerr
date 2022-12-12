@@ -84,12 +84,22 @@ Prunerr uses and requires a configuration file which defaults to
 ``~/.config/prunerr.yml``.  See the well-commented sample configuration:
 `<./src/prunerr/home/.config/prunerr.yml>`_.
 
-Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage details.
+
+************
+Installation
+************
+
+Install using any tool for installing standard Python 3 distributions such as `pip`_::
+
+  $ sudo pip3 install prunerr
+
+Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
+details.
 
 
-***********
-Quick Start
-***********
+*****
+Usage
+*****
 
 TODO
 
@@ -164,6 +174,25 @@ system such as events from download clients and/or `Servarr`_ applications.
 - Set per-indexer/per-tracker priority for items in download clients
 
 
+************
+CONTRIBUTING
+************
+
+NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
+GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
+activity.
+
+See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
+development.
+
+
+**********
+Motivation
+**********
+
+TODO
+
+
 .. _`Transmission BitTorrent client`: https://transmissionbt.com/
 
 .. _`Servarr`: https://wiki.servarr.com
@@ -171,5 +200,15 @@ system such as events from download clients and/or `Servarr`_ applications.
 .. _`Sonarr`: https://wiki.servarr.com/en/sonarr
 .. _`download clients`: https://wiki.servarr.com/radarr/settings#download-clients
 
-.. _the example ./docker-compose.yml file: https://github.com/rpatterson/prunerr/blob/master/docker-compose.yml
+.. _pip: https://pip.pypa.io/en/stable/installing/
+
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
+.. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/master/docker-compose.yml
+
+.. _`This project is hosted on GitLab`:
+   https://gitlab.com/rpatterson/prunerr
+.. _`a mirror on GitHub`:
+   https://github.com/rpatterson/prunerr
+
+.. _`the ./CONTRIBUTING.rst file`:
+   https://gitlab.com/rpatterson/prunerr/blob/master/CONTRIBUTING.rst

@@ -143,7 +143,7 @@ endif
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
-	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code

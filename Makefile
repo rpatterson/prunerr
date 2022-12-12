@@ -75,7 +75,7 @@ endif
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
-	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 	./.tox/py3/bin/towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code

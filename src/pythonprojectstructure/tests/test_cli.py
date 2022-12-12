@@ -37,7 +37,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         Run the CLI script and return any error messages.
         """
         stderr_file = io.StringIO()
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
             with contextlib.redirect_stderr(stderr_file):
                 pythonprojectstructure.main(args=args)
         return stderr_file.getvalue()
@@ -47,7 +47,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The command line script is self-docummenting.
         """
         stdout_file = io.StringIO()
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
             with contextlib.redirect_stdout(stdout_file):
                 pythonprojectstructure.main(args=["--help"])
         stdout = stdout_file.getvalue()

@@ -10,11 +10,71 @@ services:
       # Exit the container if the core `s6-overlay` service fails
       - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
 
+  ## Configuration specific to this checkout
   prunerr-daemon:
-    build: "./"
     volumes:
-      # For development, test changes without rebuilding the image
+      # Preserve caches caches between container runs
+      - "./home/:/home/prunerr/"
+
+  ## Container for use by developers
+  prunerr-devel:
+    image: "merpatterson/prunerr:devel"
+    build:
+      context: "./"
+      dockerfile: "./Dockerfile.devel"
+    environment:
+      # Make the run-time user configurable in `./.env`
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-${PUID:-1000}}"
+    volumes:
+      # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/prunerr/"
-      # Use separate Python artifacts inside the image and locally on the host
-      - "./src/prunerr-docker.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
+      # Preserve caches caches between container runs
+      - "./home/:/home/prunerr/"
+      # Ensure access permissions to build artifacts inside docker.
+      # If created by `# dockerd`, it ends up owned by `root`.
+      - "./var-docker/:/usr/local/src/prunerr/var/"
       - "./.tox-docker/:/usr/local/src/prunerr/.tox/"
+      - "./src/prunerr-docker.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
+
+  ## Contianers used during release
+
+  pandoc:
+    image: "pandoc/core"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    volumes:
+      - "./:/data/"
+    command: >-
+      "./README.rst" -f "rst" -t "markdown" -o "./README.md"
+
+  docker-pushrm:
+    image: "chko/docker-pushrm"
+    depends_on:
+      - "pandoc"
+    environment:
+      DOCKER_USER: "${DOCKER_USER:-merpatterson}"
+      DOCKER_PASS: "${DOCKER_PASS}"
+    volumes:
+      - "./:/data/"
+    command: >-
+      --file "/data/README.md" --short "prunerr foundation or template"
+      --debug "merpatterson/prunerr"
+
+  ## Container for use by end users
+  dind:
+    image: "docker:dind"
+    privileged: true
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./:/usr/local/src/prunerr/"
+      - "./var-dind/:/usr/local/src/prunerr/var/"
+      - "./.tox-dind/:/usr/local/src/prunerr/.tox/"
+    working_dir: "/usr/local/src/prunerr/"
+
+  gitlab-release-cli:
+    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    environment:
+      CI_JOB_TOKEN: "${CI_JOB_TOKEN}"
+    volumes:
+      - "./:/usr/local/src/prunerr/"
+    working_dir: "/usr/local/src/prunerr/"

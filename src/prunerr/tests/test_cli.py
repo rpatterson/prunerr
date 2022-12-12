@@ -8,7 +8,6 @@ import io
 import subprocess
 import contextlib
 import pathlib
-import importlib
 
 from unittest import mock
 
@@ -42,7 +41,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         Run the CLI script and return any error messages.
         """
         stderr_file = io.StringIO()
-        with self.assertRaises(SystemExit, msg="CLI error message didn't exit"):
+        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
             with contextlib.redirect_stderr(stderr_file):
                 prunerr.main(args=args)
         return stderr_file.getvalue()
@@ -52,7 +51,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         The command line script is self-docummenting.
         """
         stdout_file = io.StringIO()
-        with self.assertRaises(SystemExit, msg="CLI help message didn't exit"):
+        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
             with contextlib.redirect_stdout(stdout_file):
                 prunerr.main(args=["--help"])
         stdout = stdout_file.getvalue()
@@ -105,7 +104,6 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         The package/module supports execution via Python's `-m` option.
         """
-        importlib.import_module("prunerr.__main__")
         module_main_process = subprocess.run(
             [sys.executable, "-m", "prunerr", "exec", "--help"],
             check=False,

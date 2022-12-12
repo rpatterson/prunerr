@@ -1,6 +1,14 @@
-name: "Run linter, tests and, and release"
+name: "CI/CD"
 
-on: ["push"]
+on:
+  # Only run when branches are pushed, and not when tags are pushed, to allow manual
+  # creation of tags to manually control bumped versions:
+  # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
+  push:
+    branches:
+      - "**"
+    tags:
+      - "!**"
 
 jobs:
 
@@ -13,92 +21,100 @@ jobs:
 
       # Global set up
 
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      # https://github.com/actions/checkout/issues/701#issuecomment-1139627817
+      - name: "Fetch versions from VCS"
+        run: "git fetch --tags origin"
+
       - name: "Add user installs to PATH"
         run: |
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: "Set up Python ${{ matrix.python-version }}"
-        uses: "actions/setup-python@master"
-        with:
-          python-version: "${{ matrix.python-version }}"
-
-      - name: "Cache Python bootstrapping dependencies"
-        if: "github.ref != 'refs/heads/master'"
-        uses: "actions/cache@master"
-        env:
-          # Increment to force clearing the cache
-          cache-name: "cache-pip-installs-v1"
-        with:
-          path: "~/.local"
-          # Never get a cache hit to force always caching the upgraded dependencies
-          key: "ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ github.sha }}"
-          # Always re-use the cache and then upgrade
-          restore-keys: >-
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-
-
-      - name: "Install dependencies"
-        run: |
-          python -m pip install -U --upgrade-strategy=eager --user pip
-          pip install -U --upgrade-strategy=eager --user tox tox-gh-actions
-
-      # VCS set up
-
-      - uses: "actions/checkout@master"
-        with:
-          fetch-depth: 0
-
-      # Run tests and linters
+      # Cache build artifacts to speed up CI runs
 
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
           # Increment to force clearing the cache
-          cache-name: "cache-tox-envs-v1"
+          cache-name: "tox-v1"
         with:
-          path: "./.tox"
-          # Never get a cache hit to force always caching the upgraded dependencies
+          path: |
+            ~/.local
+            ./.tox
+            ./.tox-*
+            ./var/log
+          # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
-          key: "ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}"
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys: >-
-            ci-cd-${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
-      - name: "Test with tox"
+      # Delegate the rest to the `./Makefile` to keep as much portable between CI
+      # platforms
+
+      - name: "Build the container image in which to run the tests"
         env:
-          SETUPTOOLS_SCM_DEBUG: "true"
-        run: |
-          make PUID=1001 upgrade
-          tox
+          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        run: "make -e build-bump build-docker"
 
-      # Release
+      - name: "Run the tests and code checks inside the built container"
+        run: "make test-docker"
 
-      - name: "Bump version and push tag"
-        id: "github-tag-action"
-        uses: "mathieudutour/github-tag-action@v5.6"
-        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.10)"
+      # Upload build artifacts
+      # https://github.com/actions/upload-artifact#usage
+
+      - name: "Archive test suite reports"
+        uses: "actions/upload-artifact@master"
         with:
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: "Fetch release version tag"
-        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.10)"
-        run: "git fetch --depth=1 origin +refs/tags/v*:refs/tags/v* || true"
+          name: "test-suite-reports"
+          path: |
+            ./pytest*
+      # https://github.com/marketplace/actions/test-reporter#example
+      - name: "Publish test suite report"
+        uses: "dorny/test-reporter@main"
+        if: "success() || failure()"    # run this step even if previous step failed
+        with:
+          name: "PyTest Test Suite"
+          path: |
+            ./pytest-junit.xml
+          reporter: "java-junit"
 
-      - name: "Build a binary wheel and a source tarball"
-        if: "matrix.python-version == 3.10"
+      - name: "Archive code coverage reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "code-coverage-reports"
+          path: |
+            ./coverage*
+            ./htmlcov
+
+      - name: "Archive linter reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "linter-reports"
+          path: |
+            ./pylint*
+
+      # Release and publish
+
+      - name: "Bump version and publish release artifacts if on `master`/`develop`"
         env:
-          SETUPTOOLS_SCM_DEBUG: "true"
-        run: |
-          .tox/build/bin/python -m build
-
-      - name: "Publish distribution to Test PyPI for devel branches"
-        if: "(github.ref == 'refs/heads/develop') && (matrix.python-version == 3.10)"
-        uses: "pypa/gh-action-pypi-publish@master"
-        with:
-          password: "${{ secrets.test_pypi_password }}"
-          repository_url: "https://test.pypi.org/legacy/"
-
-      - name: "Publish distribution to PyPI for master"
-        if: "(github.ref == 'refs/heads/master') && (matrix.python-version == 3.10)"
-        uses: "pypa/gh-action-pypi-publish@master"
-        with:
-          password: "${{ secrets.pypi_password }}"
+          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+          # Enable the GitHub CLI
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          # Requires the secrets to be added to GitHub either through the web UI or the
+          # GitHub CLI tool:
+          # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+          PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+          TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        run: "make -e release"
+      # TODO: Push container image to GHCR? I don't currently need this but I can easily
+      #       imagine the value in it.

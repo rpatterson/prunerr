@@ -79,17 +79,21 @@ services:
         "http://radarr:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
         grep '"appData": *"/config"'
 
+  ## Container for use by end users
   prunerr-daemon:
-    image: "rpatterson/prunerr"
+    image: "merpatterson/prunerr:local"
+    build: "./"
     depends_on:
       - "transmission"
       - "sonarr"
       - "radarr"
     # Match permissions inside and outside the container
-    user: "${PUID:-1000}:${PGID:-100}"
     environment:
-      # Find the same configuration file even when run as another user, e.g. `root`.
-      HOME: "/home/prunerr"
+      # Make the run-time user configurable in `./.env` to match permissions inside and
+      # outside the container.  Default to the common/standard main/first user and group
+      # IDs
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-${PUID:-1000}}"
       # Un-comment to get more verbose `DEBUG` logging
       # DEBUG: "true"
     volumes:

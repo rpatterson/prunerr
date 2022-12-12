@@ -4,22 +4,60 @@ Prunerr
 Remove Servarr download client items to preserve disk space according to rules.
 *******************************************************************************
 
-**CAUTION**: Prunerr is currently in pre-alpha status and the risk of doing harm to the
-media libraries and download clients managed by Servarr is higher than it will be as it
-gets more testing.  Bugs in Prunerr may result in, but are not limited to, the following
-issues with download client items:
+.. list-table::
+   :class: borderless align-right
 
-- being deleted before they've met your seeding requirements
-- being moved out from under Servarr breaking file imports
-- stopping downloading when it shouldn't be stopped
-- misidentified as orphans and deleted early
+   * - .. figure:: https://img.shields.io/pypi/v/prunerr.svg?logo=pypi&label=PyPI&logoColor=gold
+          :alt: PyPI latest release version
+          :target: https://pypi.org/project/prunerr/
+       .. figure:: https://img.shields.io/pypi/dm/prunerr.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold
+          :alt: PyPI downloads per month
+          :target: https://pypi.org/project/prunerr/
+       .. figure:: https://img.shields.io/pypi/pyversions/prunerr.svg?logo=python&label=Python&logoColor=gold
+          :alt: PyPI Python versions
+          :target: https://pypi.org/project/prunerr/
+       .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
+          :alt: Python code style
+          :target: https://github.com/psf/black
 
-Please do use Prunerr, but use at your own risk and report all issues you encounter with
-full details.  Better yet, debug the issue, fix it, and submit a PR.  It's often
-impractical to keep a full backup of our media libraries, so set up a small sandbox with
-copies of media that can be safely deleted, make sure Prunerr is working smoothly for
-you for some time throughout the Servarr/Prunerr life-cycle before using it with your
-real library and even then understand the risks.
+     - .. figure:: https://gitlab.com/rpatterson/prunerr/-/badges/release.svg
+	  :alt: GitLab latest release
+	  :target: https://gitlab.com/rpatterson/prunerr/-/releases
+       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/master/pipeline.svg
+          :alt: GitLab CI/CD pipeline status
+          :target: https://gitlab.com/rpatterson/prunerr/-/commits/master
+       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/master/coverage.svg
+          :alt: GitLab coverage report
+	  :target: https://gitlab.com/rpatterson/prunerr/-/commits/master
+       .. figure:: https://img.shields.io/gitlab/stars/rpatterson/prunerr?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
+	  :alt: GitLab repo stars
+	  :target: https://gitlab.com/rpatterson/prunerr
+
+     - .. figure:: https://img.shields.io/github/v/release/rpatterson/prunerr?logo=github
+	  :alt: GitHub release (latest SemVer)
+	  :target: https://github.com/rpatterson/prunerr/releases
+       .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/ci-cd.yml/badge.svg
+          :alt: GitHub Actions status
+          :target: https://github.com/rpatterson/prunerr/
+       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/master/graph/badge.svg?token=GNKVQ8VYOU 
+          :alt: Codecov test coverage
+	  :target: https://codecov.io/github/rpatterson/prunerr
+       .. figure:: https://img.shields.io/github/stars/rpatterson/prunerr?logo=github
+	  :alt: GitHub repo stars
+	  :target: https://github.com/rpatterson/prunerr/
+
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr?sort=semver&logo=docker
+          :alt: Docker Hub image version (latest semver)
+          :target: https://hub.docker.com/r/merpatterson/prunerr
+       .. figure:: https://img.shields.io/docker/pulls/merpatterson/prunerr?logo=docker
+          :alt: Docker Hub image pulls count
+          :target: https://hub.docker.com/r/merpatterson/prunerr
+       .. figure:: https://img.shields.io/docker/stars/merpatterson/prunerr?logo=docker
+	  :alt: Docker Hub stars
+          :target: https://hub.docker.com/r/merpatterson/prunerr
+       .. figure:: https://img.shields.io/docker/image-size/merpatterson/prunerr?logo=docker
+	  :alt: Docker Hub image size (latest semver)
+          :target: https://hub.docker.com/r/merpatterson/prunerr
 
 
 *******
@@ -45,6 +83,8 @@ Servarr in the download client.
 Prunerr uses and requires a configuration file which defaults to
 ``~/.config/prunerr.yml``.  See the well-commented sample configuration:
 `<./src/prunerr/home/.config/prunerr.yml>`_.
+
+Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage details.
 
 
 ***********
@@ -124,74 +164,12 @@ system such as events from download clients and/or `Servarr`_ applications.
 - Set per-indexer/per-tracker priority for items in download clients
 
 
-****
-TODO
-****
-
-The following are known issues with Prunerr or features that are particularly desirable
-to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
-
-- Update docs after rewrite
-
-- Find a good way to review download items that are now only partially hard linked.
-  IOW, when only some episodes from one download item have replaced only some episodes
-  from another.  Maybe a partial/mixed status?
-
-- Send a notification when no download item can be deleted and downloading is paused:
-
-  Perhaps we can use the Servarr "Connect" API?
-
-- Improve configure-ability, particularly the various download client paths:
-
-  Currently, Prunerr strongly depends on using the ``.../incomplete/``,
-  ``.../downloads/``, ``.../imported/``,  and ``.../deleted/`` paths.  In theory, these
-  paths are all configurable, but that's untested.
-
-- 100% test coverage
-
-- Unit tests
-
-  The current tests are probably most accurately described as integration tests.  Any
-  tests that cover discreet units are welcome.
-
-- Resurrect the ``rename`` command.  See the ``feat(rename): Remove series title rename
-  support`` commit that removed it.
-
-- Support other download client software, not just `Transmission`_:
-
-  This would almost certainly require discussion before implementing, because how this
-  is down will be important for maintainability.  So open an issue and start the
-  discussion before you start implementing lest your work go to waste.  Currently,
-  Prunerr is way to tightly coupled with Transmission and the `Python RPC client
-  library`_ used to interface with it.  I suspect the best way to abstract it will be to
-  use that client library as a de facto abstract interface and then wrap other client
-  libraries to fulfill that interface, but that's one of the things to discuss.
-
-  It's also worth noting that the reason Transmission is the first supported download
-  client is because `it seems to be the best`_ at `managing large numbers of torrents
-  efficiently`_.  This is the most important download client quality given that the
-  primary purpose of Prunerr is to perma-seed whole media libraries and the number of
-  managed torrents will grow over time.
-
-- ``$ git grep -i -e todo``:
-
-  The above are the most important improvements that Prunerr definitely needs.  See ``#
-  TODO: ...`` comments throughout the source for other smaller, potential improvements.
-
-- Fix items with character mapping (Samba) treated as orphans.
-
-- Document that we prioritize first for free storage space then for seeding.
-
-- Items deleted from download client outside of Prunerr being re-added.
-
-
-.. _`Transmission`: https://transmissionbt.com/
-.. _`Transmission BitTorrent client`: `Transmission`_
-.. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/
-.. _`it seems to be the best`: https://www.reddit.com/r/DataHoarder/comments/3ve1oz/torrent_client_that_can_handle_lots_of_torrents/
-.. _`managing large numbers of torrents efficiently`: https://www.reddit.com/r/trackers/comments/3hiey5/does_anyone_here_seed_large_amounts_10000_of/
+.. _`Transmission BitTorrent client`: https://transmissionbt.com/
 
 .. _`Servarr`: https://wiki.servarr.com
 .. _`Radarr`: https://wiki.servarr.com/en/radarr
 .. _`Sonarr`: https://wiki.servarr.com/en/sonarr
 .. _`download clients`: https://wiki.servarr.com/radarr/settings#download-clients
+
+.. _the example ./docker-compose.yml file: https://github.com/rpatterson/prunerr/blob/master/docker-compose.yml
+.. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr

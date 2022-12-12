@@ -1,0 +1,18 @@
+[distutils]
+index-servers =
+    pypi
+    testpypi
+    gitlab
+
+[pypi]
+username = __token__
+password = ${PYPI_PASSWORD}
+
+[testpypi]
+username = __token__
+password = ${TEST_PYPI_PASSWORD}
+
+[gitlab]
+repository = https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/packages/pypi
+username = gitlab-ci-token
+password = ${CI_JOB_TOKEN}

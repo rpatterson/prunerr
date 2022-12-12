@@ -1,8 +1,8 @@
-==============================================================================
+###############################################
 python-project-structure
-==============================================================================
+###############################################
 Python project structure foundation or template
-------------------------------------------------------------------------------
+***********************************************
 
 .. list-table::
    :class: borderless align-right
@@ -50,8 +50,9 @@ that structure common to different variations can be merged back into the branch
 those specific variations.
 
 
+************
 Installation
-============
+************
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
@@ -60,8 +61,21 @@ Install using any tool for installing standard Python 3 distributions such as `p
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage details.
 
 
+************
+CONTRIBUTING
+************
+
+NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
+GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
+activity.
+
+See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
+development.
+
+
+**********
 Motivation
-==========
+**********
 
 There are many other Python project templates so why make another? I've been doing
 Python development since 1998, so I've had plenty of time to develop plenty of opinions
@@ -88,8 +102,13 @@ template.
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installing/
 
-.. _Makefile: https://github.com/rpatterson/python-project-structure/blob/master/Makefile
-.. _the example ./docker-compose.yml file: https://github.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
-
+.. _`This project is hosted on GitLab`:
+   https://gitlab.com/rpatterson/python-project-structure
+.. _`a mirror on GitHub`:
+   https://github.com/rpatterson/python-project-structure
 .. _`Docker`: https://docs.docker.com/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
+
+.. _Makefile: ./Makefile
+.. _`the example ./docker-compose.yml file`: ./docker-compose.yml
+.. _`the ./CONTRIBUTING.rst file`: ./CONTRIBUTING.rst

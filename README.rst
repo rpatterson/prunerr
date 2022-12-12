@@ -1,8 +1,8 @@
-==============================================================================
+###############################################
 python-project-structure
-==============================================================================
+###############################################
 Python project structure foundation or template
-------------------------------------------------------------------------------
+***********************************************
 
 .. list-table::
    :class: borderless align-right
@@ -37,16 +37,18 @@ that structure common to different variations can be merged back into the branch
 those specific variations.
 
 
+************
 Installation
-============
+************
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
   $ sudo pip3 install python-project-structure
 
 
+**********
 Motivation
-==========
+**********
 
 There are many other Python project templates so why make another? I've been doing
 Python development since 1998, so I've had plenty of time to develop plenty of opinions

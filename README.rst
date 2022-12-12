@@ -145,7 +145,7 @@ template.
 
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
-.. _pip: https://pip.pypa.io/en/stable/installing/
+.. _pip: https://pip.pypa.io/en/stable/installation/
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/python-project-structure

@@ -124,9 +124,9 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) ./var/log/gpg-import.log
 endif
+# Run first in case any input is needed from the developer
 	exit_code=0
-	cz_bump_stdout=$$(./.tox/build/bin/cz bump $${cz_bump_args} --dry-run) ||
-	    exit_code=$$?
+	./.tox/build/bin/cz bump $${cz_bump_args} --dry-run || exit_code=$$?
 	rm -fv "./var/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -139,12 +139,12 @@ endif
 	    exit $$exit_code
 	fi
 	next_version="$$(
-	    echo "$${cz_bump_stdout}" |
+	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
 	git fetch origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	./.tox/build/bin/towncrier check \
+	./.tox/py3/bin/towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -158,7 +158,7 @@ endif
 	./.tox/build/bin/towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
-	./.tox/build/bin/towncrier build --version "$${next_version}" --yes
+	./.tox/py3/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 
@@ -177,7 +177,7 @@ run: build-docker
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
 ifeq ($(RELEASE_PUBLISH),true)
-	./.tox/build/bin/towncrier check --compare-with "origin/develop"
+	./.tox/py3/bin/towncrier check --compare-with "origin/develop"
 endif
 
 .PHONY: release

@@ -12,6 +12,18 @@ up and build required for local development::
 
   $ make
 
+If there's not already `an issue/ticket`_ for the changes you'll be making, create one.
+Regardless, take note of the issue/ticket number, e.g. ``#123``.  Then create a
+branch/fork off of the ``develop`` branch::
+
+  $ git checkout -b feat-123-foo-bar origin/develop
+
+This project uses `towncrier`_ to manage it's release notes, AKA changelog and thus
+requires at least one `news fragment`_ before merging back into ``develop``.  The VCS
+hooks enforce this when pushing to ``develop`` or ``master``::
+
+  $ towncrier create 123.feature
+
 From there you can begin writing your tests or making other changes and run the tests to
 check your work.  For reproducibility and to expose clean build issues, the tests can be
 run inside the development container.  This is the command run by the VCS hooks and the
@@ -53,6 +65,11 @@ contributions are most welcome.
 
 .. _`Python's post-mortem debugger`:
    https://docs.python.org/3/library/pdb.html#pdb.post_mortem
+
+.. _`towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
+.. _`news fragment`: https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
+
+.. _`an issue/ticket`: https://gitlab.com/rpatterson/python-project-structure/-/issues
 
 .. _Makefile: ./Makefile
 .. _`the ./TODO.rst file`: ./TODO.rst

@@ -92,6 +92,7 @@ build-docker: ./var/log/docker-build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/recreate-build.log
+ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
 # Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
@@ -112,7 +113,6 @@ ifneq ($(GH_TOKEN),)
 endif
 endif
 	set -x
-ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -182,10 +182,7 @@ endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
-release: release-python
-ifeq ($(DOCKER_PUSH),true)
-	$(MAKE) release-docker
-endif
+release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
@@ -261,14 +258,32 @@ release-docker: build-docker
 ifeq ($(CI),true)
 	$(MAKE) ./var/log/docker-login.log
 endif
-	docker push -a "merpatterson/python-project-structure"
+	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+	docker push "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
+	docker push "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
+	docker push "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
+# Only update tags end users may depend on to be stable from the `master` branch
+	current_version=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
+	docker push "merpatterson/python-project-structure:$${minor_version}"
+	docker push "merpatterson/python-project-structure:$${major_version}"
+	docker push "merpatterson/python-project-structure:latest"
+	docker push "merpatterson/python-project-structure:devel"
+	docker push "$(CI_REGISTRY_IMAGE):$${minor_version}"
+	docker push "$(CI_REGISTRY_IMAGE):$${major_version}"
+	docker push "$(CI_REGISTRY_IMAGE):latest"
+	docker push "$(CI_REGISTRY_IMAGE):devel"
+	docker push "ghcr.io/rpatterson/python-project-structure:$${minor_version}"
+	docker push "ghcr.io/rpatterson/python-project-structure:$${major_version}"
+	docker push "ghcr.io/rpatterson/python-project-structure:latest"
+	docker push "ghcr.io/rpatterson/python-project-structure:devel"
 	docker compose run --rm docker-pushrm
-	docker push -a "$(CI_REGISTRY_IMAGE)"
-	docker push -a "ghcr.io/rpatterson/python-project-structure"
-# Only push the development images to CI/CD platforms for caching
-ifeq ($(CI),true)
-	docker push "$(CI_REGISTRY_IMAGE)-devel"
-	docker push "ghcr.io/rpatterson/python-project-structure-devel"
 endif
 
 .PHONY: format
@@ -382,63 +397,80 @@ endif
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	current_version=$$(./.tox/build/bin/cz version --project)
+# https://github.com/moby/moby/issues/39003#issuecomment-879441675
+	docker_build_args=" \
+	    --build-arg BUILDKIT_INLINE_CACHE=1 \
+	    --build-arg VERSION=$${current_version}"
+	docker_build_user_tags=" \
+	    --tag merpatterson/python-project-structure:local \
+	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
+	    --tag merpatterson/python-project-structure:$${current_version}\
+	    --tag $(CI_REGISTRY_IMAGE):$(VCS_BRANCH) \
+	    --tag $(CI_REGISTRY_IMAGE):$${current_version}\
+	    --tag ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH) \
+	    --tag ghcr.io/rpatterson/python-project-structure:$${current_version}"
+ifeq ($(VCS_BRANCH),master)
+# Only update tags end users may depend on to be stable from the `master` branch
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-# Build the end-user container image
-	docker_build_args="--pull"
+	docker_build_user_tags+=" \
+	    --tag merpatterson/python-project-structure:$${minor_version} \
+	    --tag merpatterson/python-project-structure:$${major_version} \
+	    --tag merpatterson/python-project-structure:latest \
+	    --tag $(CI_REGISTRY_IMAGE):$${minor_version} \
+	    --tag $(CI_REGISTRY_IMAGE):$${major_version} \
+	    --tag $(CI_REGISTRY_IMAGE):latest \
+	    --tag ghcr.io/rpatterson/python-project-structure:$${minor_version} \
+	    --tag ghcr.io/rpatterson/python-project-structure:$${major_version} \
+	    --tag ghcr.io/rpatterson/python-project-structure:latest"
+endif
+	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(CI_REGISTRY_IMAGE):latest" || true
-	docker_build_args+=" --cache-from \
-	    type=registry,ref=$(CI_REGISTRY_IMAGE):latest"
+	docker pull "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)" || true
+	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
 # Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
-	docker pull "ghcr.io/rpatterson/python-project-structure:latest" || true
-	docker_build_args+=" --cache-from \
-	    type=registry,ref=ghcr.io/rpatterson/python-project-structure:latest"
+	docker pull "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)" || true
+	docker_build_caches+=" --cache-from \
+	    ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
 endif
 endif
-	docker buildx build $${docker_build_args} \
-	    --tag "merpatterson/python-project-structure:$${current_version}" \
-	    --tag "merpatterson/python-project-structure:$${minor_version}" \
-	    --tag "merpatterson/python-project-structure:$${major_version}" \
-	    --tag "merpatterson/python-project-structure:latest" \
-	    --tag "$(CI_REGISTRY_IMAGE):$${current_version}" \
-	    --tag "$(CI_REGISTRY_IMAGE):$${minor_version}" \
-	    --tag "$(CI_REGISTRY_IMAGE):$${major_version}" \
-	    --tag "$(CI_REGISTRY_IMAGE):latest" \
-	    --tag "ghcr.io/rpatterson/python-project-structure:$${current_version}" \
-	    --tag "ghcr.io/rpatterson/python-project-structure:$${minor_version}" \
-	    --tag "ghcr.io/rpatterson/python-project-structure:$${major_version}" \
-	    --tag "ghcr.io/rpatterson/python-project-structure:latest" "./" | tee -a "$(@)"
+	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	    $${docker_build_caches} "./" | tee -a "$(@)"
 # Build the development image
-	docker_build_args="--pull"
+	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(CI_REGISTRY_IMAGE)-devel:latest" || true
-	docker_build_args+=" --cache-from \
-	    type=registry,ref=$(CI_REGISTRY_IMAGE)-devel:latest"
+	docker pull "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)" || true
+	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "ghcr.io/rpatterson/python-project-structure-devel:latest" || true
-	docker_build_args+=" --cache-from \
-	    type=registry,ref=ghcr.io/rpatterson/python-project-structure-devel:latest"
+	docker pull "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)" || true
+	docker_build_caches+=" --cache-from \
+	    ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
 endif
 endif
-	docker buildx build $${docker_build_args} \
-	    --tag "merpatterson/python-project-structure-devel:latest" \
+	docker buildx build $${docker_build_args} $${docker_build_caches} \
+	    --tag "merpatterson/python-project-structure:devel" \
+	    --tag "merpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
+	    --tag "$(CI_REGISTRY_IMAGE):devel" \
+	    --tag "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)" \
+	    --tag "ghcr.io/rpatterson/python-project-structure:devel" \
+	    --tag "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 # Prepare the testing environment and tools as much as possible to reduce development
 # iteration time when using the image.
-	docker compose run --rm python-project-structure-devel make build-local
+	docker compose run --rm python-project-structure-devel make build-local |
+	    tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

@@ -69,7 +69,7 @@ packaging==22.0
     #   pytest
     #   setuptools-scm
     #   tox
-pathspec==0.10.2
+pathspec==0.10.3
     # via black
 pep517==0.13.0
     # via build
@@ -126,7 +126,7 @@ tomli==2.0.1
     #   tox
 tomlkit==0.11.6
     # via pylint
-tox==4.0.4
+tox==4.0.8
     # via python-project-structure (./pyproject.toml)
 typer[all]==0.7.0
     # via rstcheck

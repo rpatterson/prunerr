@@ -42,8 +42,8 @@ def foobar(quiet=False):
 
 parser_foobar = subparsers.add_parser(
     "foobar",
-    help=foobar.__doc__.strip(),
-    description=foobar.__doc__.strip(),
+    help=foobar.__doc__.strip(),  # type: ignore
+    description=foobar.__doc__.strip(),  # type: ignore
 )
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.

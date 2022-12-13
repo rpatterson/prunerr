@@ -59,6 +59,14 @@ Perma-seed Servarr media libraries
 	  :alt: Docker Hub image size (latest semver)
           :target: https://hub.docker.com/r/merpatterson/prunerr
 
+TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
+
+- Delete torrents/items only as disk space gets low.
+- Don't delete currently imported items.  IOW, only delete upgraded items.
+- Don't delete private items that haven't met seeding requirements.
+- Delete public items first
+- Delete private items in an order to maximize tracker ratio and/or bonuses.
+- And more...
 
 *******
 Summary

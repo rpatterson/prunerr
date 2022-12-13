@@ -16,7 +16,6 @@ servarrs:
     api-key: ""
     type: "radarr"
 download-clients:
-  ## TODO: Support multiple download clients
   ## Support managing download clients without Servarr instances, use these URLs to
   ## connect to download clients instead of looking them up from Servarr settings.
   # urls:

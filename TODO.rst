@@ -53,7 +53,7 @@ Nice to Have
 #. Support other download client software, not just `Transmission`_:
 
    This would almost certainly require discussion before implementing, because how this
-   is down will be important for maintainability.  So open an issue and start the
+   is done would be important for maintainability.  So open an issue and start the
    discussion before you start implementing lest your work go to waste.  Currently,
    Prunerr is way to tightly coupled with Transmission and the `Python RPC client
    library`_ used to interface with it.  I suspect the best way to abstract it will be

@@ -58,7 +58,7 @@ incremental==22.10.0
     # via towncrier
 iniconfig==1.1.1
     # via pytest
-isort==5.10.1
+isort==5.11.2
     # via pylint
 jinja2==3.1.2
     # via towncrier
@@ -70,8 +70,12 @@ mccabe==0.7.0
     # via
     #   flake8
     #   pylint
+mypy==0.991
+    # via python-project-structure (./pyproject.toml)
 mypy-extensions==0.4.3
-    # via black
+    # via
+    #   black
+    #   mypy
 packaging==22.0
     # via
     #   build
@@ -128,6 +132,7 @@ tomli==2.0.1
     #   black
     #   build
     #   flake8-black
+    #   mypy
     #   pep517
     #   pylint
     #   pyproject-api
@@ -139,7 +144,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.8.0
     # via python-project-structure (./pyproject.toml)
-tox==4.0.8
+tox==4.0.9
     # via python-project-structure (./pyproject.toml)
 typer[all]==0.7.0
     # via rstcheck
@@ -147,6 +152,7 @@ types-docutils==0.19.1.1
     # via rstcheck-core
 typing-extensions==4.4.0
     # via
+    #   mypy
     #   pydantic
     #   setuptools-scm
 virtualenv==20.17.1

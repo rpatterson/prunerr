@@ -3,4 +3,4 @@
 
 ((python-mode . ((flycheck-python-flake8-executable . "${PWD}/.tox/py3/bin/python")
 		 (flycheck-python-pylint-executable . "${PWD}/.tox/py3/bin/python")
-		 (flycheck-python-mypy-executable . "${PWD}/.tox/py3/bin/python"))))
+		 (flycheck-python-mypy-executable . "${PWD}/.tox/py3/bin/mypy"))))

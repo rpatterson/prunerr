@@ -63,7 +63,7 @@ build-test-release-job:
     # development
     - "addgroup -g $PGID runner"
     - "adduser -u $PUID -G runner -g 'CI Runner,,,' -D runner"
-    - "chown -Rc $PUID:$PGID ./"
+    - "chown -R $PUID:$PGID ./"
     # Hand off the rest to `$ make` as the unprivileged user
     - "su runner -c 'make -e build-bump build-docker test-docker release'"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
@@ -84,9 +84,3 @@ build-test-release-job:
       coverage_report:
         coverage_format: "cobertura"
         path: "./coverage.xml"
-
-
-# TODO: Cache Docker build cache and `./.tox*` directories but not on `master`
-
-# TODO: Push container image to GitLab container registry? I don't currently need this
-#       but I can easily imagine the value in it.

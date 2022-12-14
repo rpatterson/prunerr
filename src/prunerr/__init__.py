@@ -62,8 +62,8 @@ def verify(runner, *args, **kwargs):  # pylint: disable=missing-function-docstri
 verify.__doc__ = prunerr.runner.PrunerrRunner.verify.__doc__
 parser_verify = subparsers.add_parser(
     "verify",
-    help=verify.__doc__.strip(),
-    description=verify.__doc__.strip(),
+    help=verify.__doc__.strip(),  # type: ignore
+    description=verify.__doc__.strip(),  # type: ignore
 )
 parser_verify.set_defaults(command=verify)
 
@@ -76,8 +76,8 @@ def move(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
 move.__doc__ = prunerr.runner.PrunerrRunner.move.__doc__
 parser_move = subparsers.add_parser(
     "move",
-    help=move.__doc__.strip(),
-    description=move.__doc__.strip(),
+    help=move.__doc__.strip(),  # type: ignore
+    description=move.__doc__.strip(),  # type: ignore
 )
 parser_move.set_defaults(command=move)
 
@@ -90,8 +90,8 @@ def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstri
 review.__doc__ = prunerr.runner.PrunerrRunner.review.__doc__
 parser_review = subparsers.add_parser(
     "review",
-    help=review.__doc__.strip(),
-    description=review.__doc__.strip(),
+    help=review.__doc__.strip(),  # type: ignore
+    description=review.__doc__.strip(),  # type: ignore
 )
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
@@ -106,8 +106,8 @@ def free_space(runner, *args, **kwargs):  # pylint: disable=missing-function-doc
 free_space.__doc__ = prunerr.runner.PrunerrRunner.free_space.__doc__
 parser_free_space = subparsers.add_parser(
     "free-space",
-    help=free_space.__doc__.strip(),
-    description=free_space.__doc__.strip(),
+    help=free_space.__doc__.strip(),  # type: ignore
+    description=free_space.__doc__.strip(),  # type: ignore
 )
 parser_free_space.set_defaults(command=free_space)
 
@@ -127,8 +127,8 @@ def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstrin
 exec_.__doc__ = prunerr.runner.PrunerrRunner.exec_.__doc__
 parser_exec = subparsers.add_parser(
     "exec",
-    help=exec_.__doc__.strip(),
-    description=exec_.__doc__.strip(),
+    help=exec_.__doc__.strip(),  # type: ignore
+    description=exec_.__doc__.strip(),  # type: ignore
 )
 parser_exec.set_defaults(command=exec_)
 
@@ -140,8 +140,8 @@ def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstri
 daemon.__doc__ = prunerr.runner.PrunerrRunner.daemon.__doc__
 parser_daemon = subparsers.add_parser(
     "daemon",
-    help=daemon.__doc__.strip(),
-    description=daemon.__doc__.strip(),
+    help=daemon.__doc__.strip(),  # type: ignore
+    description=daemon.__doc__.strip(),  # type: ignore
 )
 parser_daemon.set_defaults(command=daemon)
 

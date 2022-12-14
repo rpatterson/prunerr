@@ -57,6 +57,9 @@ max-line-length = "88"
 # else wants to take the time to move the `TODO`s into `./TODO.rst`, I won't object as
 # long as sufficient context comes along with them.
 disable = ["fixme"]
+[[tool.mypy.overrides]]
+module = ["transmission_rpc", "arrapi.*"]
+ignore_missing_imports = true
 
 [tool.isort]
 # Match Black's defaults

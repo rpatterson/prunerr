@@ -70,6 +70,7 @@ endif
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
 	fi
+	cz_bump_args+=" --yes"
 	next_version="$$(
 	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'

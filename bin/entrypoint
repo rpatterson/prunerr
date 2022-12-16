@@ -13,7 +13,7 @@ fi
 
 
 main() {
-    if [ ! -z "${PUID}" ]
+    if [ ! -z "${PUID:-}" ]
     then
 	if (( $(id -u) != 0 ))
 	then

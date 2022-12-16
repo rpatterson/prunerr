@@ -142,6 +142,7 @@ endif
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
 	fi
+	cz_bump_args+=" --yes"
 	next_version="$$(
 	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
@@ -391,7 +392,7 @@ endif
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
-	rm -vf ./dist/* ./.tox/dist/* | tee -a "$(@)"
+	rm -vf ./dist/* ./.tox/.pkg/dist/* | tee -a "$(@)"
 	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log

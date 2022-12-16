@@ -147,7 +147,9 @@ class PrunerrRunner:
         # they're moved and excluded from future review.
         # Also run before `free-space` in case it removes items.
         if "reviews" in self.config.get("indexers", {}):
-            results["review"] = self.review()
+            review_results = self.review()
+            if review_results is not None:
+                results["review"] = review_results
 
         # Run `move` before `free-spacce` so that all download items that could be
         # eligible for deletion are in the `seeding` directory.

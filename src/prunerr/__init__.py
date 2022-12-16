@@ -122,14 +122,19 @@ parser_free_space.set_defaults(command=free_space)
 
 def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
     runner.update()
+    results = {}
     exec_results = runner.exec_(*args, **kwargs)
+    if exec_results is not None:
+        results.update(exec_results)
 
     # Wait for all verifying torrents to finish when doing a single `exec` run.
     resume_results = runner.resume_verified_items(wait=True)
     if resume_results:
-        exec_results["verify"] = resume_results
+        results["verify"] = resume_results
 
-    return exec_results
+    if results:
+        return results
+    return None  # pragma: no cover
 
 
 exec_.__doc__ = prunerr.runner.PrunerrRunner.exec_.__doc__

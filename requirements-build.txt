@@ -38,7 +38,7 @@ docutils==0.19
     # via readme-renderer
 filelock==3.8.2
     # via virtualenv
-identify==2.5.9
+identify==2.5.10
     # via pre-commit
 idna==3.4
     # via requests
@@ -68,7 +68,7 @@ packaging==22.0
     #   commitizen
 pep517==0.13.0
     # via build
-pip-tools==6.11.0
+pip-tools==6.12.0
     # via -r ./requirements-build.txt.in
 pkginfo==1.9.2
     # via twine

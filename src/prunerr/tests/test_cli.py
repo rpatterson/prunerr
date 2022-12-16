@@ -78,7 +78,9 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
+            prunerr.main(
+                args=["--log-level", "DEBUG", f"--config={self.CONFIG}", "exec"],
+            ),
             "Wrong console script options return value",
         )
         self.assert_request_mocks(request_mocks)

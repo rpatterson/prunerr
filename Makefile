@@ -70,6 +70,7 @@ endif
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
 	fi
+	cz_bump_args+=" --yes"
 	next_version="$$(
 	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
@@ -102,7 +103,7 @@ release: ./var/log/recreate-build.log ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
 	./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/* ./.tox/dist/*
+	./.tox/build/bin/twine check ./dist/* ./.tox/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -117,7 +118,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -191,7 +192,7 @@ expand-template: ./var/log/host-install.log
 		./requirements.txt ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
-	rm -vf ./dist/* ./.tox/dist/* | tee -a "$(@)"
+	rm -vf ./dist/* ./.tox/.pkg/dist/* | tee -a "$(@)"
 	tox -r --notest -v | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log

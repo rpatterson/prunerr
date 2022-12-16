@@ -118,6 +118,7 @@ def _main(args=None):
 
     # Configure logging for CLI usage
     config_cli_logging(**shared_kwargs)
+    shared_kwargs.pop("log_level", None)
 
     # Delegate to the function for the sub-command CLI argument
     logger.info("Running %r sub-command", parsed_args.command.__name__)

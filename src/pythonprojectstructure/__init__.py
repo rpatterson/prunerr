@@ -5,6 +5,7 @@ Python project structure foundation or template, top-level package.
 import logging
 import argparse
 import pprint
+import pdb
 
 from . import utils
 
@@ -82,6 +83,18 @@ def config_cli_logging(
 
 
 def main(args=None):  # pylint: disable=missing-function-docstring
+    try:
+        _main(args=args)
+    except Exception:  # pragma: no cover
+        if utils.POST_MORTEM:
+            pdb.post_mortem()
+        raise
+
+
+def _main(args=None):
+    """
+    Inner main CLI handler for outer exception handling.
+    """
     # Parse CLI options and positional arguments
     parsed_args = parser.parse_args(args=args)
     # Avoid noisy boilerplate, functions meant to handle CLI usage should accept kwargs

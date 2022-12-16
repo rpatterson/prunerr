@@ -2,10 +2,11 @@
 Python project structure foundation or template, top-level package.
 """
 
-import os
 import logging
 import argparse
 import pprint
+
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -64,12 +65,7 @@ def config_cli_logging(
     """
     # Want just our logger's level, not others', to be controlled by options/environment
     logging.basicConfig(level=root_level)
-    if "DEBUG" in os.environ and os.getenv("DEBUG").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }:  # pragma: no cover
+    if utils.DEBUG:  # pragma: no cover
         level = logging.DEBUG
     else:
         level = logging.INFO

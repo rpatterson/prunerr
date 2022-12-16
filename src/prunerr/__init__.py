@@ -216,6 +216,7 @@ def _main(args=None):
 
     # Configure logging for CLI usage
     config_cli_logging(**shared_kwargs)
+    shared_kwargs.pop("log_level", None)
 
     runner = prunerr.runner.PrunerrRunner(**shared_kwargs)
     # Delegate to the function for the sub-command CLI argument

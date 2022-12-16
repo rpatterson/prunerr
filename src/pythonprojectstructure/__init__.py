@@ -2,10 +2,12 @@
 Python project structure foundation or template, top-level package.
 """
 
-import os
 import logging
 import argparse
 import pprint
+import pdb
+
+from . import utils
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,13 @@ else:  # pragma: no cover
 parser = argparse.ArgumentParser(
     description=__doc__.strip(),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+parser.add_argument(
+    "--log-level",
+    default=argparse.SUPPRESS,
+    # I only wish the `logging` module provided public access to all defined levels
+    choices=logging._nameToLevel,  # pylint: disable=protected-access
+    help="Select logging verbosity. (default: INFO)",
 )
 # Define CLI sub-commands
 subparsers = parser.add_subparsers(
@@ -57,27 +66,35 @@ parser_foobar.add_argument(
 
 
 def config_cli_logging(
-    root_level=logging.INFO, **kwargs
+    root_level=logging.INFO, log_level=parser.get_default("--log-level"), **kwargs
 ):  # pylint: disable=unused-argument
     """
-    Configure logging CLI usage first, but also appropriate for writing to log files.
+    Configure logging CLI usage as early as possible to affect all output.
     """
     # Want just our logger's level, not others', to be controlled by options/environment
     logging.basicConfig(level=root_level)
-    if "DEBUG" in os.environ and os.getenv("DEBUG").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "on",
-    }:  # pragma: no cover
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
-    logger.setLevel(level)
-    return level
+    # If the CLI option was not specified, fallback to the environment variable
+    if log_level is None:
+        log_level = "INFO"
+        if utils.DEBUG:  # pragma: no cover
+            log_level = "DEBUG"
+    logger.setLevel(getattr(logging, log_level.strip().upper()))
+    return log_level
 
 
 def main(args=None):  # pylint: disable=missing-function-docstring
+    try:
+        _main(args=args)
+    except Exception:  # pragma: no cover
+        if utils.POST_MORTEM:
+            pdb.post_mortem()
+        raise
+
+
+def _main(args=None):
+    """
+    Inner main CLI handler for outer exception handling.
+    """
     # Parse CLI options and positional arguments
     parsed_args = parser.parse_args(args=args)
     # Avoid noisy boilerplate, functions meant to handle CLI usage should accept kwargs

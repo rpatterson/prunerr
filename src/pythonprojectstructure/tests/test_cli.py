@@ -71,7 +71,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The command line script accepts options controlling behavior.
         """
         self.assertIsNone(
-            pythonprojectstructure.main(args=["foobar", "-q"]),
+            pythonprojectstructure.main(args=["--log-level", "DEBUG", "foobar", "-q"]),
             "Wrong console script options return value",
         )
 

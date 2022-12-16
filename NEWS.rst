@@ -1,3 +1,18 @@
+Prunerr 1.1.0b0 (2022-12-16)
+============================
+
+Features
+--------
+
+- Add ``--log-level`` CLI option to give the user more control over output verbosity. (cli-log-level)
+
+
+Bugfixes
+--------
+
+- Don't report ``review`` results from the ``exec`` sub-command when there are none. (review-empty-results)
+
+
 Prunerr 1.0.0 (2022-12-13)
 ==========================
 

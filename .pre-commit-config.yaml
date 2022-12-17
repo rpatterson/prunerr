@@ -1,4 +1,5 @@
 # Run all test, linters and other code checks before committing and pushing.
+fail_fast: true
 repos:
 # Check commit message format and style before pushing to a remote
   - repo: https://github.com/commitizen-tools/commitizen

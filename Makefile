@@ -190,7 +190,7 @@ format: build-local
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test: build-docker format
+test: build-docker
 # Run from the development Docker container for consistency
 	docker compose run --rm python-project-structure-devel make format test-local
 .PHONY: test-local

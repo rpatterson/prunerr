@@ -2,17 +2,17 @@
 fail_fast: true
 repos:
 # Check commit message format and style before pushing to a remote
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v2.37.0
+  - repo: "https://github.com/commitizen-tools/commitizen"
+    rev: "v2.37.0"
     hooks:
-      - id: commitizen
+      - id: "commitizen"
 # Checks defined in the `./Makefile`
   - repo: "local"
     hooks:
 # Fail fast, run quicker checks first
     - id: "check-push"
       name: "check-push"
-      stages: [push]
+      stages: ["push"]
       entry: "make check-push"
       language: "python"
       pass_filenames: false

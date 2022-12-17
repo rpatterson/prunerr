@@ -19,6 +19,7 @@ repos:
 # Only run the longer running test check after everything else
     - id: "test"
       name: "test"
+      stages: ["commit", "merge-commit", "push", "manual"]
       entry: "make test"
       language: "python"
       pass_filenames: false

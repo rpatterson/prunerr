@@ -212,7 +212,7 @@ test-debug: ./var/log/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./pyproject.toml"
+	touch "./setup.cfg"
 	$(MAKE) PUID=$(PUID) "test"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate

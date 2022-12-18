@@ -2,12 +2,13 @@
 Remove Servarr download client items to preserve disk space according to rules.
 """
 
+import sys
 import contextlib
 import logging
 import pathlib  # TODO: replace os.path
 import argparse
-import pprint
 import mimetypes
+import json
 import pdb
 
 import prunerr.runner
@@ -225,12 +226,12 @@ def _main(args=None):
 
     runner = prunerr.runner.PrunerrRunner(**shared_kwargs)
     # Delegate to the function for the sub-command CLI argument
-    logger.info("Running %r sub-command", parsed_args.command.__name__)
+    logger.debug("Running %r sub-command", parsed_args.command.__name__)
     # Sub-commands may return a result to be pretty printed, or handle output themselves
     # and return nothing.
     result = parsed_args.command(runner, **command_kwargs)
     if result is not None:
-        pprint.pprint(result)
+        json.dump(result, sys.stdout, indent=2)
 
 
 main.__doc__ = __doc__

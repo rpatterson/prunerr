@@ -79,6 +79,13 @@ Django, etc.), libraries and such, branches will be used for each such variation
 that structure common to different variations can be merged back into the branches for
 those specific variations.
 
+Do not use the ``develop`` or ``master`` branches in your project as those branches are
+used to test the CI/CD automatic releases process and as such contain bumped versions,
+release notes, and other release artifacts that shouldn't be merged into real projects.
+On that same note, when adding this template as a remote be sure to configure it with
+``$ git config remote.template.tagOpt --no-tags`` to avoid clashing VCS versions in your
+project.
+
 
 ************
 Installation

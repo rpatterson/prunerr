@@ -34,7 +34,7 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-coverage==6.5.0
+coverage==7.0.0
     # via python-project-structure (./pyproject.toml)
 dill==0.3.6
     # via pylint
@@ -144,7 +144,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.8.0
     # via python-project-structure (./pyproject.toml)
-tox==4.0.13
+tox==4.0.14
     # via python-project-structure (./pyproject.toml)
 typer[all]==0.7.0
     # via rstcheck

@@ -144,7 +144,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.8.0
     # via python-project-structure (./pyproject.toml)
-tox==4.0.12
+tox==4.0.13
     # via python-project-structure (./pyproject.toml)
 typer[all]==0.7.0
     # via rstcheck

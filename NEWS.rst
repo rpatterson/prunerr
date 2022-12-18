@@ -1,3 +1,12 @@
+Prunerr 1.1.0b3 (2022-12-18)
+============================
+
+Features
+--------
+
+- Return CLI results as JSON. (json-results)
+
+
 Prunerr 1.1.0b2 (2022-12-18)
 ============================
 

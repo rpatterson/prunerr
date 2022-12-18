@@ -68,7 +68,7 @@ packaging==22.0
     #   commitizen
 pep517==0.13.0
     # via build
-pip-tools==6.12.0
+pip-tools==6.12.1
     # via -r ./requirements-build.txt.in
 pkginfo==1.9.2
     # via twine

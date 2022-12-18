@@ -119,7 +119,7 @@ pyflakes==3.0.1
     #   flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.8
+pylint==2.15.9
     # via prunerr (./pyproject.toml)
 pyproject-api==1.2.1
     # via tox
@@ -142,7 +142,7 @@ rstcheck-core==1.0.3
     # via rstcheck
 service-logging==0.1.1
     # via prunerr (./pyproject.toml)
-setuptools-scm==7.0.5
+setuptools-scm==7.1.0
     # via prunerr (./pyproject.toml)
 shellingham==1.5.0
     # via typer

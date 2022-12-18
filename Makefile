@@ -307,7 +307,7 @@ format: build-local
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test: build-docker format
+test: build-docker
 # Run from the development Docker container for consistency
 	docker compose run --rm python-project-structure-devel make format test-local
 .PHONY: test-local
@@ -330,7 +330,7 @@ test-debug: ./var/log/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./pyproject.toml"
+	touch "./setup.cfg"
 	$(MAKE) PUID=$(PUID) "test"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate

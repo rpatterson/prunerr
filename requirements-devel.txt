@@ -58,7 +58,7 @@ incremental==22.10.0
     # via towncrier
 iniconfig==1.1.1
     # via pytest
-isort==5.11.2
+isort==5.11.3
     # via pylint
 jinja2==3.1.2
     # via towncrier
@@ -109,7 +109,7 @@ pyflakes==3.0.1
     #   flake8
 pygments==2.13.0
     # via rich
-pylint==2.15.8
+pylint==2.15.9
     # via python-project-structure (./pyproject.toml)
 pyproject-api==1.2.1
     # via tox
@@ -121,7 +121,7 @@ rstcheck==6.1.1
     # via python-project-structure (./pyproject.toml)
 rstcheck-core==1.0.3
     # via rstcheck
-setuptools-scm==7.0.5
+setuptools-scm==7.1.0
     # via python-project-structure (./pyproject.toml)
 shellingham==1.5.0
     # via typer
@@ -144,7 +144,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.8.0
     # via python-project-structure (./pyproject.toml)
-tox==4.0.11
+tox==4.0.12
     # via python-project-structure (./pyproject.toml)
 typer[all]==0.7.0
     # via rstcheck

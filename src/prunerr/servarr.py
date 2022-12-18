@@ -319,7 +319,7 @@ class PrunerrServarrDownloadClient:
                 "downloadDir"
             ]._replace(value=self.seeding_dir)
             vars(download_item).pop("path", None)
-        return download_items
+        return [download_item.hashString for download_item in download_items]
 
 
 def deserialize_servarr_download_client(download_client_config):

@@ -126,7 +126,7 @@ class PrunerrDownloadClient:
         for item in [item for item in self.items if download_dir in item.path.parents]:
             item_results = item.review(servarr_queue)
             if item_results:
-                results[item] = item_results
+                results[item.hashString] = item_results
         return results
 
     # Other, non-sub-command methods

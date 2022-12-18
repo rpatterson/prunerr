@@ -372,7 +372,7 @@ class PrunerrRunner:
                     results.setdefault(
                         download_client_url,
                         [],
-                    ).append(download_item)
+                    ).append(download_item.hashString)
                     download_clients = self.free_space_download_clients()
                     break
                 if removed_size:

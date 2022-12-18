@@ -2,9 +2,10 @@
 Python project structure foundation or template, top-level package.
 """
 
+import sys
 import logging
 import argparse
-import pprint
+import json
 import pdb
 
 from . import utils
@@ -121,12 +122,12 @@ def _main(args=None):
     shared_kwargs.pop("log_level", None)
 
     # Delegate to the function for the sub-command CLI argument
-    logger.info("Running %r sub-command", parsed_args.command.__name__)
+    logger.debug("Running %r sub-command", parsed_args.command.__name__)
     # Sub-commands may return a result to be pretty printed, or handle output themselves
     # and return nothing.
     result = parsed_args.command(**command_kwargs)
     if result is not None:
-        pprint.pprint(result)
+        json.dump(result, sys.stdout, indent=2)
 
 
 main.__doc__ = __doc__

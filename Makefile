@@ -11,6 +11,13 @@ MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
 
+# Variables/options that affect behavior
+# https://devguide.python.org/versions/#supported-versions
+PYTHON_VERSION=3.11
+
+# Values derived from constants
+PYTHON_ENV=py$(subst .,,$(PYTHON_VERSION))
+
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
@@ -165,6 +172,8 @@ release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(./.tox/build/bin/cz version --project)
@@ -176,6 +185,10 @@ ifeq ($(VCS_BRANCH),master)
 	docker push "merpatterson/python-project-structure:$${major_version}"
 	docker push "merpatterson/python-project-structure:latest"
 	docker push "merpatterson/python-project-structure:devel"
+	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version}"
+	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version}"
+	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)"
+	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
 	docker compose run --rm docker-pushrm
 endif
 
@@ -283,11 +296,15 @@ expand-template: ./var/log/host-install.log
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args=" \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
+	    --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
 	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
 	    --tag merpatterson/python-project-structure:local \
 	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
-	    --tag merpatterson/python-project-structure:$${current_version}"
+	    --tag merpatterson/python-project-structure:$${current_version} \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-local \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH) \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${current_version}"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
@@ -297,13 +314,18 @@ ifeq ($(VCS_BRANCH),master)
 	docker_build_user_tags+=" \
 	    --tag merpatterson/python-project-structure:$${minor_version} \
 	    --tag merpatterson/python-project-structure:$${major_version} \
-	    --tag merpatterson/python-project-structure:latest"
+	    --tag merpatterson/python-project-structure:latest \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version} \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version} \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)"
 endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./" | tee -a "$(@)"
 	docker buildx build $${docker_build_args} \
 	    --tag "merpatterson/python-project-structure:devel" \
 	    --tag "merpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
+	    --tag "merpatterson/python-project-structure:$(PYTHON_ENV)-devel" \
+	    --tag "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 
 # Local environment variables from a template

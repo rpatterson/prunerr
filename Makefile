@@ -10,8 +10,12 @@ SHELL:=bash
 MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
+EMPTY=
+COMMA=,
 
 # Variables/options that affect behavior
+# Support passing in the Python versions to test, including testing one version:
+#     $ make PYTHON_VERSIONS=3.11 test
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_VERSIONS=3.11 3.10 3.9 3.8 3.7
 
@@ -20,6 +24,11 @@ PYTHON_VERSION=$(firstword $(PYTHON_VERSIONS))
 PYTHON_ENV=py$(subst .,,$(PYTHON_VERSION))
 PYTHON_SHORT_VERSIONS=$(subst .,,$(PYTHON_VERSIONS))
 PYTHON_ENVS=$(PYTHON_SHORT_VERSIONS:%=py%)
+TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
+ifeq ($(words $(PYTHON_VERSIONS)),1)
+TOX_RUN_ARGS=run
+endif
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -153,7 +162,7 @@ format: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
 test: build
-	tox run-parallel --parallel auto --parallel-live
+	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
@@ -220,7 +229,8 @@ $(PYTHON_ENVS:%=./requirements-%.txt): \
 	$(MAKE) "./var/log/host-install.log"
 	touch $(PYTHON_ENVS:%=./requirements-devel-%.txt) "./requirements-build.txt"
 # Delegate parallel build all Python environments to tox.
-	tox run-parallel --notest --pkg-only --parallel auto --parallel-live -e "ALL"
+	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
+	    -e "build,$(TOX_ENV_LIST)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"

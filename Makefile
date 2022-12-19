@@ -180,19 +180,31 @@ expand-template: ./var/log/host-install.log
 
 ## Real targets
 
+# Manage fixed/pinned versions in `./requirements*.txt` files.
+# Has to be run in the same python environment that packages are built in:
+# https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 ./requirements-devel.txt: \
-		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
-		./requirements-build.txt.in
-	tox -e "build"
-# Avoid a tox recreation loop
-	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
+		./pyproject.toml ./setup.cfg ./tox.ini ./var/log/host-install.log
+# Bootstrap the environment for this Python version, needed for initial creation
+	touch "$(@)"
+	test -x "./.tox/py3/bin/pip-compile" || tox --notest -e "py3"
+# Once the environment is created, use it to compiled pinned versions
+	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade \
+	    --output-file="$(@:%-devel.txt=%.txt)" "$(<)"
+	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade --extra="devel" \
+	    --output-file="$(@)" "$(<)"
 ./requirements.txt: ./requirements-devel.txt
+./requirements-build.txt: ./requirements-build.txt.in ./requirements-devel.txt
+	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade \
+            --output-file="$(@)" "$(<)"
 
-./var/log/recreate.log: ./var/log/host-install.log ./requirements-devel.txt ./tox.ini
+./var/log/recreate.log: \
+		./tox.ini ./var/log/host-install.log \
+		./requirements-devel.txt ./requirements-build.txt
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
 	rm -vf ./dist/* ./.tox/.pkg/dist/* | tee -a "$(@)"
-	tox -r --notest -v | tee -a "$(@)"
+	tox -r -e "py3" --notest | tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./var/log/editable.log: ./var/log/recreate.log
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
@@ -219,7 +231,7 @@ expand-template: ./var/log/host-install.log
 	    which tox || pip install tox
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./var/log/recreate.log
+./.git/hooks/pre-commit: ./var/log/recreate-build.log
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

@@ -49,11 +49,11 @@ all: build
 ### Perform any currently necessary local set-up common to most operations
 build: \
 		./var/log/host-install.log ./.git/hooks/pre-commit \
-		./.tox/py3/bin/activate ./requirements.txt ./requirements-devel.txt \
+		./.tox/py311/bin/activate ./requirements.txt ./requirements-devel.txt \
 		./requirements-build.txt
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./.tox/py3/bin/activate
+build-bump: ~/.gitconfig ./.tox/py311/bin/activate
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -80,7 +80,7 @@ endif
 	)"
 # Update the release notes/changelog
 	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	./.tox/py3/bin/towncrier check \
+	./.tox/py311/bin/towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -89,7 +89,7 @@ endif
 	    false
 	fi
 # Build and stage the release notes to be commited by `$ cz bump`
-	./.tox/py3/bin/towncrier build --version "$${next_version}" --yes
+	./.tox/py311/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
@@ -97,16 +97,16 @@ endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: ./.tox/py3/bin/activate
+check-push: ./.tox/py311/bin/activate
 ifeq ($(RELEASE_PUBLISH),true)
-	./.tox/py3/bin/towncrier check --compare-with "origin/develop"
+	./.tox/py311/bin/towncrier check --compare-with "origin/develop"
 endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./.tox/py3/bin/activate ~/.pypirc
+release: ./.tox/py311/bin/activate ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
-	./.tox/py3/bin/pyproject-build -w
+	./.tox/py311/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/* ./.tox/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
@@ -131,29 +131,29 @@ endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: ./.tox/py3/bin/activate
-	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
+format: ./.tox/py311/bin/activate
+	./.tox/py311/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
-	./.tox/py3/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
-	./.tox/py3/bin/black "./src/pythonprojectstructure/"
+	./.tox/py311/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
+	./.tox/py311/bin/black "./src/pythonprojectstructure/"
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
 test: build
-	tox
+	tox run-parallel --parallel auto --parallel-live
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: ./.tox/py3/log/editable.log
-	./.tox/py3/bin/pytest --pdb
+test-debug: ./.tox/py311/log/editable.log
+	./.tox/py311/bin/pytest --pdb
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements-build.txt.in"
 	$(MAKE) "./requirements-devel.txt" "./requirements-build.txt" \
-	    "./.tox/py3/bin/activate"
+	    "./.tox/py311/bin/activate"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -190,26 +190,26 @@ expand-template: ./var/log/host-install.log
 # Has to be run in the same python environment that packages are built in:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 ./requirements-devel.txt: \
-		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/py3/bin/activate
+		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/py311/bin/activate
 # Once the environment is created, use it to compiled pinned versions
-	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade \
+	./.tox/py311/bin/pip-compile --resolver=backtracking --upgrade \
 	    --output-file="$(@:%-devel.txt=%.txt)" "$(<)"
-	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade --extra="devel" \
+	./.tox/py311/bin/pip-compile --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
 ./requirements.txt: ./requirements-devel.txt
-./requirements-build.txt: ./requirements-build.txt.in ./.tox/py3/bin/activate
-	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade \
+./requirements-build.txt: ./requirements-build.txt.in ./.tox/py311/bin/activate
+	./.tox/py311/bin/pip-compile --resolver=backtracking --upgrade \
             --output-file="$(@)" "$(<)"
 
 # Use the official/latest Python version target to represent building all versions.
-./.tox/py3/bin/activate:
+./.tox/py311/bin/activate:
 	$(MAKE) "./var/log/host-install.log"
 	touch "./requirements-devel.txt" "./requirements-build.txt"
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live -e "ALL"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-./.tox/py3/log/editable.log: ./.tox/py3/bin/activate
-	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
+./.tox/py311/log/editable.log: ./.tox/py311/bin/activate
+	./.tox/py311/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
@@ -229,7 +229,7 @@ expand-template: ./var/log/host-install.log
 	    which tox || pip install tox
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./.tox/py3/bin/activate
+./.git/hooks/pre-commit: ./.tox/py311/bin/activate
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

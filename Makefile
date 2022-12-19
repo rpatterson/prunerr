@@ -47,10 +47,13 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./var/log/recreate.log ./.git/hooks/pre-commit
+build: \
+		./var/log/host-install.log ./.git/hooks/pre-commit \
+		./.tox/py3/bin/activate ./requirements.txt ./requirements-devel.txt \
+		./requirements-build.txt
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./.tox/py3/bin/activate
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -89,17 +92,19 @@ endif
 	./.tox/py3/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
+# Prevent uploading unintended distributions
+	rm -vf ./dist/* ./.tox/.pkg/dist/*
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build
+check-push: ./.tox/py3/bin/activate
 ifeq ($(RELEASE_PUBLISH),true)
 	./.tox/py3/bin/towncrier check --compare-with "origin/develop"
 endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./var/log/recreate-build.log ~/.pypirc
+release: ./.tox/py3/bin/activate ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
 	./.tox/py3/bin/pyproject-build -w
 # https://twine.readthedocs.io/en/latest/#using-twine
@@ -126,7 +131,7 @@ endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: build
+format: ./.tox/py3/bin/activate
 	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
@@ -135,19 +140,20 @@ format: build
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: build format
+test: build
 	tox
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: ./var/log/editable.log
+test-debug: ./.tox/py3/log/editable.log
 	./.tox/py3/bin/pytest --pdb
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./setup.cfg"
-	$(MAKE) "test"
+	touch "./setup.cfg" "./requirements-build.txt.in"
+	$(MAKE) "./requirements-devel.txt" "./requirements-build.txt" \
+	    "./.tox/py3/bin/activate"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -184,34 +190,26 @@ expand-template: ./var/log/host-install.log
 # Has to be run in the same python environment that packages are built in:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 ./requirements-devel.txt: \
-		./pyproject.toml ./setup.cfg ./tox.ini ./var/log/host-install.log
-# Bootstrap the environment for this Python version, needed for initial creation
-	touch "$(@)"
-	test -x "./.tox/py3/bin/pip-compile" || tox --notest -e "py3"
+		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/py3/bin/activate
 # Once the environment is created, use it to compiled pinned versions
 	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade \
 	    --output-file="$(@:%-devel.txt=%.txt)" "$(<)"
 	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
 ./requirements.txt: ./requirements-devel.txt
-./requirements-build.txt: ./requirements-build.txt.in ./requirements-devel.txt
+./requirements-build.txt: ./requirements-build.txt.in ./.tox/py3/bin/activate
 	./.tox/py3/bin/pip-compile --resolver=backtracking --upgrade \
             --output-file="$(@)" "$(<)"
 
-./var/log/recreate.log: \
-		./tox.ini ./var/log/host-install.log \
-		./requirements-devel.txt ./requirements-build.txt
-	mkdir -pv "$(dir $(@))"
-# Prevent uploading unintended distributions
-	rm -vf ./dist/* ./.tox/.pkg/dist/* | tee -a "$(@)"
-	tox -r -e "py3" --notest | tee -a "$(@)"
+# Use the official/latest Python version target to represent building all versions.
+./.tox/py3/bin/activate:
+	$(MAKE) "./var/log/host-install.log"
+	touch "./requirements-devel.txt" "./requirements-build.txt"
+# Delegate parallel build all Python environments to tox.
+	tox run-parallel --notest --pkg-only --parallel auto --parallel-live -e "ALL"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-./var/log/editable.log: ./var/log/recreate.log
+./.tox/py3/log/editable.log: ./.tox/py3/bin/activate
 	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
-./var/log/recreate-build.log: \
-		./var/log/host-install.log ./requirements-build.txt ./tox.ini
-	mkdir -pv "$(dir $(@))"
-	tox -r -e "build" --notest -v | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
@@ -231,7 +229,7 @@ expand-template: ./var/log/host-install.log
 	    which tox || pip install tox
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./var/log/recreate-build.log
+./.git/hooks/pre-commit: ./.tox/py3/bin/activate
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

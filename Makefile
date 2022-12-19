@@ -180,16 +180,15 @@ expand-template: ./var/log/host-install.log
 
 ## Real targets
 
-./requirements.txt: \
+./requirements-devel.txt: \
 		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
 		./requirements-build.txt.in
 	tox -e "build"
 # Avoid a tox recreation loop
 	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
+./requirements.txt: ./requirements-devel.txt
 
-./var/log/recreate.log: \
-		./var/log/host-install.log \
-		./requirements.txt ./requirements-devel.txt ./tox.ini
+./var/log/recreate.log: ./var/log/host-install.log ./requirements-devel.txt ./tox.ini
 	mkdir -pv "$(dir $(@))"
 # Prevent uploading unintended distributions
 	rm -vf ./dist/* ./.tox/.pkg/dist/* | tee -a "$(@)"

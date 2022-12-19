@@ -236,7 +236,7 @@ expand-template: ./var/log/host-install.log
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
- ./pyproject.toml:
+./pyproject.toml:
 	./.tox/build/bin/cz init
 
 # Emacs editor settings

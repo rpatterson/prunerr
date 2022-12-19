@@ -321,11 +321,17 @@ ifeq ($(VCS_BRANCH),master)
 endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./" | tee -a "$(@)"
-	docker buildx build $${docker_build_args} \
-	    --tag "merpatterson/python-project-structure:devel" \
-	    --tag "merpatterson/python-project-structure:devel-$(VCS_BRANCH)" \
-	    --tag "merpatterson/python-project-structure:$(PYTHON_ENV)-devel" \
-	    --tag "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+	docker_build_devel_tags=" \
+	    --tag merpatterson/python-project-structure:devel-local \
+	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH) \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-local \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
+	docker_build_devel_tags+=" \
+	    --tag merpatterson/python-project-structure:devel \
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
+endif
+	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./" | tee -a "$(@)"
 
 # Local environment variables from a template

@@ -15,7 +15,7 @@ services:
 
   ## Container for use by developers
   python-project-structure-devel:
-    image: "merpatterson/python-project-structure:devel"
+    image: "merpatterson/python-project-structure:devel-local"
     build:
       context: "./"
       dockerfile: "./Dockerfile.devel"

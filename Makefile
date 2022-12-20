@@ -86,11 +86,11 @@ endif
 # Run first in case any input is needed from the developer
 	exit_code=0
 	./.tox/build/bin/cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-	rm -fv "./var/cz-bump-no-release.txt"
+	rm -fv "./.tox/build/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
-	    echo "true" >"./var/cz-bump-no-release.txt"
+	    echo "true" >"./.tox/build/cz-bump-no-release.txt"
 	    exit
 	elif (( $$exit_code != 0 ))
 	then
@@ -117,7 +117,7 @@ endif
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
-	rm -vf ./dist/* ./.tox/.pkg/dist/*
+	rm -vf ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -130,16 +130,17 @@ endif
 ### Publish installable Python packages to PyPI
 release: ./.tox/$(PYTHON_ENV)/bin/activate ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
-	./.tox/$(PYTHON_ENV)/bin/pyproject-build -w
+	./.tox/$(PYTHON_ENV)/bin/pyproject-build \
+	    --outdir "./.tox/$(PYTHON_ENV)/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/* ./.tox/.pkg/dist/*
+	./.tox/build/bin/twine check ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
 	    echo "CRITICAL: Checkout is not clean, not publishing release"
 	    false
 	fi
-	if [ -e "./var/cz-bump-no-release.txt" ]
+	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
 	then
 	    exit
 	fi
@@ -147,7 +148,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox/.pkg/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
+	    ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)

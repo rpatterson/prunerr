@@ -44,9 +44,7 @@ htmlcov/
 .tox/
 .coverage
 .coverage.*
-.coverage-*
 coverage.*
-coverage-*.*
 .cache
 nosetests.xml
 pytest-junit.xml

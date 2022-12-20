@@ -14,13 +14,16 @@ EMPTY=
 COMMA=,
 
 # Variables/options that affect behavior
-# Support passing in the Python versions to test, including testing one version:
-#     $ make PYTHON_VERSIONS=3.11 test
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_VERSIONS=3.11 3.10 3.9 3.8 3.7
+PYTHON_SUPPORTED_VERSIONS=3.11 3.10 3.9 3.8 3.7
 
 # Values derived from constants
+# Support passing in the Python versions to test, including testing one version:
+#     $ make PYTHON_VERSIONS=3.11 test
+PYTHON_VERSIONS=$(PYTHON_SUPPORTED_VERSIONS)
+PYTHON_LATEST_VERSION=$(firstword $(PYTHON_SUPPORTED_VERSIONS))
 PYTHON_VERSION=$(firstword $(PYTHON_VERSIONS))
+PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_VERSION))
 PYTHON_ENV=py$(subst .,,$(PYTHON_VERSION))
 PYTHON_SHORT_VERSIONS=$(subst .,,$(PYTHON_VERSIONS))
 PYTHON_ENVS=$(PYTHON_SHORT_VERSIONS:%=py%)

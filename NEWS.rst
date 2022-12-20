@@ -1,3 +1,12 @@
+Prunerr 1.1.0b5 (2022-12-20)
+============================
+
+Bugfixes
+--------
+
+- Expand which error strings are used to identify unregistered download items. (unregistered-unrecognized-error)
+
+
 Prunerr 1.1.0b4 (2022-12-19)
 ============================
 

@@ -2,6 +2,7 @@
 Prunerr interaction with download clients.
 """
 
+import re
 import pathlib
 import shutil
 import urllib.parse
@@ -22,6 +23,7 @@ class PrunerrDownloadClient:
 
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
+    UNREGISTERED_ERROR_RE = re.compile(r".*(not |un)registered.*")
 
     config = None
     client = None
@@ -306,7 +308,8 @@ class PrunerrDownloadClient:
                     ]
                 )
                 and item.error == 2
-                and "unregistered item" in item.errorString.lower()
+                and self.UNREGISTERED_ERROR_RE.match(item.errorString.lower())
+                is not None
             )
         )
 

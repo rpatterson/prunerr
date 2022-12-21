@@ -72,9 +72,9 @@ all: build
 build: \
 		./.git/hooks/pre-commit \
 		./.tox/$(PYTHON_ENV)/bin/activate \
-		$(PYTHON_ENVS:%=./requirements-%.txt) \
-		$(PYTHON_ENVS:%=./requirements-devel-%.txt) \
-		./requirements-build.txt
+		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
+		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+		./requirements/build.txt
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./.tox/$(PYTHON_ENV)/bin/activate
@@ -177,9 +177,8 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./setup.cfg" "./requirements-build.txt.in"
-	$(MAKE) "./requirements-devel.txt" "./requirements-build.txt" \
-	    "./.tox/$(PYTHON_ENV)/bin/activate"
+	touch "./setup.cfg" "./requirements/build.txt.in"
+	$(MAKE) "build"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -212,27 +211,27 @@ expand-template: ./var/log/host-install.log
 
 ## Real targets
 
-# Manage fixed/pinned versions in `./requirements*.txt` files.  Has to be run for each
+# Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-$(PYTHON_ENVS:%=./requirements-devel-%.txt): \
+$(PYTHON_ENVS:%=./requirements/%/devel.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(@:requirements-devel-%.txt=%)/bin/pip-compile \
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
-$(PYTHON_ENVS:%=./requirements-%.txt): \
+$(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(@:requirements-%.txt=%)/bin/pip-compile \
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
-./requirements-build.txt: \
-		./requirements-build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+./requirements/build.txt: \
+		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
             --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate:
 	$(MAKE) "./var/log/host-install.log"
-	touch $(PYTHON_ENVS:%=./requirements-devel-%.txt) "./requirements-build.txt"
+	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) "./requirements/build.txt"
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
 	    -e "build,$(TOX_ENV_LIST)"

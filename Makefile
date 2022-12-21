@@ -70,7 +70,7 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
 build: \
-		./var/log/host-install.log ./.git/hooks/pre-commit \
+		./.git/hooks/pre-commit \
 		./.tox/$(PYTHON_ENV)/bin/activate \
 		$(PYTHON_ENVS:%=./requirements-%.txt) \
 		$(PYTHON_ENVS:%=./requirements-devel-%.txt) \

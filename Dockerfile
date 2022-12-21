@@ -4,6 +4,7 @@
 ARG PYTHON_VERSION=3.11
 FROM python:${PYTHON_VERSION}
 
+ARG PYTHON_ENV=py311
 ARG VERSION=
 
 # Put the `ENTRYPOINT` on the `$PATH`
@@ -13,8 +14,8 @@ COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 WORKDIR "/usr/local/src/python-project-structure/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
 # because this step takes the most time and changes the least frequently.
-COPY [ "./requirements.txt", "./" ]
-RUN pip install --no-cache-dir -r "./requirements.txt"
+COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" ]
+RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/user.txt"
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
 RUN --mount=source=./,target=./,rw,type=bind pip install --no-cache-dir "./"

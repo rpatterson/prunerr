@@ -3,4 +3,7 @@
 
 ((python-mode . ((flycheck-python-flake8-executable . "${PWD}/.tox/py311/bin/python")
 		 (flycheck-python-pylint-executable . "${PWD}/.tox/py311/bin/python")
-		 (flycheck-python-mypy-executable . "${PWD}/.tox/py311/bin/mypy"))))
+		 (flycheck-python-mypy-executable . "${PWD}/.tox/py311/bin/mypy")
+		 )))
+((dockerfile-mode . ((flycheck-dockerfile-hadolint-executable . "${PWD}/bin/hadolint")
+		     )))

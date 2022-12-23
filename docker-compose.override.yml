@@ -34,7 +34,13 @@ services:
       - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
-  ## Contianers used during release
+  ## Contianers during development and release
+
+  # https://github.com/hadolint/hadolint#how-to-use
+  hadolint:
+    image: "hadolint/hadolint"
+    volumes:
+      - "./:/usr/local/src/python-project-structure/"
 
   pandoc:
     image: "pandoc/core"

@@ -239,6 +239,9 @@ test: build-docker
 # Run from the development Docker container for consistency
 	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm \
 	    python-project-structure-devel make format test-local
+# Lint the `./Dockerfile*` files
+	docker compose run --rm hadolint <"./Dockerfile"
+	docker compose run --rm hadolint <"./Dockerfile.devel"
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local

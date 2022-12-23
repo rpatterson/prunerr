@@ -90,7 +90,8 @@ build: ./.git/hooks/pre-commit build-local build-docker ./requirements/build.txt
 build-local: \
 		./.tox/$(PYTHON_ENV)/bin/activate \
 		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/devel.txt)
+		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+		$(PYTHON_ENVS:%=./requirements/%/host.txt)
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./var/log/docker-build.log
@@ -258,7 +259,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./setup.cfg" "./requirements/build.txt.in"
+	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
 	$(MAKE) PUID=$(PUID) "build"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
@@ -305,13 +306,22 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/host.txt): \
+		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
+            --output-file="$(@)" "$(<)"
+	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
+	then
+# Only update the installed tox version for the latest/host/main/default Python version
+	    pip install -r "$(@)"
+	fi
 ./requirements/build.txt: \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
             --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate:
+./.tox/$(PYTHON_ENV)/bin/activate: ./requirements/$(PYTHON_ENV)/host.txt
 	$(MAKE) "./var/log/host-install.log"
 	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt)
 # Delegate parallel build all Python environments to tox.
@@ -401,7 +411,7 @@ endif
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    which tox || pip install tox
+	    which tox || pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate

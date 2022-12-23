@@ -43,8 +43,8 @@ packages, and publish them to PyPI::
   $ make build-bump test release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
-reproducibility in ``./requirements*.txt``. The `Makefile`_ will update those versions
-as the dependencies change in ``./setup.cfg`` and ``./requirements-build.txt.in``.  Note
+reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions
+as the dependencies change in ``./setup.cfg`` and ``./requirements/build.txt.in``.  Note
 that this means other versions may be updated as the published versions for dependencies
 are updated on remote indexes/registries.  Maintainers can also update all dependencies
 to the latest versions::

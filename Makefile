@@ -10,6 +10,28 @@ SHELL:=bash
 MAKEFLAGS+=--warn-undefined-variables
 MAKEFLAGS+=--no-builtin-rules
 PS1?=$$
+EMPTY=
+COMMA=,
+
+# Variables/options that affect behavior
+# https://devguide.python.org/versions/#supported-versions
+PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
+
+# Values derived from constants
+# Support passing in the Python versions to test, including testing one version:
+#     $ make PYTHON_MINORS=3.11 test
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
+PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
+TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
+ifeq ($(words $(PYTHON_MINORS)),1)
+TOX_RUN_ARGS=run
+endif
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -47,10 +69,16 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./var/log/recreate.log ./.git/hooks/pre-commit
+build: \
+		./.git/hooks/pre-commit \
+		./.tox/$(PYTHON_ENV)/bin/activate \
+		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
+		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+		$(PYTHON_ENVS:%=./requirements/%/host.txt) \
+		./requirements/build.txt
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/recreate-build.log
+build-bump: ~/.gitconfig ./.tox/$(PYTHON_ENV)/bin/activate
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -59,11 +87,11 @@ endif
 # Run first in case any input is needed from the developer
 	exit_code=0
 	./.tox/build/bin/cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-	rm -fv "./var/cz-bump-no-release.txt"
+	rm -fv "./.tox/build/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
-	    echo "true" >"./var/cz-bump-no-release.txt"
+	    echo "true" >"./.tox/build/cz-bump-no-release.txt"
 	    exit
 	elif (( $$exit_code != 0 ))
 	then
@@ -77,7 +105,7 @@ endif
 	)"
 # Update the release notes/changelog
 	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	./.tox/py3/bin/towncrier check \
+	./.tox/$(PYTHON_ENV)/bin/towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -86,31 +114,34 @@ endif
 	    false
 	fi
 # Build and stage the release notes to be commited by `$ cz bump`
-	./.tox/py3/bin/towncrier build --version "$${next_version}" --yes
+	./.tox/$(PYTHON_ENV)/bin/towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
+# Prevent uploading unintended distributions
+	rm -vf ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build
+check-push: ./.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(RELEASE_PUBLISH),true)
-	./.tox/py3/bin/towncrier check --compare-with "origin/develop"
+	./.tox/$(PYTHON_ENV)/bin/towncrier check --compare-with "origin/develop"
 endif
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./var/log/recreate-build.log ~/.pypirc
+release: ./.tox/$(PYTHON_ENV)/bin/activate ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
-	./.tox/py3/bin/pyproject-build -w
+	./.tox/$(PYTHON_ENV)/bin/pyproject-build \
+	    --outdir "./.tox/$(PYTHON_ENV)/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/* ./.tox/.pkg/dist/*
+	./.tox/build/bin/twine check ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
 	    echo "CRITICAL: Checkout is not clean, not publishing release"
 	    false
 	fi
-	if [ -e "./var/cz-bump-no-release.txt" ]
+	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
 	then
 	    exit
 	fi
@@ -118,7 +149,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/* ./.tox/.pkg/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
+	    ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -126,28 +158,28 @@ endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: build
-	./.tox/py3/bin/autoflake -r -i --remove-all-unused-imports \
+format: ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(PYTHON_ENV)/bin/autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
-	./.tox/py3/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
-	./.tox/py3/bin/black "./src/pythonprojectstructure/"
+	./.tox/$(PYTHON_ENV)/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
+	./.tox/$(PYTHON_ENV)/bin/black "./src/pythonprojectstructure/"
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters
-test: build format
-	tox
+test: build
+	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: ./var/log/editable.log
-	./.tox/py3/bin/pytest --pdb
+test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
+	./.tox/$(PYTHON_ENV)/bin/pytest --pdb
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./setup.cfg"
-	$(MAKE) "test"
+	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
+	$(MAKE) "build"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -180,27 +212,42 @@ expand-template: ./var/log/host-install.log
 
 ## Real targets
 
-./requirements.txt: \
-		./var/log/recreate-build.log ./pyproject.toml ./setup.cfg ./tox.ini \
-		./requirements-build.txt.in
-	tox -e "build"
-# Avoid a tox recreation loop
-	touch -r "./requirements-build.txt" "./var/log/recreate-build.log" "$(@)"
+# Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
+# python version in the virtual environment for that Python version:
+# https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
+$(PYTHON_ENVS:%=./requirements/%/devel.txt): \
+		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --extra="devel" \
+	    --output-file="$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/user.txt): \
+		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/host.txt): \
+		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
+            --output-file="$(@)" "$(<)"
+	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
+	then
+# Only update the installed tox version for the latest/host/main/default Python version
+	    pip install -r "$(@)"
+	fi
+./requirements/build.txt: \
+		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
+            --output-file="$(@)" "$(<)"
 
-./var/log/recreate.log: \
-		./var/log/host-install.log \
-		./requirements.txt ./requirements-devel.txt ./tox.ini
-	mkdir -pv "$(dir $(@))"
-# Prevent uploading unintended distributions
-	rm -vf ./dist/* ./.tox/.pkg/dist/* | tee -a "$(@)"
-	tox -r --notest -v | tee -a "$(@)"
+# Use any Python version target to represent building all versions.
+./.tox/$(PYTHON_ENV)/bin/activate:
+	$(MAKE) "./var/log/host-install.log"
+	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) "./requirements/build.txt"
+# Delegate parallel build all Python environments to tox.
+	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
+	    -e "build,$(TOX_ENV_LIST)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-./var/log/editable.log: ./var/log/recreate.log
-	./.tox/py3/bin/pip install -e "./" | tee -a "$(@)"
-./var/log/recreate-build.log: \
-		./var/log/host-install.log ./requirements-build.txt ./tox.ini
-	mkdir -pv "$(dir $(@))"
-	tox -r -e "build" --notest -v | tee -a "$(@)"
+./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
+	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
@@ -217,15 +264,15 @@ expand-template: ./var/log/host-install.log
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    which tox || pip install tox
+	    which tox || pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./var/log/recreate.log
+./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
- ./pyproject.toml:
+./pyproject.toml:
 	./.tox/build/bin/cz init
 
 # Emacs editor settings

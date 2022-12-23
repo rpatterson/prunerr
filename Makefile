@@ -338,7 +338,7 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 # Docker targets
 ./var/log/docker-build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
-		./pyproject.toml ./setup.cfg ./tox.ini ./requirements/build.txt.in \
+		./pyproject.toml ./setup.cfg ./tox.ini \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
 		./var/log/recreate-build.log
 # Ensure access permissions to build artifacts in container volumes.

@@ -35,7 +35,7 @@ package_dir = "src"
 #     $ pylint --generate-rcfile
 jobs = 0
 enable-all-extensions = true
-output-format = "colorized,json:pylint.json"
+output-format = "colorized"
 ignore-paths = [
 # Managed by tools, best to use `# pylint: disable=...` inline comments for any other
 # ignores.

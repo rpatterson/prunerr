@@ -355,7 +355,7 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args=" \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
-	    --build-arg PYTHON_VERSION=$(PYTHON_VERSION) \
+	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \

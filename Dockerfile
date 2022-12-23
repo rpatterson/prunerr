@@ -1,8 +1,8 @@
 ## Container image for use by end users
 
 # Stay as close to a vanilla Python environment as possible
-ARG PYTHON_VERSION=3.11
-FROM python:${PYTHON_VERSION}
+ARG PYTHON_MINOR=3.11
+FROM python:${PYTHON_MINOR}
 
 ARG PYTHON_ENV=py311
 ARG VERSION=
@@ -35,6 +35,6 @@ LABEL org.opencontainers.image.description="Python project structure foundation 
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
-LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_VERSION}"
+LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 # Build-time `LABEL`s
 LABEL org.opencontainers.image.version=${VERSION}

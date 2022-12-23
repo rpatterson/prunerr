@@ -380,7 +380,7 @@ ifeq ($(VCS_BRANCH),master)
 	    --tag merpatterson/python-project-structure:devel \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
 endif
-	docker buildx build --progress plain $${docker_build_args} $${docker_build_devel_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
 	date >>"$(@)"
 

@@ -321,7 +321,7 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
             --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate: ./requirements/$(PYTHON_ENV)/host.txt
+./.tox/$(PYTHON_ENV)/bin/activate:
 	$(MAKE) "./var/log/host-install.log"
 	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt)
 # Delegate parallel build all Python environments to tox.

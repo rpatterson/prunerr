@@ -80,17 +80,21 @@ all: build
 build: ./.git/hooks/pre-commit build-local build-docker ./requirements/build.txt
 .PHONY: build-local
 ### Set up for development locally, directly on the host
-build-local: \
-		./.tox/$(PYTHON_ENV)/bin/activate \
-		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/host.txt)
+build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./var/log/docker-build.log
+build-docker:
+	$(MAKE) -j $(PYTHON_MINORS:%=build-docker-%)
+.PHONY: $(PYTHON_MINORS:%=build-docker-%)
+### Set up for development in a Docker container for one Python version
+$(PYTHON_MINORS:%=build-docker-%):
+	$(MAKE) PYTHON_MINORS="$(@:build-docker-%=%)" \
+	    "./.tox/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./.tox/build/bin/activate ./var/log/docker-build.log
+build-bump: \
+		~/.gitconfig ./.tox/build/bin/activate \
+		./.tox/$(PYTHON_ENV)/log/docker-build.log
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -135,7 +139,7 @@ endif
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch "./requirements/*/devel.txt"
-	$(MAKE) "./var/log/docker-build.log"
+	$(MAKE) "./.tox/$(PYTHON_ENV)/log/docker-build.log"
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -161,7 +165,7 @@ endif
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/docker-build.log ./.tox/build/bin/activate ~/.pypirc
+release-python: ./.tox/$(PYTHON_ENV)/log/docker-build.log ./.tox/build/bin/activate ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build \
@@ -224,23 +228,38 @@ format: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
 	./.tox/$(PYTHON_ENV)/bin/black "./src/pythonprojectstructure/"
 
+.PHONY: lint-docker
+### Check the style and content of the `./Dockerfile*` files
+lint-docker:
+	docker compose run --rm hadolint hadolint "./Dockerfile"
+	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
+
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test: build-docker test-docker
+test: lint-docker
+	$(MAKE) -j $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
+.PHONY: $(PYTHON_MINORS:%=test-docker-%)
+### Set up for development in a Docker container for one Python version
+$(PYTHON_MINORS:%=test-docker-%):
+	$(MAKE) PYTHON_MINORS="$(@:test-docker-%=%)" test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
-test-docker: build-docker
-# Lint the `./Dockerfile*` files, fail fast, run first
-	docker compose run --rm hadolint <"./Dockerfile"
-	docker compose run --rm hadolint <"./Dockerfile.devel"
+test-docker: build-docker-$(PYTHON_MINOR)
+	docker_run_args="--rm"
+	if [ ! -t 0 ]
+	then
+# No fancy output when running in parallel
+	    docker_run_args+=" -T"
+	fi
 # Run from the development Docker container for consistency
-	docker compose run --rm python-project-structure-devel make test-local
+	docker compose run $${docker_run_args} python-project-structure-devel \
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" test-local
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run --rm python-project-structure \
+	docker compose run $${docker_run_args} python-project-structure \
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
@@ -327,11 +346,14 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live -e "build"
 
 # Docker targets
-./var/log/docker-build.log: \
+./.tox/$(PYTHON_ENV)/log/docker-build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
+		./requirements/$(PYTHON_ENV)/user.txt \
+		./requirements/$(PYTHON_ENV)/devel.txt \
+		./requirements/$(PYTHON_ENV)/host.txt \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./var/log/recreate-build.log
+		./.tox/build/bin/activate
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" "./.tox-docker/" \

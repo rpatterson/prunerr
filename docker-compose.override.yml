@@ -41,6 +41,7 @@ services:
     image: "hadolint/hadolint"
     volumes:
       - "./:/usr/local/src/python-project-structure/"
+    working_dir: "/usr/local/src/python-project-structure/"
 
   pandoc:
     image: "pandoc/core"

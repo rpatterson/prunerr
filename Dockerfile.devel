@@ -10,7 +10,10 @@ ENV PYTHON_ENV="${PYTHON_ENV}"
 ARG VERSION=
 
 # Put the `ENTRYPOINT` on the `$PATH`
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+RUN \
+    apt-get update && \
+    apt-get install --no-install-recommends -y gosu=1.12-1+b6 && \
+    rm -rf /var/lib/apt/lists/*
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
 WORKDIR "/usr/local/src/python-project-structure/"
@@ -29,6 +32,8 @@ ENV PATH="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}/bin:$PATH"
 # command to run.
 ENV HOME="/home/python-project-structure"
 ENTRYPOINT [ "entrypoint" ]
+# Have to use the shell form of `CMD` because we need variable substitution:
+# hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys

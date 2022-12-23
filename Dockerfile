@@ -8,7 +8,10 @@ ARG PYTHON_ENV=py311
 ARG VERSION=
 
 # Put the `ENTRYPOINT` on the `$PATH`
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+RUN \
+    apt-get update && \
+    apt-get install --no-install-recommends -y gosu=1.12-1+b6 && \
+    rm -rf /var/lib/apt/lists/*
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
 WORKDIR "/usr/local/src/python-project-structure/"
@@ -18,7 +21,7 @@ COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" 
 RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/user.txt"
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
-RUN --mount=source=./,target=./,rw,type=bind pip install --no-cache-dir "./"
+RUN --mount=type=bind,source=./,target=./,rw pip install --no-cache-dir "./"
 
 # Find the same home directory even when run as another user, e.g. `root`.
 ENV HOME="/home/python-project-structure"

@@ -33,13 +33,6 @@ ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
 
-# Variables/options that affect behavior
-# https://devguide.python.org/versions/#supported-versions
-PYTHON_VERSION=3.11
-
-# Values derived from constants
-PYTHON_ENV=py$(subst .,,$(PYTHON_VERSION))
-
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)

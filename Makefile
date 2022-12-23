@@ -226,12 +226,7 @@ format: ./.tox/$(PYTHON_ENV)/bin/activate
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test: build-docker
-# Lint the `./Dockerfile*` files, fail fast, run first
-	docker compose run --rm hadolint <"./Dockerfile"
-	docker compose run --rm hadolint <"./Dockerfile.devel"
-# Run from the development Docker container for consistency
-	docker compose run --rm python-project-structure-devel make format test-local
+test: build-docker test-docker
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local
@@ -239,6 +234,10 @@ test-local: build-local
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker
+# Lint the `./Dockerfile*` files, fail fast, run first
+	docker compose run --rm hadolint <"./Dockerfile"
+	docker compose run --rm hadolint <"./Dockerfile.devel"
+# Run from the development Docker container for consistency
 	docker compose run --rm python-project-structure-devel make test-local
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --rm python-project-structure \

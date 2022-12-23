@@ -6,7 +6,7 @@
 #
 astroid==2.12.13
     # via pylint
-attrs==22.1.0
+attrs==22.2.0
     # via pytest
 autoflake==2.0.0
     # via python-project-structure (pyproject.toml)
@@ -59,7 +59,7 @@ incremental==22.10.0
     # via towncrier
 iniconfig==1.1.1
     # via pytest
-isort==5.11.3
+isort==5.11.4
     # via pylint
 jinja2==3.1.2
     # via towncrier
@@ -128,11 +128,9 @@ setuptools-scm==7.1.0
     # via python-project-structure (pyproject.toml)
 shellingham==1.5.0
     # via typer
-tomli==2.0.1
-    # via towncrier
 tomlkit==0.11.6
     # via pylint
-towncrier==22.8.0
+towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
 tox==4.0.16
     # via python-project-structure (pyproject.toml)

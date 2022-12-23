@@ -10,17 +10,15 @@ on:
     tags:
       - "!**"
 
+defaults:
+  runs-on: "ubuntu-latest"
+
 jobs:
 
-  ci-cd:
-    runs-on: "ubuntu-latest"
-    strategy:
-      matrix:
-        python-version: ["3.11"]
+  bump:
     steps:
 
-      # Global set up
-
+      # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
       # https://github.com/actions/checkout/issues/701#issuecomment-1139627817
@@ -30,9 +28,7 @@ jobs:
       - name: "Add user installs to PATH"
         run: |
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-
       # Cache build artifacts to speed up CI runs
-
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -53,6 +49,49 @@ jobs:
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
+      - name: "Bump the version if publishing a release"
+        env:
+          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        run: "make -e PYTHON_MINORS=3.11 build-bump"
+
+  build-test:
+    needs: "bump"
+    strategy:
+      matrix:
+        PYTHON_MINORS:
+          - "3.11"
+          - "3.10"
+          - "3.9"
+          - "3.8"
+          - "3.7"
+    steps:
+
+      # Shared/common set up
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Fetch versions from VCS"
+        run: "git fetch --tags origin"
+      - name: "Add user installs to PATH"
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        env:
+          cache-name: "tox-v1"
+        with:
+          path: |
+            ~/.local
+            ./.tox
+            ./.tox-*
+            ./var/log
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          restore-keys: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+
       # Delegate the rest to the `./Makefile` to keep as much portable between CI
       # platforms
 
@@ -61,20 +100,22 @@ jobs:
           GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-        run: "make -e build-bump build-docker"
-
+        run: >-
+          make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          build-docker-${{ matrix.PYTHON_MINORS }}
       - name: "Run the tests and code checks inside the built container"
-        run: "make test-docker"
+        run: >-
+          make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          test-docker-${{ matrix.PYTHON_MINORS }}
 
       # Upload build artifacts
       # https://github.com/actions/upload-artifact#usage
-
       - name: "Archive test suite reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "test-suite-reports"
           path: |
-            ./pytest*
+            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/pytest*
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
@@ -82,27 +123,51 @@ jobs:
         with:
           name: "PyTest Test Suite"
           path: |
-            ./pytest-junit.xml
+            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/pytest-junit.xml
           reporter: "java-junit"
-
       - name: "Archive code coverage reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "code-coverage-reports"
           path: |
-            ./coverage*
-            ./htmlcov
-
+            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/coverage*
+            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/htmlcov
       - name: "Archive linter reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "linter-reports"
           path: |
-            ./pylint*
+            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/pylint*
 
-      # Release and publish
+  release:
+    needs: "build-test"
+    steps:
 
-      - name: "Bump version and publish release artifacts if on `master`/`develop`"
+      # Shared/common set up
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Fetch versions from VCS"
+        run: "git fetch --tags origin"
+      - name: "Add user installs to PATH"
+        run: |
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        env:
+          cache-name: "tox-v1"
+        with:
+          path: |
+            ~/.local
+            ./.tox
+            ./.tox-*
+            ./var/log
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          restore-keys: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+
+      - name: "Publish release artifacts"
         env:
           CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
           # Enable the GitHub CLI
@@ -115,4 +180,4 @@ jobs:
           PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
           TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-        run: "make -e release"
+        run: "make -e PYTHON_MINORS=3.11 release"

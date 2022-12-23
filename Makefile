@@ -15,21 +15,21 @@ COMMA=,
 
 # Variables/options that affect behavior
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_SUPPORTED_VERSIONS=3.11 3.10 3.9 3.8 3.7
+PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:
-#     $ make PYTHON_VERSIONS=3.11 test
-PYTHON_VERSIONS=$(PYTHON_SUPPORTED_VERSIONS)
-PYTHON_LATEST_VERSION=$(firstword $(PYTHON_SUPPORTED_VERSIONS))
-PYTHON_VERSION=$(firstword $(PYTHON_VERSIONS))
-PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_VERSION))
-PYTHON_ENV=py$(subst .,,$(PYTHON_VERSION))
-PYTHON_SHORT_VERSIONS=$(subst .,,$(PYTHON_VERSIONS))
-PYTHON_ENVS=$(PYTHON_SHORT_VERSIONS:%=py%)
+#     $ make PYTHON_MINORS=3.11 test
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
+PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
 TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
-ifeq ($(words $(PYTHON_VERSIONS)),1)
+ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
 

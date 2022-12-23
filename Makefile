@@ -24,7 +24,7 @@ PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
 PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
-PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
@@ -47,8 +47,8 @@ ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
 USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
-PUID:=$(shell id -u)
-PGID:=$(shell id -g)
+export PUID:=$(shell id -u)
+export PGID:=$(shell id -g)
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -124,8 +124,7 @@ endif
 	)"
 # Update the release notes/changelog
 	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm \
-	    python-project-structure-devel \
+	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -134,7 +133,7 @@ endif
 	    false
 	fi
 # Build and stage the release notes to be commited by `$ cz bump`
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm python-project-structure-devel \
+	docker compose run --rm python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
@@ -160,7 +159,7 @@ run: build-docker
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
 ifeq ($(RELEASE_PUBLISH),true)
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm python-project-structure-devel \
+	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/develop"
 endif
 
@@ -172,8 +171,7 @@ release: release-python release-docker
 release-python: ./var/log/docker-build.log ./.tox/build/bin/activate ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm \
-	    python-project-structure-devel pyproject-build \
+	docker compose run --rm python-project-structure-devel pyproject-build \
 	    --outdir "./.tox/$(PYTHON_ENV)/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./.tox-docker/$(PYTHON_ENV)/dist/* \
@@ -237,8 +235,7 @@ format: ./.tox/$(PYTHON_ENV)/bin/activate
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test: build-docker
 # Run from the development Docker container for consistency
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm \
-	    python-project-structure-devel make format test-local
+	docker compose run --rm python-project-structure-devel make format test-local
 # Lint the `./Dockerfile*` files
 	docker compose run --rm hadolint <"./Dockerfile"
 	docker compose run --rm hadolint <"./Dockerfile.devel"
@@ -249,10 +246,9 @@ test-local: build-local
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm \
-	    python-project-structure-devel make test-local
+	docker compose run --rm python-project-structure-devel make test-local
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run -e PYTHON_ENV="$(PYTHON_ENV)" --rm python-project-structure \
+	docker compose run --rm python-project-structure \
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures

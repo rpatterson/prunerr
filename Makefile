@@ -85,7 +85,7 @@ build: \
 build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker:
+build-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -j $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version

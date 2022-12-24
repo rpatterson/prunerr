@@ -77,7 +77,9 @@ all: build
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers
-build: ./.git/hooks/pre-commit build-local build-docker ./requirements/build.txt
+build: \
+		./var/log/host-install.log ./.git/hooks/pre-commit \
+		build-local build-docker ./requirements/build.txt
 .PHONY: build-local
 ### Set up for development locally, directly on the host
 build-local: ./.tox/$(PYTHON_ENV)/bin/activate
@@ -320,11 +322,6 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
             --output-file="$(@)" "$(<)"
-	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
-	then
-# Only update the installed tox version for the latest/host/main/default Python version
-	    pip install -r "$(@)"
-	fi
 ./requirements/build.txt: \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
@@ -337,6 +334,7 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
 	    -e "$(TOX_ENV_LIST)"
+	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
@@ -411,7 +409,7 @@ endif
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log:
+./var/log/host-install.log: ./requirements/$(PYTHON_ENV)/host.txt
 	mkdir -pv "$(dir $(@))"
 	(
 	    if ! which pip
@@ -425,7 +423,7 @@ endif
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    which tox || pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate

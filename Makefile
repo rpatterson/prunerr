@@ -79,7 +79,7 @@ all: build
 ### Set up everything for development from a checkout, local and in containers
 build: \
 		./var/log/host-install.log ./.git/hooks/pre-commit \
-		build-local build-docker ./requirements/build.txt
+		build-local build-docker
 .PHONY: build-local
 ### Set up for development locally, directly on the host
 build-local: ./.tox/$(PYTHON_ENV)/bin/activate
@@ -272,7 +272,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
-	$(MAKE) PUID=$(PUID) "build"
+	$(MAKE) PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -347,9 +347,6 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 ./.tox/$(PYTHON_ENV)/log/docker-build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
-		./requirements/$(PYTHON_ENV)/user.txt \
-		./requirements/$(PYTHON_ENV)/devel.txt \
-		./requirements/$(PYTHON_ENV)/host.txt \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
 		./.tox/build/bin/activate
 # Ensure access permissions to build artifacts in container volumes.
@@ -401,7 +398,20 @@ ifeq ($(VCS_BRANCH),master)
 endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
-	date >>"$(@)"
+# Update the pinned/frozen versions, if needed, using the container.  If changed, then
+# we may need to re-build the container image again to ensure it's current and correct.
+	docker compose run $${docker_run_args} python-project-structure-devel \
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" \
+		"./requirements/$(PYTHON_ENV)/user.txt" \
+		"./requirements/$(PYTHON_ENV)/devel.txt" \
+		"./requirements/$(PYTHON_ENV)/host.txt" |
+	    tee -a "$(@)"
+ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+	docker compose run $${docker_run_args} python-project-structure-devel \
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" "./requirements/build.txt" |
+	    tee -a "$(@)"
+endif
+	$(MAKE) "$(@)" | tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

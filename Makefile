@@ -320,12 +320,12 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
-            --output-file="$(@)" "$(<)"
-./requirements/build.txt: \
+	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
-            --output-file="$(@)" "$(<)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate:
@@ -404,13 +404,9 @@ endif
 	    make PYTHON_MINORS="$(PYTHON_MINOR)" \
 		"./requirements/$(PYTHON_ENV)/user.txt" \
 		"./requirements/$(PYTHON_ENV)/devel.txt" \
+		"./requirements/$(PYTHON_ENV)/build.txt" \
 		"./requirements/$(PYTHON_ENV)/host.txt" |
 	    tee -a "$(@)"
-ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
-	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make PYTHON_MINORS="$(PYTHON_MINOR)" "./requirements/build.txt" |
-	    tee -a "$(@)"
-endif
 	$(MAKE) "$(@)" | tee -a "$(@)"
 
 # Local environment variables from a template

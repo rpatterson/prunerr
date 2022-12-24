@@ -17,6 +17,18 @@ COMMA=,
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 
+# Values derived from the environment
+USER_NAME:=$(shell id -u -n)
+USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+ifeq ($(USER_FULL_NAME),)
+USER_FULL_NAME=$(USER_NAME)
+endif
+USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
+# Use the latest installed Python version of the supported versions
+PYTHON_EXECS=$(PYTHON_SUPPORTED_MINORS:%=python%)
+PYTHON_AVAIL_EXECS=$(foreach PYTHON_EXEC,$(PYTHON_EXECS),$(shell which $(PYTHON_EXEC)))
+PYTHON_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:
 #     $ make PYTHON_MINORS=3.11 test
@@ -32,14 +44,6 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
-
-# Values derived from the environment
-USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
-ifeq ($(USER_FULL_NAME),)
-USER_FULL_NAME=$(USER_NAME)
-endif
-USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:

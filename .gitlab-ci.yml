@@ -108,8 +108,5 @@ build-test:
 
 release:
   stage: "release"
-  dependencies:
-    # Publish release artifacts from the latest/current Python version
-    - "docker: [3.11]"
   script:
     - "su runner -c 'make -e PYTHON_MINORS=3.11 release'"

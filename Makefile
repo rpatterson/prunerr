@@ -104,13 +104,15 @@ all: build
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers
-build: ./.git/hooks/pre-commit build-local build-docker ./requirements/build.txt
+build: \
+		./var/log/host-install.log ./.git/hooks/pre-commit \
+		build-local build-docker
 .PHONY: build-local
 ### Set up for development locally, directly on the host
 build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker:
+build-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -j $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
@@ -401,7 +403,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
-	$(MAKE) PUID=$(PUID) "build"
+	$(MAKE) PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -467,14 +469,14 @@ ifeq ($(CI),true)
 	touch "$(@)"
 	exit
 endif
-	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
-            --output-file="$(@)" "$(<)"
+	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
 # Only update the installed tox version for the latest/host/main/default Python version
 	    pip install -r "$(@)"
 	fi
-./requirements/build.txt: \
+$(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(CI),true)
 # Don't update dependencies in CI/CD so that the release of new versions don't break
@@ -482,8 +484,8 @@ ifeq ($(CI),true)
 	touch "$(@)"
 	exit
 endif
-	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
-            --output-file="$(@)" "$(<)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate:
@@ -492,6 +494,7 @@ endif
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
 	    -e "$(TOX_ENV_LIST)"
+	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
@@ -504,9 +507,6 @@ endif
 ./.tox/$(PYTHON_ENV)/log/docker-build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
-		./requirements/$(PYTHON_ENV)/user.txt \
-		./requirements/$(PYTHON_ENV)/devel.txt \
-		./requirements/$(PYTHON_ENV)/host.txt \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
 		./.tox/build/bin/activate
 # Ensure access permissions to build artifacts in container volumes.
@@ -617,7 +617,16 @@ ifeq ($(VCS_BRANCH),master)
 endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
-	date >>"$(@)"
+# Update the pinned/frozen versions, if needed, using the container.  If changed, then
+# we may need to re-build the container image again to ensure it's current and correct.
+	docker compose run --rm python-project-structure-devel \
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" \
+		"./requirements/$(PYTHON_ENV)/user.txt" \
+		"./requirements/$(PYTHON_ENV)/devel.txt" \
+		"./requirements/$(PYTHON_ENV)/build.txt" \
+		"./requirements/$(PYTHON_ENV)/host.txt" |
+	    tee -a "$(@)"
+	$(MAKE) "$(@)" | tee -a "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in
@@ -625,7 +634,7 @@ endif
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log:
+./var/log/host-install.log: ./requirements/$(PYTHON_ENV)/host.txt
 	mkdir -pv "$(dir $(@))"
 # Bootstrap the minimum Python environment
 	(
@@ -646,7 +655,7 @@ endif
 	            false
 	        fi
 	    fi
-	    which tox || pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
 	) | tee -a "$(@)"
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"

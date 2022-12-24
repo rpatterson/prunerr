@@ -400,7 +400,7 @@ endif
 	    --file "./Dockerfile.devel" "./"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
-	docker compose run $${docker_run_args} python-project-structure-devel \
+	docker compose run --rm python-project-structure-devel \
 	    make PYTHON_MINORS="$(PYTHON_MINOR)" \
 		"./requirements/$(PYTHON_ENV)/user.txt" \
 		"./requirements/$(PYTHON_ENV)/devel.txt" \

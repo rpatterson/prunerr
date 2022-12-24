@@ -58,8 +58,10 @@ PYPI_HOSTNAME=test.pypi.org
 GITLAB_CI=false
 GITHUB_ACTIONS=false
 ifeq ($(GITLAB_CI),true)
+USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
 VCS_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifeq ($(GITHUB_ACTIONS),true)
+USER_EMAIL=$(USER_NAME)@actions.github.com
 VCS_BRANCH=$(GITHUB_REF_NAME)
 else
 VCS_BRANCH:=$(shell git branch --show-current)

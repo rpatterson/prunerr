@@ -75,8 +75,8 @@ build: \
 		./.tox/$(PYTHON_ENV)/bin/activate \
 		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
 		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/host.txt) \
-		./requirements/build.txt
+		$(PYTHON_ENVS:%=./requirements/%/build.txt) \
+		$(PYTHON_ENVS:%=./requirements/%/host.txt)
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./.tox/$(PYTHON_ENV)/bin/activate
@@ -227,12 +227,12 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
-            --output-file="$(@)" "$(<)"
-./requirements/build.txt: \
+	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(PYTHON_ENV)/bin/pip-compile --resolver=backtracking --upgrade \
-            --output-file="$(@)" "$(<)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate:

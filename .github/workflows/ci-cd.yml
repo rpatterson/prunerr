@@ -114,7 +114,7 @@ jobs:
         with:
           name: "test-suite-reports"
           path: |
-            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/pytest*
+            ./.tox-docker/*/pytest*
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
@@ -122,21 +122,21 @@ jobs:
         with:
           name: "PyTest Test Suite"
           path: |
-            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/pytest-junit.xml
+            ./.tox-docker/*/pytest-junit.xml
           reporter: "java-junit"
       - name: "Archive code coverage reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "code-coverage-reports"
           path: |
-            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/coverage*
-            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/htmlcov
+            ./.tox-docker/*/coverage*
+            ./.tox-docker/*/htmlcov
       - name: "Archive linter reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "linter-reports"
           path: |
-            ./.tox-docker/${{ matrix.PYTHON_MINORS }}/pylint*
+            ./.tox-docker/*/pylint*
 
   release:
     runs-on: "ubuntu-latest"

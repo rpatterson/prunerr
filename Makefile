@@ -239,8 +239,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate:
-	$(MAKE) "./var/log/host-install.log"
+./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
 	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) "./requirements/build.txt"
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
@@ -251,7 +250,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log: ./requirements/$(PYTHON_ENV)/host.txt
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
 	(
 	    if ! which pip
@@ -265,7 +264,12 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    if [ -e ./requirements/$(PYTHON_ENV)/host.txt ]
+	    then
+	        pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    else
+	        pip install -r "./requirements/host.txt.in"
+	    fi
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate

@@ -19,11 +19,11 @@ PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+USER_FULL_NAME:=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
-USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
+USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
 # Use the latest installed Python version of the supported versions
 PYTHON_EXECS=$(PYTHON_SUPPORTED_MINORS:%=python%)
 PYTHON_AVAIL_EXECS=$(foreach PYTHON_EXEC,$(PYTHON_EXECS),$(shell which $(PYTHON_EXEC)))

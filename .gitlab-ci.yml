@@ -83,11 +83,7 @@ build-test:
           - "3.8"
           - "3.7"
   script:
-    - >-
-      su runner -c '
-          make -e PYTHON_MINORS=${PYTHON_MINORS}
-          build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}
-      '
+    - "su runner -c 'make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}'"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:

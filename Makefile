@@ -17,14 +17,40 @@ COMMA=,
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 
+# Values derived from the environment
+USER_NAME:=$(shell id -u -n)
+USER_FULL_NAME:=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+ifeq ($(USER_FULL_NAME),)
+USER_FULL_NAME=$(USER_NAME)
+endif
+USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
+# Use the same Python version tox would as a default:
+# https://tox.wiki/en/latest/config.html#base_python
+PYTHON_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+# Determine the latest installed Python version of the supported versions
+PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
+define PYTHON_AVAIL_EXECS :=
+    $(foreach PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
+endef
+PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+ifeq ($(PYTHON_MINOR),)
+# Fallback to the latest installed supported Python version
+PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+endif
+
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:
 #     $ make PYTHON_MINORS=3.11 test
-PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
-PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+ifeq ($(PYTHON_MINOR),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+endif
+export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
@@ -32,14 +58,6 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
-
-# Values derived from the environment
-USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
-ifeq ($(USER_FULL_NAME),)
-USER_FULL_NAME=$(USER_NAME)
-endif
-USER_EMAIL=$(USER_NAME)@$(shell hostname --fqdn)
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -72,11 +90,21 @@ all: build
 build: \
 		./var/log/host-install.log \
 		./.git/hooks/pre-commit \
-		./.tox/$(PYTHON_ENV)/bin/activate \
-		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/build.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/host.txt)
+		./.tox/$(PYTHON_ENV)/bin/activate
+# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+#     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
+#     Content-Type: .  The only supported Content-Type is text/html
+# I assume it's some sort of PyPI rate limiting.  Remove one or both of the next two `$
+# make -j` options if you don't find the trade off worth it.
+	$(MAKE) -j $(PYTHON_ENVS:%=build-requirements-%)
+.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
+### Compile fixed/pinned dependency versions if necessary
+$(PYTHON_ENVS:%=build-requirements-%):
+	$(MAKE) -j \
+	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./.tox/$(PYTHON_ENV)/bin/activate
@@ -235,9 +263,9 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate:
-	$(MAKE) "./var/log/host-install.log"
-	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) "./requirements/build.txt"
+./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
+	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+	    $(PYTHON_ENVS:%=./requirements/%/build.txt)
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
 	    -e "build,$(TOX_ENV_LIST)"
@@ -247,7 +275,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log: ./requirements/$(PYTHON_ENV)/host.txt
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
 	(
 	    if ! which pip
@@ -261,7 +289,12 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    if [ -e ./requirements/$(PYTHON_ENV)/host.txt ]
+	    then
+	        pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    else
+	        pip install -r "./requirements/host.txt.in"
+	    fi
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate

@@ -96,11 +96,11 @@ build: \
 #     Content-Type: .  The only supported Content-Type is text/html
 # I assume it's some sort of PyPI rate limiting.  Remove one or both of the next two `$
 # make -j` options if you don't find the trade off worth it.
-	$(MAKE) -j $(PYTHON_ENVS:%=build-requirements-%)
+	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
-	$(MAKE) -j \
+	$(MAKE) -e -j \
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
@@ -208,7 +208,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
-	$(MAKE) "build"
+	$(MAKE) -e "build"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -307,11 +307,11 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in
-	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 # User-created pre-requisites
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
-	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template

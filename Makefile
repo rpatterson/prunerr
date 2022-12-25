@@ -345,14 +345,17 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): \
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
+	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	touch "./Dockerfile"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \

@@ -16,14 +16,46 @@ COMMA=,
 # Variables/options that affect behavior
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
+# Project-specific variables
+GPG_SIGNING_KEYID=2EFF7CCE6828E359
+GITHUB_REPOSITORY_OWNER=rpatterson
+CI_REGISTRY_IMAGE=registry.gitlab.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure
+
+# Values derived from the environment
+USER_NAME:=$(shell id -u -n)
+USER_FULL_NAME:=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+ifeq ($(USER_FULL_NAME),)
+USER_FULL_NAME=$(USER_NAME)
+endif
+USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
+export PUID:=$(shell id -u)
+export PGID:=$(shell id -g)
+# Use the same Python version tox would as a default:
+# https://tox.wiki/en/latest/config.html#base_python
+PYTHON_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+# Determine the latest installed Python version of the supported versions
+PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
+define PYTHON_AVAIL_EXECS :=
+    $(foreach PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
+endef
+PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+ifeq ($(PYTHON_MINOR),)
+# Fallback to the latest installed supported Python version
+PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+endif
 
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:
 #     $ make PYTHON_MINORS=3.11 test
-PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+ifeq ($(PYTHON_MINOR),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+endif
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
@@ -32,21 +64,6 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
-
-# Project-specific variables
-GPG_SIGNING_KEYID=2EFF7CCE6828E359
-GITHUB_REPOSITORY_OWNER=rpatterson
-CI_REGISTRY_IMAGE=registry.gitlab.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure
-
-# Values derived from the environment
-USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
-ifeq ($(USER_FULL_NAME),)
-USER_FULL_NAME=$(USER_NAME)
-endif
-USER_EMAIL=$(USER_NAME)@$(shell hostname -f)
-export PUID:=$(shell id -u)
-export PGID:=$(shell id -g)
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -116,11 +133,27 @@ build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 ### Set up for development in Docker containers
 build-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -j $(PYTHON_MINORS:%=build-docker-%)
+# Ensure that async target modification times from parallel execution don't result in
+# redundant subsequent builds.
+	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    "./.tox/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
+.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
+### Compile fixed/pinned dependency versions if necessary
+$(PYTHON_ENVS:%=build-requirements-%):
+# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+#     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
+#     Content-Type: .  The only supported Content-Type is text/html
+# I assume it's some sort of PyPI rate limiting.  Remove the next `$ make -j` option if
+# you don't find the trade off worth it.
+	$(MAKE) -j \
+	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -453,6 +486,7 @@ endif
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
+	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(CI),true)
@@ -463,6 +497,7 @@ ifeq ($(CI),true)
 endif
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	touch "./Dockerfile"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(CI),true)
@@ -478,6 +513,7 @@ endif
 # Only update the installed tox version for the latest/host/main/default Python version
 	    pip install -r "$(@)"
 	fi
+	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(CI),true)
@@ -490,20 +526,19 @@ endif
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate:
-	$(MAKE) "./var/log/host-install.log"
-	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt)
+./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
+	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+	    $(PYTHON_ENVS:%=./requirements/%/build.txt)
 # Delegate parallel build all Python environments to tox.
-	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
-	    -e "$(TOX_ENV_LIST)"
+	tox $(TOX_RUN_ARGS) --notest --pkg-only -e "$(TOX_ENV_LIST)"
 	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 ./.tox/build/bin/activate:
 	$(MAKE) "./var/log/host-install.log"
-	touch "./requirements/build.txt"
-	tox run-parallel --notest --pkg-only --parallel auto --parallel-live -e "build"
+	touch "./requirements/$(PYTHON_ENV)/build.txt"
+	tox run --notest --pkg-only -e "build"
 
 # Docker targets
 ./.tox/$(PYTHON_ENV)/log/docker-build.log: \
@@ -622,13 +657,9 @@ endif
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run --rm python-project-structure-devel \
-	    make PYTHON_MINORS="$(PYTHON_MINOR)" \
-		"./requirements/$(PYTHON_ENV)/user.txt" \
-		"./requirements/$(PYTHON_ENV)/devel.txt" \
-		"./requirements/$(PYTHON_ENV)/build.txt" \
-		"./requirements/$(PYTHON_ENV)/host.txt" |
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV) |
 	    tee -a "$(@)"
-	$(MAKE) "$(@)" | tee -a "$(@)"
+	$(MAKE) "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in
@@ -636,7 +667,7 @@ endif
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log: ./requirements/$(PYTHON_ENV)/host.txt
+./var/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
 # Bootstrap the minimum Python environment
 	(
@@ -657,7 +688,12 @@ endif
 	            false
 	        fi
 	    fi
-	    pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    if [ -e ./requirements/$(PYTHON_ENV)/host.txt ]
+	    then
+	        pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	    else
+	        pip install -r "./requirements/host.txt.in"
+	    fi
 	) | tee -a "$(@)"
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"
@@ -692,7 +728,7 @@ endif
 	    fi
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate
+./.git/hooks/pre-commit: ./.tox/build/bin/activate
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

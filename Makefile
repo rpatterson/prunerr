@@ -90,11 +90,21 @@ all: build
 build: \
 		./var/log/host-install.log \
 		./.git/hooks/pre-commit \
-		./.tox/$(PYTHON_ENV)/bin/activate \
-		$(PYTHON_ENVS:%=./requirements/%/user.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/build.txt) \
-		$(PYTHON_ENVS:%=./requirements/%/host.txt)
+		./.tox/$(PYTHON_ENV)/bin/activate
+# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+#     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
+#     Content-Type: .  The only supported Content-Type is text/html
+# I assume it's some sort of PyPI rate limiting.  Remove one or both of the next two `$
+# make -j` options if you don't find the trade off worth it.
+	$(MAKE) -j $(PYTHON_ENVS:%=build-requirements-%)
+.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
+### Compile fixed/pinned dependency versions if necessary
+$(PYTHON_ENVS:%=build-requirements-%):
+	$(MAKE) -j \
+	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./.tox/$(PYTHON_ENV)/bin/activate

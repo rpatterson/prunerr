@@ -70,7 +70,7 @@ bump:
   stage: "bump"
   script:
     # Hand off the rest to `$ make` as the unprivileged user
-    - "su runner -c 'make -e PYTHON_MINORS=3.11 build-bump'"
+    - "su runner -c 'make -e build-bump'"
 
 build-test:
   stage: "build-test"

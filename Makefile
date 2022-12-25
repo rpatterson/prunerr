@@ -105,6 +105,9 @@ build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 ### Set up for development in Docker containers
 build-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -j $(PYTHON_MINORS:%=build-docker-%)
+# Ensure that async target modification times from parallel execution don't result in
+# redundant subsequent builds.
+	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
@@ -436,7 +439,7 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    make PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV) |
 	    tee -a "$(@)"
-	$(MAKE) "$(@)" | tee -a "$(@)"
+	$(MAKE) "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

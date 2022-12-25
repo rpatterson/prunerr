@@ -24,19 +24,31 @@ ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
 USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
-# Use the latest installed Python version of the supported versions
-PYTHON_EXECS=$(PYTHON_SUPPORTED_MINORS:%=python%)
-PYTHON_AVAIL_EXECS=$(foreach PYTHON_EXEC,$(PYTHON_EXECS),$(shell which $(PYTHON_EXEC)))
-PYTHON_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+# Use the same Python version tox would as a default:
+# https://tox.wiki/en/latest/config.html#base_python
+PYTHON_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+# Determine the latest installed Python version of the supported versions
+PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
+define PYTHON_AVAIL_EXECS :=
+    $(foreach PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
+endef
+PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+ifeq ($(PYTHON_MINOR),)
+# Fallback to the latest installed supported Python version
+PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+endif
 
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:
 #     $ make PYTHON_MINORS=3.11 test
-PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
-PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+ifeq ($(PYTHON_MINOR),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+endif
+export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
@@ -240,7 +252,8 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
-	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) "./requirements/build.txt"
+	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+	    $(PYTHON_ENVS:%=./requirements/%/build.txt)
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
 	    -e "build,$(TOX_ENV_LIST)"

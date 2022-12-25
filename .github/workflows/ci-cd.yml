@@ -65,6 +65,7 @@ jobs:
           - "3.9"
           - "3.8"
           - "3.7"
+    name: "build-test (python${{ matrix.PYTHON_MINORS }})"
     steps:
 
       # Shared/common set up
@@ -120,7 +121,7 @@ jobs:
         uses: "dorny/test-reporter@main"
         if: "success() || failure()"    # run this step even if previous step failed
         with:
-          name: "PyTest Test Suite"
+          name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
           path: |
             ./.tox-docker/*/pytest-junit.xml
           reporter: "java-junit"

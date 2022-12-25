@@ -132,14 +132,14 @@ build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env ./.tox/build/bin/activate
-	$(MAKE) -j $(PYTHON_MINORS:%=build-docker-%)
+	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-%)
 # Ensure that async target modification times from parallel execution don't result in
 # redundant subsequent builds.
 	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
-	$(MAKE) PYTHON_MINORS="$(@:build-docker-%=%)" \
+	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    "./.tox/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
@@ -149,7 +149,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 #     Content-Type: .  The only supported Content-Type is text/html
 # I assume it's some sort of PyPI rate limiting.  Remove the next `$ make -j` option if
 # you don't find the trade off worth it.
-	$(MAKE) -j \
+	$(MAKE) -e -j \
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
@@ -189,7 +189,7 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 	cz_bump_args+=" --gpg-sign"
 # Import the private signing key from CI secrets
-	$(MAKE) ./var/log/gpg-import.log
+	$(MAKE) -e ./var/log/gpg-import.log
 endif
 # Run first in case any input is needed from the developer
 	exit_code=0
@@ -236,7 +236,7 @@ endif
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch "./requirements/*/devel.txt"
-	$(MAKE) "./.tox/$(PYTHON_ENV)/log/docker-build.log"
+	$(MAKE) -e "./.tox/$(PYTHON_ENV)/log/docker-build.log"
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -261,7 +261,7 @@ endif
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
 ifeq ($(RELEASE_PUBLISH),true)
-	$(MAKE) release-docker
+	$(MAKE) -e release-docker
 endif
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
@@ -274,7 +274,7 @@ ifeq ($(GITLAB_CI),true)
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
-	$(MAKE) ./var/log/gpg-import.log
+	$(MAKE) -e ./var/log/gpg-import.log
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
@@ -337,7 +337,7 @@ endif
 release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 ifeq ($(CI),true)
-	$(MAKE) ./var/log/docker-login.log
+	$(MAKE) -e ./var/log/docker-login.log
 endif
 	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
@@ -403,7 +403,7 @@ lint-docker:
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test: lint-docker
-	$(MAKE) -j $(PYTHON_MINORS:%=test-docker-%)
+	$(MAKE) -e -j $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local
@@ -411,7 +411,7 @@ test-local: build-local
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=test-docker-%):
-	$(MAKE) PYTHON_MINORS="$(@:test-docker-%=%)" test-docker
+	$(MAKE) -e PYTHON_MINORS="$(@:test-docker-%=%)" test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker-$(PYTHON_MINOR)
@@ -423,7 +423,7 @@ test-docker: build-docker-$(PYTHON_MINOR)
 	fi
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make PYTHON_MINORS="$(PYTHON_MINOR)" test-local
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" test-local
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run $${docker_run_args} python-project-structure \
 	    python -m pythonprojectstructure --help
@@ -438,7 +438,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
-	$(MAKE) PUID=$(PUID) "build-docker"
+	$(MAKE) -e PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
 	./.tox/build/bin/pre-commit autoupdate
 
@@ -536,7 +536,7 @@ endif
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 ./.tox/build/bin/activate:
-	$(MAKE) "./var/log/host-install.log"
+	$(MAKE) -e "./var/log/host-install.log"
 	touch "./requirements/$(PYTHON_ENV)/build.txt"
 	tox run --notest --pkg-only -e "build"
 
@@ -657,13 +657,13 @@ endif
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run --rm python-project-structure-devel \
-	    make PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV) |
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV) |
 	    tee -a "$(@)"
-	$(MAKE) "$(@)"
+	$(MAKE) -e "$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in
-	$(MAKE) "PUID=$(PUID)" "PGID=$(PGID)" \
+	$(MAKE) -e "PUID=$(PUID)" "PGID=$(PGID)" \
 	    "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
@@ -738,14 +738,15 @@ endif
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in
-	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 # User-created pre-requisites
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
-	$(MAKE) "template=$(<)" "target=$(@)" expand-template
+	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/docker-login.log:
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin |
 	    tee -a "$(@)"

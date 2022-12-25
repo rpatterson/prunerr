@@ -49,6 +49,8 @@ PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
 PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 ifeq ($(PYTHON_MINOR),)
 PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 endif
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
@@ -107,8 +109,20 @@ build-docker: ./.env ./.tox/build/bin/activate
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) PYTHON_MINORS="$(@:build-docker-%=%)" \
-	    PYTHON_MINOR="$(@:build-docker-%=%)" \
 	    "./.tox/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
+.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
+### Compile fixed/pinned dependency versions if necessary
+$(PYTHON_ENVS:%=build-requirements-%):
+# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+#     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
+#     Content-Type: .  The only supported Content-Type is text/html
+# I assume it's some sort of PyPI rate limiting.  Remove the next `$ make -j` option if
+# you don't find the trade off worth it.
+	$(MAKE) -j \
+	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
+	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -264,8 +278,7 @@ test-local: build-local
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=test-docker-%):
-	$(MAKE) PYTHON_MINORS="$(@:test-docker-%=%)" \
-	    PYTHON_MINOR="$(@:test-docker-%=%)" test-docker
+	$(MAKE) PYTHON_MINORS="$(@:test-docker-%=%)" test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker-$(PYTHON_MINOR)
@@ -277,8 +290,7 @@ test-docker: build-docker-$(PYTHON_MINOR)
 	fi
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make PYTHON_MINORS="$(PYTHON_MINOR)" PYTHON_MINOR="$(PYTHON_MINOR)" \
-	        test-local
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" test-local
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run $${docker_run_args} python-project-structure \
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
@@ -351,16 +363,15 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/build.txt)
 # Delegate parallel build all Python environments to tox.
-	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
-	    -e "$(TOX_ENV_LIST)"
+	tox $(TOX_RUN_ARGS) --notest --pkg-only -e "$(TOX_ENV_LIST)"
 	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 ./.tox/build/bin/activate:
 	$(MAKE) "./var/log/host-install.log"
-	touch "./requirements/build.txt"
-	tox run-parallel --notest --pkg-only --parallel auto --parallel-live -e "build"
+	touch "./requirements/$(PYTHON_ENV)/build.txt"
+	tox run --notest --pkg-only -e "build"
 
 # Docker targets
 ./.tox/$(PYTHON_ENV)/log/docker-build.log: \
@@ -420,11 +431,7 @@ endif
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run --rm python-project-structure-devel \
-	    make PYTHON_MINORS="$(PYTHON_MINOR)" PYTHON_MINOR="$(PYTHON_MINOR)" \
-		"./requirements/$(PYTHON_ENV)/user.txt" \
-		"./requirements/$(PYTHON_ENV)/devel.txt" \
-		"./requirements/$(PYTHON_ENV)/build.txt" \
-		"./requirements/$(PYTHON_ENV)/host.txt" |
+	    make PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV) |
 	    tee -a "$(@)"
 	$(MAKE) "$(@)" | tee -a "$(@)"
 

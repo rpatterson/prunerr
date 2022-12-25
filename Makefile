@@ -466,7 +466,7 @@ endif
 	    fi
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate
+./.git/hooks/pre-commit: ./.tox/build/bin/activate
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

@@ -278,6 +278,9 @@ lint-docker:
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test: lint-docker
 	$(MAKE) -e -j $(PYTHON_MINORS:%=test-docker-%)
+# Ensure that async target modification times from parallel execution don't result in
+# redundant subsequent builds.
+	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local

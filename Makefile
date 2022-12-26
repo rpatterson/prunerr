@@ -257,6 +257,11 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
+	then
+# Only update the installed tox version for the latest/host/main/default Python version
+	    pip install -r "$(@)"
+	fi
 $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \

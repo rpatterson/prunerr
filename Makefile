@@ -67,6 +67,7 @@ endif
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
+PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
@@ -87,6 +88,13 @@ endif
 DOCKER_PUSH=false
 CI=false
 GITHUB_RELEASE_ARGS=--prerelease
+ifeq ($(CI),true)
+# Compile requirements on CI/CD as a check to make sure all changes to dependencies have
+# been reflected in the frozen/pinned versions, but don't upgrade packages so that
+# external changes, such as new PyPI releases, don't turn CI/CD red spuriously and
+# unrelated to the contributor's actual changes.
+PIP_COMPILE_ARGS=
+endif
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
@@ -479,37 +487,19 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
-ifeq ($(CI),true)
-# Don't update dependencies in CI/CD so that the release of new versions don't break
-# CI/CD runs.
-	touch "$(@)"
-	exit
-endif
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --extra="devel" \
+	    --resolver=backtracking $(PIP_COMPILE_ARGS) --extra="devel" \
 	    --output-file="$(@)" "$(<)"
 	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
-ifeq ($(CI),true)
-# Don't update dependencies in CI/CD so that the release of new versions don't break
-# CI/CD runs.
-	touch "$(@)"
-	exit
-endif
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	    --resolver=backtracking $(PIP_COMPILE_ARGS) --output-file="$(@)" "$(<)"
 	touch "./Dockerfile"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
-ifeq ($(CI),true)
-# Don't update dependencies in CI/CD so that the release of new versions don't break
-# CI/CD runs.
-	touch "$(@)"
-	exit
-endif
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	    --resolver=backtracking $(PIP_COMPILE_ARGS) --output-file="$(@)" "$(<)"
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
 # Only update the installed tox version for the latest/host/main/default Python version
@@ -518,14 +508,8 @@ endif
 	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
-ifeq ($(CI),true)
-# Don't update dependencies in CI/CD so that the release of new versions don't break
-# CI/CD runs.
-	touch "$(@)"
-	exit
-endif
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	    --resolver=backtracking $(PIP_COMPILE_ARGS) --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log

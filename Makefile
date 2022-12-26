@@ -347,27 +347,37 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
+	ls -lnt $(?)
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
 	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
+	ls -lnt $(?)
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 	touch "./Dockerfile"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+	ls -lnt $(?)
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
+	then
+# Only update the installed tox version for the latest/host/main/default Python version
+	    pip install -r "$(@)"
+	fi
 	touch "./Dockerfile.devel"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+	ls -lnt $(?)
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
+	ls -lnt $(?)
 	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/build.txt)
 # Delegate parallel build all Python environments to tox.
@@ -377,6 +387,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 ./.tox/build/bin/activate:
+	ls -lnt $(?)
 	$(MAKE) -e "./var/log/host-install.log"
 	touch "./requirements/$(PYTHON_ENV)/build.txt"
 	tox run --notest --pkg-only -e "build"
@@ -387,6 +398,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
 		./.tox/build/bin/activate
+	ls -lnt $(?)
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" "./.tox-docker/" \

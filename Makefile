@@ -274,8 +274,23 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 # Use any Python version target to represent building all versions.
 ./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
 	ls -lnt $(?)
-	touch $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-	    $(PYTHON_ENVS:%=./requirements/%/build.txt)
+# Bootstrap frozen/pinned versions if necessary
+	if [ ! -e "./requirements/$(PYTHON_ENV)/build.txt" ]
+	then
+	    cp -av "./requirements/build.txt.in" \
+	        "./requirements/$(PYTHON_ENV)/build.txt"
+# Ensure frozen/pinned versions will subsequently be compiled
+	    touch "./requirements/build.txt.in"
+	fi
+	for reqs in $(PYTHON_ENVS:%=./requirements/%/devel.txt)
+	do
+	    if [ ! -e "$${reqs}" ]
+	    then
+	        touch "$${reqs}"
+# Ensure frozen/pinned versions will subsequently be compiled
+	        touch "./setup.cfg"
+	    fi
+	done
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
 	    -e "build,$(TOX_ENV_LIST)"

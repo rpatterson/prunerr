@@ -112,6 +112,7 @@ build-docker: ./.env ./.tox/build/bin/activate
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
 	    "./.tox/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
@@ -281,7 +282,8 @@ test-local: build-local
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=test-docker-%):
-	$(MAKE) -e PYTHON_MINORS="$(@:test-docker-%=%)" test-docker
+	$(MAKE) -e PYTHON_MINORS="$(@:test-docker-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" test-docker
 .PHONY: test-docker
 ### Run the full suite of tests inside a docker container
 test-docker: build-docker-$(PYTHON_MINOR)

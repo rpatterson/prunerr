@@ -13,13 +13,13 @@ repos:
     - id: "check-push"
       name: "check-push"
       stages: ["push"]
-      entry: "make check-push"
+      entry: "make -e check-push"
       language: "python"
       pass_filenames: false
 # Only run the longer running test check after everything else
     - id: "test"
       name: "test"
       stages: ["commit", "merge-commit", "push", "manual"]
-      entry: "make test"
+      entry: "make -e test"
       language: "python"
       pass_filenames: false

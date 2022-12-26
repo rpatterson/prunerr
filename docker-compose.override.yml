@@ -23,6 +23,8 @@ services:
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
+      # Variables from the environment we want to be passed through into the container:
+      CI: "${CI:-false}"
     volumes:
       # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/python-project-structure/"

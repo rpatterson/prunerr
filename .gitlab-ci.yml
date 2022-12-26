@@ -89,18 +89,18 @@ build-test:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "./.tox-docker/${PYTHON_MINORS}/pytest*"
-      - "./.tox-docker/${PYTHON_MINORS}/coverage*"
-      - "./.tox-docker/${PYTHON_MINORS}/htmlcov"
-      - "./.tox-docker/${PYTHON_MINORS}/pylint*"
+      - "./.tox-docker/py${PYTHON_MINORS}/pytest*"
+      - "./.tox-docker/py${PYTHON_MINORS}/coverage*"
+      - "./.tox-docker/py${PYTHON_MINORS}/htmlcov"
+      - "./.tox-docker/py${PYTHON_MINORS}/pylint*"
       - "./.tox-docker/.pkg/dist/*"
       - "./dist/*"
       - "./NEWS-release.rst"
     reports:
-      junit: "./.tox-docker/${PYTHON_MINORS}/pytest-junit.xml"
+      junit: "./.tox-docker/py${PYTHON_MINORS}/pytest-junit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./.tox-docker/${PYTHON_MINORS}/coverage.xml"
+        path: "./.tox-docker/py${PYTHON_MINORS}/coverage.xml"
 
 release:
   stage: "release"

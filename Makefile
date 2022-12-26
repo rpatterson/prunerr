@@ -175,7 +175,10 @@ endif
 	rm -vf ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
-	touch "./requirements/*/devel.txt"
+	touch \
+	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
+	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/log/docker-build.log"
 
 .PHONY: start
@@ -406,6 +409,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	    touch "./requirements/build.txt.in"
 	fi
 	tox run --notest --pkg-only -e "build"
+	touch "$(@)"
 
 # Docker targets
 ./.tox/$(PYTHON_ENV)/log/docker-build.log: \

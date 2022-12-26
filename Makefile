@@ -357,13 +357,13 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): \
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
-	touch "./Dockerfile.devel"
+	touch "./.tox/$(PYTHON_ENV)/log/docker-rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): \
 		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
 	ls -lnt $(?)
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
-	touch "./Dockerfile"
+	touch "./.tox/$(PYTHON_ENV)/log/docker-rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	ls -lnt $(?)
@@ -374,7 +374,7 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 # Only update the installed tox version for the latest/host/main/default Python version
 	    pip install -r "$(@)"
 	fi
-	touch "./Dockerfile.devel"
+	touch "./.tox/$(PYTHON_ENV)/log/docker-rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
 	ls -lnt $(?)
@@ -419,6 +419,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
+		./.tox-docker/$(PYTHON_ENV)/log/docker-rebuild.log \
 		./.tox/build/bin/activate
 	ls -lnt $(?)
 # Ensure access permissions to build artifacts in container volumes.
@@ -476,6 +477,10 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
+# Marker file used to trigger the rebuild of the image for just one Python version.
+# Useful to workaround async timestamp issues when running jobs in parallel.
+./.tox-docker/$(PYTHON_ENV)/log/docker-rebuild.log:
+	date >>"$(@)"
 
 # Local environment variables from a template
 ./.env: ./.env.in

@@ -4,46 +4,35 @@
 #
 #    pip-compile --output-file=requirements/py37/host.txt --resolver=backtracking requirements/host.txt.in
 #
-cachetools==5.2.0
-    # via tox
-chardet==5.1.0
-    # via tox
-colorama==0.4.6
-    # via tox
 distlib==0.3.6
     # via virtualenv
 filelock==3.8.2
     # via
     #   tox
     #   virtualenv
-importlib-metadata==5.2.0
+importlib-metadata==4.2.0 ; python_version < "3.8"
     # via
+    #   -r requirements/host.txt.in
     #   pluggy
     #   tox
     #   virtualenv
 packaging==22.0
-    # via
-    #   pyproject-api
-    #   tox
+    # via tox
 platformdirs==2.6.0
-    # via
-    #   tox
-    #   virtualenv
+    # via virtualenv
 pluggy==1.0.0
     # via tox
-pyproject-api==1.2.1
+py==1.11.0
+    # via tox
+six==1.16.0
     # via tox
 tomli==2.0.1
-    # via
-    #   pyproject-api
-    #   tox
-tox==4.0.18
+    # via tox
+tox==3.28.0
     # via -r requirements/host.txt.in
 typing-extensions==4.4.0
-    # via
-    #   importlib-metadata
-    #   tox
-virtualenv==20.17.1
+    # via importlib-metadata
+virtualenv==20.16.2
     # via tox
 zipp==3.11.0
     # via importlib-metadata

@@ -292,7 +292,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	    fi
 	done
 # Delegate parallel build all Python environments to tox.
-	tox run-parallel --notest --pkg-only --parallel auto --parallel-live \
+	tox run-parallel --notest --parallel auto --parallel-live \
 	    -e "build,$(TOX_ENV_LIST)"
 	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`

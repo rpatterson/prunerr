@@ -467,11 +467,11 @@ ifeq ($(VCS_BRANCH),master)
 endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
+	date >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run --rm python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV) |
-	    tee -a "$(@)"
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 
 # Local environment variables from a template

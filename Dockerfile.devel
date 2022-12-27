@@ -24,7 +24,7 @@ COPY [ "./requirements/${PYTHON_ENV}/host.txt", "./requirements/${PYTHON_ENV}/" 
 RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/host.txt"
 COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
 COPY [ "./tox.ini", "./" ]
-RUN tox --notest -e "${PYTHON_ENV}"
+RUN tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
 # Activate the Python virtual environment
 ENV PATH="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}/bin:$PATH"
 

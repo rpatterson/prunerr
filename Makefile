@@ -62,6 +62,7 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
+DOCKER_BUILD_ARGS=
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -106,7 +107,8 @@ build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env ./.tox/build/bin/activate
-	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-%)
+	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
+	    $(PYTHON_MINORS:%=build-docker-%)
 # Ensure that async target modification times from parallel execution don't result in
 # redundant subsequent builds.
 	touch $(PYTHON_ENVS:%=./var/%/log/docker-build.log)
@@ -283,7 +285,8 @@ test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test-docker:
-	$(MAKE) -e -j $(PYTHON_MINORS:%=test-docker-%)
+	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
+	    $(PYTHON_MINORS:%=test-docker-%)
 # Ensure that async target modification times from parallel execution don't result in
 # redundant subsequent builds.
 	touch $(PYTHON_ENVS:%=./var/%/log/docker-build.log)
@@ -439,7 +442,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	$(MAKE) ./.tox/build/bin/activate
 	current_version=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
-	docker_build_args=" \
+	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \

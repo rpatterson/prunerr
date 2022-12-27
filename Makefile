@@ -227,8 +227,8 @@ clean:
 
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
-expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template: ./var/log/host-install.log
+	set +x
 	if [ -e "$(target)" ]
 	then
 	    diff -u "$(target)" "$(template)" || true

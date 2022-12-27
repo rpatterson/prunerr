@@ -107,13 +107,13 @@ build-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-%)
 # Ensure that async target modification times from parallel execution don't result in
 # redundant subsequent builds.
-	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
+	touch $(PYTHON_ENVS:%=./var/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
-	    "./.tox/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
+	    "./var/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
@@ -131,7 +131,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 		~/.gitconfig ./.tox/build/bin/activate \
-		./.tox/$(PYTHON_ENV)/log/docker-build.log
+		./var/$(PYTHON_ENV)/log/docker-build.log
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -179,7 +179,7 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
-	$(MAKE) -e "./.tox/$(PYTHON_ENV)/log/docker-build.log"
+	$(MAKE) -e "./var/$(PYTHON_ENV)/log/docker-build.log"
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -205,7 +205,7 @@ endif
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./.tox/$(PYTHON_ENV)/log/docker-build.log ./.tox/build/bin/activate ~/.pypirc
+release-python: ./var/$(PYTHON_ENV)/log/docker-build.log ./.tox/build/bin/activate ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build \
@@ -284,7 +284,7 @@ test-docker:
 	$(MAKE) -e -j $(PYTHON_MINORS:%=test-docker-%)
 # Ensure that async target modification times from parallel execution don't result in
 # redundant subsequent builds.
-	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
+	touch $(PYTHON_ENVS:%=./var/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Run the full suite of tests inside a docker container for this Python version
 $(PYTHON_MINORS:%=test-docker-%):
@@ -359,13 +359,15 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
-	touch "./.tox/$(PYTHON_ENV)/log/docker-rebuild.log"
+	mkdir -pv "./var/$(@:requirements/%/devel.txt=%)/log/"
+	touch "./var/$(@:requirements/%/devel.txt=%)/log/docker-rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/$(@:requirements/%/user.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
-	touch "./.tox/$(PYTHON_ENV)/log/docker-rebuild.log"
+	mkdir -pv "./var/$(@:requirements/%/user.txt=%)/log/"
+	touch "./var/$(@:requirements/%/user.txt=%)/log/docker-rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/$(@:requirements/%/host.txt=%)/bin/activate
@@ -376,7 +378,8 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 # Only update the installed tox version for the latest/host/main/default Python version
 	    pip install -r "$(@)"
 	fi
-	touch "./.tox/$(PYTHON_ENV)/log/docker-rebuild.log"
+	mkdir -pv "./var/$(@:requirements/%/host.txt=%)/log/"
+	touch "./var/$(@:requirements/%/host.txt=%)/log/docker-rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/$(@:requirements/%/build.txt=%)/bin/activate
@@ -417,11 +420,11 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	touch "$(@)"
 
 # Docker targets
-./.tox/$(PYTHON_ENV)/log/docker-build.log: \
+./var/$(PYTHON_ENV)/log/docker-build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./.tox-docker/$(PYTHON_ENV)/log/docker-rebuild.log
+		./var/$(PYTHON_ENV)/log/docker-rebuild.log
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/build/bin/activate
 # Ensure access permissions to build artifacts in container volumes.
@@ -482,7 +485,7 @@ endif
 	$(MAKE) -e "$(@)"
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
-./.tox-docker/$(PYTHON_ENV)/log/docker-rebuild.log:
+./var/$(PYTHON_ENV)/log/docker-rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 

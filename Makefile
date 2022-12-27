@@ -395,7 +395,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	    fi
 	done
 # Delegate parallel build all Python environments to tox.
-	tox $(TOX_RUN_ARGS) --notest --pkg-only -e "$(TOX_ENV_LIST)"
+	tox $(TOX_RUN_ARGS) --notest -e "$(TOX_ENV_LIST)"
 	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 ./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
@@ -411,7 +411,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 # Ensure frozen/pinned versions will subsequently be compiled
 	    touch "./requirements/build.txt.in"
 	fi
-	tox run --notest --pkg-only -e "build"
+	tox run --notest -e "build"
 	touch "$(@)"
 
 # Docker targets

@@ -39,7 +39,7 @@ docutils==0.19
     # via rstcheck-core
 exceptiongroup==1.1.0
     # via pytest
-flake8==5.0.4 ; python_version <= "3.7"
+flake8==5.0.4 ; python_version < "3.8"
     # via
     #   flake8-black
     #   python-project-structure (pyproject.toml)

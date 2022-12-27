@@ -32,6 +32,7 @@ services:
       # If created by `# dockerd`, it ends up owned by `root`.
       - "./var-docker/:/usr/local/src/python-project-structure/var/"
       - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
+      - "./.tox-docker/.pkg-${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/.tox/.pkg/"
       - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
   ## Contianers during development and release

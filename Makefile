@@ -424,7 +424,8 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	ls -lnt $(?)
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
-	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" "./.tox-docker/" \
+	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" \
+	    "./.tox-docker/" "./.tox-docker/.pkg-$(PYTHON_ENV)/" \
 	    "./src/python_project_structure.egg-info/" \
 	    "./src/python_project_structure-docker.egg-info/"
 # Workaround issues with local images and the development image depending on the end

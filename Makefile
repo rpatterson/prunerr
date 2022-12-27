@@ -109,18 +109,17 @@ build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 build-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
-# Ensure that async target modification times from parallel execution don't result in
-# redundant subsequent builds.
-	touch $(PYTHON_ENVS:%=./var/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
-	    "./var/py$(subst .,,$(@:build-docker-%=%))/log/docker-build.log"
+	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
+# Avoid parallel tox recreations stomping on each other
+	$(MAKE) -e "./.tox/$(@:build-requirements-%=%)/bin/activate"
 # Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
@@ -135,7 +134,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 		~/.gitconfig ./.tox/build/bin/activate \
-		./var/$(PYTHON_ENV)/log/docker-build.log
+		./var/docker/$(PYTHON_ENV)/log/build.log
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -183,7 +182,7 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
-	$(MAKE) -e "./var/$(PYTHON_ENV)/log/docker-build.log"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -209,7 +208,7 @@ endif
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/$(PYTHON_ENV)/log/docker-build.log ./.tox/build/bin/activate ~/.pypirc
+release-python: ./var/docker/$(PYTHON_ENV)/log/build.log ./.tox/build/bin/activate ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build \
@@ -284,12 +283,9 @@ test: lint-docker test-docker
 .PHONY: test-local
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker:
+test-docker: ./.env ./.tox/build/bin/activate
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
-# Ensure that async target modification times from parallel execution don't result in
-# redundant subsequent builds.
-	touch $(PYTHON_ENVS:%=./var/%/log/docker-build.log)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Run the full suite of tests inside a docker container for this Python version
 $(PYTHON_MINORS:%=test-docker-%):
@@ -335,6 +331,7 @@ clean:
 	./.tox/build/bin/pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -rfv "./var/log/"
+	rm -rf "./var/docker/"
 
 
 ## Utility targets
@@ -425,18 +422,18 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	touch "$(@)"
 
 # Docker targets
-./var/$(PYTHON_ENV)/log/docker-build.log: \
+./var/docker/$(PYTHON_ENV)/log/build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./var/$(PYTHON_ENV)/log/docker-rebuild.log
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
-	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" \
-	    "./.tox-docker/" "./.tox-docker/.pkg-$(PYTHON_ENV)/" \
+	mkdir -pv "$(dir $(@))" \
 	    "./src/python_project_structure.egg-info/" \
-	    "./src/python_project_structure-docker.egg-info/"
+	    "./var/docker/$(PYTHON_ENV)/python_project_structure-docker.egg-info/" \
+	    "./.tox/" "./var/docker/$(PYTHON_ENV)/.tox/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./.tox/build/bin/activate
@@ -490,7 +487,7 @@ endif
 	$(MAKE) -e "$(@)"
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
-./var/$(PYTHON_ENV)/log/docker-rebuild.log:
+./var/docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 

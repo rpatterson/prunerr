@@ -19,7 +19,9 @@ importlib-metadata==4.2.0 ; python_version < "3.8"
 packaging==22.0
     # via tox
 platformdirs==2.6.0
-    # via virtualenv
+    # via
+    #   tox
+    #   virtualenv
 pluggy==1.0.0
     # via tox
 py==1.11.0
@@ -31,7 +33,9 @@ tomli==2.0.1
 tox==3.28.0
     # via -r requirements/host.txt.in
 typing-extensions==4.4.0
-    # via importlib-metadata
+    # via
+    #   importlib-metadata
+    #   tox
 virtualenv==20.16.2
     # via tox
 zipp==3.11.0

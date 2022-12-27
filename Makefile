@@ -26,7 +26,8 @@ endif
 USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
-PYTHON_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
 define PYTHON_AVAIL_EXECS :=
@@ -34,6 +35,7 @@ define PYTHON_AVAIL_EXECS :=
 endef
 PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
 PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+PYTHON_MINOR=$(PYTHON_HOST_MINOR)
 ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
 PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
@@ -275,10 +277,10 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 ./.tox/$(PYTHON_ENV)/bin/activate:
 	$(MAKE) ./var/log/host-install.log
 # Bootstrap frozen/pinned versions if necessary
-	if [ ! -e "./requirements/$(PYTHON_ENV)/build.txt" ]
+	if [ ! -e "./requirements/$(PYTHON_HOST_ENV)/build.txt" ]
 	then
 	    cp -av "./requirements/build.txt.in" \
-	        "./requirements/$(PYTHON_ENV)/build.txt"
+	        "./requirements/$(PYTHON_HOST_ENV)/build.txt"
 # Ensure frozen/pinned versions will subsequently be compiled
 	    touch "./requirements/build.txt.in"
 	fi
@@ -314,9 +316,9 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    if [ -e ./requirements/$(PYTHON_ENV)/host.txt ]
+	    if [ -e ./requirements/$(PYTHON_HOST_ENV)/host.txt ]
 	    then
-	        pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	        pip install -r "./requirements/$(PYTHON_HOST_ENV)/host.txt"
 	    else
 	        pip install -r "./requirements/host.txt.in"
 	    fi

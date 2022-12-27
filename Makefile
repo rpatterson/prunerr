@@ -276,35 +276,37 @@ lint-docker:
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test: lint-docker
+test: lint-docker test-docker
+.PHONY: test-local
+.PHONY: test-docker
+### Format the code and run the full suite of tests, coverage checks, and linters
+test-docker:
 	$(MAKE) -e -j $(PYTHON_MINORS:%=test-docker-%)
 # Ensure that async target modification times from parallel execution don't result in
 # redundant subsequent builds.
 	touch $(PYTHON_ENVS:%=./.tox/%/log/docker-build.log)
-.PHONY: test-local
-### Run the full suite of tests on the local host
-test-local: build-local
-	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
-### Set up for development in a Docker container for one Python version
+### Run the full suite of tests inside a docker container for this Python version
 $(PYTHON_MINORS:%=test-docker-%):
 	$(MAKE) -e PYTHON_MINORS="$(@:test-docker-%=%)" \
-	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" test-docker
-.PHONY: test-docker
-### Run the full suite of tests inside a docker container
-test-docker: build-docker-$(PYTHON_MINOR)
+	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" test-docker-pyminor
+.PHONY: test-docker-pyminor
+test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
 	fi
-# Run from the development Docker container for consistency
-	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" test-local
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run $${docker_run_args} python-project-structure \
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
+# Run from the development Docker container for consistency
+	docker compose run $${docker_run_args} python-project-structure-devel \
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" test-local
+### Run the full suite of tests on the local host
+test-local: build-local
+	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log

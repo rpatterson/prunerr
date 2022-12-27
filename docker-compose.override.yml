@@ -32,7 +32,7 @@ services:
       # run-time.
       - "./var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
       - "./var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
-      - "./var/docker/${PYTHON_ENV:-py311}/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      - "./var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
   ## Contianers during development and release
 

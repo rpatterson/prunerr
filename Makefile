@@ -175,7 +175,7 @@ endif
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
-	rm -vf ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
+	rm -vf ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch \
@@ -212,10 +212,9 @@ release-python: ./var/docker/$(PYTHON_ENV)/log/build.log ./.tox/build/bin/activa
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build \
-	    --outdir "./.tox/$(PYTHON_ENV)/dist/" -w
+	    --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./.tox-docker/$(PYTHON_ENV)/dist/* \
-	    ./.tox-docker/.pkg/dist/*
+	./.tox/build/bin/twine check ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -231,7 +230,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./.tox-docker/$(PYTHON_ENV)/dist/* ./.tox-docker/.pkg/dist/*
+	    ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -361,15 +360,15 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
-	mkdir -pv "./var/$(@:requirements/%/devel.txt=%)/log/"
-	touch "./var/$(@:requirements/%/devel.txt=%)/log/docker-rebuild.log"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/$(@:requirements/%/user.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
-	mkdir -pv "./var/$(@:requirements/%/user.txt=%)/log/"
-	touch "./var/$(@:requirements/%/user.txt=%)/log/docker-rebuild.log"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/$(@:requirements/%/host.txt=%)/bin/activate
@@ -380,8 +379,8 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 # Only update the installed tox version for the latest/host/main/default Python version
 	    pip install -r "$(@)"
 	fi
-	mkdir -pv "./var/$(@:requirements/%/host.txt=%)/log/"
-	touch "./var/$(@:requirements/%/host.txt=%)/log/docker-rebuild.log"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./.tox/$(@:requirements/%/build.txt=%)/bin/activate
@@ -432,7 +431,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" \
 	    "./src/python_project_structure.egg-info/" \
-	    "./var/docker/$(PYTHON_ENV)/python_project_structure-docker.egg-info/" \
+	    "./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/" \
 	    "./.tox/" "./var/docker/$(PYTHON_ENV)/.tox/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.

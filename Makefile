@@ -28,7 +28,8 @@ export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
-PYTHON_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
 define PYTHON_AVAIL_EXECS :=
@@ -36,6 +37,7 @@ define PYTHON_AVAIL_EXECS :=
 endef
 PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
 PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+PYTHON_MINOR=$(PYTHON_HOST_MINOR)
 ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
 PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
@@ -336,8 +338,8 @@ clean:
 
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
-expand-template: .SHELLFLAGS = -eu -o pipefail -c
 expand-template: ./var/log/host-install.log
+	set +x
 	if [ -e "$(target)" ]
 	then
 	    diff -u "$(target)" "$(template)" || true
@@ -409,10 +411,10 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) -e "./var/log/host-install.log"
 # Bootstrap frozen/pinned versions if necessary
-	if [ ! -e "./requirements/$(PYTHON_ENV)/build.txt" ]
+	if [ ! -e "./requirements/$(PYTHON_HOST_ENV)/build.txt" ]
 	then
 	    cp -av "./requirements/build.txt.in" \
-	        "./requirements/$(PYTHON_ENV)/build.txt"
+	        "./requirements/$(PYTHON_HOST_ENV)/build.txt"
 # Ensure frozen/pinned versions will subsequently be compiled
 	    touch "./requirements/build.txt.in"
 	fi
@@ -426,7 +428,6 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
 		./var/$(PYTHON_ENV)/log/docker-rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./.tox/build/bin/activate
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" "./var-docker/log/" "./.tox/" \
@@ -435,6 +436,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	    "./src/python_project_structure-docker.egg-info/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
+	$(MAKE) ./.tox/build/bin/activate
 	current_version=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args=" \
@@ -509,9 +511,9 @@ endif
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    if [ -e ./requirements/$(PYTHON_ENV)/host.txt ]
+	    if [ -e ./requirements/$(PYTHON_HOST_ENV)/host.txt ]
 	    then
-	        pip install -r "./requirements/$(PYTHON_ENV)/host.txt"
+	        pip install -r "./requirements/$(PYTHON_HOST_ENV)/host.txt"
 	    else
 	        pip install -r "./requirements/host.txt.in"
 	    fi
@@ -536,7 +538,7 @@ endif
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
-./var/log/docker-login.log: .SHELLFLAGS = -eu -o pipefail -c
 ./var/log/docker-login.log:
+	set +x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"

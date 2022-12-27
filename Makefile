@@ -244,20 +244,20 @@ expand-template: ./var/log/host-install.log
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-$(PYTHON_ENVS:%=./requirements/%/devel.txt): \
-		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
+$(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./.tox/$(@:requirements/%/devel.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --extra="devel" \
 	    --output-file="$(@)" "$(<)"
-$(PYTHON_ENVS:%=./requirements/%/user.txt): \
-		./pyproject.toml ./setup.cfg ./tox.ini ./.tox/$(PYTHON_ENV)/bin/activate
+$(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./.tox/$(@:requirements/%/user.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
-$(PYTHON_ENVS:%=./requirements/%/host.txt): \
-		./requirements/host.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+$(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./.tox/$(@:requirements/%/host.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
@@ -265,15 +265,15 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 # Only update the installed tox version for the latest/host/main/default Python version
 	    pip install -r "$(@)"
 	fi
-$(PYTHON_ENVS:%=./requirements/%/build.txt): \
-		./requirements/build.txt.in ./.tox/$(PYTHON_ENV)/bin/activate
+$(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./.tox/$(@:requirements/%/build.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
 
 # Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate: ./var/log/host-install.log
-	true DEBUG Updated prereqs: $(?)
+./.tox/$(PYTHON_ENV)/bin/activate:
+	$(MAKE) ./var/log/host-install.log
 # Bootstrap frozen/pinned versions if necessary
 	if [ ! -e "./requirements/$(PYTHON_ENV)/build.txt" ]
 	then
@@ -294,9 +294,9 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 # Delegate parallel build all Python environments to tox.
 	tox run-parallel --notest --parallel auto --parallel-live \
 	    -e "build,$(TOX_ENV_LIST)"
-	touch "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-./.tox/$(PYTHON_ENV)/log/editable.log: ./.tox/$(PYTHON_ENV)/bin/activate
+./.tox/$(PYTHON_ENV)/log/editable.log:
+	$(MAKE) ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
@@ -322,7 +322,8 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): \
 	    fi
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./.tox/$(PYTHON_ENV)/bin/activate
+./.git/hooks/pre-commit:
+	$(MAKE) ./.tox/$(PYTHON_ENV)/bin/activate
 	./.tox/build/bin/pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

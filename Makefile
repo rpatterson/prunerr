@@ -480,6 +480,7 @@ endif
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./.tox-docker/$(PYTHON_ENV)/log/docker-rebuild.log:
+	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 
 # Local environment variables from a template

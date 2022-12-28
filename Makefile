@@ -149,7 +149,7 @@ endif
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
-	rm -vf ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
+	rm -vf ./.tox/.pkg/dist/*
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -162,10 +162,9 @@ endif
 ### Publish installable Python packages to PyPI
 release: ./.tox/$(PYTHON_ENV)/bin/activate ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
-	./.tox/$(PYTHON_ENV)/bin/pyproject-build \
-	    --outdir "./.tox/$(PYTHON_ENV)/dist/" -w
+	./.tox/$(PYTHON_ENV)/bin/pyproject-build --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
+	./.tox/build/bin/twine check ./.tox/.pkg/dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -180,8 +179,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./.tox/$(PYTHON_ENV)/dist/* ./.tox/.pkg/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./.tox/.pkg/dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)

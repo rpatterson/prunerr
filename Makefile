@@ -280,7 +280,6 @@ lint-docker:
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test: lint-docker test-docker
-.PHONY: test-local
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test-docker: ./.env ./.tox/build/bin/activate
@@ -305,6 +304,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" test-local
+.PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"

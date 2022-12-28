@@ -45,7 +45,7 @@ flake8==5.0.4 ; python_version < "3.8"
     #   python-project-structure (pyproject.toml)
 flake8-black==0.3.6
     # via python-project-structure (pyproject.toml)
-importlib-metadata==4.2.0
+importlib-metadata==4.2.0 ; python_version < "3.8"
     # via
     #   build
     #   click
@@ -53,6 +53,7 @@ importlib-metadata==4.2.0
     #   pep517
     #   pluggy
     #   pytest
+    #   python-project-structure (pyproject.toml)
     #   rstcheck
     #   rstcheck-core
     #   setuptools-scm

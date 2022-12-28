@@ -260,10 +260,17 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	$(MAKE) ./.tox/$(@:requirements/%/host.txt=%)/bin/activate
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+# Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
-# Only update the installed tox version for the latest/host/main/default Python version
-	    pip install -r "$(@)"
+# Don't install tox into one of it's own virtual environments
+	    if [ -n "$${VIRTUAL_ENV:-}" ]
+	    then
+	        pip_bin="$$(which -a pip | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
+	    else
+	        pip_bin="pip"
+	    fi
+	    "$${pip_bin}" install -r "$(@)"
 	fi
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)

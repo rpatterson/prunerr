@@ -6,7 +6,7 @@
 #
 distlib==0.3.6
     # via virtualenv
-filelock==3.8.2
+filelock==3.9.0
     # via
     #   tox
     #   virtualenv
@@ -18,7 +18,7 @@ importlib-metadata==4.2.0 ; python_version < "3.8"
     #   virtualenv
 packaging==22.0
     # via tox
-platformdirs==2.6.0
+platformdirs==2.6.2
     # via
     #   tox
     #   virtualenv
@@ -35,6 +35,7 @@ tox==3.28.0
 typing-extensions==4.4.0
     # via
     #   importlib-metadata
+    #   platformdirs
     #   tox
 virtualenv==20.16.2
     # via tox

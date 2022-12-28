@@ -130,6 +130,13 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/host.txt"
+.PHONY: build-wheel
+### Build the package/distribution format that is fastest to install
+build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
+	ln -sfv --relative "./dist/$$(
+	    docker compose run --rm python-project-structure-devel pyproject-build -w |
+	    tee "/dev/stderr" | sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
+	)" "./var/current.whl"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -175,7 +182,7 @@ endif
 # Increment the version in VCS
 	./.tox/build/bin/cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
-	rm -vf ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*
+	rm -vf ./dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch \
@@ -208,13 +215,16 @@ endif
 release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/docker/$(PYTHON_ENV)/log/build.log ./.tox/build/bin/activate ~/.pypirc
+release-python: \
+		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./.tox/build/bin/activate \
+		~/.pypirc
 # Build Python packages/distributions from the development Docker container for
+	test -f ./var/current.whl || $(MAKE) build-wheel
+	docker compose run --rm python-project-structure-devel pyproject-build -s
 # consistency/reproducibility.
-	docker compose run --rm python-project-structure-devel pyproject-build \
-	    --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*
+	./.tox/build/bin/twine check ./dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -229,8 +239,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -281,7 +290,7 @@ lint-docker:
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env ./.tox/build/bin/activate
+test-docker: ./.env ./.tox/build/bin/activate build-wheel
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
@@ -302,7 +311,10 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" test-local
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" \
+	        TOX_RUN_ARGS="run --installpkg $$(
+	            realpath --relative-to "./" "./var/current.whl"
+	        )" test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local

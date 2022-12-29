@@ -58,7 +58,12 @@ bump:
   stage: "bump"
   script:
     # Hand off the rest to `$ make` as the unprivileged user
-    - "./bin/docker-entrypoint make -e build-bump"
+    - "./bin/docker-entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel"
+  artifacts:
+    # Upload build artifacts:
+    # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
+    paths:
+      - "./dist/*"
 
 build-test:
   stage: "build-test"
@@ -75,24 +80,24 @@ build-test:
     - "./bin/docker-entrypoint make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
-    # Upload build artifacts:
-    # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "./.tox-docker/py${PYTHON_MINORS}/pytest*"
-      - "./.tox-docker/py${PYTHON_MINORS}/coverage*"
-      - "./.tox-docker/py${PYTHON_MINORS}/htmlcov"
-      - "./.tox-docker/py${PYTHON_MINORS}/pylint*"
-      - "./.tox-docker/.pkg/dist/*"
+      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/pytest*"
+      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/coverage*"
+      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/htmlcov"
+      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/pylint*"
       - "./dist/*"
       - "./NEWS-release.rst"
     reports:
-      junit: "./.tox-docker/py${PYTHON_MINORS}/pytest-junit.xml"
+      junit: "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/pytest-junit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./.tox-docker/py${PYTHON_MINORS}/coverage.xml"
+        path: "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/coverage.xml"
 
 release:
   stage: "release"
   needs: ["build-test"]
   script:
     - "./bin/docker-entrypoint make -e PYTHON_MINORS=3.11 release"
+  artifacts:
+    paths:
+      - "./dist/*"

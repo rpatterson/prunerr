@@ -23,7 +23,7 @@ USER_FULL_NAME:=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d 
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
-USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
+USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 # Use the same Python version tox would as a default:

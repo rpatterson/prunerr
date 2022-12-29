@@ -1,0 +1,37 @@
+#!/bin/ash
+#
+# Shared set up for local testing of CI/CD
+
+set -eu -o pipefail
+if [ -n "${DEBUG:=}" ]
+then
+    # Echo commands for easier debugging
+    PS4='$0:$LINENO+'
+    set -x
+fi
+
+
+main() {
+    # Install packages into container required to hand off to `$ make`
+    apk update
+    apk add "make" "bash" "git" "gettext" "py3-pip" "gnupg" "curl" "github-cli"
+    # Add an unprivileged user to cover those use cases and more closely match local
+    # development
+    addgroup -g "${PGID}" "runner"
+    adduser -u "${PUID}" -G "runner" -g "CI Runner,,," -D "runner"
+    if [ -n "${DOCKER_GID:-}" ]
+    then
+	addgroup -g "${DOCKER_GID}" "docker"
+	adduser "runner" "docker"
+    fi
+    # Add user installs to PATH
+    export PATH="/home/runner/.local/bin:$PATH"
+    # Make the checkout accessible to the user
+    chown -R "$PUID:$PGID" "./"
+
+    # Run the rest of the CLI arguments as the unprivileged user
+    exec su runner -c "$*"
+}
+
+
+main "$@"

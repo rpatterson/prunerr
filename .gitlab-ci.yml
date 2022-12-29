@@ -63,6 +63,7 @@ bump:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
+      - "./NEWS-release.rst"
       - "./dist/*"
 
 build-test:
@@ -86,7 +87,6 @@ build-test:
       - "./var/docker/py*/.tox/py*/htmlcov"
       - "./var/docker/py*/.tox/py*/pylint*"
       - "./dist/*"
-      - "./NEWS-release.rst"
     reports:
       junit: "./var/docker/py*/.tox/py*/pytest-junit.xml"
       coverage_report:
@@ -100,4 +100,5 @@ release:
     - "./bin/docker-entrypoint make -e PYTHON_MINORS=3.11 release"
   artifacts:
     paths:
+      - "./NEWS-release.rst"
       - "./dist/*"

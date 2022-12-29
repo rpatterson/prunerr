@@ -54,12 +54,12 @@ jobs:
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
 
-      - name: "Archive built Python wheel package"
+      - name: "Archive built Python built packages"
         uses: "actions/upload-artifact@master"
         with:
-          name: "python-wheel-package"
+          name: "python-built-packages"
           path: |
-            ./dist/*.whl
+            ./dist
 
   build-test:
     runs-on: "ubuntu-latest"
@@ -98,12 +98,12 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
-      - name: "Retrieve built Python wheel package"
+      - name: "Retrieve built Python built packages"
         uses: "actions/download-artifact@master"
         with:
-          name: "python-wheel-package"
+          name: "python-built-packages"
           path: |
-            ./dist/*.whl
+            ./dist
 
       # Delegate the rest to the `./Makefile` to keep as much portable between CI
       # platforms
@@ -180,12 +180,12 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
-      - name: "Retrieve built Python wheel package"
+      - name: "Retrieve built Python built packages"
         uses: "actions/download-artifact@master"
         with:
-          name: "python-wheel-package"
+          name: "python-built-packages"
           path: |
-            ./dist/*.whl
+            ./dist
 
       - name: "Publish release artifacts"
         env:

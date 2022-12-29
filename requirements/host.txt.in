@@ -1,1 +1,9 @@
 tox
+# Workaround an issue when both the `$ pip install -r ./requirements/py37/devel.txt` and
+# `$ pip install -r ./requirements/py37/host.txt` requirements are installed in then
+# same environment, such as the Docker development container image:
+# ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+# rstcheck 6.1.1 requires importlib-metadata<5.0,>=1.6; python_version < "3.8", but you have importlib-metadata 5.2.0 which is incompatible.
+# rstcheck-core 1.0.3 requires importlib-metadata<5.0,>=1.6; python_version < "3.8", but you have importlib-metadata 5.2.0 which is incompatible.
+# flake8 5.0.4 requires importlib-metadata<4.3,>=1.1.0; python_version < "3.8", but you have importlib-metadata 5.2.0 which is incompatible.
+importlib-metadata<4.3,>=1.6; python_version < "3.8"

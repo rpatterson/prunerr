@@ -32,7 +32,7 @@ distlib==0.3.6
     # via virtualenv
 docutils==0.19
     # via readme-renderer
-filelock==3.8.2
+filelock==3.9.0
     # via virtualenv
 identify==2.5.11
     # via pre-commit
@@ -45,7 +45,7 @@ importlib-metadata==4.13.0
     #   pre-commit
     #   twine
     #   virtualenv
-importlib-resources==5.10.1
+importlib-resources==5.10.2
     # via keyring
 jaraco-classes==3.2.3
     # via keyring
@@ -67,7 +67,7 @@ packaging==22.0
     # via commitizen
 pkginfo==1.9.2
     # via twine
-platformdirs==2.6.0
+platformdirs==2.6.2
     # via virtualenv
 pre-commit==2.21.0
     # via -r requirements/build.txt.in
@@ -111,6 +111,7 @@ typing-extensions==4.4.0
     # via
     #   commitizen
     #   importlib-metadata
+    #   platformdirs
     #   rich
 urllib3==1.26.13
     # via

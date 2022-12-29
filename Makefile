@@ -335,7 +335,7 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	docker compose --remove-orphans down --rmi "all" -v || true
+	docker compose down --remove-orphans --rmi "all" -v || true
 	./.tox/build/bin/pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true

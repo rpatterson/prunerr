@@ -340,7 +340,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	./.tox/build/bin/pre-commit clean || true
-	git clean -dfx -e "var/"
+	git clean -dfx -e "var/" -e ".env"
 	rm -rfv "./var/log/"
 	rm -rf "./var/docker/"
 

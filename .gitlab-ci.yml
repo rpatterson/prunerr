@@ -81,17 +81,17 @@ build-test:
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     paths:
-      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/pytest*"
-      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/coverage*"
-      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/htmlcov"
-      - "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/pylint*"
+      - "./var/docker/py*/.tox/py*/pytest*"
+      - "./var/docker/py*/.tox/py*/coverage*"
+      - "./var/docker/py*/.tox/py*/htmlcov"
+      - "./var/docker/py*/.tox/py*/pylint*"
       - "./dist/*"
       - "./NEWS-release.rst"
     reports:
-      junit: "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/pytest-junit.xml"
+      junit: "./var/docker/py*/.tox/py*/pytest-junit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./var/docker/py${PYTHON_MINORS}/.tox/py${PYTHON_MINORS}/coverage.xml"
+        path: "./var/docker/py*/.tox/py*/coverage.xml"
 
 release:
   stage: "release"

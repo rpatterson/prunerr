@@ -30,11 +30,11 @@ services:
       - "./:/usr/local/src/python-project-structure/"
       # Preserve caches caches between container runs
       - "./home/:/home/python-project-structure/"
-      # Ensure access permissions to build artifacts inside docker.
-      # If created by `# dockerd`, it ends up owned by `root`.
-      - "./var-docker/:/usr/local/src/python-project-structure/var/"
-      - "./.tox-docker/:/usr/local/src/python-project-structure/.tox/"
-      - "./src/python_project_structure-docker.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      # Avoid any clashes between image variants and/or the local host at both build and
+      # run-time.
+      - "./var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
+      - "./var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
+      - "./var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
   ## Contianers during development and release
 

@@ -24,9 +24,10 @@ COPY [ "./requirements/${PYTHON_ENV}/host.txt", "./requirements/${PYTHON_ENV}/" 
 RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/host.txt"
 COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
 COPY [ "./tox.ini", "./" ]
-RUN tox --notest --pkg-only -e "${PYTHON_ENV}"
+RUN tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
 # Activate the Python virtual environment
-ENV PATH="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}/bin:$PATH"
+ENV VIRTUAL_ENV="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}"
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 # Remain in the checkout `WORKDIR` and make the primary testing tool for the default
 # command to run.

@@ -12,18 +12,6 @@ default:
   image: "docker:latest"
   services:
     - "docker:dind"
-  before_script:
-    # Install packages into container required to hand off to `$ make`
-    - "apk update"
-    - "apk add make bash git gettext py3-pip gnupg curl github-cli"
-    # Add an unprivileged user to cover those use cases and more closely match local
-    # development
-    - "addgroup -g $PGID runner"
-    - "adduser -u $PUID -G runner -g 'CI Runner,,,' -D runner"
-    # Add user installs to PATH
-    - 'export PATH="/home/runner/.local/bin:$PATH"'
-    # Make the checkout accessible to the user
-    - "chown -R $PUID:$PGID ./"
 
 variables:
   # Options that affect GitLab CI/CD runner behavior
@@ -70,7 +58,7 @@ bump:
   stage: "bump"
   script:
     # Hand off the rest to `$ make` as the unprivileged user
-    - "su runner -c 'make -e build-bump'"
+    - "./bin/docker-entrypoint make -e build-bump"
 
 build-test:
   stage: "build-test"
@@ -84,7 +72,7 @@ build-test:
           - "3.8"
           - "3.7"
   script:
-    - "su runner -c 'make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}'"
+    - "./bin/docker-entrypoint make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:
@@ -107,4 +95,4 @@ release:
   stage: "release"
   needs: ["build-test"]
   script:
-    - "su runner -c 'make -e PYTHON_MINORS=3.11 release'"
+    - "./bin/docker-entrypoint make -e PYTHON_MINORS=3.11 release"

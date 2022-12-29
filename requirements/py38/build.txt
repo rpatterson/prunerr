@@ -42,7 +42,7 @@ importlib-metadata==5.2.0
     # via
     #   keyring
     #   twine
-importlib-resources==5.10.1
+importlib-resources==5.10.2
     # via keyring
 jaraco-classes==3.2.3
     # via keyring

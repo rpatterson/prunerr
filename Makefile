@@ -169,10 +169,10 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
-	ln -sfv --relative "./dist/$$(
+	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    tee "/dev/stderr" | sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
-	)" "./var/current.whl"
+	)" "./dist/.current.whl"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -300,7 +300,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
 # Build Python packages/distributions from the development Docker container for
-	test -f ./var/current.whl || $(MAKE) build-wheel
+	test -f ./dist/.current.whl || $(MAKE) build-wheel
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # consistency/reproducibility.
 # https://twine.readthedocs.io/en/latest/#using-twine
@@ -450,8 +450,8 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" \
-	        TOX_RUN_ARGS="run --installpkg $$(
-	            realpath --relative-to "./" "./var/current.whl"
+	        TOX_RUN_ARGS="run --installpkg ./dist/$$(
+	            readlink "./dist/.current.whl"
 	        )" test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
@@ -473,12 +473,12 @@ upgrade:
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
-	docker compose --remove-orphans down --rmi "all" -v || true
+	docker compose down --remove-orphans --rmi "all" -v || true
 	./.tox/build/bin/pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	./.tox/build/bin/pre-commit clean || true
-	git clean -dfx -e "var/"
+	git clean -dfx -e "var/" -e ".env"
 	rm -rfv "./var/log/"
 	rm -rf "./var/docker/"
 

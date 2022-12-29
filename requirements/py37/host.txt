@@ -36,7 +36,6 @@ typing-extensions==4.4.0
     # via
     #   importlib-metadata
     #   platformdirs
-    #   tox
 virtualenv==20.16.2
     # via tox
 zipp==3.11.0

@@ -25,6 +25,7 @@ services:
       PGID: "${PGID:-${PUID:-1000}}"
       # Variables from the environment we want to be passed through into the container:
       CI: "${CI:-false}"
+      DEBUG: "true"
     volumes:
       # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/python-project-structure/"
@@ -67,15 +68,21 @@ services:
       --debug "merpatterson/python-project-structure"
 
   ## Container for use by end users
-  dind:
-    image: "docker:dind"
+  docker:
+    image: "docker:latest"
     privileged: true
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./:/usr/local/src/python-project-structure/"
-      - "./var-dind/:/usr/local/src/python-project-structure/var/"
-      - "./.tox-dind/:/usr/local/src/python-project-structure/.tox/"
-    working_dir: "/usr/local/src/python-project-structure/"
+      - "./:${CHECKOUT_DIR}"
+    environment:
+      DOCKER_GID: "${DOCKER_GID:-}"
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-${PUID:-1000}}"
+      DEBUG: "true"
+    working_dir: "${CHECKOUT_DIR}"
+    entrypoint: "./bin/docker-entrypoint"
+    command: >-
+      make -e build-docker test-docker release
 
   gitlab-release-cli:
     image: "registry.gitlab.com/gitlab-org/release-cli:latest"

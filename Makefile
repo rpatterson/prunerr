@@ -135,7 +135,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
-	    tee "/dev/stderr" | sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
+	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
 	)" "./dist/.current.whl"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release

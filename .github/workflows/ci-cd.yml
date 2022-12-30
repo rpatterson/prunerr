@@ -38,6 +38,7 @@ jobs:
             ~/.local
             ./.tox
             ./var/docker/py*/.tox
+            ./dist
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
           key: >-
@@ -52,13 +53,6 @@ jobs:
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
-
-      - name: "Archive built Python built packages"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "python-built-packages"
-          path: |
-            ./dist
 
   build-test:
     runs-on: "ubuntu-latest"
@@ -92,16 +86,11 @@ jobs:
             ~/.local
             ./.tox
             ./var/docker/py*/.tox
+            ./dist
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
-      - name: "Retrieve built Python built packages"
-        uses: "actions/download-artifact@master"
-        with:
-          name: "python-built-packages"
-          path: |
-            ./dist
 
       # Delegate the rest to the `./Makefile` to keep as much portable between CI
       # platforms
@@ -173,16 +162,11 @@ jobs:
             ~/.local
             ./.tox
             ./var/docker/py*/.tox
+            ./dist
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
-      - name: "Retrieve built Python built packages"
-        uses: "actions/download-artifact@master"
-        with:
-          name: "python-built-packages"
-          path: |
-            ./dist
 
       - name: "Publish release artifacts"
         env:

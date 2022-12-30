@@ -58,9 +58,9 @@ export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
-TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
+export TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
-TOX_RUN_ARGS=run
+export TOX_RUN_ARGS=run
 endif
 DOCKER_BUILD_ARGS=
 
@@ -218,9 +218,9 @@ release: release-python release-docker
 release-python: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./.tox/build/bin/activate \
-		~/.pypirc
+		~/.pypirc \
+		./dist/.current.whl
 # Build Python packages/distributions from the development Docker container for
-	test -f ./dist/.current.whl || $(MAKE) build-wheel
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # consistency/reproducibility.
 # https://twine.readthedocs.io/en/latest/#using-twine
@@ -291,7 +291,11 @@ test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test-docker: ./.env ./.tox/build/bin/activate build-wheel
-	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
+	$(MAKE) -e -j \
+	    TOX_RUN_ARGS="run --installpkg ./dist/$$(
+	        readlink "./dist/.current.whl"
+	    )" \
+	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Run the full suite of tests inside a docker container for this Python version
@@ -311,10 +315,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" \
-	        TOX_RUN_ARGS="run --installpkg ./dist/$$(
-	            readlink "./dist/.current.whl"
-	        )" test-local
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local
@@ -438,6 +439,10 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	fi
 	tox run --notest -e "build"
 	touch "$(@)"
+
+# Build a wheel package but only if one hasn't already been made
+./dist/.current.whl:
+	$(MAKE) build-wheel
 
 # Docker targets
 ./var/docker/$(PYTHON_ENV)/log/build.log: \

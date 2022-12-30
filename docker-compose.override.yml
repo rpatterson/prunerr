@@ -23,7 +23,9 @@ services:
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
-      DEBUG: "true"
+      # Variables from the environment we want to be passed through into the container:
+      CI: "${CI:-false}"
+      # DEBUG: "true"
     volumes:
       # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/python-project-structure/"
@@ -34,6 +36,7 @@ services:
       - "./var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
       - "./var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
       - "./var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+    entrypoint: "./bin/entrypoint"
 
   ## Contianers during development and release
 
@@ -76,7 +79,7 @@ services:
       DOCKER_GID: "${DOCKER_GID:-}"
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
-      DEBUG: "true"
+      # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR}"
     entrypoint: "./bin/docker-entrypoint"
     command: >-

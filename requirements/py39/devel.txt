@@ -55,6 +55,8 @@ jinja2==3.1.2
     # via towncrier
 lazy-object-proxy==1.8.0
     # via astroid
+lxml==4.9.2
+    # via python-project-structure (pyproject.toml)
 markupsafe==2.1.1
     # via jinja2
 mccabe==0.7.0

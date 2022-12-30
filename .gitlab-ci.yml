@@ -88,6 +88,7 @@ build-test:
       - "./var/docker/py*/.tox/py*/coverage*"
       - "./var/docker/py*/.tox/py*/htmlcov"
       - "./var/docker/py*/.tox/py*/pylint*"
+      - "./var/docker/py*/.tox/py*/mypy*"
       - "./dist/*"
     reports:
       junit: "./var/docker/py*/.tox/py*/pytest-junit.xml"

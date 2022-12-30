@@ -131,13 +131,14 @@ jobs:
           name: "code-coverage-reports"
           path: |
             ./var/docker/*/.tox/*/coverage*
-            ./var/docker/*/.tox/*/htmlcov
+            ./var/docker/*/.tox/*/htmlcov*
       - name: "Archive linter reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "linter-reports"
           path: |
             ./var/docker/*/.tox/*/pylint*
+            ./var/docker/*/.tox/*/mypy*
 
   release:
     runs-on: "ubuntu-latest"

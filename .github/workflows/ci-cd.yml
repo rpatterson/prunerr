@@ -37,8 +37,7 @@ jobs:
           path: |
             ~/.local
             ./.tox
-            ./.tox-*
-            ./var/log
+            ./var/docker/py*/.tox
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
           key: >-
@@ -92,8 +91,7 @@ jobs:
           path: |
             ~/.local
             ./.tox
-            ./.tox-*
-            ./var/log
+            ./var/docker/py*/.tox
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
@@ -174,8 +172,7 @@ jobs:
           path: |
             ~/.local
             ./.tox
-            ./.tox-*
-            ./var/log
+            ./var/docker/py*/.tox
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-

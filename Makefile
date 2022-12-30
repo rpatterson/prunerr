@@ -453,7 +453,8 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    python-project-structure --help
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" test-local
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" TOX_RUN_ARGS="$(TOX_RUN_ARGS)" \
+	        test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local: build-local

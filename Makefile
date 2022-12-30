@@ -504,6 +504,8 @@ endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
 	date >>"$(@)"
+# The image installs the host requirements, reflect that in the bind mount volumes
+	date >>"$(@:%/build.log=%/host-install.log)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run --rm -T python-project-structure-devel \

@@ -42,7 +42,7 @@ variables:
 # them in a virtualenv and cache it as well.
 cache:
   # Increment to clear the cache
-  key: "v1"
+  key: "v2"
   paths:
     - "./.cache/pip"
     - "./.tox"

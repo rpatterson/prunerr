@@ -88,7 +88,7 @@ pycodestyle==2.10.0
     # via
     #   autopep8
     #   flake8
-pydantic==1.10.3
+pydantic==1.10.4
     # via rstcheck-core
 pyflakes==3.0.1
     # via

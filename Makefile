@@ -282,7 +282,7 @@ endif
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
-ifeq ($(RELEASE_PUBLISH),true)
+ifeq ($(GITLAB_CI),true)
 	$(MAKE) -e release-docker
 endif
 .PHONY: release-python

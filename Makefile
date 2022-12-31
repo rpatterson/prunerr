@@ -224,8 +224,8 @@ release-python: \
 		~/.pypirc \
 		./dist/.current.whl
 # Build Python packages/distributions from the development Docker container for
-	docker compose run --rm python-project-structure-devel pyproject-build -s
 # consistency/reproducibility.
+	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/*
 	if [ ! -z "$$(git status --porcelain)" ]

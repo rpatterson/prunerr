@@ -371,20 +371,20 @@ expand-template: ./var/log/host-install.log
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-$(PYTHON_ENVS:%=./requirements/%/devel.txt): \
-		./pyproject.toml ./setup.cfg ./tox.ini ./var/log/host-install.log
+$(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./var/log/host-install.log
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/devel.txt=%)" -- \
 	    pip-compile --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
-$(PYTHON_ENVS:%=./requirements/%/user.txt): \
-		./pyproject.toml ./setup.cfg ./tox.ini ./var/log/host-install.log
+$(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./var/log/host-install.log
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/user.txt=%)" -- \
 	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
-$(PYTHON_ENVS:%=./requirements/%/host.txt): \
-		./requirements/host.txt.in ./var/log/host-install.log
+$(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./var/log/host-install.log
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/host.txt=%)" -- \
 	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
@@ -401,14 +401,15 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): \
 	fi
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./requirements/%/build.txt): \
-		./requirements/build.txt.in ./var/log/host-install.log
+$(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) ./var/log/host-install.log
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/build.txt=%)" -- \
 	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log): ./var/log/host-install.log
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
+	$(MAKE) ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
@@ -517,7 +518,8 @@ endif
 	    fi
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit: ./var/log/host-install.log
+./.git/hooks/pre-commit:
+	$(MAKE) ./var/log/host-install.log
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

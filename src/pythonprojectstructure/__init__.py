@@ -67,7 +67,9 @@ parser_foobar.add_argument(
 
 
 def config_cli_logging(
-    root_level=logging.INFO, log_level=parser.get_default("--log-level"), **kwargs
+    root_level=logging.INFO,
+    log_level=parser.get_default("--log-level"),
+    **_,
 ):  # pylint: disable=unused-argument
     """
     Configure logging CLI usage as early as possible to affect all output.

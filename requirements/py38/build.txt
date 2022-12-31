@@ -20,7 +20,7 @@ charset-normalizer==2.1.1
     #   requests
 colorama==0.4.6
     # via commitizen
-commitizen==2.38.0
+commitizen==2.39.1
     # via -r requirements/build.txt.in
 commonmark==0.9.1
     # via rich
@@ -92,7 +92,7 @@ requests-toolbelt==0.10.1
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==12.6.0
+rich==13.0.0
     # via twine
 secretstorage==3.3.3
     # via keyring

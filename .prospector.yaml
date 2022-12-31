@@ -1,0 +1,54 @@
+# https://prospector.landscape.io/en/master/profiles.html#global-configuration-options
+strictness: "veryhigh"
+test-warnings: true
+doc-warnings: true
+member-warnings: true
+autodetect: false
+inherits:
+  - "full_pep8"
+max-line-length: 88
+
+# https://prospector.landscape.io/en/master/profiles.html#enabling-and-disabling-tools
+bandit:
+  run: true
+mypy:
+  run: true
+vulture:
+  run: true
+# Deprecated in favor of PyFlakes:
+# https://github.com/timothycrosley/deprecated.frosted#important-note-frosted-is-deprecated-long-live-flake8
+# frosted:
+#   run: true
+# FIXME: I confirmed the package is installed but couldn't get to work:
+#     Cannot run tool pyroma as support was not installed.
+#     Please install by running 'pip install prospector[with_pyroma]'
+# pyroma:
+#   run: true
+
+pyflakes:
+  disable:
+    # Redundant with `pylint - unused-import`.
+    # If a line disables that error with a `  # pylint: disable=unused-import` comment,
+    # then the `pyflakes - F401` error is returned and vice versa with a `  # noqa: `
+    # comment and I couldn't get both to work in the same comment.
+    - "F401"
+pep257:
+  disable:
+    # Choose between the conflicting docstring first line rules:
+    # https://github.com/PyCQA/pydocstyle/issues/242#issuecomment-288166773
+    - "D212"
+    # https://github.com/PyCQA/pydocstyle/issues/141#issuecomment-146903063
+    - "D203"
+    # Disable `One-line docstring should fit on one line with quotes`.  I don't like
+    # this rule in the first place, I think the mix makes docstrings harder to scan
+    # visually.  The point of these tools, however, is to minimize choices so I went
+    # along with it until I discovered that `$ pydocstyle` will issue this warning even
+    # when the one-line version exceeds the `max-line-length`.
+    - "D200"
+
+# Defensively avoid scanning large artifacts:
+# https://prospector.landscape.io/en/master/profiles.html#ignoring-paths-and-patterns
+ignore-paths:
+  - "src/pythonprojectstructure/version.py"
+  - ".tox"
+  - "var"

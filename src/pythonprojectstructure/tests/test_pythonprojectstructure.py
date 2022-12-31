@@ -3,7 +3,7 @@ python-project-structure unit and integration tests.
 """
 
 import sys
-import subprocess
+import subprocess  # nosec B404
 
 import unittest
 
@@ -17,7 +17,7 @@ class PythonProjectStructureTests(unittest.TestCase):
         """
         The Python package is on `sys.path` and thus importable.
         """
-        import_process = subprocess.run(
+        import_process = subprocess.run(  # nosec B603
             [sys.executable, "-c", "import pythonprojectstructure"],
             check=True,
         )

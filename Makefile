@@ -62,6 +62,11 @@ export TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 export TOX_RUN_ARGS=run
 endif
+# The options that allow for rapid execution of arbitrary commands in the venvs managed
+# by tox
+TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
+TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 DOCKER_BUILD_ARGS=
 
 # Safe defaults for testing the release process without publishing to the final/official
@@ -98,9 +103,7 @@ all: build
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers
-build: \
-		./var/log/host-install.log ./.git/hooks/pre-commit \
-		build-local build-docker
+build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-local
 ### Set up for development locally, directly on the host
 build-local: ./.tox/$(PYTHON_ENV)/bin/activate
@@ -119,7 +122,7 @@ $(PYTHON_MINORS:%=build-docker-%):
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	$(MAKE) -e "./.tox/$(@:build-requirements-%=%)/bin/activate"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:build-requirements-%=%)" -- python -c ""
 # Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
@@ -140,7 +143,7 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
-		~/.gitconfig ./.tox/build/bin/activate \
+		~/.gitconfig ./var/log/host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build.log
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -149,7 +152,7 @@ ifneq ($(VCS_BRANCH),master)
 endif
 # Run first in case any input is needed from the developer
 	exit_code=0
-	./.tox/build/bin/cz bump $${cz_bump_args} --dry-run || exit_code=$$?
+	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
 	rm -fv "./.tox/build/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -163,7 +166,7 @@ endif
 	fi
 	cz_bump_args+=" --yes"
 	next_version="$$(
-	    ./.tox/build/bin/cz bump $${cz_bump_args} --dry-run |
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
@@ -180,7 +183,7 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
-	./.tox/build/bin/cz bump $${cz_bump_args}
+	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
@@ -217,14 +220,14 @@ release: release-python release-docker
 ### Publish installable Python packages to PyPI
 release-python: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
-		./.tox/build/bin/activate \
+		 ./var/log/host-install.log \
 		~/.pypirc \
 		./dist/.current.whl
 # Build Python packages/distributions from the development Docker container for
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # consistency/reproducibility.
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -239,7 +242,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" ./dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./dist/*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -272,12 +275,12 @@ endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(PYTHON_ENV)/bin/autoflake -r -i --remove-all-unused-imports \
+format: ./var/log/host-install.log
+	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
-	./.tox/$(PYTHON_ENV)/bin/autopep8 -v -i -r "./src/pythonprojectstructure/"
-	./.tox/$(PYTHON_ENV)/bin/black "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) autopep8 -v -i -r "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) black "./src/pythonprojectstructure/"
 
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
@@ -324,7 +327,7 @@ test-local: build-local
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
 test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
-	./.tox/$(PYTHON_ENV)/bin/pytest --pdb
+	$(TOX_EXEC_ARGS) pytest --pdb
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
@@ -332,16 +335,16 @@ upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
 	$(MAKE) -e PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
-	./.tox/build/bin/pre-commit autoupdate
+	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
 	docker compose down --remove-orphans --rmi "all" -v || true
-	./.tox/build/bin/pre-commit uninstall \
+	$(TOX_EXEC_BUILD_ARGS) pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
-	./.tox/build/bin/pre-commit clean || true
+	$(TOX_EXEC_BUILD_ARGS) pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
 	rm -rfv "./var/log/"
 	rm -rf "./var/docker/"
@@ -368,26 +371,22 @@ expand-template: ./var/log/host-install.log
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-$(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
+$(PYTHON_ENVS:%=./requirements/%/devel.txt): \
+		./pyproject.toml ./setup.cfg ./tox.ini ./var/log/host-install.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./.tox/$(@:requirements/%/devel.txt=%)/bin/activate
-	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --extra="devel" \
-	    --output-file="$(@)" "$(<)"
-	mkdir -pv "./var/log/"
-	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/devel.txt=%)" -- \
+	    pip-compile --resolver "backtracking" --upgrade --extra "devel" \
+	    --output-file "$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/user.txt): \
+		./pyproject.toml ./setup.cfg ./tox.ini ./var/log/host-install.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./.tox/$(@:requirements/%/user.txt=%)/bin/activate
-	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
-	mkdir -pv "./var/log/"
-	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/user.txt=%)" -- \
+	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+$(PYTHON_ENVS:%=./requirements/%/host.txt): \
+		./requirements/host.txt.in ./var/log/host-install.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./.tox/$(@:requirements/%/host.txt=%)/bin/activate
-	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/host.txt=%)" -- \
+	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -402,44 +401,17 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	fi
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
+$(PYTHON_ENVS:%=./requirements/%/build.txt): \
+		./requirements/build.txt.in ./var/log/host-install.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./.tox/$(@:requirements/%/build.txt=%)/bin/activate
-	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver=backtracking --upgrade --output-file="$(@)" "$(<)"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/build.txt=%)" -- \
+	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
-# Use any Python version target to represent building all versions.
-./.tox/$(PYTHON_ENV)/bin/activate:
-	$(MAKE) ./var/log/host-install.log
-# Bootstrap frozen/pinned versions if necessary
-	for reqs in $(PYTHON_ENVS:%=./requirements/%/devel.txt)
-	do
-	    if [ ! -e "$${reqs}" ]
-	    then
-	        touch "$${reqs}"
-# Ensure frozen/pinned versions will subsequently be compiled
-	        touch "./setup.cfg"
-	    fi
-	done
-# Delegate parallel build all Python environments to tox.
-	tox $(TOX_RUN_ARGS) --skip-pkg-install --notest -e "$(TOX_ENV_LIST)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-./.tox/$(PYTHON_ENV)/log/editable.log:
-	$(MAKE) ./.tox/$(PYTHON_ENV)/bin/activate
-	./.tox/$(PYTHON_ENV)/bin/pip install -e "./" | tee -a "$(@)"
-./.tox/build/bin/activate:
-	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "./var/log/host-install.log"
-# Bootstrap frozen/pinned versions if necessary
-	if [ ! -e "./requirements/$(PYTHON_HOST_ENV)/build.txt" ]
-	then
-	    cp -av "./requirements/build.txt.in" \
-	        "./requirements/$(PYTHON_HOST_ENV)/build.txt"
-# Ensure frozen/pinned versions will subsequently be compiled
-	    touch "./requirements/build.txt.in"
-	fi
-	tox run --notest -e "build"
-	touch "$(@)"
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log): ./var/log/host-install.log
+	mkdir -pv "$(dir $(@))"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
+	    pip install -e "./" | tee -a "$(@)"
 
 # Build a wheel package but only if one hasn't already been made
 ./dist/.current.whl:
@@ -545,14 +517,14 @@ endif
 	    fi
 	) | tee -a "$(@)"
 
-./.git/hooks/pre-commit:
-	$(MAKE) ./.tox/build/bin/activate
-	./.tox/build/bin/pre-commit install \
+./.git/hooks/pre-commit: ./var/log/host-install.log
+	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	./.tox/build/bin/cz init
+	$(MAKE) ./var/log/host-install.log
+	$(TOX_EXEC_BUILD_ARGS) cz init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

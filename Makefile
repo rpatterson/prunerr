@@ -284,7 +284,7 @@ format: ./var/log/host-install.log
 
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
-lint-docker:
+lint-docker: ./.env
 	docker compose run --rm hadolint hadolint "./Dockerfile"
 	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
 

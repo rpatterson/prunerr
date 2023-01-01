@@ -151,7 +151,7 @@ pyflakes==2.5.0
     #   autoflake
     #   flake8
     #   prospector
-pygments==2.13.0
+pygments==2.14.0
     # via
     #   pyroma
     #   rich

@@ -432,6 +432,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	    "./.tox/" "./var/docker/$(PYTHON_ENV)/.tox/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
+	$(MAKE) ./var/log/host-install.log
 	current_version=$$(
 	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
 	)

@@ -376,11 +376,15 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/devel.txt=%)" -- \
 	    pip-compile --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./var/log/host-install.log
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/user.txt=%)" -- \
 	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) ./var/log/host-install.log

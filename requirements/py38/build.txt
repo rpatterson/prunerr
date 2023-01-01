@@ -38,7 +38,7 @@ identify==2.5.11
     # via pre-commit
 idna==3.4
     # via requests
-importlib-metadata==5.2.0
+importlib-metadata==6.0.0
     # via
     #   keyring
     #   twine
@@ -72,7 +72,7 @@ prompt-toolkit==3.0.36
     # via questionary
 pycparser==2.21
     # via cffi
-pygments==2.13.0
+pygments==2.14.0
     # via
     #   readme-renderer
     #   rich

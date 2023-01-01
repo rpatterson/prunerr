@@ -104,12 +104,9 @@ all: build
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers
 build: ./.git/hooks/pre-commit build-docker
-.PHONY: build-local
-### Set up for development locally, directly on the host
-build-local: ./.tox/$(PYTHON_ENV)/bin/activate
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env ./.tox/build/bin/activate
+build-docker: ./.env
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -257,7 +254,9 @@ release-docker: ./var/log/docker-login.log build-docker
 	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
-	current_version=$$(./.tox/build/bin/cz version --project)
+	current_version=$$(
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
+	)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
@@ -293,7 +292,7 @@ lint-docker: ./.env
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env ./.tox/build/bin/activate build-wheel
+test-docker: ./.env build-wheel
 	$(MAKE) -e -j \
 	    TOX_RUN_ARGS="run --installpkg ./dist/$$(
 	        readlink "./dist/.current.whl"
@@ -322,7 +321,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	        test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
-test-local: build-local
+test-local:
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
@@ -433,8 +432,9 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	    "./.tox/" "./var/docker/$(PYTHON_ENV)/.tox/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
-	$(MAKE) ./.tox/build/bin/activate
-	current_version=$$(./.tox/build/bin/cz version --project)
+	current_version=$$(
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
+	)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \

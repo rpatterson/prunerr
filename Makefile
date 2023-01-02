@@ -360,7 +360,8 @@ endif
 release-docker: build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 ifeq ($(CI),true)
-	$(MAKE) -e ./var/log/docker-login.log
+	$(MAKE) -e "./var/log/docker-login.log" \
+	    "./var/log/docker-login-gitlab.log" "./var/log/docker-login-github.log"
 endif
 	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
@@ -642,13 +643,12 @@ endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
-ifeq ($(CI),true)
-	$(MAKE) -e ./var/log/docker-login.log
-endif
 ifeq ($(GITLAB_CI),true)
+	$(MAKE) -e ./var/log/docker-login-gitlab.log
 	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
+	$(MAKE) -e ./var/log/docker-login-github.log
 	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 # Build the development image
@@ -797,8 +797,14 @@ endif
 ./var/log/docker-login.log:
 	set +x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
+	date | tee -a "$(@)"
+./var/log/docker-login-gitlab.log:
+	set +x
 	printenv "CI_REGISTRY_PASSWORD" |
 	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	date | tee -a "$(@)"
+./var/log/docker-login-github.log:
+	set +x
 	printenv "GH_TOKEN" |
 	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
 	date | tee -a "$(@)"

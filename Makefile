@@ -287,6 +287,7 @@ format: ./var/log/host-install.log
 lint-docker: ./.env
 	docker compose run --rm hadolint hadolint "./Dockerfile"
 	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
+	docker compose run --rm hadolint hadolint "./build-host/Dockerfile"
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters

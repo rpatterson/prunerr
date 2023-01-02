@@ -368,12 +368,8 @@ endif
 	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 	docker push "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
 	docker push "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
-	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)"
-	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 	docker push "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(
@@ -631,20 +627,30 @@ endif
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
+	docker pull "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
 # Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
-	docker pull "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)" || true
+	docker pull "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
-	    ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
+	    ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    $${docker_build_caches} "./"
+# Ensure any subsequent builds have optimal caches
+ifeq ($(CI),true)
+	$(MAKE) -e ./var/log/docker-login.log
+endif
+ifeq ($(GITLAB_CI),true)
+	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)"
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
+endif
 # Build the development image
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
@@ -680,6 +686,13 @@ ifeq ($(VCS_BRANCH),master)
 endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
+# Ensure any subsequent builds have optimal caches
+ifeq ($(GITLAB_CI),true)
+	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+endif
 	date >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build.log=%/host-install.log)"

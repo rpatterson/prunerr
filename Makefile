@@ -294,7 +294,8 @@ release-python: \
 		./dist/.current.whl
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
-	codecov -t "$(CODECOV_TOKEN)" --file "./coverage.xml"
+	codecov --nonZero -t "$(CODECOV_TOKEN)" \
+	    --file "./build/$(PYTHON_ENV)/coverage.xml"
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets

@@ -119,7 +119,7 @@ endif
 # Address undefined variables warnings when running under local development
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
-GH_TOKEN=
+GITHUB_TOKEN=
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -190,11 +190,11 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 	git push -o ci.skip --no-verify --tags "origin"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
-ifneq ($(GH_TOKEN),)
+ifneq ($(GITHUB_TOKEN),)
 # Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
 # mirror.
 	git remote add "github" \
-	    "https://$(GH_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
+	    "https://$(GITHUB_TOKEN)@github.com/$(CI_PROJECT_PATH).git"
 	git push -o ci.skip --no-verify --tags "github"
 endif
 endif
@@ -805,7 +805,7 @@ endif
 	date | tee -a "$(@)"
 ./var/log/docker-login-github.log:
 	set +x
-	printenv "GH_TOKEN" |
+	printenv "GITHUB_TOKEN" |
 	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
 	date | tee -a "$(@)"
 

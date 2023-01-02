@@ -24,7 +24,7 @@ variables:
   GPG_SIGNING_PRIVATE_KEY: "$GPG_SIGNING_PRIVATE_KEY"
   PYPI_PASSWORD: "$PYPI_PASSWORD"
   TEST_PYPI_PASSWORD: "$TEST_PYPI_PASSWORD"
-  GITHUB_TOKEN: "$GITHUB_TOKEN"
+  PROJECT_GITHUB_PAT: "$PROJECT_GITHUB_PAT"
 
   # Change pip's cache directory to be inside the project directory since we can only
   # cache local items:

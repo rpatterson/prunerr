@@ -85,6 +85,7 @@ build-test:
   artifacts:
     paths:
       - "./var/docker/py*/.tox/py*/pytest*"
+      - "./var/docker/py*/.tox/py*/.coverage*"
       - "./var/docker/py*/.tox/py*/coverage*"
       - "./var/docker/py*/.tox/py*/htmlcov"
       - "./var/docker/py*/.tox/py*/prospector*"

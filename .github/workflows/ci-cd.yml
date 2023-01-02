@@ -131,6 +131,7 @@ jobs:
         with:
           name: "code-coverage-reports"
           path: |
+            ./var/docker/*/.tox/*/.coverage*
             ./var/docker/*/.tox/*/coverage*
             ./var/docker/*/.tox/*/htmlcov*
       - name: "Archive linter reports"

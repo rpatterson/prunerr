@@ -87,11 +87,12 @@ build-test:
       - "./var/docker/py*/.tox/py*/pytest*"
       - "./var/docker/py*/.tox/py*/coverage*"
       - "./var/docker/py*/.tox/py*/htmlcov"
-      - "./var/docker/py*/.tox/py*/pylint*"
-      - "./var/docker/py*/.tox/py*/mypy*"
+      - "./var/docker/py*/.tox/py*/prospector*"
       - "./dist/*"
     reports:
-      junit: "./var/docker/py*/.tox/py*/pytest-junit.xml"
+      junit:
+        - "./var/docker/py*/.tox/py*/pytest-junit.xml"
+        - "./var/docker/py*/.tox/py*/prospector.xunit"
       coverage_report:
         coverage_format: "cobertura"
         path: "./var/docker/py*/.tox/py*/coverage.xml"

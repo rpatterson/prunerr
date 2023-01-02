@@ -123,7 +123,8 @@ jobs:
         with:
           name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
           path: |
-            ./var/docker/*/.tox/*/pytest-junit.xml
+            ./var/docker/*/.tox/*/pytest-junit.xml,
+            ./var/docker/*/.tox/*/prospector.xunit,
           reporter: "java-junit"
       - name: "Archive code coverage reports"
         uses: "actions/upload-artifact@master"
@@ -137,8 +138,7 @@ jobs:
         with:
           name: "linter-reports"
           path: |
-            ./var/docker/*/.tox/*/pylint*
-            ./var/docker/*/.tox/*/mypy*
+            ./var/docker/*/.tox/*/prospector*
 
   release:
     runs-on: "ubuntu-latest"

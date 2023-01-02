@@ -66,7 +66,7 @@ bump:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
       - "./NEWS-release.rst"
-      - "./dist/*"
+      - "./dist/python_project_structure-*"
 
 build-test:
   stage: "build-test"
@@ -84,19 +84,19 @@ build-test:
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     paths:
-      - "./var/docker/py*/.tox/py*/pytest*"
-      - "./var/docker/py*/.tox/py*/.coverage*"
-      - "./var/docker/py*/.tox/py*/coverage*"
-      - "./var/docker/py*/.tox/py*/htmlcov"
-      - "./var/docker/py*/.tox/py*/prospector*"
-      - "./dist/*"
+      - "./build/py*/pytest*"
+      - "./build/py*/.coverage*"
+      - "./build/py*/coverage*"
+      - "./build/py*/htmlcov"
+      - "./build/py*/prospector*"
+      - "./dist/python_project_structure-*"
     reports:
       junit:
-        - "./var/docker/py*/.tox/py*/pytest-junit.xml"
-        - "./var/docker/py*/.tox/py*/prospector.xunit"
+        - "./build/py*/pytest-junit.xml"
+        - "./build/py*/prospector-xunit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./var/docker/py*/.tox/py*/coverage.xml"
+        path: "./build/py*/coverage.xml"
 
 release:
   stage: "release"
@@ -106,4 +106,4 @@ release:
   artifacts:
     paths:
       - "./NEWS-release.rst"
-      - "./dist/*"
+      - "./dist/python_project_structure-*"

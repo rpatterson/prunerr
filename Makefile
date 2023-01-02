@@ -304,7 +304,7 @@ endif
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python_project_structure-*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -319,13 +319,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/python_project_structure-*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
-	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/*
+	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python_project_structure-*
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
@@ -351,7 +352,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # release object:
 	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-release.rst" ./dist/*
+	    --notes-file "./NEWS-release.rst" ./dist/python_project_structure-*
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub

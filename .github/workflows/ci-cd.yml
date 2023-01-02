@@ -53,6 +53,8 @@ jobs:
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        permissions:
+          packages: write
         run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
 
   build-test:
@@ -102,6 +104,8 @@ jobs:
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+        permissions:
+          packages: write
         run: >-
           make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           build-docker-${{ matrix.PYTHON_MINORS }}
@@ -185,4 +189,6 @@ jobs:
           PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
           TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        permissions:
+          packages: write
         run: "make -e PYTHON_MINORS=3.11 release"

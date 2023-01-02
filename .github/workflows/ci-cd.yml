@@ -122,9 +122,9 @@ jobs:
         if: "success() || failure()"    # run this step even if previous step failed
         with:
           name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
-          path:
-            - "./build/*/pytest-junit.xml"
-            - "./build/*/prospector-xunit.xml"
+          path: >-
+            ./var/docker/*/.tox/*/pytest-junit.xml,
+            ./var/docker/*/.tox/*/prospector.xunit
           reporter: "java-junit"
       - name: "Archive code coverage reports"
         uses: "actions/upload-artifact@master"

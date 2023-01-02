@@ -52,6 +52,7 @@ jobs:
           GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
 
   build-test:
@@ -100,6 +101,7 @@ jobs:
           GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: >-
           make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           build-docker-${{ matrix.PYTHON_MINORS }}

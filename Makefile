@@ -224,7 +224,7 @@ release-python: \
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python_project_structure-*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -239,7 +239,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./dist/python_project_structure-*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)

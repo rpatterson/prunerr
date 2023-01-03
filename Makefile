@@ -338,6 +338,15 @@ upgrade:
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 
+# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
+# targets for the authentication environment variables that need to be set or just login
+# to those container registries manually and touch these targets.
+.PHONY: bootstrap-project
+### Run any tasks needed to be run once for a given project by a maintainer
+bootstrap-project: ./var/log/docker-login.log
+# Initially seed the build host Docker image to bootstrap CI/CD environments
+	$(MAKE) -C "./build-host/" release
+
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible
 clean:
@@ -545,6 +554,7 @@ endif
 	git config --global user.email "$(USER_EMAIL)"
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+
 ./var/log/docker-login.log:
 	set +x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin

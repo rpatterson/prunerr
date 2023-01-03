@@ -16,7 +16,7 @@ jobs:
     runs-on: "ubuntu-latest"
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     permissions:
-      packages: "read"
+      packages: "write"
     steps:
       - name: "Update build host image"
         run: >-
@@ -28,7 +28,7 @@ jobs:
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     needs: "build-host"
     permissions:
-      packages: "read|write"
+      packages: "write"
     steps:
 
       # Shared/common set up
@@ -75,7 +75,7 @@ jobs:
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     needs: ["build-host", "bump"]
     permissions:
-      packages: "read|write"
+      packages: "write"
     strategy:
       matrix:
         PYTHON_MINORS:
@@ -166,7 +166,7 @@ jobs:
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     needs: ["build-host", "build-test"]
     permissions:
-      packages: "read|write"
+      packages: "write"
     steps:
 
       # Shared/common set up

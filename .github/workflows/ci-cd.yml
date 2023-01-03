@@ -43,7 +43,7 @@ jobs:
         uses: "actions/checkout@master"
       # https://github.com/actions/checkout/issues/701#issuecomment-1139627817
       - name: "Fetch versions from VCS"
-        run: "id && ls -ldn ./.git/ && git fetch --tags origin"
+        run: "id && ls -ln ./.git/ && git fetch --tags origin"
 
       - name: "Add user installs to PATH"
         run: |

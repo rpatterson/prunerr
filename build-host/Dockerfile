@@ -12,6 +12,7 @@ RUN \
     apk add --no-cache \
     "make" \
     "bash" \
+    "su-exec" \
     "git" \
     "gettext" \
     "py3-pip" \

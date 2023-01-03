@@ -9,7 +9,7 @@ workflow:
     - when: "always"
 
 default:
-  image: "docker:latest"
+  image: "${CI_REGISTRY_IMAGE}:build-host"
   services:
     - "docker:dind"
 
@@ -52,15 +52,23 @@ cache:
 # platforms
 
 stages:
+  - "build-host"
   - "bump"
   - "build-test"
   - "release"
 
+# Ensure the image used for the rest of this run is up to date
+build-host:
+  stage: "build-host"
+  script:
+    - "make -C ./build-host/ release"
+
 bump:
   stage: "bump"
+  needs: ["build-host"]
   script:
     # Hand off the rest to `$ make` as the unprivileged user
-    - "./bin/docker-entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel"
+    - "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
   artifacts:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
@@ -70,7 +78,7 @@ bump:
 
 build-test:
   stage: "build-test"
-  needs: ["bump"]
+  needs: ["build-host", "bump"]
   parallel:
     matrix:
       - PYTHON_MINORS:
@@ -80,7 +88,7 @@ build-test:
           - "3.8"
           - "3.7"
   script:
-    - "./bin/docker-entrypoint make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
+    - "make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     paths:
@@ -100,9 +108,9 @@ build-test:
 
 release:
   stage: "release"
-  needs: ["build-test"]
+  needs: ["build-host", "build-test"]
   script:
-    - "./bin/docker-entrypoint make -e PYTHON_MINORS=3.11 release"
+    - "make -e PYTHON_MINORS=3.11 release"
   artifacts:
     paths:
       - "./NEWS-release.rst"

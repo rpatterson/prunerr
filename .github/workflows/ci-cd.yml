@@ -12,10 +12,21 @@ on:
 
 jobs:
 
+  build-host:
+    runs-on: "ubuntu-latest"
+    steps:
+    script:
+      - name: "Update build host image"
+        run: >-
+          make -C ./build-host/
+          CI_REGISTRY_IMAGE=ghcr.io/rpatterson/python-project-structure release
+
   bump:
     runs-on: "ubuntu-latest"
+    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    needs: "build-host"
     permissions:
-      packages: write
+      packages: "write"
     steps:
 
       # Shared/common set up
@@ -59,9 +70,10 @@ jobs:
 
   build-test:
     runs-on: "ubuntu-latest"
+    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    needs: ["build-host", "bump"]
     permissions:
-      packages: write
-    needs: "bump"
+      packages: "write"
     strategy:
       matrix:
         PYTHON_MINORS:
@@ -149,9 +161,10 @@ jobs:
 
   release:
     runs-on: "ubuntu-latest"
+    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    needs: ["build-host", "build-test"]
     permissions:
-      packages: write
-    needs: "build-test"
+      packages: "write"
     steps:
 
       # Shared/common set up

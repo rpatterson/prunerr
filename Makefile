@@ -480,9 +480,17 @@ upgrade:
 # to those container registries manually and touch these targets.
 .PHONY: bootstrap-project
 ### Run any tasks needed to be run once for a given project by a maintainer
-bootstrap-project: ./var/log/docker-login.log
+bootstrap-project: \
+		./var/log/docker-login-gitlab.log \
+		./var/log/docker-login-github.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
-	$(MAKE) -C "./build-host/" release
+# GitLab CI/CD:
+	$(MAKE) -C "./build-host/" \
+	    CI_REGISTRY_IMAGE="registry.gitlab.com/rpatterson/python-project-structure"\
+	    release
+# GitHub Actions:
+	$(MAKE) -C "./build-host/" \
+	    CI_REGISTRY_IMAGE="ghcr.io/rpatterson/python-project-structure" release
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible

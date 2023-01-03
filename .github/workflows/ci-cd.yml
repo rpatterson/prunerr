@@ -14,8 +14,8 @@ jobs:
 
   build-host:
     runs-on: "ubuntu-latest"
+    container: "ghcr.io/rpatterson/python-project-structure:build-host"
     steps:
-    script:
       - name: "Update build host image"
         run: >-
           make -C ./build-host/

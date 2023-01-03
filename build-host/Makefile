@@ -37,5 +37,4 @@ build: ./Dockerfile
 .PHONY: release
 ### Publish the image to this specific CI/CD platform for future caching
 release: build
-	$(MAKE) -C "../" "./var/log/docker-login.log"
 	docker push "$(CI_REGISTRY_IMAGE):build-host"

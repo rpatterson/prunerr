@@ -18,7 +18,7 @@ RUN \
     "gnupg" \
     "curl" \
     "github-cli" \
-    && rm -r /var/cache/apk/*
+    && rm -rf /var/cache/apk/*
 
 # Find the same home directory even when run as another user, e.g. `root`.
 ENV HOME="/home/runner"

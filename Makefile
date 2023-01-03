@@ -556,6 +556,7 @@ endif
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 ./var/log/docker-login.log:
+	mkdir -pv "$(dir $(@))"
 	set +x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"

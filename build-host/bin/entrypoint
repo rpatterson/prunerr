@@ -28,13 +28,16 @@ main() {
             addgroup -g "${PGID}" "runner"
             adduser -u "${PUID}" -G "runner" -g "CI Runner,,," -D "runner"
         fi
-        # Ensure the user can talk to `# dockerd`:
-        docker_gid=$(stat -c "%g" /var/run/docker.sock)
 	user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
-        if ! getent group ${docker_gid}
+	if [ -e "/var/run/docker.sock" ]
         then
-            addgroup -g "${docker_gid}" "docker"
-            adduser "${user_name}" "docker"
+            # Ensure the user can talk to `# dockerd`:
+            docker_gid=$(stat -c "%g" "/var/run/docker.sock")
+            if ! getent group ${docker_gid}
+            then
+                addgroup -g "${docker_gid}" "docker"
+                adduser "${user_name}" "docker"
+            fi
         fi
 	# Make the checkout accessible to the user:
 	chown -R "${PUID}:${PGID}" "./"

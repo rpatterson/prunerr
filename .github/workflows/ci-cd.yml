@@ -22,7 +22,7 @@ jobs:
         uses: "actions/checkout@master"
       - name: "Update build host image"
         run: >-
-          make -C ./build-host/
+          make -C ./build-host/ -e
           CI_REGISTRY_IMAGE=ghcr.io/rpatterson/python-project-structure release
 
   bump:

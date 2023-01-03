@@ -61,7 +61,7 @@ stages:
 build-host:
   stage: "build-host"
   script:
-    - "make -C ./build-host/ release"
+    - "make -C ./build-host/ -e release"
 
 bump:
   stage: "bump"

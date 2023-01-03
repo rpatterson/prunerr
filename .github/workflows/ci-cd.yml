@@ -18,6 +18,8 @@ jobs:
     permissions:
       packages: "write"
     steps:
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
       - name: "Update build host image"
         run: >-
           make -C ./build-host/

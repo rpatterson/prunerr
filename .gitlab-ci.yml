@@ -61,6 +61,7 @@ stages:
 build-host:
   stage: "build-host"
   script:
+    - "make -e ./var/log/docker-login-gitlab.log"
     - "make -C ./build-host/ -e release"
 
 bump:

@@ -21,6 +21,8 @@ jobs:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
       - name: "Authenticate with the container registry"
+        env:
+          PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
         run: >-
           make -e ./var/log/docker-login-github.log
       - name: "Update build host image"

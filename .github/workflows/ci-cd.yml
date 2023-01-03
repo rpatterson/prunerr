@@ -28,9 +28,7 @@ jobs:
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     needs: "build-host"
     permissions:
-      packages:
-        - "read"
-        - "write"
+      packages: "read|write"
     steps:
 
       # Shared/common set up
@@ -77,9 +75,7 @@ jobs:
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     needs: ["build-host", "bump"]
     permissions:
-      packages:
-        - "read"
-        - "write"
+      packages: "read|write"
     strategy:
       matrix:
         PYTHON_MINORS:
@@ -170,9 +166,7 @@ jobs:
     container: "ghcr.io/rpatterson/python-project-structure:build-host"
     needs: ["build-host", "build-test"]
     permissions:
-      packages:
-        - "read"
-        - "write"
+      packages: "read|write"
     steps:
 
       # Shared/common set up

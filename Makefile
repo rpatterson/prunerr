@@ -107,6 +107,7 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env
+	$(MAKE) ./var/log/host-install.log
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)

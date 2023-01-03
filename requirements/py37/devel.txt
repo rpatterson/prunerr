@@ -44,7 +44,7 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-coverage==7.0.1
+coverage==7.0.2
     # via python-project-structure (pyproject.toml)
 dill==0.3.6
     # via pylint
@@ -78,6 +78,7 @@ importlib-metadata==4.13.0
     #   click
     #   pep517
     #   pluggy
+    #   pydocstyle
     #   pytest
     #   rstcheck
     #   rstcheck-core
@@ -144,7 +145,7 @@ pycodestyle==2.10.0
     #   prospector
 pydantic==1.10.4
     # via rstcheck-core
-pydocstyle==6.1.1
+pydocstyle==6.2.0
     # via prospector
 pyflakes==2.5.0
     # via

@@ -143,6 +143,7 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env
+	$(MAKE) ./var/log/host-install.log
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -421,6 +422,7 @@ format: ./var/log/host-install.log
 lint-docker: ./.env
 	docker compose run --rm hadolint hadolint "./Dockerfile"
 	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
+	docker compose run --rm hadolint hadolint "./build-host/Dockerfile"
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters

@@ -1,0 +1,50 @@
+#!/bin/ash
+#
+# Shared set up for local testing of CI/CD
+
+set -eu -o pipefail
+if [ -n "${DEBUG:=}" ]
+then
+    # Echo commands for easier debugging
+    PS4='${0}:${LINENO}+'
+    set -x
+fi
+
+
+main() {
+    # Run as the user from the enironment, adding that user if necessary
+    if [ -n "${PUID:-}" ]
+    then
+        if [ "$(id -u)" != "0" ]
+        then
+            set +x
+            echo "ERROR: Can't create a user when not run as root" 1>&2
+            false
+        fi
+        if ! id ${PUID} 2>&-
+        then
+            # Add an unprivileged user to cover those use cases and more closely match
+            # local development
+            addgroup -g "${PGID}" "runner"
+            adduser -u "${PUID}" -G "runner" -g "CI Runner,,," -D "runner"
+        fi
+        # Ensure the user can talk to `# dockerd`:
+        docker_gid=$(stat -c "%g" /var/run/docker.sock)
+	user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
+        if ! getent group ${docker_gid}
+        then
+            addgroup -g "${docker_gid}" "docker"
+            adduser "${user_name}" "docker"
+        fi
+	# Make the checkout accessible to the user:
+	chown -R "${PUID}:${PGID}" "./"
+	# Run the rest of the CLI arguments as the unprivileged user:
+	exec su "${user_name}" -c "$*"
+    fi
+
+    # Run un-altered as the user passed in by docker
+    exec "$@"
+}
+
+
+main "$@"

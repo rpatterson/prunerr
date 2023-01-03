@@ -69,19 +69,19 @@ services:
       --debug "merpatterson/python-project-structure"
 
   ## Container for use by end users
-  docker:
-    image: "docker:latest"
+  build-host:
+    image: "merpatterson/python-project-structure:build-host"
+    build: "./build-host/"
     privileged: true
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "./:${CHECKOUT_DIR}"
+    env_file: "./.env"
     environment:
-      DOCKER_GID: "${DOCKER_GID:-}"
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR}"
-    entrypoint: "./bin/docker-entrypoint"
     command: >-
       make -e build-docker test-docker release
 

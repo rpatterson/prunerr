@@ -816,15 +816,18 @@ endif
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 ./var/log/docker-login.log:
+	mkdir -pv "$(dir $(@))"
 	set +x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"
 ./var/log/docker-login-gitlab.log:
+	mkdir -pv "$(dir $(@))"
 	set +x
 	printenv "CI_REGISTRY_PASSWORD" |
 	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
 	date | tee -a "$(@)"
 ./var/log/docker-login-github.log:
+	mkdir -pv "$(dir $(@))"
 	set +x
 	printenv "PROJECT_GITHUB_PAT" |
 	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"

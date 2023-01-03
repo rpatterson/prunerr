@@ -28,7 +28,7 @@ ENV PATH="${HOME}/.local/bin:${PATH}"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 WORKDIR "${HOME}"
-ENTRYPOINT [ "entrypoint" ]
+ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys

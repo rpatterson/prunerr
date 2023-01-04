@@ -27,7 +27,6 @@ ENV HOME="/home/runner"
 ENV PATH="${HOME}/.local/bin:${PATH}"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
-WORKDIR "${HOME}"
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
 

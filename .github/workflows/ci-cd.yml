@@ -25,6 +25,9 @@ jobs:
     steps:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
       - name: "Authenticate with the container registry"
         run: >-
           entrypoint make -e ./var/log/docker-login-github.log
@@ -53,6 +56,9 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
 
       # Cache build artifacts to speed up CI runs
       - name: "Cache tox virtual environments"
@@ -107,6 +113,9 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -194,6 +203,9 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"

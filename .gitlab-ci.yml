@@ -68,6 +68,7 @@ bump:
   stage: "bump"
   needs: ["build-host"]
   script:
+    - "chown -R ${PUID}:${PGID} ./"
     # Hand off the rest to `$ make` as the unprivileged user
     - "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
   artifacts:
@@ -89,6 +90,7 @@ build-test:
           - "3.8"
           - "3.7"
   script:
+    - "chown -R ${PUID}:${PGID} ./"
     - "make -e PYTHON_MINORS=${PYTHON_MINORS} build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
@@ -111,6 +113,7 @@ release:
   stage: "release"
   needs: ["build-host", "build-test"]
   script:
+    - "chown -R ${PUID}:${PGID} ./"
     - "make -e PYTHON_MINORS=3.11 release"
   artifacts:
     paths:

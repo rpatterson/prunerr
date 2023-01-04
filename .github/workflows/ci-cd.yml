@@ -14,30 +14,37 @@ jobs:
 
   build-host:
     runs-on: "ubuntu-latest"
-    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    container:
+      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
       packages: "write"
     steps:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
       - name: "Authenticate with the container registry"
-        env:
-          PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-          PUID: "1001"
-          PGID: "123"
         run: >-
           make -e ./var/log/docker-login-github.log
       - name: "Update build host image"
-        env:
-          PUID: "1001"
-          PGID: "123"
         run: >-
           make -C ./build-host/ -e
           CI_REGISTRY_IMAGE=ghcr.io/rpatterson/python-project-structure release
 
   bump:
     runs-on: "ubuntu-latest"
-    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    container:
+      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        DEBUG: "true"
     needs: "build-host"
     permissions:
       packages: "write"
@@ -69,19 +76,19 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       - name: "Bump the version if publishing a release"
-        env:
-          PUID: "1001"
-          PGID: "123"
-          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
-          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
-          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-          PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-          DEBUG: "true"
         run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
 
   build-test:
     runs-on: "ubuntu-latest"
-    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    container:
+      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
     needs: ["build-host", "bump"]
     permissions:
       packages: "write"
@@ -119,20 +126,10 @@ jobs:
       # platforms
 
       - name: "Build the container image in which to run the tests"
-        env:
-          PUID: "1001"
-          PGID: "123"
-          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
-          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
-          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-          PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
         run: >-
           make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           build-docker-${{ matrix.PYTHON_MINORS }}
       - name: "Run the tests and code checks inside the built container"
-        env:
-          PUID: "1001"
-          PGID: "123"
         run: >-
           make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           test-docker-${{ matrix.PYTHON_MINORS }}
@@ -172,7 +169,22 @@ jobs:
 
   release:
     runs-on: "ubuntu-latest"
-    container: "ghcr.io/rpatterson/python-project-structure:build-host"
+    container:
+      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        # Enable the GitHub CLI
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        # Requires the secrets to be added to GitHub either through the web UI or the
+        # GitHub CLI tool:
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+        TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
     needs: ["build-host", "build-test"]
     permissions:
       packages: "write"
@@ -198,18 +210,4 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       - name: "Publish release artifacts"
-        env:
-          PUID: "1001"
-          PGID: "123"
-          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
-          # Enable the GitHub CLI
-          PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-          # Requires the secrets to be added to GitHub either through the web UI or the
-          # GitHub CLI tool:
-          # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
-          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
-          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
-          PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
-          TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
-          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         run: "make -e PYTHON_MINORS=3.11 release"

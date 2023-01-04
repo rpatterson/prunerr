@@ -122,7 +122,7 @@ $(PYTHON_MINORS:%=build-docker-%):
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:build-requirements-%=%)" -- python -c ""
+	$(MAKE) "$(@:build-requirements-%=./.tox/%/log/build.log)"
 # Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
@@ -386,24 +386,24 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/devel.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --extra "devel" \
+	$(MAKE) "$(@:./requirements/%/devel.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/user.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:./requirements/%/user.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/host.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:./requirements/%/host.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -420,11 +420,14 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/build.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:./requirements/%/build.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
+$(PYTHON_ENVS:%=./.tox/%/log/build.log): ./var/log/host-install.log
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/build.log=%)" -- python -c "" |
+	    tee -a "$(@)"
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"

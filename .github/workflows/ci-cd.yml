@@ -19,6 +19,11 @@ jobs:
       env:
         PUID: "1001"
         PGID: "123"
+        # From GitHub Actions debugging output:
+        #     docker create ... --workdir
+        #     /__w/python-project-structure/python-project-structure ... -v
+        #     "/home/runner/work":"/__w" ...
+        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
       packages: "write"
@@ -43,6 +48,7 @@ jobs:
       env:
         PUID: "1001"
         PGID: "123"
+        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -91,6 +97,7 @@ jobs:
       env:
         PUID: "1001"
         PGID: "123"
+        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -183,6 +190,7 @@ jobs:
       env:
         PUID: "1001"
         PGID: "123"
+        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
         CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
         # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"

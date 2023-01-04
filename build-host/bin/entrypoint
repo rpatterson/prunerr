@@ -25,12 +25,12 @@ main() {
         fi
         # Add an unprivileged user to cover those use cases and more closely match local
 	# development
-        if ! getent group "${PGID}"
+        if ! getent group "${PGID}" 2>&-
         then
             addgroup -g "${PGID}" "runner"
         fi
 	group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
-        if ! id ${PUID} 2>&-
+        if ! getent passwd "${PUID}" 2>&-
         then
             adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D "runner"
         fi

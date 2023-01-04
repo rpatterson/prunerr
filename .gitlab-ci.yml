@@ -9,7 +9,10 @@ workflow:
     - when: "always"
 
 default:
-  image: "${CI_REGISTRY_IMAGE}:build-host"
+  image:
+    name: "${CI_REGISTRY_IMAGE}:build-host"
+    entrypoint:
+      - "docker-entrypoint.sh"
   services:
     - "docker:dind"
 
@@ -61,8 +64,8 @@ stages:
 build-host:
   stage: "build-host"
   script:
-    - "make -e ./var/log/docker-login-gitlab.log"
-    - "make -C ./build-host/ -e release"
+    - "entrypoint make -e ./var/log/docker-login-gitlab.log"
+    - "entrypoint make -C ./build-host/ -e release"
 
 bump:
   stage: "bump"
@@ -70,7 +73,7 @@ bump:
   script:
     - "chown -R ${PUID}:${PGID} ./"
     # Hand off the rest to `$ make` as the unprivileged user
-    - "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
+    - "entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel"
   artifacts:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
@@ -91,7 +94,7 @@ build-test:
           - "3.7"
   script:
     - "chown -R ${PUID}:${PGID} ./"
-    - "make -e build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
+    - "entrypoint make -e build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}"
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     paths:
@@ -114,7 +117,7 @@ release:
   needs: ["build-host", "build-test"]
   script:
     - "chown -R ${PUID}:${PGID} ./"
-    - "make -e PYTHON_MINORS=3.11 release"
+    - "entrypoint make -e PYTHON_MINORS=3.11 release"
   artifacts:
     paths:
       - "./NEWS-release.rst"

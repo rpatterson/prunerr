@@ -3,11 +3,13 @@
 # Shared set up for local testing of CI/CD
 
 set -eu -o pipefail
-if [ -n "${DEBUG:=}" ]
+CHOWN_ARGS="-R"
+if [ "${DEBUG:=false}" = "true" ]
 then
     # Echo commands for easier debugging
-    PS4='${0}:${LINENO}+'
     set -x
+    PS4='${0}:${LINENO}+'
+    CHOWN_ARGS="${CHOWN_ARGS} -c"
 fi
 
 
@@ -40,7 +42,7 @@ main() {
             fi
         fi
 	# Make the checkout accessible to the user:
-	chown -R "${PUID}:${PGID}" "./"
+	chown ${CHOWN_ARGS} "${PUID}:${PGID}" "./"
 	# Run the rest of the CLI arguments as the unprivileged user:
 	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"
     fi

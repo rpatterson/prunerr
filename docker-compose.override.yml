@@ -8,17 +8,17 @@ services:
   ## Configuration specific to this checkout
   python-project-structure:
     image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-local"
-    build: "./"
+    build: "${CHECKOUT_DIR}/"
     volumes:
       # Preserve caches caches between container runs
-      - "./home/:/home/python-project-structure/"
+      - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
 
   ## Container for use by developers
   python-project-structure-devel:
     image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-devel-local"
     build:
-      context: "./"
-      dockerfile: "./Dockerfile.devel"
+      context: "${CHECKOUT_DIR}/"
+      dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
     environment:
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
@@ -31,12 +31,12 @@ services:
       - "./bin/entrypoint:/usr/local/bin/entrypoint"
       - "./:/usr/local/src/python-project-structure/"
       # Preserve caches caches between container runs
-      - "./home/:/home/python-project-structure/"
+      - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "./var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
-      - "./var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
-      - "./var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
   ## Contianers during development and release
 
@@ -44,14 +44,14 @@ services:
   hadolint:
     image: "hadolint/hadolint"
     volumes:
-      - "./:/usr/local/src/python-project-structure/"
+      - "${CHECKOUT_DIR}/:/usr/local/src/python-project-structure/"
     working_dir: "/usr/local/src/python-project-structure/"
 
   pandoc:
     image: "pandoc/core"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     volumes:
-      - "./:/data/"
+      - "${CHECKOUT_DIR}/:/data/"
     command: >-
       "./README.rst" -f "rst" -t "markdown" -o "./README.md"
 
@@ -63,7 +63,7 @@ services:
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
       DOCKER_PASS: "${DOCKER_PASS}"
     volumes:
-      - "./:/data/"
+      - "${CHECKOUT_DIR}/:/data/"
     command: >-
       --file "/data/README.md" --short "Python project structure foundation or template"
       --debug "merpatterson/python-project-structure"
@@ -71,11 +71,11 @@ services:
   ## Container for use by end users
   build-host:
     image: "merpatterson/python-project-structure:build-host"
-    build: "./build-host/"
+    build: "${CHECKOUT_DIR}/build-host/"
     privileged: true
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./:${CHECKOUT_DIR}"
+      - "${CHECKOUT_DIR}/:${CHECKOUT_DIR}"
     env_file: "./.env"
     environment:
       PUID: "${PUID:-1000}"

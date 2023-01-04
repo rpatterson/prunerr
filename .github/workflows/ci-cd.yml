@@ -23,9 +23,14 @@ jobs:
       - name: "Authenticate with the container registry"
         env:
           PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+          PUID: "1001"
+          PGID: "123"
         run: >-
           make -e ./var/log/docker-login-github.log
       - name: "Update build host image"
+        env:
+          PUID: "1001"
+          PGID: "123"
         run: >-
           make -C ./build-host/ -e
           CI_REGISTRY_IMAGE=ghcr.io/rpatterson/python-project-structure release
@@ -65,6 +70,8 @@ jobs:
 
       - name: "Bump the version if publishing a release"
         env:
+          PUID: "1001"
+          PGID: "123"
           GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -113,6 +120,8 @@ jobs:
 
       - name: "Build the container image in which to run the tests"
         env:
+          PUID: "1001"
+          PGID: "123"
           GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -121,6 +130,9 @@ jobs:
           make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           build-docker-${{ matrix.PYTHON_MINORS }}
       - name: "Run the tests and code checks inside the built container"
+        env:
+          PUID: "1001"
+          PGID: "123"
         run: >-
           make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           test-docker-${{ matrix.PYTHON_MINORS }}
@@ -187,6 +199,8 @@ jobs:
 
       - name: "Publish release artifacts"
         env:
+          PUID: "1001"
+          PGID: "123"
           CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
           # Enable the GitHub CLI
           PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"

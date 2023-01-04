@@ -27,10 +27,10 @@ jobs:
         uses: "actions/checkout@master"
       - name: "Authenticate with the container registry"
         run: >-
-          make -e ./var/log/docker-login-github.log
+          entrypoint make -e ./var/log/docker-login-github.log
       - name: "Update build host image"
         run: >-
-          make -C ./build-host/ -e
+          entrypoint make -C ./build-host/ -e
           CI_REGISTRY_IMAGE=ghcr.io/rpatterson/python-project-structure release
 
   bump:
@@ -76,7 +76,8 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       - name: "Bump the version if publishing a release"
-        run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel
 
   build-test:
     runs-on: "ubuntu-latest"
@@ -127,11 +128,11 @@ jobs:
 
       - name: "Build the container image in which to run the tests"
         run: >-
-          make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           build-docker-${{ matrix.PYTHON_MINORS }}
       - name: "Run the tests and code checks inside the built container"
         run: >-
-          make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           test-docker-${{ matrix.PYTHON_MINORS }}
 
       # Upload build artifacts
@@ -210,4 +211,5 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       - name: "Publish release artifacts"
-        run: "make -e PYTHON_MINORS=3.11 release"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=3.11 release

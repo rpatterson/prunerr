@@ -28,8 +28,8 @@ services:
       # DEBUG: "true"
     volumes:
       # Ensure local changes are reflected inside the container.
-      - "./bin/entrypoint:/usr/local/bin/entrypoint"
-      - "./:/usr/local/src/python-project-structure/"
+      - "${CHECKOUT_DIR}/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR}/:/usr/local/src/python-project-structure/"
       # Preserve caches caches between container runs
       - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and

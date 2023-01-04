@@ -45,9 +45,6 @@ jobs:
       - name: "Fetch versions from VCS"
         run: "id && ls -ln ./.git/ && git fetch --tags origin"
 
-      - name: "Add user installs to PATH"
-        run: |
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
       # Cache build artifacts to speed up CI runs
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
@@ -99,9 +96,6 @@ jobs:
         uses: "actions/checkout@master"
       - name: "Fetch versions from VCS"
         run: "git fetch --tags origin"
-      - name: "Add user installs to PATH"
-        run: |
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -181,9 +175,6 @@ jobs:
         uses: "actions/checkout@master"
       - name: "Fetch versions from VCS"
         run: "git fetch --tags origin"
-      - name: "Add user installs to PATH"
-        run: |
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"

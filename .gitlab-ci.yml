@@ -32,6 +32,9 @@ variables:
   PUID: "1001"
   PGID: "1001"
 
+  # Uncomment to get more debugging output
+  DEBUG: "true"
+
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
 #

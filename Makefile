@@ -202,6 +202,7 @@ endif
 	set -x
 endif
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
+	ls -an "./.git/"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -754,6 +755,8 @@ endif
 	            false
 	        fi
 	    fi
+	    printenv
+	    ls -an "./.git/" "/github/home/.cache/pip" || true
 	    if [ -e ./requirements/$(PYTHON_HOST_ENV)/host.txt ]
 	    then
 	        pip install -r "./requirements/$(PYTHON_HOST_ENV)/host.txt"

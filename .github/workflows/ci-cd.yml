@@ -69,6 +69,7 @@ jobs:
           GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
           DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
           PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+          DEBUG: "true"
         run: "make -e PYTHON_MINORS=3.11 build-bump build-wheel"
 
   build-test:

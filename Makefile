@@ -181,7 +181,6 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
 build-bump: \
 		~/.gitconfig ./var/log/host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build.log
-	ls -an "./.git/"
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
@@ -757,7 +756,6 @@ endif
 	            false
 	        fi
 	    fi
-	    ls -an "./.git/" "$${HOME}" || true
 	    if [ -e ./requirements/$(PYTHON_HOST_ENV)/host.txt ]
 	    then
 	        pip install -r "./requirements/$(PYTHON_HOST_ENV)/host.txt"

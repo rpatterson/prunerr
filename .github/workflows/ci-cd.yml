@@ -47,7 +47,6 @@ jobs:
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-        DEBUG: "true"
     needs: "build-host"
     permissions:
       packages: "write"

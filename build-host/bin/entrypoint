@@ -41,8 +41,6 @@ main() {
                 adduser "${user_name}" "docker"
             fi
         fi
-	# Make the checkout accessible to the user:
-	chown ${CHOWN_ARGS} "${PUID}:${PGID}" "./"
 	# Run the rest of the CLI arguments as the unprivileged user:
 	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"
     fi

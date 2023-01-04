@@ -28,6 +28,7 @@ services:
       # DEBUG: "true"
     volumes:
       # Ensure local changes are reflected inside the container.
+      - "./bin/entrypoint:/usr/local/bin/entrypoint"
       - "./:/usr/local/src/python-project-structure/"
       # Preserve caches caches between container runs
       - "./home/:/home/python-project-structure/"
@@ -36,7 +37,6 @@ services:
       - "./var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
       - "./var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
       - "./var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
-    entrypoint: "./bin/entrypoint"
 
   ## Contianers during development and release
 

@@ -16,6 +16,7 @@ COMMA=,
 # Variables/options that affect behavior
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
+export DOCKER_USER=merpatterson
 # Project-specific variables
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 GITHUB_REPOSITORY_OWNER=rpatterson
@@ -30,6 +31,7 @@ endif
 USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
+export CHECKOUT_DIR=$(PWD)
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
@@ -731,8 +733,7 @@ endif
 
 # Local environment variables from a template
 ./.env: ./.env.in
-	$(MAKE) -e "PUID=$(PUID)" "PGID=$(PGID)" \
-	    "template=$(<)" "target=$(@)" expand-template
+	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
 ./var/log/host-install.log:
@@ -819,9 +820,10 @@ endif
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
-./var/log/docker-login.log:
+./var/log/docker-login.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
+	source "./.env"
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"
 ./var/log/docker-login-gitlab.log:

@@ -41,9 +41,6 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      # https://github.com/actions/checkout/issues/701#issuecomment-1139627817
-      - name: "Fetch versions from VCS"
-        run: "id && ls -ln ./.git/ && git fetch --tags origin"
 
       # Cache build artifacts to speed up CI runs
       - name: "Cache tox virtual environments"
@@ -94,8 +91,6 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Fetch versions from VCS"
-        run: "git fetch --tags origin"
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -173,8 +168,6 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Fetch versions from VCS"
-        run: "git fetch --tags origin"
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"

@@ -201,6 +201,8 @@ endif
 endif
 	set -x
 endif
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -231,7 +233,6 @@ endif
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
-	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code

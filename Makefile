@@ -205,7 +205,7 @@ endif
 	ls -an "./.git/"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
-	cz_bump_args="--check-consistency --no-verify --debug"
+	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
@@ -216,7 +216,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Run first in case any input is needed from the developer
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
+	$(TOX_EXEC_BUILD_ARGS) cz --debug bump $${cz_bump_args} --dry-run || exit_code=$$?
 	rm -fv "./.tox/build/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -230,7 +230,7 @@ endif
 	fi
 	cz_bump_args+=" --yes"
 	next_version="$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run |
+	    $(TOX_EXEC_BUILD_ARGS) cz --debug bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
@@ -257,7 +257,7 @@ endif
 	cat "~/.gitconfig" || true
 	git config user.email || true
 	git config user.name || true
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
+	$(TOX_EXEC_BUILD_ARGS) cz --debug bump $${cz_bump_args}
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
@@ -333,7 +333,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
-	current_version=$$(./.tox/build/bin/cz version --project --debug)
+	current_version=$$(./.tox/build/bin/cz --debug version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python_project_structure-*
 	release_cli_args="--description ./NEWS-release.rst"
@@ -382,7 +382,7 @@ endif
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project --debug
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz --debug version --project
 	)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -605,7 +605,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
 	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project --debug
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz --debug version --project
 	)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
@@ -814,7 +814,7 @@ endif
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
 	$(MAKE) ./var/log/host-install.log
-	$(TOX_EXEC_BUILD_ARGS) cz init --debug
+	$(TOX_EXEC_BUILD_ARGS) cz --debug init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

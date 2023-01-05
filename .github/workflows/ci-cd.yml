@@ -21,8 +21,8 @@ jobs:
         PGID: "123"
         # From GitHub Actions debugging output:
         #     docker create ... --workdir
-        #     /__w/python-project-structure/python-project-structure ... -v
-        #     "/home/runner/work":"/__w" ...
+        #     /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+        #     ... -v "/home/runner/work":"/__w" ...
         CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
@@ -120,8 +120,11 @@ jobs:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
       - name: "Change checkout owner"
+        # https://stackoverflow.com/a/58474340/624787
         run: >-
-          chown -R ${PUID}:${PGID} ./
+          chown -R ${PUID}:${PGID} ./ &&
+          git config --global --add safe.directory
+          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"

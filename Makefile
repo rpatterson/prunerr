@@ -202,7 +202,6 @@ endif
 	set -x
 endif
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
-	ls -an "./.git/"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -252,11 +251,6 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
-	ls -ln "${HOME}/.gitconfig" "~/.gitconfig" || true
-	cat "${HOME}/.gitconfig" || true
-	cat "~/.gitconfig" || true
-	git config user.email || true
-	git config user.name || true
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
@@ -824,11 +818,6 @@ endif
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
-	ls -ln "${HOME}/.gitconfig" "~/.gitconfig" || true
-	cat "${HOME}/.gitconfig" || true
-	cat "~/.gitconfig" || true
-	git config user.email || true
-	git config user.name || true
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 

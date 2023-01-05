@@ -2,45 +2,50 @@
 
 # Stay as close to the end user image as possible for build cache efficiency.
 # Then add everything that might contribute to efficient development
-FROM python:3
+ARG PYTHON_MINOR=3.11
+FROM python:${PYTHON_MINOR}
 
+ARG PYTHON_ENV=py311
+ENV PYTHON_ENV="${PYTHON_ENV}"
 ARG VERSION=
 
 # Put the `ENTRYPOINT` on the `$PATH`
-RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
+RUN \
+    apt-get update && \
+    apt-get install --no-install-recommends -y gosu=1.12-1+b6 && \
+    rm -rf /var/lib/apt/lists/*
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
 WORKDIR "/usr/local/src/python-project-structure/"
-# Install dependencies with fixed versions in a separate layer to optimize build times
-# because this step takes the most time and changes the least frequently.
-COPY [ "./requirements.txt", "./" ]
-RUN pip install --no-cache-dir -r "./requirements.txt"
-# Install the development dependencies with fixed versions in a separate layer to
-# optimize build times because this step takes the most time and changes the least
-# frequently.  Also be more verbose now that the audience is developers.
-COPY [ "./requirements-devel.txt", "./" ]
-RUN pip install -v --no-cache-dir -r "./requirements-devel.txt"
-# Install this package in editable/development mode so that changes take effect without
-# re-installing and for easier debugging.  Done as root to install into the container's
-# system Python then change the ownership back to the unprivileged user to make it
-# writeable.
-RUN --mount=source=./,target=./,rw,type=bind pip install --no-cache-dir -e "./"
+# Match local development tool chain and avoid time consuming redundant package
+# installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
+# package and all the development tools into the image.
+COPY [ "./requirements/${PYTHON_ENV}/host.txt", "./requirements/${PYTHON_ENV}/" ]
+RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/host.txt"
+COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
+COPY [ "./tox.ini", "./" ]
+RUN tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
+# Activate the Python virtual environment
+ENV VIRTUAL_ENV="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}"
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 
 # Remain in the checkout `WORKDIR` and make the primary testing tool for the default
 # command to run.
 ENV HOME="/home/python-project-structure"
 ENTRYPOINT [ "entrypoint" ]
-CMD [ "tox" ]
+# Have to use the shell form of `CMD` because we need variable substitution:
+# hadolint ignore=DL3025
+CMD tox -e "${PYTHON_ENV}"
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/python-project-structure"
 LABEL org.opencontainers.image.documentation="https://gitlab.com/rpatterson/python-project-structure"
 LABEL org.opencontainers.image.source="https://gitlab.com/rpatterson/python-project-structure"
-LABEL org.opencontainers.image.title="python-project-structure:devel"
-LABEL org.opencontainers.image.description="Python project structure foundation or template, development image."
+LABEL org.opencontainers.image.title="Python Project Structure Development"
+LABEL org.opencontainers.image.description="Python project structure foundation or template, development image"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
-LABEL org.opencontainers.image.base.name="docker.io/library/python:3"
+LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 # Build-time `LABEL`s
 LABEL org.opencontainers.image.version=${VERSION}

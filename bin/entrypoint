@@ -4,16 +4,16 @@
 
 set -eu -o pipefail
 shopt -s inherit_errexit
-if [ ! -z "${DEBUG:=}" ]
+if [ "${DEBUG:=false}" = "true" ]
 then
     # Echo commands for easier debugging
-    PS4='$0:$LINENO+'
     set -x
+    PS4='$0:$LINENO+'
 fi
 
 
 main() {
-    if [ ! -z "${PUID:-}" ]
+    if [ -n "${PUID:-}" ]
     then
 	if (( $(id -u) != 0 ))
 	then
@@ -21,17 +21,17 @@ main() {
 	    echo "ERROR: Can't create a user when not run as root" 1>&2
 	    false
 	fi
-	if ! id ${PUID}
+	if ! id ${PUID} 2>&-
 	then
 	    # Add a user to the `passwd` DB so that the `~python-project-structure/`
 	    # HOME directory can be looked up.
 	    adduser --uid "${PUID}" --disabled-password --gecos \
-		    "Python Project Structure,,," "python-project-structure" 1>&2
+		    "Python Project Structure,,," "python-project-structure" 1>&-
 	fi
 	# Fix the TTY ownership if the session is interactive
 	if tty_dev=$(tty)
 	then
-	    chown -c "${PUID}" "${tty_dev}"
+	    chown "${PUID}" "${tty_dev}"
 	fi
 	# Delegate the rest to the `CMD`
 	exec gosu "${PUID}:${PGID:-${PUID}}" "${@}"
@@ -40,6 +40,5 @@ main() {
     # Delegate the rest to the `CMD`
     exec "$@"
 }
-
 
 main "$@"

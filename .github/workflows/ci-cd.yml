@@ -12,27 +12,60 @@ on:
 
 jobs:
 
-  ci-cd:
+  build-host:
     runs-on: "ubuntu-latest"
-    strategy:
-      matrix:
-        python-version: ["3.11"]
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        # From GitHub Actions debugging output:
+        #     docker create ... --workdir
+        #     /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+        #     ... -v "/home/runner/work":"/__w" ...
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+    permissions:
+      packages: "write"
     steps:
-
-      # Global set up
-
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      # https://github.com/actions/checkout/issues/701#issuecomment-1139627817
-      - name: "Fetch versions from VCS"
-        run: "git fetch --tags origin"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
+      - name: "Authenticate with the container registry"
+        run: >-
+          entrypoint make -e ./var/log/docker-login-github.log
+      - name: "Update build host image"
+        run: >-
+          entrypoint make -C ./build-host/ -e
+          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release
 
-      - name: "Add user installs to PATH"
-        run: |
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+  bump:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+    needs: "build-host"
+    permissions:
+      packages: "write"
+    steps:
+
+      # Shared/common set up
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
 
       # Cache build artifacts to speed up CI runs
-
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -43,8 +76,8 @@ jobs:
           path: |
             ~/.local
             ./.tox
-            ./.tox-*
-            ./var/log
+            ./var/docker/py*/.tox
+            ./dist
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
           key: >-
@@ -53,66 +86,153 @@ jobs:
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
+      - name: "Bump the version if publishing a release"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel
+
+  build-test:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+    needs: ["build-host", "bump"]
+    permissions:
+      packages: "write"
+      checks: "write"
+    strategy:
+      matrix:
+        PYTHON_MINORS:
+          - "3.11"
+          - "3.10"
+          - "3.9"
+          - "3.8"
+          - "3.7"
+    name: "build-test (python${{ matrix.PYTHON_MINORS }})"
+    steps:
+
+      # Shared/common set up
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        # https://stackoverflow.com/a/58474340/624787
+        run: >-
+          chown -R ${PUID}:${PGID} ./ &&
+          git config --global --add safe.directory
+          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        env:
+          cache-name: "tox-v1"
+        with:
+          path: |
+            ~/.local
+            ./.tox
+            ./var/docker/py*/.tox
+            ./dist
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          restore-keys: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+
       # Delegate the rest to the `./Makefile` to keep as much portable between CI
       # platforms
 
       - name: "Build the container image in which to run the tests"
-        env:
-          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
-          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
-          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-        run: "make -e build-bump build-docker"
-
+        run: >-
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          build-docker-${{ matrix.PYTHON_MINORS }}
       - name: "Run the tests and code checks inside the built container"
-        run: "make test-docker"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          test-docker-${{ matrix.PYTHON_MINORS }}
 
       # Upload build artifacts
       # https://github.com/actions/upload-artifact#usage
-
       - name: "Archive test suite reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "test-suite-reports"
           path: |
-            ./pytest*
+            ./build/*/pytest*
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
         if: "success() || failure()"    # run this step even if previous step failed
         with:
-          name: "PyTest Test Suite"
-          path: |
-            ./pytest-junit.xml
+          name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
+          path: >-
+            ./build/*/pytest-junit.xml,
+            ./build/*/prospector-xunit.xml
           reporter: "java-junit"
-
       - name: "Archive code coverage reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "code-coverage-reports"
           path: |
-            ./coverage*
-            ./htmlcov
-
+            ./build/*/.coverage*
+            ./build/*/coverage*
+            ./build/*/htmlcov*
       - name: "Archive linter reports"
         uses: "actions/upload-artifact@master"
         with:
           name: "linter-reports"
           path: |
-            ./pylint*
+            ./build/*/prospector*
 
-      # Release and publish
+  release:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        # Enable the GitHub CLI
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        # Requires the secrets to be added to GitHub either through the web UI or the
+        # GitHub CLI tool:
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+        TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+    needs: ["build-host", "build-test"]
+    permissions:
+      packages: "write"
+    steps:
 
-      - name: "Bump version and publish release artifacts if on `master`/`develop`"
+      # Shared/common set up
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
         env:
-          CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
-          # Enable the GitHub CLI
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          # Requires the secrets to be added to GitHub either through the web UI or the
-          # GitHub CLI tool:
-          # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
-          GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
-          GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
-          PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
-          TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
-          DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-        run: "make -e release"
+          cache-name: "tox-v1"
+        with:
+          path: |
+            ~/.local
+            ./.tox
+            ./var/docker/py*/.tox
+            ./dist
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          restore-keys: >-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+
+      - name: "Publish release artifacts"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=3.11 release

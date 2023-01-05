@@ -4,7 +4,7 @@ Test the python-project-structure Command-Line Interface.
 
 import sys
 import io
-import subprocess
+import subprocess  # nosec B404
 import contextlib
 import pathlib
 
@@ -22,7 +22,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         The Python package is on `sys.path` and thus importable.
         """
-        import_process = subprocess.run(
+        import_process = subprocess.run(  # nosec B603
             [sys.executable, "-c", "import pythonprojectstructure"],
             check=False,
         )
@@ -90,7 +90,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         """
         The package/module supports execution via Python's `-m` option.
         """
-        module_main_process = subprocess.run(
+        module_main_process = subprocess.run(  # nosec B603
             [sys.executable, "-m", "pythonprojectstructure", "foobar"],
             check=False,
         )
@@ -108,10 +108,10 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         prefix_path = pathlib.Path(sys.argv[0]).parent
         while not (prefix_path / "bin").is_dir():
             prefix_path = prefix_path.parent
-            if prefix_path.parent is prefix_path.parents[-1]:  # pragma: no cover
+            if prefix_path.parent is list(prefix_path.parents)[-1]:  # pragma: no cover
                 raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
 
-        script_process = subprocess.run(
+        script_process = subprocess.run(  # nosec B603
             [prefix_path / "bin" / "python-project-structure", "foobar"],
             check=False,
         )

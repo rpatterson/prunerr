@@ -33,9 +33,11 @@ package_dir = "src"
 [tool.pylint.MASTER]
 # Auto-detect the number of processors available to use from:
 #     $ pylint --generate-rcfile
-jobs = 0
+# BBB: Un-comment if this bug is fixed:
+# https://github.com/PyCQA/prospector/issues/573#issuecomment-1368566582
+# jobs = 0
 enable-all-extensions = true
-output-format = "colorized,json:pylint.json"
+output-format = "colorized"
 ignore-paths = [
 # Managed by tools, best to use `# pylint: disable=...` inline comments for any other
 # ignores.

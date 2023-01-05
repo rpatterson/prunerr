@@ -26,9 +26,9 @@ platformdirs==2.6.2
     #   virtualenv
 pluggy==1.0.0
     # via tox
-pyproject-api==1.2.1
+pyproject-api==1.4.0
     # via tox
-tox==4.1.2
+tox==4.2.2
     # via -r requirements/host.txt.in
 virtualenv==20.17.1
     # via tox

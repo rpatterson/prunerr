@@ -94,19 +94,17 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./.git/hooks/pre-commit
-# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+build: ./.git/hooks/pre-commit ./var/log/host-install.log
+# Running `$ pip-compile` in parallel generates a lot of network requests so if your
+# network connection is intermittent, even rarely, you'll probably see these errors:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
-# I assume it's some sort of PyPI rate limiting.  Remove one or both of the next two `$
-# make -j` options if you don't find the trade off worth it.
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
-# Avoid parallel tox invocations stomping on each other when venvs need to be
-# recreated/updated
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:build-requirements-%=%)" -- python -c ""
+# Avoid parallel tox recreations stomping on each other
+	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	$(MAKE) -e -j \
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
@@ -115,6 +113,8 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/host-install.log
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -140,7 +140,6 @@ endif
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
-	git fetch --no-tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 	$(TOX_EXEC_ARGS) towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
@@ -169,7 +168,7 @@ release: ./var/log/host-install.log ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
 	$(TOX_EXEC_ARGS) pyproject-build --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/python_project_structure-*
 	if [ ! -z "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -184,7 +183,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./.tox/.pkg/dist/*
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./.tox/.pkg/dist/python_project_structure-*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)
@@ -206,7 +205,7 @@ test: build
 
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
+test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 	$(TOX_EXEC_ARGS) pytest --pdb
 
 .PHONY: upgrade
@@ -251,20 +250,20 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/devel.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --extra "devel" \
+	$(MAKE) "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/user.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/host.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:requirements/%/host.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -279,15 +278,19 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	fi
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/build.txt=%)" -- \
-	    pip-compile --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
+$(PYTHON_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
+	mkdir -pv "$(dir $(@))"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
+	    tee -a "$(@)"
+$(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	$(MAKE) ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up

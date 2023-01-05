@@ -25,12 +25,12 @@ main() {
         fi
         # Add an unprivileged user to cover those use cases and more closely match local
 	# development
-        if ! getent group "${PGID}" 2>&-
+        if ! getent group "${PGID}" 1>&-
         then
             addgroup -g "${PGID}" "runner"
         fi
 	group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
-        if ! getent passwd "${PUID}" 2>&-
+        if ! getent passwd "${PUID}" 1>&-
         then
             adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D "runner"
         fi
@@ -39,7 +39,7 @@ main() {
         then
             # Ensure the user can talk to `# dockerd`:
             docker_gid=$(stat -c "%g" "/var/run/docker.sock")
-            if ! getent group ${docker_gid}
+            if ! getent group ${docker_gid} 1>&-
             then
                 addgroup -g "${docker_gid}" "docker"
                 adduser "${user_name}" "docker"

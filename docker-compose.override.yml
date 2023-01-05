@@ -76,6 +76,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${CHECKOUT_DIR}/:${CHECKOUT_DIR}"
+      - "${CHECKOUT_DIR}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
     env_file: "./.env"
     environment:
       PUID: "${PUID:-1000}"

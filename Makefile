@@ -95,11 +95,10 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
 build: ./.git/hooks/pre-commit ./var/log/host-install.log
-# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+# Running `$ pip-compile` in parallel generates a lot of network requests so if your
+# network connection is intermittent, even rarely, you'll probably see these errors:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
-# I assume it's some sort of PyPI rate limiting.  Remove one or both of the next two `$
-# make -j` options if you don't find the trade off worth it.
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary

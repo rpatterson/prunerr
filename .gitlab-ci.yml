@@ -79,6 +79,10 @@ bump:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
+      # TODO: GitLab CI/CD issues a warning when not on `develop` or `master` because it
+      # isn't actually used, IOW this is an expected condition on feature branches:
+      #     WARNING: ./NEWS-release.rst: no matching files. Ensure that the artifact path is relative to the working directory
+      # Is there a way to make paths conditional?
       - "./NEWS-release.rst"
       - "./dist/python_project_structure-*"
 
@@ -119,5 +123,4 @@ release:
     - "entrypoint make -e PYTHON_MINORS=3.11 release"
   artifacts:
     paths:
-      - "./NEWS-release.rst"
       - "./dist/python_project_structure-*"

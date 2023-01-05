@@ -144,8 +144,7 @@ all: build
 build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env
-	$(MAKE) ./var/log/host-install.log
+build-docker: ./.env ./var/log/host-install.log
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -158,12 +157,11 @@ $(PYTHON_MINORS:%=build-docker-%):
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:build-requirements-%=%)" -- python -c ""
-# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+	$(MAKE) "$(@:build-requirements-%=./.tox/%/log/build.log)"
+# Running `$ pip-compile` in parallel generates a lot of network requests so if your
+# network connection is intermittent, even rarely, you'll probably see these errors:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
-# I assume it's some sort of PyPI rate limiting.  Remove the next `$ make -j` option if
-# you don't find the trade off worth it.
 	$(MAKE) -e -j \
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
@@ -532,24 +530,24 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/devel.txt=%)" -- \
-	    pip-compile --resolver "backtracking" $(PIP_COMPILE_ARGS) --extra "devel" \
+	$(MAKE) "$(@:requirements/%/devel.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --extra "devel" \
 	    --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/user.txt=%)" -- \
-	    pip-compile --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:requirements/%/user.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/host.txt=%)" -- \
-	    pip-compile --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:requirements/%/host.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -566,15 +564,18 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) ./var/log/host-install.log
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:requirements/%/build.txt=%)" -- \
-	    pip-compile --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
+	$(MAKE) "$(@:requirements/%/build.txt=./.tox/%/log/build.log)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
+$(PYTHON_ENVS:%=./.tox/%/log/build.log): ./var/log/host-install.log
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/build.log=%)" -- python -c "" |
+	    tee -a "$(@)"
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
 
 # Build a wheel package but only if one hasn't already been made

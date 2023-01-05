@@ -15,7 +15,7 @@ jobs:
   build-host:
     runs-on: "ubuntu-latest"
     container:
-      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      image: "ghcr.io/${GITHUB_REPOSITORY}:build-host"
       env:
         PUID: "1001"
         PGID: "123"
@@ -23,7 +23,7 @@ jobs:
         #     docker create ... --workdir
         #     /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
         #     ... -v "/home/runner/work":"/__w" ...
-        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
+        CHECKOUT_DIR: "${GITHUB_WORKSPACE}"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
       packages: "write"
@@ -39,16 +39,16 @@ jobs:
       - name: "Update build host image"
         run: >-
           entrypoint make -C ./build-host/ -e
-          CI_REGISTRY_IMAGE=ghcr.io/rpatterson/python-project-structure release
+          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release
 
   bump:
     runs-on: "ubuntu-latest"
     container:
-      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      image: "ghcr.io/${GITHUB_REPOSITORY}:build-host"
       env:
         PUID: "1001"
         PGID: "123"
-        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
+        CHECKOUT_DIR: "${GITHUB_WORKSPACE}"
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -93,11 +93,11 @@ jobs:
   build-test:
     runs-on: "ubuntu-latest"
     container:
-      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      image: "ghcr.io/${GITHUB_REPOSITORY}:build-host"
       env:
         PUID: "1001"
         PGID: "123"
-        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
+        CHECKOUT_DIR: "${GITHUB_WORKSPACE}"
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -189,11 +189,11 @@ jobs:
   release:
     runs-on: "ubuntu-latest"
     container:
-      image: "ghcr.io/rpatterson/python-project-structure:build-host"
+      image: "ghcr.io/${GITHUB_REPOSITORY}:build-host"
       env:
         PUID: "1001"
         PGID: "123"
-        CHECKOUT_DIR: "/home/runner/work/python-project-structure/python-project-structure"
+        CHECKOUT_DIR: "${GITHUB_WORKSPACE}"
         CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
         # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"

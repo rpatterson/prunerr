@@ -105,6 +105,7 @@ jobs:
     needs: ["build-host", "bump"]
     permissions:
       packages: "write"
+      checks: "write"
     strategy:
       matrix:
         PYTHON_MINORS:

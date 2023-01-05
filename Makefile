@@ -252,6 +252,11 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
+	ls -ln "${HOME}/.gitconfig" "~/.gitconfig" || true
+	cat "${HOME}/.gitconfig" || true
+	cat "~/.gitconfig" || true
+	git config user.email || true
+	git config user.name || true
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
@@ -819,6 +824,11 @@ endif
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
+	ls -ln "${HOME}/.gitconfig" "~/.gitconfig" || true
+	cat "${HOME}/.gitconfig" || true
+	cat "~/.gitconfig" || true
+	git config user.email || true
+	git config user.name || true
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 

@@ -424,6 +424,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ENVS:%=./.tox/%/log/build.log): ./var/log/host-install.log
+	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):

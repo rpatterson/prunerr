@@ -205,7 +205,7 @@ endif
 	ls -an "./.git/"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
-	cz_bump_args="--check-consistency --no-verify"
+	cz_bump_args="--check-consistency --no-verify --debug"
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
@@ -333,7 +333,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
-	current_version=$$(./.tox/build/bin/cz version --project)
+	current_version=$$(./.tox/build/bin/cz version --project --debug)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python_project_structure-*
 	release_cli_args="--description ./NEWS-release.rst"
@@ -382,7 +382,7 @@ endif
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project --debug
 	)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -605,7 +605,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
 	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project --debug
 	)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
@@ -814,7 +814,7 @@ endif
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
 	$(MAKE) ./var/log/host-install.log
-	$(TOX_EXEC_BUILD_ARGS) cz init
+	$(TOX_EXEC_BUILD_ARGS) cz init --debug
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

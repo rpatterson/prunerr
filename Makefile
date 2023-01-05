@@ -108,8 +108,7 @@ all: build
 build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env
-	$(MAKE) ./var/log/host-install.log
+build-docker: ./.env ./var/log/host-install.log
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -123,11 +122,10 @@ $(PYTHON_MINORS:%=build-docker-%):
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "$(@:build-requirements-%=./.tox/%/log/build.log)"
-# Parallelizing all `$ pip-compile` runs seems to fail intermittently with:
+# Running `$ pip-compile` in parallel generates a lot of network requests so if your
+# network connection is intermittent, even rarely, you'll probably see these errors:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
 #     Content-Type: .  The only supported Content-Type is text/html
-# I assume it's some sort of PyPI rate limiting.  Remove the next `$ make -j` option if
-# you don't find the trade off worth it.
 	$(MAKE) -e -j \
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
@@ -386,7 +384,7 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:./requirements/%/devel.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/devel.txt=./.tox/%/log/build.log)"
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
@@ -394,14 +392,14 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:./requirements/%/user.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/user.txt=./.tox/%/log/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:./requirements/%/host.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/host.txt=./.tox/%/log/build.log)"
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
@@ -420,7 +418,7 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:./requirements/%/build.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/build.txt=./.tox/%/log/build.log)"
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
@@ -431,7 +429,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/build.log): ./var/log/host-install.log
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
 
 # Build a wheel package but only if one hasn't already been made

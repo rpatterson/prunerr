@@ -80,7 +80,7 @@ isort==5.11.4
     # via pylint
 jinja2==3.1.2
     # via towncrier
-lazy-object-proxy==1.8.0
+lazy-object-proxy==1.9.0
     # via astroid
 mando==0.6.4
     # via radon

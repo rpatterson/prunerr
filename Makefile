@@ -157,7 +157,7 @@ $(PYTHON_MINORS:%=build-docker-%):
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	$(MAKE) "$(@:build-requirements-%=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 # Running `$ pip-compile` in parallel generates a lot of network requests so if your
 # network connection is intermittent, even rarely, you'll probably see these errors:
 #     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
@@ -466,7 +466,7 @@ test-local:
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures
-test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
+test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 	$(TOX_EXEC_ARGS) pytest --pdb
 
 .PHONY: upgrade
@@ -530,7 +530,7 @@ expand-template: ./var/log/host-install.log
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/devel.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --extra "devel" \
 	    --output-file "$(@)" "$(<)"
@@ -538,14 +538,14 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/user.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/host.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/host.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
@@ -564,19 +564,19 @@ $(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/build.txt=./.tox/%/log/build.log)"
+	$(MAKE) "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ENVS:%=./.tox/%/log/build.log): ./var/log/host-install.log
+$(PYTHON_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/build.log=%)" -- python -c "" |
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
+$(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	$(MAKE) ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
 
 # Build a wheel package but only if one hasn't already been made

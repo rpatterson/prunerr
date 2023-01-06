@@ -63,6 +63,7 @@ endif
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
+PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
 export TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
@@ -145,6 +146,8 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env ./var/log/host-install.log
+# Avoid parallel tox recreations stomping on each other
+	$(MAKE) "./var/log/tox/build/build.log"
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -202,7 +205,6 @@ endif
 	set -x
 endif
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
-	ls -an "./.git/"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -252,12 +254,7 @@ endif
 	docker compose run --rm python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
-	ls -ln "${HOME}/.gitconfig" "~/.gitconfig" || true
-	cat "${HOME}/.gitconfig" || true
-	cat "~/.gitconfig" || true
-	git config user.email || true
-	git config user.name || true
-	$(TOX_EXEC_BUILD_ARGS) cz --debug bump $${cz_bump_args}
+	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
 	rm -vf ./dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
@@ -373,12 +370,19 @@ ifeq ($(CI),true)
 endif
 	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 	docker push "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
 	docker push "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
 	docker push "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+	for python_env in $(PYTHON_ENVS)
+	do
+	    docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
+	    docker push "merpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
+	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-$(VCS_BRANCH)"
+	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-devel-$(VCS_BRANCH)"
+	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
+	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
+	done
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(
@@ -392,26 +396,29 @@ ifeq ($(VCS_BRANCH),master)
 	docker push "merpatterson/python-project-structure:$${major_version}"
 	docker push "merpatterson/python-project-structure:latest"
 	docker push "merpatterson/python-project-structure:devel"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version}"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version}"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
 	docker push "$(CI_REGISTRY_IMAGE):$${minor_version}"
 	docker push "$(CI_REGISTRY_IMAGE):$${major_version}"
 	docker push "$(CI_REGISTRY_IMAGE):latest"
 	docker push "$(CI_REGISTRY_IMAGE):devel"
-	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$${minor_version}"
-	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$${major_version}"
-	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-latest"
-	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel"
 	docker push "ghcr.io/rpatterson/python-project-structure:$${minor_version}"
 	docker push "ghcr.io/rpatterson/python-project-structure:$${major_version}"
 	docker push "ghcr.io/rpatterson/python-project-structure:latest"
 	docker push "ghcr.io/rpatterson/python-project-structure:devel"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version}"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version}"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-latest"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel"
+	for python_env in $(PYTHON_ENVS)
+	do
+	    docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
+	    docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
+	    docker push "merpatterson/python-project-structure:$${python_env}"
+	    docker push "merpatterson/python-project-structure:$${python_env}-devel"
+	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-$${minor_version}"
+	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-$${major_version}"
+	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}"
+	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-devel"
+	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-$${minor_version}"
+	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-$${major_version}"
+	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}"
+	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-devel"
+	done
 	docker compose run --rm docker-pushrm
 endif
 
@@ -574,7 +581,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"
@@ -593,7 +600,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini ./requirements/host.txt.in \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./var/docker/$(PYTHON_ENV)/log/rebuild.log
+		./var/log/tox/build/build.log ./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Ensure access permissions to build artifacts in container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
@@ -604,9 +611,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
-	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz --debug version --project
-	)
+	current_version=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -824,18 +829,13 @@ endif
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
-	ls -ln "${HOME}/.gitconfig" "~/.gitconfig" || true
-	cat "${HOME}/.gitconfig" || true
-	cat "~/.gitconfig" || true
-	git config user.email || true
-	git config user.name || true
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 ./var/log/docker-login.log: ./.env
 	mkdir -pv "$(dir $(@))"
-	set +x
 	source "./.env"
+	export DOCKER_PASS
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"
 ./var/log/docker-login-gitlab.log:

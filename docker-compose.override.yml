@@ -80,7 +80,7 @@ services:
     env_file: "./.env"
     environment:
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-${PUID:-1000}}"
+      PGID: "${DOCKER_GID:-${PGID:-${PUID:-1000}}}"
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR}"
     command: >-

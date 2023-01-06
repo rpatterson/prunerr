@@ -71,7 +71,7 @@ jobs:
         uses: "actions/cache@master"
         env:
           # Increment to force clearing the cache
-          cache-name: "tox-v2"
+          cache-name: "tox-v1"
         with:
           path: |
             ~/.local
@@ -81,10 +81,10 @@ jobs:
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
           key: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+            ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           # Always re-use the cache and then upgrade
           restore-keys: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+            ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       - name: "Bump the version if publishing a release"
         run: >-
@@ -131,7 +131,7 @@ jobs:
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
-          cache-name: "tox-v2"
+          cache-name: "tox-v1"
         with:
           path: |
             ~/.local
@@ -139,9 +139,9 @@ jobs:
             ./var/docker/py*/.tox
             ./dist
           key: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       # Delegate the rest to the `./Makefile` to keep as much portable between CI
       # platforms
@@ -222,7 +222,7 @@ jobs:
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
-          cache-name: "tox-v2"
+          cache-name: "tox-v1"
         with:
           path: |
             ~/.local
@@ -230,9 +230,9 @@ jobs:
             ./var/docker/py*/.tox
             ./dist
           key: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+            ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+            ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
 
       - name: "Publish release artifacts"
         run: >-

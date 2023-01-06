@@ -18,6 +18,7 @@ RUN \
     "py3-pip" \
     "gnupg" \
     "curl" \
+    "tar" \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 

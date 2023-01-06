@@ -32,7 +32,8 @@ main() {
 	group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
         if ! getent passwd "${PUID}" >"/dev/null"
         then
-            adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D "runner"
+            adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D \
+		    -s "/bin/bash" "runner"
         fi
 	user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
 	if [ -e "/var/run/docker.sock" ]

@@ -88,6 +88,7 @@ jobs:
 
       - name: "Bump the version if publishing a release"
         run: >-
+          touch ./requirements/*/devel.txt &&
           entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel check-clean
 
   build-test:
@@ -235,6 +236,7 @@ jobs:
 
       - name: "Publish release artifacts"
         run: >-
+          touch ./requirements/*/devel.txt &&
           entrypoint make -e PYTHON_MINORS=3.11 release check-clean
       - name: "Archive built packages"
         uses: "actions/upload-artifact@master"

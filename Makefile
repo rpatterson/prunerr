@@ -255,8 +255,11 @@ release-docker: ./var/log/docker-login.log build-docker
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+	for python_env in $(PYTHON_ENVS)
+	do
+	    docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
+	    docker push "merpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
+	done
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(
@@ -270,10 +273,13 @@ ifeq ($(VCS_BRANCH),master)
 	docker push "merpatterson/python-project-structure:$${major_version}"
 	docker push "merpatterson/python-project-structure:latest"
 	docker push "merpatterson/python-project-structure:devel"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version}"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version}"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)"
-	docker push "merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
+	for python_env in $(PYTHON_ENVS)
+	do
+	    docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
+	    docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
+	    docker push "merpatterson/python-project-structure:$${python_env}"
+	    docker push "merpatterson/python-project-structure:$${python_env}-devel"
+	done
 	docker compose run --rm docker-pushrm
 endif
 

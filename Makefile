@@ -74,6 +74,7 @@ DOCKER_BUILD_ARGS=
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
+BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
@@ -136,7 +137,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
-build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
+build-wheel: ./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
@@ -145,7 +146,7 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 		~/.gitconfig ./var/log/host-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build.log
+		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
@@ -230,7 +231,7 @@ release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate \
 		 ./var/log/host-install.log \
 		~/.pypirc \
 		./dist/.current.whl
@@ -514,14 +515,24 @@ endif
 	date >>"$(@:%/build.log=%/host-install.log)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
+ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run --rm -T python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
+endif
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
+# Target for use as a prerequisite in host targets that depend on the virtualenv having
+# been built.
+$(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
+	python_env=$(notdir $(@:%/bin/activate=%))
+	$(MAKE) "./var/docker/$${python_env}/log/build.log"
+	docker compose run --rm -T python-project-structure-devel \
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	    "./var/log/tox/$${python_env}/build.log"
 
 # Local environment variables from a template
 ./.env: ./.env.in

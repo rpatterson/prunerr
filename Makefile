@@ -162,6 +162,15 @@ check-push: ./var/log/host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/develop"
 endif
+.PHONY: check-clean
+### Confirm that the checkout is free of uncommitted VCS changes
+check-clean: ./var/log/host-install.log
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
@@ -170,12 +179,7 @@ release: ./var/log/host-install.log ~/.pypirc
 	$(TOX_EXEC_ARGS) pyproject-build --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/python?project?structure-*
-	if [ ! -z "$$(git status --porcelain)" ]
-	then
-	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
-	    false
-	fi
+	$(MAKE) "check-clean"
 	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
 	then
 	    exit

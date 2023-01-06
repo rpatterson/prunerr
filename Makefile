@@ -78,6 +78,7 @@ DOCKER_BUILD_ARGS=
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
+BUILD_REQUIREMENTS=true
 PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
@@ -739,9 +740,11 @@ endif
 	date >>"$(@:%/build.log=%/host-install.log)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
+ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run --rm -T python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
+endif
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:

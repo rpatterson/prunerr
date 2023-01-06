@@ -59,6 +59,7 @@ endif
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
+PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
 export TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
@@ -423,7 +424,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"

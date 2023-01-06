@@ -38,8 +38,10 @@ jobs:
           entrypoint make -e ./var/log/docker-login-github.log
       - name: "Update build host image"
         run: >-
+          ls -an ./var/ &&
           entrypoint make -C ./build-host/ -e
-          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release
+          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release &&
+          ls -an ./var/
 
   bump:
     runs-on: "ubuntu-latest"
@@ -89,7 +91,9 @@ jobs:
       - name: "Bump the version if publishing a release"
         run: >-
           touch ./requirements/*/*.txt &&
-          entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel check-clean
+          ls -an ./var/ &&
+          entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel check-clean &&
+          ls -an ./var/
 
   build-test:
     runs-on: "ubuntu-latest"
@@ -148,12 +152,16 @@ jobs:
 
       - name: "Build the container image in which to run the tests"
         run: >-
+          ls -an ./var/ &&
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          build-docker-${{ matrix.PYTHON_MINORS }}
+          build-docker-${{ matrix.PYTHON_MINORS }} &&
+          ls -an ./var/
       - name: "Run the tests and code checks inside the built container"
         run: >-
+          ls -an ./var/ &&
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          test-docker-${{ matrix.PYTHON_MINORS }} check-clean
+          test-docker-${{ matrix.PYTHON_MINORS }} check-clean &&
+          ls -an ./var/
 
       # Upload build artifacts
       # https://github.com/actions/upload-artifact#usage
@@ -237,7 +245,9 @@ jobs:
       - name: "Publish release artifacts"
         run: >-
           touch ./requirements/*/*.txt &&
-          entrypoint make -e PYTHON_MINORS=3.11 release check-clean
+          ls -an ./var/ &&
+          entrypoint make -e PYTHON_MINORS=3.11 release check-clean &&
+          ls -an ./var/
       - name: "Archive built packages"
         uses: "actions/upload-artifact@master"
         with:

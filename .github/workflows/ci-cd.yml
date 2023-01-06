@@ -236,3 +236,9 @@ jobs:
       - name: "Publish release artifacts"
         run: >-
           entrypoint make -e PYTHON_MINORS=3.11 release
+      - name: "Archive built packages"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "built-packages"
+          path: |
+            ./dist/python?project?structure-*

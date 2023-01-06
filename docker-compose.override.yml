@@ -77,6 +77,8 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${CHECKOUT_DIR}/:${CHECKOUT_DIR}"
       - "${CHECKOUT_DIR}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
+      # Share local SSH authentication to repository remotes
+      - "~/.ssh/:/home/runner/.ssh/"
     env_file: "./.env"
     environment:
       PUID: "${PUID:-1000}"

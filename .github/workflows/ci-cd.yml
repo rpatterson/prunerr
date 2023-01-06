@@ -38,10 +38,8 @@ jobs:
           entrypoint make -e ./var/log/docker-login-github.log
       - name: "Update build host image"
         run: >-
-          ls -an ./var/ || true &&
           entrypoint make -C ./build-host/ -e
-          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release &&
-          ls -an ./var/ || true
+          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release
 
   bump:
     runs-on: "ubuntu-latest"
@@ -63,9 +61,6 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Change checkout owner"
-        run: >-
-          chown -R ${PUID}:${PGID} ./
 
       # Cache build artifacts to speed up CI runs
       - name: "Cache tox virtual environments"
@@ -87,13 +82,14 @@ jobs:
           # Always re-use the cache and then upgrade
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
 
       - name: "Bump the version if publishing a release"
         run: >-
           touch ./requirements/*/*.txt &&
-          ls -an ./var/ || true &&
-          entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel check-clean &&
-          ls -an ./var/ || true
+          entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel check-clean
 
   build-test:
     runs-on: "ubuntu-latest"
@@ -125,12 +121,6 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Change checkout owner"
-        # https://stackoverflow.com/a/58474340/624787
-        run: >-
-          chown -R ${PUID}:${PGID} ./ &&
-          git config --global --add safe.directory
-          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -146,22 +136,24 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+      - name: "Change checkout owner"
+        # https://stackoverflow.com/a/58474340/624787
+        run: >-
+          chown -R ${PUID}:${PGID} ./ &&
+          git config --global --add safe.directory
+          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
 
       # Delegate the rest to the `./Makefile` to keep as much portable between CI
       # platforms
 
       - name: "Build the container image in which to run the tests"
         run: >-
-          ls -an ./var/ || true &&
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          build-docker-${{ matrix.PYTHON_MINORS }} &&
-          ls -an ./var/ || true
+          build-docker-${{ matrix.PYTHON_MINORS }}
       - name: "Run the tests and code checks inside the built container"
         run: >-
-          ls -an ./var/ || true &&
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          test-docker-${{ matrix.PYTHON_MINORS }} check-clean &&
-          ls -an ./var/ || true
+          test-docker-${{ matrix.PYTHON_MINORS }} check-clean
 
       # Upload build artifacts
       # https://github.com/actions/upload-artifact#usage
@@ -223,9 +215,6 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Change checkout owner"
-        run: >-
-          chown -R ${PUID}:${PGID} ./
       - name: "Cache tox virtual environments"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
@@ -241,13 +230,14 @@ jobs:
             ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-
             ${{ env.cache-name }}-${{ runner.os }}-3.11-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
 
       - name: "Publish release artifacts"
         run: >-
           touch ./requirements/*/*.txt &&
-          ls -an ./var/ || true &&
-          entrypoint make -e PYTHON_MINORS=3.11 release check-clean &&
-          ls -an ./var/ || true
+          entrypoint make -e PYTHON_MINORS=3.11 release check-clean
       - name: "Archive built packages"
         uses: "actions/upload-artifact@master"
         with:

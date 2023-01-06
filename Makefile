@@ -283,6 +283,15 @@ ifeq ($(RELEASE_PUBLISH),true)
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/develop"
 endif
+.PHONY: check-clean
+### Confirm that the checkout is free of uncommitted VCS changes
+check-clean: ./var/log/host-install.log
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
@@ -310,13 +319,8 @@ endif
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python_project_structure-*
-	if [ ! -z "$$(git status --porcelain)" ]
-	then
-	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
-	    false
-	fi
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
+	$(MAKE) "check-clean"
 	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
 	then
 	    exit
@@ -326,13 +330,13 @@ ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python_project_structure-*
+	    ./dist/python?project?structure-*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
-	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python_project_structure-*
+	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python?project?structure-*
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
@@ -358,7 +362,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # release object:
 	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-release.rst" ./dist/python_project_structure-*
+	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub

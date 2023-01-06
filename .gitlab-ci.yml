@@ -75,7 +75,7 @@ bump:
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
-      touch ./requirements/*/devel.txt &&
+      touch ./requirements/*/*.txt &&
       entrypoint make -e PYTHON_MINORS=3.11 build-bump build-wheel check-clean
   artifacts:
     # Upload build artifacts:
@@ -125,7 +125,7 @@ release:
   needs: ["build-host", "build-test"]
   script:
     - >-
-      touch ./requirements/*/devel.txt &&
+      touch ./requirements/*/*.txt &&
       entrypoint make -e PYTHON_MINORS=3.11 release check-clean
   artifacts:
     paths:

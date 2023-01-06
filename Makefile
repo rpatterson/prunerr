@@ -162,6 +162,15 @@ check-push: ./var/log/host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/develop"
 endif
+.PHONY: check-clean
+### Confirm that the checkout is free of uncommitted VCS changes
+check-clean: ./var/log/host-install.log
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
@@ -169,13 +178,8 @@ release: ./var/log/host-install.log ~/.pypirc
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
 	$(TOX_EXEC_ARGS) pyproject-build --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/python_project_structure-*
-	if [ ! -z "$$(git status --porcelain)" ]
-	then
-	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
-	    false
-	fi
+	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/python?project?structure-*
+	$(MAKE) "check-clean"
 	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
 	then
 	    exit
@@ -184,7 +188,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" ./.tox/.pkg/dist/python_project_structure-*
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	    ./.tox/.pkg/dist/python?project?structure-*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push --no-verify --tags origin $(VCS_BRANCH)

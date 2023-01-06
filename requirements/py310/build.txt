@@ -60,7 +60,7 @@ nodeenv==1.7.0
     # via pre-commit
 packaging==22.0
     # via commitizen
-pkginfo==1.9.3
+pkginfo==1.9.4
     # via twine
 platformdirs==2.6.2
     # via virtualenv

@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py38/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.12.13
+astroid==2.12.14
     # via
     #   pylint
     #   pylint-celery
@@ -74,7 +74,7 @@ idna==3.4
     # via requests
 incremental==22.10.0
     # via towncrier
-iniconfig==1.1.1
+iniconfig==2.0.0
     # via pytest
 isort==5.11.4
     # via pylint

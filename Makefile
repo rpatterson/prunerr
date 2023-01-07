@@ -78,6 +78,7 @@ DOCKER_BUILD_ARGS=
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
+BUILD_REQUIREMENTS=true
 PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
@@ -172,7 +173,9 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
-build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
+build-wheel: \
+		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
@@ -181,7 +184,8 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 		~/.gitconfig ./var/log/host-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build.log
+		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
@@ -283,6 +287,15 @@ ifeq ($(RELEASE_PUBLISH),true)
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/develop"
 endif
+.PHONY: check-clean
+### Confirm that the checkout is free of uncommitted VCS changes
+check-clean: ./var/log/host-install.log
+	if [ ! -z "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    false
+	fi
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
@@ -295,6 +308,7 @@ endif
 release-python: \
 		~/.pypirc ./var/log/codecov-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate \
 		 ./var/log/host-install.log \
 		./dist/.current.whl
 # Upload any build or test artifacts to CI/CD providers
@@ -310,13 +324,8 @@ endif
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python_project_structure-*
-	if [ ! -z "$$(git status --porcelain)" ]
-	then
-	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
-	    false
-	fi
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
+	$(MAKE) "check-clean"
 	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
 	then
 	    exit
@@ -326,13 +335,13 @@ ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 # Only release on `master` or `develop` to avoid duplicate uploads
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python_project_structure-*
+	    ./dist/python?project?structure-*
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz --debug version --project)
 # Create a GitLab release
-	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python_project_structure-*
+	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python?project?structure-*
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${current_version}"
 	release_cli_args+=" --assets-link {\
@@ -358,7 +367,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # release object:
 	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-release.rst" ./dist/python_project_structure-*
+	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
 endif
 .PHONY: release-docker
 ### Publish container images to Docker Hub
@@ -735,14 +744,24 @@ endif
 	date >>"$(@:%/build.log=%/host-install.log)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
+ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run --rm -T python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
+endif
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
+# Target for use as a prerequisite in host targets that depend on the virtualenv having
+# been built.
+$(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
+	python_env=$(notdir $(@:%/bin/activate=%))
+	$(MAKE) "./var/docker/$${python_env}/log/build.log"
+	docker compose run --rm -T python-project-structure-devel \
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	    "./var/log/tox/$${python_env}/build.log"
 
 # Local environment variables from a template
 ./.env: ./.env.in
@@ -834,6 +853,7 @@ endif
 
 ./var/log/docker-login.log: ./.env
 	mkdir -pv "$(dir $(@))"
+	set +x
 	source "./.env"
 	export DOCKER_PASS
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin

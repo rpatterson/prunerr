@@ -72,7 +72,7 @@ idna==3.4
     # via requests
 incremental==22.10.0
     # via towncrier
-iniconfig==1.1.1
+iniconfig==2.0.0
     # via pytest
 isort==5.11.4
     # via pylint

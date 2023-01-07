@@ -584,6 +584,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 
 ./var/log/docker-login.log: ./.env
 	mkdir -pv "$(dir $(@))"
+	set +x
 	source "./.env"
 	export DOCKER_PASS
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin

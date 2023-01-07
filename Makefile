@@ -174,7 +174,6 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
-	ls -na $(?)
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'

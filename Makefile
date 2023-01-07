@@ -173,7 +173,9 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/host.txt"
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
-build-wheel: ./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
+build-wheel: \
+		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
@@ -182,6 +184,7 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 		~/.gitconfig ./var/log/host-install.log \
+		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
@@ -304,6 +307,7 @@ endif
 ### Publish installable Python packages to PyPI
 release-python: \
 		~/.pypirc ./var/log/codecov-install.log \
+		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate \
 		 ./var/log/host-install.log \
 		./dist/.current.whl

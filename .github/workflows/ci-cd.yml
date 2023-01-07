@@ -88,7 +88,6 @@ jobs:
 
       - name: "Bump the version if publishing a release"
         run: >-
-          ls -na ./ ./.tox/ ./var/ ./var/docker/ ./var/docker/*/log/ || true &&
           entrypoint make -e BUILD_REQUIREMENTS=false PYTHON_MINORS=3.11
           build-bump build-wheel check-clean
 

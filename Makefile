@@ -174,6 +174,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
+	ls -na ./ ./.tox/ ./var/ ./var/docker/ ./var/docker/*/log/ ./var/docker/*/.tox/ || true
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
@@ -183,6 +184,7 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
 build-bump: \
 		~/.gitconfig ./var/log/host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build.log
+	ls -na ./ ./.tox/ ./var/ ./var/docker/ ./var/docker/*/log/ ./var/docker/*/.tox/ || true
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
@@ -264,7 +266,9 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
+	ls -na ./ ./.tox/ ./var/ ./var/docker/ ./var/docker/*/log/ ./var/docker/*/.tox/ || true
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
+	ls -na ./ ./.tox/ ./var/ ./var/docker/ ./var/docker/*/log/ ./var/docker/*/.tox/ || true
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons

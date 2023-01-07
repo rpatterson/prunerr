@@ -68,7 +68,7 @@ jobs:
         uses: "actions/cache@master"
         env:
           # Increment to force clearing the cache
-          cache-name: "tox-v1"
+          cache-name: "tox-v2"
         with:
           path: |
             ~/.local
@@ -125,7 +125,7 @@ jobs:
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
-          cache-name: "tox-v1"
+          cache-name: "tox-v2"
         with:
           path: |
             ~/.local
@@ -219,7 +219,7 @@ jobs:
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
-          cache-name: "tox-v1"
+          cache-name: "tox-v2"
         with:
           path: |
             ~/.local

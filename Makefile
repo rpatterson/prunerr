@@ -174,12 +174,9 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build.log
-	printenv "PYTHON_ENV"
-	docker compose run --rm python-project-structure-devel printenv "PATH"
-	docker compose run --rm python-project-structure-devel printenv "VIRTUAL_ENV"
-	docker compose run --rm python-project-structure-devel pwd
-	docker compose run --rm python-project-structure-devel bash -c \
-	    "ls -an /usr/local/src/python-project-structure/.tox/*/bin/" || true
+	docker compose run --rm python-project-structure-devel ls -an \
+	    "/usr/local/src/python-project-structure/" \
+	    "/usr/local/src/python-project-structure/.tox/" || true
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'

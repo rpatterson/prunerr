@@ -707,15 +707,16 @@ endif
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
+	docker pull "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel-$(VCS_BRANCH)" || true
+	docker_build_caches+=" --cache-from \
+	$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)" || true
+	docker pull "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
-	    ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+	ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 endif
 endif
 	docker_build_devel_tags=" \

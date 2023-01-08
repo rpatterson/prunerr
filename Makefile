@@ -155,6 +155,11 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
 	rm -vf ./.tox/.pkg/dist/*
+ifeq ($(RELEASE_PUBLISH),true)
+# The VCS remote should reflect the release before the release is published to ensure
+# that a published release is never *not* reflected in VCS.
+	git push --no-verify --tags origin $(VCS_BRANCH)
+endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
@@ -190,9 +195,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Only release on `master` or `develop` to avoid duplicate uploads
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./.tox/.pkg/dist/python?project?structure-*
-# The VCS remote shouldn't reflect the release until the release has been successfully
-# published
-	git push --no-verify --tags origin $(VCS_BRANCH)
 endif
 
 .PHONY: format

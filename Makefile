@@ -271,7 +271,7 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS:
-	git-push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 # Ensure the tag is in place on the GitHub mirror so we can create the project host
 # release object there:
 	git push -o ci.skip --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"

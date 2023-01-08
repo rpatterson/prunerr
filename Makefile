@@ -111,6 +111,13 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env ./var/log/host-install.log
+ifeq ($(RELEASE_PUBLISH),true)
+	if [ -e "./build/next-version.txt" ]
+	then
+# Ensure the build is made from the version bump commit if it was done elsewhere:
+	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	fi
+endif
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
@@ -160,22 +167,25 @@ endif
 # Run first in case any input is needed from the developer
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-	rm -fv "./.tox/build/cz-bump-no-release.txt"
+# Check if a release and thus a version bump is needed for the commits since the last
+# release:
+	next_version=$$(
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
+	) || true
+	rm -fv "./build/next-version.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
-	    echo "true" >"./.tox/build/cz-bump-no-release.txt"
 	    exit
-	elif (( $$exit_code != 0 ))
+	elif (( $$exit_code == 0 ))
 	then
+	    mkdir -pv "./build/"
+	    echo "$${next_version}" >"./build/next-version.txt"
+	else
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
 	fi
-	cz_bump_args+=" --yes"
-	next_version="$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run |
-	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
-	)"
 # Update the release notes/changelog
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
@@ -202,7 +212,8 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags origin $(VCS_BRANCH)
+	git push --no-verify -o "ci.skip" --tags \
+	   "origin" "v$$(cat "./build/next-version.txt")"
 endif
 
 .PHONY: start
@@ -244,20 +255,26 @@ release-python: \
 		 ./var/log/host-install.log \
 		~/.pypirc \
 		./dist/.current.whl
+ifeq ($(RELEASE_PUBLISH),true)
+	if [ -e "./build/next-version.txt" ]
+	then
+# Ensure the release is made from the version bump commit if it was done elsewhere:
+	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	fi
+endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 	$(MAKE) "check-clean"
-	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
+	if [ ! -e "./build/next-version.txt" ]
 	then
 	    exit
 	fi
+# Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
-# Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
-# Only release on `master` or `develop` to avoid duplicate uploads
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
 endif

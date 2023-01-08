@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py311/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.12.14
+astroid==2.13.0
     # via
     #   pylint
     #   pylint-celery
@@ -44,7 +44,7 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-coverage==7.0.3
+coverage==7.0.4
     # via python-project-structure (pyproject.toml)
 dill==0.3.6
     # via pylint

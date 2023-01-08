@@ -222,7 +222,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Run first in case any input is needed from the developer
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz --debug bump $${cz_bump_args} --dry-run || exit_code=$$?
+	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
 	rm -fv "./.tox/build/cz-bump-no-release.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -236,7 +236,7 @@ endif
 	fi
 	cz_bump_args+=" --yes"
 	next_version="$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz --debug bump $${cz_bump_args} --dry-run |
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run |
 	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
 	)"
 # Update the release notes/changelog
@@ -339,7 +339,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote shouldn't reflect the release until the release has been successfully
 # published
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
-	current_version=$$(./.tox/build/bin/cz --debug version --project)
+	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python?project?structure-*
 	release_cli_args="--description ./NEWS-release.rst"
@@ -395,7 +395,7 @@ endif
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz --debug version --project
+	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
 	)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -838,7 +838,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
 	$(MAKE) ./var/log/host-install.log
-	$(TOX_EXEC_BUILD_ARGS) cz --debug init
+	$(TOX_EXEC_BUILD_ARGS) cz init
 
 # Emacs editor settings
 ./.dir-locals.el: ./.dir-locals.el.in

@@ -268,6 +268,14 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
+ifeq ($(RELEASE_PUBLISH),true)
+# The VCS remote should reflect the release before the release is published to ensure
+# that a published release is never *not* reflected in VCS:
+	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+# Ensure the tag is in place on the GitHub mirror so we can create the project host
+# release object there:
+	git push -o ci.skip --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
+endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
@@ -330,15 +338,12 @@ endif
 	then
 	    exit
 	fi
+# Only release on `master` or `develop` to avoid duplicate uploads
 ifeq ($(RELEASE_PUBLISH),true)
 # Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
-# Only release on `master` or `develop` to avoid duplicate uploads
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
-# The VCS remote shouldn't reflect the release until the release has been successfully
-# published
-	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python?project?structure-*
@@ -363,9 +368,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    create $${release_cli_args}
 # Create a GitHub release
-# Ensure the tag is in place on the GitHub mirror so we can create the project host
-# release object:
-	git push -o ci.skip --no-verify --tags "github"
 	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
 endif

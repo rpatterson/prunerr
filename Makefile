@@ -176,6 +176,8 @@ $(PYTHON_ENVS:%=build-requirements-%):
 build-wheel: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git fetch --tags origin "$(VCS_BRANCH)"
 	ln -sfv "$$(
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
@@ -622,6 +624,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git fetch --tags origin "$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \

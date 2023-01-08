@@ -492,6 +492,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
 	current_version=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -499,37 +503,47 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
-	    --tag merpatterson/python-project-structure:local \
-	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
-	    --tag merpatterson/python-project-structure:$${current_version} \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-local \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${current_version}"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
-	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
-	minor_version=$$(
-	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
-	)
 	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:$${minor_version} \
-	    --tag merpatterson/python-project-structure:$${major_version} \
-	    --tag merpatterson/python-project-structure:latest \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version} \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version} \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)"
 endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+	docker_build_user_tags+=" \
+	    --tag merpatterson/python-project-structure:local \
+	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
+	    --tag merpatterson/python-project-structure:$${current_version}"
+ifeq ($(VCS_BRANCH),master)
+	docker_build_user_tags+=" \
+	    --tag merpatterson/python-project-structure:$${minor_version} \
+	    --tag merpatterson/python-project-structure:$${major_version} \
+	    --tag merpatterson/python-project-structure:latest"
+endif
+endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./"
 	docker_build_devel_tags=" \
-	    --tag merpatterson/python-project-structure:devel-local \
-	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-local \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:devel \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
+endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+	docker_build_devel_tags+=" \
+	    --tag merpatterson/python-project-structure:devel-local \
+	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
+	docker_build_devel_tags+=" \
+	    --tag merpatterson/python-project-structure:devel"
+endif
 endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"

@@ -72,6 +72,15 @@ TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 CI=false
 DOCKER_BUILD_ARGS=
+DOCKER_REGISTRIES=DOCKER
+export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
+DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/python-project-structure
+DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
+export DOCKER_VARIANT=
+DOCKER_VARIANT_PREFIX=
+ifneq ($(DOCKER_VARIANT),)
+DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
+endif
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -109,6 +118,7 @@ all: build
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers
 build: ./.git/hooks/pre-commit build-docker
+
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env ./var/log/host-install.log
@@ -129,6 +139,35 @@ $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
 	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
+.PHONY: build-docker-tags
+### Print the list of image tags for the current registry and variant
+build-docker-tags:
+	current_version=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),master)
+# Only update tags end users may depend on to be stable from the `master` branch
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${major_version}
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
+endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),master)
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$${minor_version}
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$${major_version}
+ifeq ($(DOCKER_VARIANT),)
+	echo $(DOCKER_IMAGE):latest
+else
+	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT)
+endif
+endif
+endif
+
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
@@ -143,6 +182,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/host.txt"
+
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
 build-wheel: \
@@ -152,6 +192,7 @@ build-wheel: \
 	    docker compose run --rm python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
 	)" "./dist/.current.whl"
+
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -252,6 +293,7 @@ check-clean: ./var/log/host-install.log
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python release-docker
+
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
@@ -267,9 +309,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker pull \
-	    "merpatterson/python-project-structure:devel-$(PYTHON_ENV)-$(VCS_BRANCH)" \
-	    || true
+	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
@@ -286,43 +326,34 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
 endif
+
 .PHONY: release-docker
-### Publish container images to container registries
-release-docker: ./var/log/docker-login.log build-docker
+### Publish all container images to all container registries
+release-docker: build-docker
 	$(MAKE) -e -j $(PYTHON_MINORS:%=release-docker-%)
 .PHONY: $(PYTHON_MINORS:%=release-docker-%)
-### Publish the container image for one variant to container registries
+### Publish the container images for one Python version to all container registry
 $(PYTHON_MINORS:%=release-docker-%):
-	python_env="py$(subst .,,$(@:release-docker-%=%))"
-	current_version=$$(
-	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
-	)
-	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
-	minor_version=$$(
-	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
-	)
-# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:devel-$${python_env}-$(VCS_BRANCH)"
-# Only update tags end users may depend on to be stable from the `master` branch
-ifeq ($(VCS_BRANCH),master)
-	docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
-	docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
-	docker push "merpatterson/python-project-structure:$${python_env}"
-	docker push "merpatterson/python-project-structure:devel-$${python_env}"
-endif
-# This variant is the default used for tags such as `latest`
-ifeq ($${python_env},$(PYTHON_LATEST_ENV))
-	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-ifeq ($(VCS_BRANCH),master)
-	docker push "merpatterson/python-project-structure:$${minor_version}"
-	docker push "merpatterson/python-project-structure:$${major_version}"
-	docker push "merpatterson/python-project-structure:latest"
-	docker push "merpatterson/python-project-structure:devel"
+	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
+	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
+ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
 	docker compose run --rm docker-pushrm
 endif
-endif
+.PHONY: $(DOCKER_REGISTRIES:%=release-docker-registry-%)
+### Publish all container images to one container registry
+$(DOCKER_REGISTRIES:%=release-docker-registry-%):
+# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+	$(MAKE) "./var/log/docker-login-$(DOCKER_REGISTRY).log"
+	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
+	do
+	    docker push "$${user_tag}"
+	done
+	for devel_tag in $$(
+	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
+	)
+	do
+	    docker push "$${devel_tag}"
+	done
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -394,7 +425,7 @@ upgrade:
 # to those container registries manually and touch these targets.
 .PHONY: bootstrap-project
 ### Run any tasks needed to be run once for a given project by a maintainer
-bootstrap-project: ./var/log/docker-login.log
+bootstrap-project: ./var/log/docker-login-DOCKER.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 	$(MAKE) -C "./build-host/" release
 
@@ -504,53 +535,26 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
 	current_version=$$(./.tox/build/bin/cz version --project)
-	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
-	minor_version=$$(
-	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
-	)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${current_version}"
-	docker_build_user_tags=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
-ifeq ($(VCS_BRANCH),master)
-# Only update tags end users may depend on to be stable from the `master` branch
-	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version} \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version} \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)"
-endif
-# This variant is the default used for tags such as `latest`
-ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
-	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:$(VCS_BRANCH)"
-ifeq ($(VCS_BRANCH),master)
-	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:$${minor_version} \
-	    --tag merpatterson/python-project-structure:$${major_version} \
-	    --tag merpatterson/python-project-structure:latest"
-endif
-endif
+	docker_build_user_tags=""
+	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
+	do
+	    docker_build_user_tags+="--tag $${user_tag} "
+	done
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./"
-	docker_build_devel_tags=" \
-	    --tag merpatterson/python-project-structure:devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
-ifeq ($(VCS_BRANCH),master)
-	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:devel-$(PYTHON_ENV)"
-endif
-# This variant is the default used for tags such as `latest`
-ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
-	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-ifeq ($(VCS_BRANCH),master)
-	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:devel"
-endif
-endif
+	docker_build_devel_tags=""
+	for devel_tag in $$(
+	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
+	)
+	do
+	    docker_build_devel_tags+="--tag $${devel_tag} "
+	done
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
 	date >>"$(@)"
@@ -625,7 +629,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
-./var/log/docker-login.log: ./.env
+./var/log/docker-login-DOCKER.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"

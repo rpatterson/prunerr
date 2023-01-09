@@ -7,7 +7,7 @@ services:
 
   ## Configuration specific to this checkout
   python-project-structure:
-    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-local"
+    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
     build: "${CHECKOUT_DIR}/"
     volumes:
       # Preserve caches caches between container runs
@@ -15,7 +15,7 @@ services:
 
   ## Container for use by developers
   python-project-structure-devel:
-    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-devel-local"
+    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-devel-${VCS_BRANCH:-develop}"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"

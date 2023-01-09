@@ -79,7 +79,7 @@ RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
-VCS_BRANCH:=$(shell git branch --show-current)
+export VCS_BRANCH:=$(shell git branch --show-current)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 TOWNCRIER_COMPARE_BRANCH=master
@@ -208,7 +208,11 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
+ifneq ($(CI),true)
+# If running under CI/CD then the image will be updated in the next pipeline stage.
+# For testing locally, however, ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
+endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
@@ -250,8 +254,6 @@ release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate \
 		 ./var/log/host-install.log \
 		~/.pypirc \
 		./dist/.current.whl
@@ -264,6 +266,10 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
+	docker pull \
+	    "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
+	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
@@ -279,18 +285,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    ./dist/python?project?structure-*
 endif
 .PHONY: release-docker
-### Publish container images to Docker Hub
+### Publish container images to container registries
 release-docker: ./var/log/docker-login.log build-docker
-# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-	for python_env in $(PYTHON_ENVS)
-	do
-	    docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
-	    docker push "merpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
-	done
-ifeq ($(VCS_BRANCH),master)
-# Only update tags end users may depend on to be stable from the `master` branch
+	$(MAKE) -e -j $(PYTHON_ENVS:%=release-docker-%)
+.PHONY: $(PYTHON_ENVS:%=release-docker-%)
+### Publish the container image for one variant to container registries
+$(PYTHON_ENVS:%=release-docker-%):
 	current_version=$$(
 	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
 	)
@@ -298,18 +298,27 @@ ifeq ($(VCS_BRANCH),master)
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
+# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-devel-$(VCS_BRANCH)"
+# Only update tags end users may depend on to be stable from the `master` branch
+ifeq ($(VCS_BRANCH),master)
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$${minor_version}"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$${major_version}"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-devel"
+endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(@:release-docker-%=%),$(PYTHON_LATEST_ENV))
+	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
 	docker push "merpatterson/python-project-structure:$${minor_version}"
 	docker push "merpatterson/python-project-structure:$${major_version}"
 	docker push "merpatterson/python-project-structure:latest"
 	docker push "merpatterson/python-project-structure:devel"
-	for python_env in $(PYTHON_ENVS)
-	do
-	    docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
-	    docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
-	    docker push "merpatterson/python-project-structure:$${python_env}"
-	    docker push "merpatterson/python-project-structure:$${python_env}-devel"
-	done
 	docker compose run --rm docker-pushrm
+endif
 endif
 
 .PHONY: format
@@ -503,7 +512,6 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-local \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${current_version}"
 ifeq ($(VCS_BRANCH),master)
@@ -529,7 +537,6 @@ endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./"
 	docker_build_devel_tags=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-local \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 	docker_build_devel_tags+=" \
@@ -538,7 +545,6 @@ endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
 	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:devel-local \
 	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 	docker_build_devel_tags+=" \

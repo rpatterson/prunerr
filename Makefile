@@ -287,10 +287,11 @@ endif
 .PHONY: release-docker
 ### Publish container images to container registries
 release-docker: ./var/log/docker-login.log build-docker
-	$(MAKE) -e -j $(PYTHON_ENVS:%=release-docker-%)
-.PHONY: $(PYTHON_ENVS:%=release-docker-%)
+	$(MAKE) -e -j $(PYTHON_MINORS:%=release-docker-%)
+.PHONY: $(PYTHON_MINORS:%=release-docker-%)
 ### Publish the container image for one variant to container registries
-$(PYTHON_ENVS:%=release-docker-%):
+$(PYTHON_MINORS:%=release-docker-%):
+	python_env="py$(subst .,,$(@:release-docker-%=%))"
 	current_version=$$(
 	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
 	)
@@ -299,17 +300,17 @@ $(PYTHON_ENVS:%=release-docker-%):
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-devel-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
 # Only update tags end users may depend on to be stable from the `master` branch
 ifeq ($(VCS_BRANCH),master)
-	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$${minor_version}"
-	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$${major_version}"
-	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)"
-	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-devel"
+	docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
+	docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
+	docker push "merpatterson/python-project-structure:$${python_env}"
+	docker push "merpatterson/python-project-structure:$${python_env}-devel"
 endif
 # This variant is the default used for tags such as `latest`
-ifeq ($(@:release-docker-%=%),$(PYTHON_LATEST_ENV))
+ifeq ($${python_env},$(PYTHON_LATEST_ENV))
 	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
 	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)

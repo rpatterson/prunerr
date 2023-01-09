@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/py37/host.txt --resolver=backtracking requirements/host.txt.in
 #
-cachetools==5.2.0
+cachetools==5.2.1
     # via tox
 chardet==5.1.0
     # via tox
@@ -21,7 +21,7 @@ importlib-metadata==6.0.0
     #   pluggy
     #   tox
     #   virtualenv
-packaging==22.0
+packaging==23.0
     # via
     #   pyproject-api
     #   tox

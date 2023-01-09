@@ -89,12 +89,12 @@ GITLAB_CI=false
 GITHUB_ACTIONS=false
 ifeq ($(GITLAB_CI),true)
 USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
-VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+export VCS_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifeq ($(GITHUB_ACTIONS),true)
 USER_EMAIL=$(USER_NAME)@actions.github.com
-VCS_BRANCH=$(GITHUB_REF_NAME)
+export VCS_BRANCH=$(GITHUB_REF_NAME)
 else
-VCS_BRANCH:=$(shell git branch --show-current)
+export VCS_BRANCH:=$(shell git branch --show-current)
 endif
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
@@ -147,6 +147,13 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env ./var/log/host-install.log
+ifeq ($(RELEASE_PUBLISH),true)
+	if [ -e "./build/next-version.txt" ]
+	then
+# Ensure the build is made from the version bump commit if it was done elsewhere:
+	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	fi
+endif
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
@@ -225,22 +232,25 @@ endif
 # Run first in case any input is needed from the developer
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-	rm -fv "./.tox/build/cz-bump-no-release.txt"
+# Check if a release and thus a version bump is needed for the commits since the last
+# release:
+	next_version=$$(
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
+	) || true
+	rm -fv "./build/next-version.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
-	    echo "true" >"./.tox/build/cz-bump-no-release.txt"
 	    exit
-	elif (( $$exit_code != 0 ))
+	elif (( $$exit_code == 0 ))
 	then
+	    mkdir -pv "./build/"
+	    echo "$${next_version}" >"./build/next-version.txt"
+	else
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
 	fi
-	cz_bump_args+=" --yes"
-	next_version="$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run |
-	    sed -nE 's|.* *[Vv]ersion *(.+) *→ *(.+)|\2|p'
-	)"
 # Update the release notes/changelog
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
@@ -269,14 +279,20 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
+ifneq ($(CI),true)
+# If running under CI/CD then the image will be updated in the next pipeline stage.
+# For testing locally, however, ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
+endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS:
-	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push -o ci.skip --no-verify --tags \
+	    "origin" "v$$(cat "./build/next-version.txt")"
 # Ensure the tag is in place on the GitHub mirror so we can create the project host
 # release object there:
-	git push -o ci.skip --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
+	git push -o ci.skip --no-verify --tags \
+	    "github" "v$$(cat "./build/next-version.txt")"
 endif
 
 .PHONY: start
@@ -317,8 +333,6 @@ endif
 ### Publish installable Python packages to PyPI
 release-python: \
 		~/.pypirc ./var/log/codecov-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate \
 		 ./var/log/host-install.log \
 		./dist/.current.whl
 # Upload any build or test artifacts to CI/CD providers
@@ -327,22 +341,30 @@ ifeq ($(GITLAB_CI),true)
 	    --file "./build/$(PYTHON_ENV)/coverage.xml"
 endif
 ifeq ($(RELEASE_PUBLISH),true)
+	if [ -e "./build/next-version.txt" ]
+	then
+# Ensure the release is made from the version bump commit if it was done elsewhere:
+	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	fi
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
+	docker pull \
+	    "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
+	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 	$(MAKE) "check-clean"
-	if [ -e "./.tox/build/cz-bump-no-release.txt" ]
+	if [ ! -e "./build/next-version.txt" ]
 	then
 	    exit
 	fi
-# Only release on `master` or `develop` to avoid duplicate uploads
+# Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
-# Publish from the local host outside a container for access to user credentials:
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
@@ -374,30 +396,20 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
 endif
 .PHONY: release-docker
-### Publish container images to Docker Hub
-release-docker: build-docker
-# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+### Publish container images to container registries
+release-docker: ./var/log/docker-login.log build-docker
 ifeq ($(CI),true)
 	$(MAKE) -e "./var/log/docker-login.log" \
 	    "./var/log/docker-login-gitlab.log" "./var/log/docker-login-github.log"
 endif
-	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-	docker push "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
-	docker push "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
-	docker push "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
-	docker push "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
-	for python_env in $(PYTHON_ENVS)
-	do
-	    docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
-	    docker push "merpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
-	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-$(VCS_BRANCH)"
-	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-devel-$(VCS_BRANCH)"
-	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
-	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
-	done
-ifeq ($(VCS_BRANCH),master)
-# Only update tags end users may depend on to be stable from the `master` branch
+	$(MAKE) -e -j $(PYTHON_ENVS:%=release-docker-%)
+.PHONY: $(PYTHON_ENVS:%=release-docker-%)
+### Publish the container image for one variant to container registries
+$(PYTHON_ENVS:%=release-docker-%):
+ifeq ($(CI),true)
+	$(MAKE) -e "./var/log/docker-login.log" \
+	    "./var/log/docker-login-gitlab.log" "./var/log/docker-login-github.log"
+endif
 	current_version=$$(
 	    tox exec $(TOX_EXEC_OPTS) -e "build" -qq -- cz version --project
 	)
@@ -405,6 +417,37 @@ ifeq ($(VCS_BRANCH),master)
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
+# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-devel-$(VCS_BRANCH)"
+	docker push "$(CI_REGISTRY_IMAGE):$(@:release-docker-%=%)-$(VCS_BRANCH)"
+	docker push "$(CI_REGISTRY_IMAGE):$(@:release-docker-%=%)-devel-$(VCS_BRANCH)"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(@:release-docker-%=%)-$(VCS_BRANCH)"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(@:release-docker-%=%)-devel-$(VCS_BRANCH)"
+# Only update tags end users may depend on to be stable from the `master` branch
+ifeq ($(VCS_BRANCH),master)
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$${minor_version}"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-$${major_version}"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)"
+	docker push "merpatterson/python-project-structure:$(@:release-docker-%=%)-devel"
+	docker push "$(CI_REGISTRY_IMAGE):$(@:release-docker-%=%)-$${minor_version}"
+	docker push "$(CI_REGISTRY_IMAGE):$(@:release-docker-%=%)-$${major_version}"
+	docker push "$(CI_REGISTRY_IMAGE):$(@:release-docker-%=%)"
+	docker push "$(CI_REGISTRY_IMAGE):$(@:release-docker-%=%)-devel"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(@:release-docker-%=%)-$${minor_version}"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(@:release-docker-%=%)-$${major_version}"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(@:release-docker-%=%)"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(@:release-docker-%=%)-devel"
+endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(@:release-docker-%=%),$(PYTHON_LATEST_ENV))
+	docker push "merpatterson/python-project-structure:$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+	docker push "$(CI_REGISTRY_IMAGE):$(VCS_BRANCH)"
+	docker push "$(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH)"
+	docker push "ghcr.io/rpatterson/python-project-structure:$(VCS_BRANCH)"
+	docker push "ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
 	docker push "merpatterson/python-project-structure:$${minor_version}"
 	docker push "merpatterson/python-project-structure:$${major_version}"
 	docker push "merpatterson/python-project-structure:latest"
@@ -417,22 +460,8 @@ ifeq ($(VCS_BRANCH),master)
 	docker push "ghcr.io/rpatterson/python-project-structure:$${major_version}"
 	docker push "ghcr.io/rpatterson/python-project-structure:latest"
 	docker push "ghcr.io/rpatterson/python-project-structure:devel"
-	for python_env in $(PYTHON_ENVS)
-	do
-	    docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
-	    docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
-	    docker push "merpatterson/python-project-structure:$${python_env}"
-	    docker push "merpatterson/python-project-structure:$${python_env}-devel"
-	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-$${minor_version}"
-	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-$${major_version}"
-	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}"
-	    docker push "$(CI_REGISTRY_IMAGE):$${python_env}-devel"
-	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-$${minor_version}"
-	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-$${major_version}"
-	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}"
-	    docker push "ghcr.io/rpatterson/python-project-structure:$${python_env}-devel"
-	done
 	docker compose run --rm docker-pushrm
+endif
 endif
 
 .PHONY: format
@@ -627,6 +656,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(VCS_BRANCH)"
 	current_version=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	minor_version=$$(
+	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -634,10 +667,6 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
-	    --tag merpatterson/python-project-structure:local \
-	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
-	    --tag merpatterson/python-project-structure:$${current_version} \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-local \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${current_version} \
 	    --tag $(CI_REGISTRY_IMAGE):$(VCS_BRANCH) \
@@ -650,14 +679,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --tag ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$${current_version}"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
-	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
-	minor_version=$$(
-	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
-	)
 	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:$${minor_version} \
-	    --tag merpatterson/python-project-structure:$${major_version} \
-	    --tag merpatterson/python-project-structure:latest \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${minor_version} \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${major_version} \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV) \
@@ -692,6 +714,19 @@ ifneq ($(VCS_BRANCH),master)
 	    ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+	docker_build_user_tags+=" \
+	    --tag merpatterson/python-project-structure:local \
+	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
+	    --tag merpatterson/python-project-structure:$${current_version}"
+ifeq ($(VCS_BRANCH),master)
+	docker_build_user_tags+=" \
+	    --tag merpatterson/python-project-structure:$${minor_version} \
+	    --tag merpatterson/python-project-structure:$${major_version} \
+	    --tag merpatterson/python-project-structure:latest"
+endif
+endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
@@ -720,22 +755,27 @@ ifneq ($(VCS_BRANCH),master)
 endif
 endif
 	docker_build_devel_tags=" \
-	    --tag merpatterson/python-project-structure:devel-local \
-	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH) \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-local \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH) \
-	    --tag $(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH) \
 	    --tag $(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel-$(VCS_BRANCH) \
-	    --tag ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH) \
 	    --tag ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:devel \
 	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel \
-	    --tag $(CI_REGISTRY_IMAGE):devel \
 	    --tag $(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-devel \
-	    --tag ghcr.io/rpatterson/python-project-structure:devel \
 	    --tag ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-devel"
+endif
+# This variant is the default used for tags such as `latest`
+ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+	docker_build_devel_tags+=" \
+	    --tag merpatterson/python-project-structure:devel-$(VCS_BRANCH) \
+	    --tag $(CI_REGISTRY_IMAGE):devel-$(VCS_BRANCH) \
+	    --tag ghcr.io/rpatterson/python-project-structure:devel-$(VCS_BRANCH)"
+ifeq ($(VCS_BRANCH),master)
+	docker_build_devel_tags+=" \
+	    --tag merpatterson/python-project-structure:devel \
+	    --tag $(CI_REGISTRY_IMAGE):devel \
+	    --tag ghcr.io/rpatterson/python-project-structure:devel"
+endif
 endif
 	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"

@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py38/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.13.0
+astroid==2.13.2
     # via
     #   pylint
     #   pylint-celery
@@ -133,7 +133,7 @@ pycodestyle==2.10.0
     #   prospector
 pydantic==1.10.4
     # via rstcheck-core
-pydocstyle==6.2.2
+pydocstyle==6.2.3
     # via prospector
 pyflakes==2.5.0
     # via
@@ -240,7 +240,7 @@ typing-extensions==4.4.0
     #   setuptools-scm
 urllib3==1.26.13
     # via requests
-vulture==2.6
+vulture==2.7
     # via prospector
 wheel==0.38.4
     # via

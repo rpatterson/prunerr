@@ -717,7 +717,6 @@ endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
 	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:local \
 	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
 	    --tag merpatterson/python-project-structure:$${current_version}"
 ifeq ($(VCS_BRANCH),master)

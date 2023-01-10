@@ -98,6 +98,7 @@ mypy-extensions==0.4.3
 packaging==21.3
     # via
     #   build
+    #   prospector
     #   pytest
     #   requirements-detector
     #   setuptools-scm
@@ -123,7 +124,7 @@ pluggy==1.0.0
     # via pytest
 poetry-semver==0.1.0
     # via requirements-detector
-prospector[with_everything]==1.8.3
+prospector[with_everything]==1.8.4
     # via python-project-structure (pyproject.toml)
 pycodestyle==2.10.0
     # via
@@ -142,7 +143,7 @@ pygments==2.14.0
     # via
     #   pyroma
     #   rich
-pylint==2.15.9
+pylint==2.15.10
     # via
     #   prospector
     #   pylint-celery

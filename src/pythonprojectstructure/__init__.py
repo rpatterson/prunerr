@@ -8,6 +8,8 @@ import argparse
 import json
 import pdb
 
+import argcomplete
+
 from . import utils
 
 logger = logging.getLogger(__name__)
@@ -64,6 +66,9 @@ parser_foobar.add_argument(
     action="store_true",
     help="Suppress reporting results",
 )
+
+# Register shell tab completion
+argcomplete.autocomplete(parser)
 
 
 def config_cli_logging(

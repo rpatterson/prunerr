@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
+# https://kislyuk.github.io/argcomplete/#global-completion
 """
 Python project structure foundation or template, command-line execution.
 """

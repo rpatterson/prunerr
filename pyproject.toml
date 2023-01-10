@@ -50,6 +50,9 @@ ignored-classes = ["lxml.etree.QName.localname"]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#pylint
 [tool.pylint.format]
 max-line-length = "88"
+[[tool.mypy.overrides]]
+module = ["argcomplete"]
+ignore_missing_imports = true
 
 [tool.isort]
 # Match Black's defaults

@@ -267,7 +267,8 @@ endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker pull \
-	    "merpatterson/python-project-structure:devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	    "merpatterson/python-project-structure:devel-$(PYTHON_ENV)-$(VCS_BRANCH)" \
+	    || true
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s

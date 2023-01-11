@@ -34,7 +34,7 @@ docutils==0.19
     # via readme-renderer
 filelock==3.9.0
     # via virtualenv
-identify==2.5.12
+identify==2.5.13
     # via pre-commit
 idna==3.4
     # via requests
@@ -113,7 +113,7 @@ typing-extensions==4.4.0
     #   importlib-metadata
     #   platformdirs
     #   rich
-urllib3==1.26.13
+urllib3==1.26.14
     # via
     #   requests
     #   twine

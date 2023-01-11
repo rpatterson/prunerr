@@ -699,16 +699,16 @@ endif
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `master`
-ifneq ($(VCS_BRANCH),master)
 	$(MAKE) -e "./var/log/docker-login-gitlab.log"
+ifneq ($(VCS_BRANCH),master)
 	docker pull "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from $(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
+	$(MAKE) -e "./var/log/docker-login-github.log"
 ifneq ($(VCS_BRANCH),master)
 # Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
-	$(MAKE) -e "./var/log/docker-login-github.log"
 	docker pull "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
 	    ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
@@ -730,11 +730,9 @@ endif
 	    $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
-	$(MAKE) -e ./var/log/docker-login-gitlab.log
 	docker push "$(CI_REGISTRY_IMAGE):$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
-	$(MAKE) -e ./var/log/docker-login-github.log
 	docker push "ghcr.io/rpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 # Build the development image

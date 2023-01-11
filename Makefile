@@ -513,8 +513,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${current_version}"
 	docker_build_user_tags=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH) \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$${current_version}"
+	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	docker_build_user_tags+=" \
@@ -525,8 +524,7 @@ endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
 	docker_build_user_tags+=" \
-	    --tag merpatterson/python-project-structure:$(VCS_BRANCH) \
-	    --tag merpatterson/python-project-structure:$${current_version}"
+	    --tag merpatterson/python-project-structure:$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 	docker_build_user_tags+=" \
 	    --tag merpatterson/python-project-structure:$${minor_version} \

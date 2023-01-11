@@ -34,7 +34,7 @@ docutils==0.19
     # via readme-renderer
 filelock==3.9.0
     # via virtualenv
-identify==2.5.12
+identify==2.5.13
     # via pre-commit
 idna==3.4
     # via requests
@@ -104,7 +104,7 @@ twine==4.0.2
     # via -r requirements/build.txt.in
 typing-extensions==4.4.0
     # via commitizen
-urllib3==1.26.13
+urllib3==1.26.14
     # via
     #   requests
     #   twine

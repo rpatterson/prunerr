@@ -267,7 +267,7 @@ endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker pull \
-	    "merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+	    "merpatterson/python-project-structure:devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
@@ -301,13 +301,13 @@ $(PYTHON_MINORS:%=release-docker-%):
 	)
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	docker push "merpatterson/python-project-structure:$${python_env}-$(VCS_BRANCH)"
-	docker push "merpatterson/python-project-structure:$${python_env}-devel-$(VCS_BRANCH)"
+	docker push "merpatterson/python-project-structure:devel-$${python_env}-$(VCS_BRANCH)"
 # Only update tags end users may depend on to be stable from the `master` branch
 ifeq ($(VCS_BRANCH),master)
 	docker push "merpatterson/python-project-structure:$${python_env}-$${minor_version}"
 	docker push "merpatterson/python-project-structure:$${python_env}-$${major_version}"
 	docker push "merpatterson/python-project-structure:$${python_env}"
-	docker push "merpatterson/python-project-structure:$${python_env}-devel"
+	docker push "merpatterson/python-project-structure:devel-$${python_env}"
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($${python_env},$(PYTHON_LATEST_ENV))
@@ -535,10 +535,10 @@ endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./"
 	docker_build_devel_tags=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel-$(VCS_BRANCH)"
+	    --tag merpatterson/python-project-structure:devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
 ifeq ($(VCS_BRANCH),master)
 	docker_build_devel_tags+=" \
-	    --tag merpatterson/python-project-structure:$(PYTHON_ENV)-devel"
+	    --tag merpatterson/python-project-structure:devel-$(PYTHON_ENV)"
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))

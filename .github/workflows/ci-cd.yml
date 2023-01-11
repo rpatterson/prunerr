@@ -39,7 +39,7 @@ jobs:
       - name: "Update build host image"
         run: >-
           entrypoint make -C ./build-host/ -e
-          CI_REGISTRY_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release
+          DOCKER_IMAGE=ghcr.io/${GITHUB_REPOSITORY} release
 
   bump:
     runs-on: "ubuntu-latest"

@@ -545,9 +545,9 @@ bootstrap-project: \
 		./var/log/docker-login-GITHUB.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 # GitLab CI/CD:
-	$(MAKE) -C "./build-host/" CI_REGISTRY_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
+	$(MAKE) -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
 # GitHub Actions:
-	$(MAKE) -C "./build-host/" CI_REGISTRY_IMAGE="$(DOCKER_IMAGE_GITHUB)" release
+	$(MAKE) -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible

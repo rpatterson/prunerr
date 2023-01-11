@@ -70,6 +70,7 @@ endif
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
+CI=false
 DOCKER_BUILD_ARGS=
 
 # Safe defaults for testing the release process without publishing to the final/official

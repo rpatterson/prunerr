@@ -15,7 +15,7 @@ services:
 
   ## Container for use by developers
   python-project-structure-devel:
-    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-devel-${VCS_BRANCH:-develop}"
+    image: "merpatterson/python-project-structure:devel-${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"

@@ -35,7 +35,7 @@ jobs:
           chown -R ${PUID}:${PGID} ./
       - name: "Authenticate with the container registry"
         run: >-
-          entrypoint make -e ./var/log/docker-login-github.log
+          entrypoint make -e ./var/log/docker-login-GITHUB.log
       - name: "Update build host image"
         run: >-
           entrypoint make -C ./build-host/ -e

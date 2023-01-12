@@ -40,11 +40,17 @@ services:
     # won't restart the container again.
     restart: "on-failure"
     healthcheck:
+      # If the `transmission` service uses `network_mode: "service:..."`, such as a VPN,
+      # then it may become inaccessible on any IP other than `localhost` when the
+      # service whose network it uses is restarted.  As such, if the `transmission`
+      # service should be accessible from it's IP on the LAN set the `LAN_IP=...` in the
+      # `./.env` so that the `HEALTHCHECK` fails and the container is restart when that
+      # happens.
       test: >-
         test "$(df --output="avail" "${DOWNLOAD_VOLUME}" | tail -n +2)"
         -gt "${CRITICAL_AVAIL}" || /sbin/shutdown &&
         curl -LI -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
-        "http://localhost:9091/transmission/rpc/" |
+        "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '
     labels:
       traefik.enable: true

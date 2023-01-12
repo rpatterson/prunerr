@@ -1,0 +1,33 @@
+# Example Servarr service to demonstrate the integration with Prunerr.
+#
+# In a separate file because integrating with Servarr is optional.  See the comment
+# above `COMPOSE_FILE` in `./.env.in` for an example of how to add this file.
+version: "3.8"
+
+services:
+
+  sonarr:
+    image: "ghcr.io/hotio/sonarr"
+    volumes:
+      - "./sonarr/config/:/config/"
+    # ports:
+    #   - "8989:8989"
+    restart: "unless-stopped"
+    healthcheck:
+      test: >-
+        curl -Lv
+        "http://sonarr:8989/api/system/status?apikey=${SONARR_API_KEY:-}" |
+        grep '"appData": *"/config"'
+
+  radarr:
+    image: "ghcr.io/hotio/radarr"
+    volumes:
+      - "./radarr/config/:/config/"
+    # ports:
+    #   - "7878:7878"
+    restart: "unless-stopped"
+    healthcheck:
+      test: >-
+        curl -Lv
+        "http://radarr:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
+        grep '"appData": *"/config"'

@@ -6,13 +6,20 @@ version: "3.8"
 services:
 
   transmission:
+    container_name: "prunerr-devel-transmission"
     volumes:
       # Exit the container if the core `s6-overlay` service fails
       - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
 
+  sonarr:
+    container_name: "prunerr-devel-sonarr"
+  radarr:
+    container_name: "prunerr-devel-radarr"
+
   ## Configuration specific to this checkout
   prunerr-daemon:
     image: "merpatterson/prunerr:local"
+    container_name: "prunerr-devel-daemon"
     build: "./"
     volumes:
       # Preserve caches caches between container runs

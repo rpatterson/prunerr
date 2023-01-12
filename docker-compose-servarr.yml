@@ -8,6 +8,7 @@ services:
 
   sonarr:
     image: "ghcr.io/hotio/sonarr"
+    container_name: "sonarr"
     volumes:
       - "./sonarr/config/:/config/"
     # ports:
@@ -21,6 +22,7 @@ services:
 
   radarr:
     image: "ghcr.io/hotio/radarr"
+    container_name: "radarr"
     volumes:
       - "./radarr/config/:/config/"
     # ports:

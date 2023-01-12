@@ -6,6 +6,7 @@ services:
 
   transmission:
     image: "linuxserver/transmission"
+    container_name: "transmission"
     # command:
     #   # From `# pgrep -fla transmission`:
     #   # `/usr/bin/transmission-daemon -g /config -c /watch -f`
@@ -58,6 +59,7 @@ services:
   ## Container for use by end users
   prunerr-daemon:
     image: "merpatterson/prunerr"
+    container_name: "prunerr-daemon"
     depends_on:
       - "transmission"
       - "sonarr"

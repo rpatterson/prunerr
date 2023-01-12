@@ -8,6 +8,7 @@ services:
   ## Configuration specific to this checkout
   python-project-structure:
     image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    container_name: "python-project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR}/"
       args:
@@ -21,6 +22,7 @@ services:
   ## Container for use by developers
   python-project-structure-devel:
     image: "merpatterson/python-project-structure:devel-${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    container_name: "python-project-structure-devel"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"

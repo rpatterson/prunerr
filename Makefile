@@ -139,34 +139,39 @@ $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
 	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
-.PHONY: build-docker-tags
+.PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
-build-docker-tags:
+$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	current_version=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${major_version}
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$(VCS_BRANCH)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(VCS_BRANCH)
 ifeq ($(VCS_BRANCH),master)
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$${minor_version}
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT_PREFIX)$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${major_version}
 ifeq ($(DOCKER_VARIANT),)
-	echo $(DOCKER_IMAGE):latest
+	echo $${docker_image}:latest
 else
-	echo $(DOCKER_IMAGE):$(DOCKER_VARIANT)
+	echo $${docker_image}:$(DOCKER_VARIANT)
 endif
 endif
 endif
+.PHONY: build-docker-tags
+### Print the list of image tags for the current registry and variant
+build-docker-tags:
+	$(MAKE) $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
@@ -344,7 +349,10 @@ endif
 $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
 	$(MAKE) "./var/log/docker-login-$(DOCKER_REGISTRY).log"
-	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
+	for user_tag in $$(
+	    $(MAKE) -e --no-print-directory \
+	        build-docker-tags-$(@:release-docker-registry-%=%)
+	)
 	do
 	    docker push "$${user_tag}"
 	done

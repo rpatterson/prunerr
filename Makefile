@@ -462,7 +462,7 @@ endif
 ### Publish all container images to one container registry
 $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	$(MAKE) "./var/log/docker-login-$(DOCKER_REGISTRY).log"
+	$(MAKE) "./var/log/docker-login-$(@:release-docker-registry-%=%).log"
 	for user_tag in $$(
 	    $(MAKE) -e --no-print-directory \
 	        build-docker-tags-$(@:release-docker-registry-%=%)

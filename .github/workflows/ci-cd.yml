@@ -237,7 +237,7 @@ jobs:
       - name: "Publish release artifacts"
         run: >-
           entrypoint make -e BUILD_REQUIREMENTS=false PYTHON_MINORS=3.11
-          release check-clean
+          release-python check-clean
       - name: "Archive built packages"
         uses: "actions/upload-artifact@master"
         with:

@@ -375,9 +375,7 @@ check-clean: ./var/log/host-install.log
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub
 release: release-python
-ifeq ($(GITLAB_CI),true)
 	$(MAKE) -e release-docker
-endif
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI

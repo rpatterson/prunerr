@@ -103,7 +103,7 @@ build-test:
   script:
     - >-
       entrypoint make -e build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}
-      check-clean
+      release-docker-${PYTHON_MINORS} check-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     paths:
@@ -127,7 +127,7 @@ release:
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false PYTHON_MINORS=3.11
-      release check-clean
+      release-python check-clean
   artifacts:
     paths:
       - "./dist/python?project?structure-*"

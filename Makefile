@@ -382,9 +382,8 @@ release: release-python
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		~/.pypirc ./var/log/codecov-install.log \
-		 ./var/log/host-install.log \
-		./dist/.current.whl
+		~/.pypirc ./var/log/codecov-install.log ./var/log/host-install.log \
+		./.env ./dist/.current.whl
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \

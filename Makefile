@@ -81,6 +81,11 @@ DOCKER_VARIANT_PREFIX=
 ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
+DOCKER_VOLUMES=\
+./src/python_project_structure.egg-info/ \
+./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
+./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
+
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -303,7 +308,9 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/host-install.log ./.env ~/.pypirc ./dist/.current.whl
+release-python: \
+		./var/log/host-install.log ./.env $(DOCKER_VOLUMES) ~/.pypirc \
+		./dist/.current.whl
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./build/next-version.txt" ]
 	then
@@ -376,7 +383,7 @@ format: ./var/log/host-install.log
 
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
-lint-docker: ./.env
+lint-docker: ./.env $(DOCKER_VOLUMES)
 	docker compose run --rm hadolint hadolint "./Dockerfile"
 	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
 	docker compose run --rm hadolint hadolint "./build-host/Dockerfile"
@@ -536,14 +543,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini ./requirements/host.txt.in \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./var/log/tox/build/build.log ./var/docker/$(PYTHON_ENV)/log/rebuild.log
+		./var/log/tox/build/build.log \
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
 	true DEBUG Updated prereqs: $(?)
-# Ensure access permissions to build artifacts in container volumes.
-# If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" \
-	    "./src/python_project_structure.egg-info/" \
-	    "./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/" \
-	    "./.tox/" "./var/docker/$(PYTHON_ENV)/.tox/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
@@ -580,6 +583,12 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
+# Ensure access permissions to build artifacts in container volumes.
+# If created by `# dockerd`, they end up owned by `root`.
+./src/python_project_structure.egg-info/ \
+$(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
+./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/):
+	mkdir -pv "$(@)"
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:

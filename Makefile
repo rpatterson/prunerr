@@ -857,14 +857,14 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	export DOCKER_PASS
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"
-./var/log/docker-login-GITLAB.log:
+./var/log/docker-login-GITLAB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
 	printenv "CI_REGISTRY_PASSWORD" |
 	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
 	date | tee -a "$(@)"
-./var/log/docker-login-GITHUB.log:
+./var/log/docker-login-GITHUB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"

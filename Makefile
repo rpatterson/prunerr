@@ -365,7 +365,7 @@ endif
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: ./var/log/host-install.log
-	if [ ! -z "$$(git status --porcelain)" ]
+	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
 	    echo "CRITICAL: Checkout is not clean, not publishing release"
@@ -400,6 +400,7 @@ endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
@@ -468,7 +469,8 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 	    docker push "$${user_tag}"
 	done
 	for devel_tag in $$(
-	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
+	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory \
+	        build-docker-tags-$(@:release-docker-registry-%=%)
 	)
 	do
 	    docker push "$${devel_tag}"

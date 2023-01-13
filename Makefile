@@ -315,6 +315,7 @@ endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s

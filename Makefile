@@ -39,10 +39,10 @@ define PYTHON_AVAIL_EXECS :=
 endef
 PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
 PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
-PYTHON_MINOR=$(PYTHON_HOST_MINOR)
+export PYTHON_MINOR=$(PYTHON_HOST_MINOR)
 ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
-PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+export PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
 
 # Values derived from constants
@@ -52,9 +52,9 @@ PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
 PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
 PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 ifeq ($(PYTHON_MINOR),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 endif
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
@@ -136,17 +136,19 @@ endif
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
-	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:build-docker-%=%)" \
+	    PYTHON_MINOR="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
 	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
 $(DOCKER_REGISTRIES:%=build-docker-tags-%):
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
-	current_version=$$(./.tox/build/bin/cz version --project)
-	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
-	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
 ifeq ($(VCS_BRANCH),master)
@@ -311,10 +313,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
-	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
@@ -393,8 +396,11 @@ test-docker: ./.env build-wheel
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Run the full suite of tests inside a docker container for this Python version
 $(PYTHON_MINORS:%=test-docker-%):
-	$(MAKE) -e PYTHON_MINORS="$(@:test-docker-%=%)" \
-	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" test-docker-pyminor
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:test-docker-%=%)" \
+	    PYTHON_MINOR="$(@:test-docker-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" \
+	    test-docker-pyminor
 .PHONY: test-docker-pyminor
 test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
@@ -541,13 +547,13 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
-	current_version=$$(./.tox/build/bin/cz version --project)
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
-	    --build-arg VERSION=$${current_version}"
+	    --build-arg VERSION=$${VERSION}"
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
 	do

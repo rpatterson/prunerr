@@ -8,7 +8,12 @@ services:
   ## Configuration specific to this checkout
   python-project-structure:
     image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
-    build: "${CHECKOUT_DIR}/"
+    build:
+      context: "${CHECKOUT_DIR}/"
+      args:
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
       - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
@@ -19,6 +24,10 @@ services:
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
+      args:
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        VERSION: "${VERSION:-}"
     environment:
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"

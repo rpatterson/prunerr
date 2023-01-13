@@ -19,8 +19,7 @@ PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 # Project-specific variables
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-GITHUB_REPOSITORY_OWNER=rpatterson
-CI_REGISTRY_IMAGE=registry.gitlab.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure
+CI_REGISTRY_USER=rpatterson
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -132,6 +131,9 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
 endif
+CI_REGISTRY=registry.gitlab.com/$(CI_REGISTRY_USER)
+CI_REGISTRY_IMAGE=$(CI_REGISTRY)/python-project-structure
+GITHUB_REPOSITORY_OWNER=$(CI_REGISTRY_USER)
 # Address undefined variables warnings when running under local development
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
@@ -859,12 +861,14 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 ./var/log/docker-login-GITLAB.log:
 	mkdir -pv "$(dir $(@))"
 	set +x
+	source "./.env"
 	printenv "CI_REGISTRY_PASSWORD" |
 	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
 	date | tee -a "$(@)"
 ./var/log/docker-login-GITHUB.log:
 	mkdir -pv "$(dir $(@))"
 	set +x
+	source "./.env"
 	printenv "PROJECT_GITHUB_PAT" |
 	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
 	date | tee -a "$(@)"

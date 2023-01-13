@@ -358,7 +358,8 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 	    docker push "$${user_tag}"
 	done
 	for devel_tag in $$(
-	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
+	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory \
+	        build-docker-tags-$(@:release-docker-registry-%=%)
 	)
 	do
 	    docker push "$${devel_tag}"

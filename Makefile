@@ -288,7 +288,7 @@ endif
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: ./var/log/host-install.log
-	if [ ! -z "$$(git status --porcelain)" ]
+	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
 	    echo "CRITICAL: Checkout is not clean, not publishing release"

@@ -19,7 +19,8 @@ PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 # Project-specific variables
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CI_REGISTRY_USER=rpatterson
+GITLAB_REPOSITORY_OWNER=rpatterson
+GITHUB_REPOSITORY_OWNER=$(GITLAB_REPOSITORY_OWNER)
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -131,9 +132,9 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
 endif
-CI_REGISTRY=registry.gitlab.com/$(CI_REGISTRY_USER)
+CI_REGISTRY_USER=$(GITLAB_REPOSITORY_OWNER)
+CI_REGISTRY=registry.gitlab.com/$(GITLAB_REPOSITORY_OWNER)
 CI_REGISTRY_IMAGE=$(CI_REGISTRY)/python-project-structure
-GITHUB_REPOSITORY_OWNER=$(CI_REGISTRY_USER)
 # Address undefined variables warnings when running under local development
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=

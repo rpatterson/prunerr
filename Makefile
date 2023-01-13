@@ -301,10 +301,7 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: \
-		 ./var/log/host-install.log \
-		~/.pypirc \
-		./dist/.current.whl
+release-python: ./var/log/host-install.log ./.env ~/.pypirc ./dist/.current.whl
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./build/next-version.txt" ]
 	then

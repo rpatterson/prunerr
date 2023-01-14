@@ -656,5 +656,6 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	set +x
 	source "./.env"
 	export DOCKER_PASS
+	set -x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"

@@ -95,7 +95,9 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations
-build: ./.git/hooks/pre-commit ./var/log/host-install.log
+build: \
+	./.git/hooks/pre-commit \
+	$(HOME)/.local/var/log/python-project-structure-host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./build/next-version.txt" ]
 	then
@@ -117,10 +119,11 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/host.txt"
+	    "./build-host/requirements-$(@:build-requirements-%=%).txt"
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/host-install.log
+build-bump: \
+	~/.gitconfig $(HOME)/.local/var/log/python-project-structure-host-install.log
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
@@ -174,13 +177,13 @@ endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: ./var/log/host-install.log
+check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/develop"
 endif
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
-check-clean: ./var/log/host-install.log
+check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -190,7 +193,7 @@ check-clean: ./var/log/host-install.log
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: ./var/log/host-install.log ~/.pypirc
+release: $(HOME)/.local/var/log/python-project-structure-host-install.log ~/.pypirc
 ifeq ($(RELEASE_PUBLISH),true)
 # Ensure the release is made from the version bump commit if it was done elsewhere:
 	git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
@@ -213,7 +216,7 @@ endif
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: ./var/log/host-install.log
+format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
@@ -233,7 +236,7 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
+	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
 	$(MAKE) -e "build"
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
@@ -253,7 +256,7 @@ clean:
 
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
-expand-template: ./var/log/host-install.log
+expand-template: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	set +x
 	if [ -e "$(target)" ]
 	then
@@ -281,13 +284,13 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.i
 	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
-$(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
+$(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/host.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
-	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
+	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
 # Don't install tox into one of it's own virtual environments
 	    if [ -n "$${VIRTUAL_ENV:-}" ]
@@ -305,18 +308,19 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log:
+$(HOME)/.local/var/log/python-project-structure-host-install.log:
 	mkdir -pv "$(dir $(@))"
 	(
 	    if ! which pip
@@ -330,22 +334,22 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    if [ -e ./requirements/$(PYTHON_HOST_ENV)/host.txt ]
+	    if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]
 	    then
-	        pip install -r "./requirements/$(PYTHON_HOST_ENV)/host.txt"
+	        pip install -r "./build-host/requirements-$(PYTHON_HOST_ENV).txt"
 	    else
-	        pip install -r "./requirements/host.txt.in"
+	        pip install -r "./build-host/requirements.txt.in"
 	    fi
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit:
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) cz init
 
 # Emacs editor settings

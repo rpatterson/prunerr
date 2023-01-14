@@ -876,6 +876,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
+	export CI_REGISTRY_PASSWORD
 	set -x
 	printenv "CI_REGISTRY_PASSWORD" |
 	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
@@ -884,6 +885,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
+	export PROJECT_GITHUB_PAT
 	set -x
 	printenv "PROJECT_GITHUB_PAT" |
 	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"

@@ -869,12 +869,14 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	set +x
 	source "./.env"
 	export DOCKER_PASS
+	set -x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"
 ./var/log/docker-login-GITLAB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
+	set -x
 	printenv "CI_REGISTRY_PASSWORD" |
 	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
 	date | tee -a "$(@)"
@@ -882,6 +884,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
+	set -x
 	printenv "PROJECT_GITHUB_PAT" |
 	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
 	date | tee -a "$(@)"

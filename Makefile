@@ -43,10 +43,10 @@ define PYTHON_AVAIL_EXECS :=
 endef
 PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
 PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
-PYTHON_MINOR=$(PYTHON_HOST_MINOR)
+export PYTHON_MINOR=$(PYTHON_HOST_MINOR)
 ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
-PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+export PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
 
 # Values derived from constants
@@ -56,9 +56,9 @@ PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
 PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
 PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 ifeq ($(PYTHON_MINOR),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 endif
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
@@ -87,6 +87,11 @@ DOCKER_VARIANT_PREFIX=
 ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
+DOCKER_VOLUMES=\
+./src/python_project_structure.egg-info/ \
+./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
+./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
+
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -177,17 +182,19 @@ endif
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
 $(PYTHON_MINORS:%=build-docker-%):
-	$(MAKE) -e PYTHON_MINORS="$(@:build-docker-%=%)" \
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:build-docker-%=%)" \
+	    PYTHON_MINOR="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
 	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
 $(DOCKER_REGISTRIES:%=build-docker-tags-%):
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
-	current_version=$$(./.tox/build/bin/cz version --project)
-	major_version=$$(echo $${current_version} | sed -nE 's|([0-9]+).*|\1|p')
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
-	    echo $${current_version} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
+	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
 ifeq ($(VCS_BRANCH),master)
@@ -384,7 +391,7 @@ release: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
 		~/.pypirc ./var/log/codecov-install.log ./var/log/host-install.log \
-		./.env ./dist/.current.whl
+		./.env $(DOCKER_VOLUMES) ./dist/.current.whl
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \
@@ -401,10 +408,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
-	$(MAKE) "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run --rm python-project-structure-devel pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
@@ -418,14 +426,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
-	current_version=$$(./.tox/build/bin/cz version --project)
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python?project?structure-*
 	release_cli_args="--description ./NEWS-release.rst"
-	release_cli_args+=" --tag-name v$${current_version}"
+	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"PyPI\",\
-	\"url\":\"https://$(PYPI_HOSTNAME)/project/$(CI_PROJECT_NAME)/$${current_version}/\",\
+	\"url\":\"https://$(PYPI_HOSTNAME)/project/$(CI_PROJECT_NAME)/$${VERSION}/\",\
 	\"link_type\":\"package\"\
 	}"
 	release_cli_args+=" --assets-link {\
@@ -442,7 +450,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    create $${release_cli_args}
 # Create a GitHub release
-	gh release create "v$${current_version}" $(GITHUB_RELEASE_ARGS) \
+	gh release create "v$${VERSION}" $(GITHUB_RELEASE_ARGS) \
 	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
 endif
 
@@ -489,7 +497,7 @@ format: ./var/log/host-install.log
 
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
-lint-docker: ./.env
+lint-docker: ./.env $(DOCKER_VOLUMES)
 	docker compose run --rm hadolint hadolint "./Dockerfile"
 	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
 	docker compose run --rm hadolint hadolint "./build-host/Dockerfile"
@@ -509,8 +517,11 @@ test-docker: ./.env build-wheel
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Run the full suite of tests inside a docker container for this Python version
 $(PYTHON_MINORS:%=test-docker-%):
-	$(MAKE) -e PYTHON_MINORS="$(@:test-docker-%=%)" \
-	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" test-docker-pyminor
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:test-docker-%=%)" \
+	    PYTHON_MINOR="$(@:test-docker-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" \
+	    test-docker-pyminor
 .PHONY: test-docker-pyminor
 test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
@@ -653,26 +664,22 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini ./requirements/host.txt.in \
 		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./var/log/tox/build/build.log ./var/docker/$(PYTHON_ENV)/log/rebuild.log
+		./var/log/tox/build/build.log \
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
 	true DEBUG Updated prereqs: $(?)
-# Ensure access permissions to build artifacts in container volumes.
-# If created by `# dockerd`, they end up owned by `root`.
 	mkdir -pv "$(dir $(@))" \
-	    "./src/python_project_structure.egg-info/" \
-	    "./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/" \
-	    "./.tox/" "./var/docker/$(PYTHON_ENV)/.tox/"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) ./var/log/host-install.log
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(VCS_BRANCH)"
-	current_version=$$(./.tox/build/bin/cz version --project)
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
-	    --build-arg VERSION=$${current_version}"
+	    --build-arg VERSION=$${VERSION}"
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
 	do
@@ -749,6 +756,12 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
+# Ensure access permissions to build artifacts in container volumes.
+# If created by `# dockerd`, they end up owned by `root`.
+./src/python_project_structure.egg-info/ \
+$(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
+./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/):
+	mkdir -pv "$(@)"
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:

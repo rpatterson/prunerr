@@ -26,6 +26,11 @@ ENV HOME="/home/runner"
 # Add user installs to PATH
 ENV PATH="${HOME}/.local/bin:${PATH}"
 
+COPY [ "./requirements-py310.txt", "./" ]
+RUN mkdir -pv "${HOME}/.local/var/log/" && \
+    pip install --no-cache-dir --user -r "./requirements-py310.txt" \
+    >"${HOME}/.local/var/log/python-project-structure-host-install.log"
+
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]

@@ -126,7 +126,7 @@ build: ./.git/hooks/pre-commit build-docker
 
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env ./var/log/host-install.log
+build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./build/next-version.txt" ]
 	then
@@ -193,7 +193,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
 	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/host.txt"
+	    "./build-host/requirements-$(@:build-requirements-%=%).txt"
 
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
@@ -208,7 +208,8 @@ build-wheel: \
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
-		~/.gitconfig ./var/log/host-install.log \
+		~/.gitconfig \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
@@ -261,7 +262,7 @@ endif
 	touch \
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-	    $(PYTHON_ENVS:%=./requirements/%/host.txt)
+	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
 ifneq ($(CI),true)
 # If running under CI/CD then the image will be updated in the next pipeline stage.
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
@@ -294,7 +295,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
-check-clean: ./var/log/host-install.log
+check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -309,8 +310,8 @@ release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
 release-python: \
-		./var/log/host-install.log ./.env $(DOCKER_VOLUMES) ~/.pypirc \
-		./dist/.current.whl
+		$(HOME)/.local/var/log/python-project-structure-host-install.log \
+		./.env $(DOCKER_VOLUMES) ~/.pypirc ./dist/.current.whl
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./build/next-version.txt" ]
 	then
@@ -376,7 +377,7 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: ./var/log/host-install.log
+format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
@@ -437,7 +438,7 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
-	touch "./setup.cfg" "./requirements/build.txt.in" "./requirements/host.txt.in"
+	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
 	$(MAKE) -e PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
@@ -468,7 +469,7 @@ clean:
 
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
-expand-template: ./var/log/host-install.log
+expand-template: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	set +x
 	if [ -e "$(target)" ]
 	then
@@ -500,13 +501,13 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.i
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./requirements/%/host.txt): ./requirements/host.txt.in
+$(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/host.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/host.txt=%)/bin/pip-compile \
+	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
-	if [ "$(@:requirements/%/host.txt=%)" = "$(PYTHON_ENV)" ]
+	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
 # Don't install tox into one of it's own virtual environments
 	    if [ -n "$${VIRTUAL_ENV:-}" ]
@@ -526,12 +527,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): ./var/log/host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
@@ -543,15 +545,15 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Docker targets
 ./var/docker/$(PYTHON_ENV)/log/build.log: \
 		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
-		./pyproject.toml ./setup.cfg ./tox.ini ./requirements/host.txt.in \
-		./docker-compose.yml ./docker-compose.override.yml ./.env \
-		./var/log/tox/build/build.log \
+		./pyproject.toml ./setup.cfg ./tox.ini \
+		./build-host/requirements.txt.in ./docker-compose.yml \
+		./docker-compose.override.yml ./.env ./var/log/tox/build/build.log \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))" \
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) $(HOME)/.local/var/log/python-project-structure-host-install.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
@@ -610,7 +612,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up
-./var/log/host-install.log:
+$(HOME)/.local/var/log/python-project-structure-host-install.log:
 	mkdir -pv "$(dir $(@))"
 	(
 	    if ! which pip
@@ -624,22 +626,22 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	            sudo apt-get install -y "gettext-base" "python3-pip"
 	        fi
 	    fi
-	    if [ -e ./requirements/$(PYTHON_HOST_ENV)/host.txt ]
+	    if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]
 	    then
-	        pip install -r "./requirements/$(PYTHON_HOST_ENV)/host.txt"
+	        pip install -r "./build-host/requirements-$(PYTHON_HOST_ENV).txt"
 	    else
-	        pip install -r "./requirements/host.txt.in"
+	        pip install -r "./build-host/requirements.txt.in"
 	    fi
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit:
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	$(MAKE) ./var/log/host-install.log
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) cz init
 
 # Emacs editor settings

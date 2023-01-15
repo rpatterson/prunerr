@@ -344,13 +344,13 @@ endif
 .PHONY: release-docker
 ### Publish all container images to all container registries
 release-docker: build-docker
-	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log
+	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(PYTHON_MINORS:%=release-docker-%)
 .PHONY: $(PYTHON_MINORS:%=release-docker-%)
 ### Publish the container images for one Python version to all container registry
 $(PYTHON_MINORS:%=release-docker-%):
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
-	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log
+	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
 	docker compose run --rm docker-pushrm

@@ -20,8 +20,8 @@ WORKDIR "/usr/local/src/python-project-structure/"
 # Match local development tool chain and avoid time consuming redundant package
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
 # package and all the development tools into the image.
-COPY [ "./requirements/${PYTHON_ENV}/host.txt", "./requirements/${PYTHON_ENV}/" ]
-RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/host.txt"
+COPY [ "./build-host/requirements-${PYTHON_ENV}.txt", "./build-host/" ]
+RUN pip install --no-cache-dir -r "./build-host/requirements-${PYTHON_ENV}.txt"
 COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
 COPY [ "./tox.ini", "./" ]
 RUN tox --skip-pkg-install --notest -e "${PYTHON_ENV}"

@@ -14,6 +14,10 @@ fi
 
 
 main() {
+    # Signal to `$ make` that host requirements are baked into the image and need not be
+    # reinstalled:
+    touch "${HOME}/.local/var/log/python-project-structure-host-install.log"
+
     # Run as the user from the enironment, adding that user if necessary
     if [ -n "${PUID:-}" ]
     then
@@ -23,6 +27,8 @@ main() {
             echo "ERROR: Can't create a user when not run as root" 1>&2
             false
         fi
+	# Ensure the home directory in the image has the correct permissions:
+	chown -R "${PUID}:${PGID:-${PUID}}" "/home/runner/"
         # Add an unprivileged user to cover those use cases and more closely match local
 	# development
         if ! getent group "${PGID}" >"/dev/null"

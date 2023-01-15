@@ -14,6 +14,9 @@ fi
 
 
 main() {
+    # The build host image depends on the baked in `HOME` directory for the installed
+    # host requirements:
+    export HOME=/home/runner
     # Signal to `$ make` that host requirements are baked into the image and need not be
     # reinstalled:
     touch "${HOME}/.local/var/log/python-project-structure-host-install.log"

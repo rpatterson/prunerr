@@ -77,8 +77,7 @@ bump:
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false PYTHON_MINORS=3.11
-      build-bump build-wheel check-clean
+      entrypoint make -e BUILD_REQUIREMENTS=false build-bump build-wheel check-clean
   artifacts:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
@@ -127,8 +126,7 @@ release:
   needs: ["build-host", "build-test"]
   script:
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false PYTHON_MINORS=3.11
-      release-python check-clean
+      entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
   artifacts:
     paths:
       - "./dist/python?project?structure-*"

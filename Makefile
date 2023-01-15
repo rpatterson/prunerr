@@ -289,10 +289,8 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
-ifeq ($(RELEASE_PUBLISH),true)
 	docker compose run --rm python-project-structure-devel \
 	    towncrier check --compare-with "origin/develop"
-endif
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log

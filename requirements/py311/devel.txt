@@ -4,6 +4,8 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py311/devel.txt --resolver=backtracking pyproject.toml
 #
+argcomplete==2.0.0
+    # via python-project-structure (pyproject.toml)
 astroid==2.13.2
     # via
     #   pylint

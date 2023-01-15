@@ -98,6 +98,8 @@ Install using any tool for installing standard Python 3 distributions such as `p
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
 details.
 
+Optional shell tab completion is available via `argcomplete`_.
+
 
 *****
 Usage
@@ -153,6 +155,7 @@ template.
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installation/
+.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/python-project-structure

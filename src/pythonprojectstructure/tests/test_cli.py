@@ -4,6 +4,7 @@ Test the python-project-structure Command-Line Interface.
 
 import sys
 import io
+import runpy
 import subprocess  # nosec B404
 import contextlib
 import pathlib
@@ -86,9 +87,9 @@ class PythonProjectStructureCLITests(unittest.TestCase):
             "Wrong invalid option message",
         )
 
-    def test_cli_module_main(self):
+    def test_cli_dash_m_option(self):
         """
-        The package/module supports execution via Python's `-m` option.
+        The package supports execution via Python's `-m` CLI option.
         """
         module_main_process = subprocess.run(  # nosec B603
             [sys.executable, "-m", "pythonprojectstructure", "foobar"],
@@ -98,6 +99,18 @@ class PythonProjectStructureCLITests(unittest.TestCase):
             module_main_process.returncode,
             0,
             "Running via Python's `-m` option exited with non-zero status code",
+        )
+
+    def test_cli_module_main(self):
+        """
+        The package supports execution via Python's `-m` option.
+        """
+        with self.assertRaises(SystemExit, msg="CLI didn't exit") as exc_context:
+            runpy.run_module("pythonprojectstructure")
+        self.assertEqual(
+            exc_context.exception.code,
+            2,
+            "Wrong `runpy` exit status code",
         )
 
     def test_cli_exit_code(self):

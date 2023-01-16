@@ -1,3 +1,4 @@
+# PYTHON_ARGCOMPLETE_OK
 """
 Python project structure foundation or template, top-level package.
 """
@@ -7,6 +8,8 @@ import logging
 import argparse
 import json
 import pdb
+
+import argcomplete
 
 from . import utils
 
@@ -64,6 +67,9 @@ parser_foobar.add_argument(
     action="store_true",
     help="Suppress reporting results",
 )
+
+# Register shell tab completion
+argcomplete.autocomplete(parser)
 
 
 def config_cli_logging(

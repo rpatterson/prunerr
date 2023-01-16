@@ -16,7 +16,7 @@ COMMA=,
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
-CI_REGISTRY_IMAGE=merpatterson/python-project-structure
+DOCKER_IMAGE=merpatterson/python-project-structure
 
 ## Top-level targets
 
@@ -27,14 +27,14 @@ all: build
 .PHONY: build
 ### Build the Docker container image
 build: ./Dockerfile
-	docker pull "$(CI_REGISTRY_IMAGE):build-host" || true
+	docker pull "$(DOCKER_IMAGE):build-host" || true
 	docker buildx build --pull \
 	    --build-arg "BUILDKIT_INLINE_CACHE=1" \
-	    --cache-from "$(CI_REGISTRY_IMAGE):build-host" \
-	    --tag "$(CI_REGISTRY_IMAGE):build-host" \
+	    --cache-from "$(DOCKER_IMAGE):build-host" \
+	    --tag "$(DOCKER_IMAGE):build-host" \
 	    "./"
 
 .PHONY: release
 ### Publish the image to this specific CI/CD platform for future caching
 release: build
-	docker push "$(CI_REGISTRY_IMAGE):build-host"
+	docker push "$(DOCKER_IMAGE):build-host"

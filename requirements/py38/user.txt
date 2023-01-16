@@ -4,3 +4,5 @@
 #
 #    pip-compile --output-file=requirements/py38/user.txt --resolver=backtracking pyproject.toml
 #
+argcomplete==2.0.0
+    # via python-project-structure (pyproject.toml)

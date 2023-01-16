@@ -1,3 +1,13 @@
+Pythonprojectstructure 0.1.0b2 (2023-01-16)
+===========================================
+
+Features
+--------
+
+- Add support for tab/shell completion via `argcomplete
+  <https://kislyuk.github.io/argcomplete/#installation>`_. (tab-completion)
+
+
 Pythonprojectstructure 0.1.0b1 (2023-01-08)
 ===========================================
 

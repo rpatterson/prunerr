@@ -1,3 +1,4 @@
+# PYTHON_ARGCOMPLETE_OK
 """
 Python project structure foundation or template, top-level package.
 """

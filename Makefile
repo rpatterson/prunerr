@@ -14,6 +14,7 @@ EMPTY=
 COMMA=,
 
 # Variables/options that affect behavior
+export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
@@ -555,6 +556,39 @@ upgrade:
 	$(MAKE) -e PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
+.PHONY: upgrade-branch
+### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
+upgrade-branch:
+	git fetch "origin" "$(VCS_BRANCH)"
+	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
+	then
+# Reset an existing local branch to the latest upstream before upgrading
+	    git checkout "$(VCS_BRANCH)-upgrade"
+	    git reset --hard "origin/$(VCS_BRANCH)"
+	else
+# Create a new local branch from the latest upstream before upgrading
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
+	fi
+	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
+	if $(MAKE) "check-clean"
+	then
+# No changes from upgrade, exit successfully but push nothing
+	    exit
+	fi
+# Commit the upgrade changes
+	echo "Upgrade all requirements and dependencies to the latest versions." \
+	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	git add --update \
+	    './build-host/requirements-*.txt' './requirements/*/build.txt' \
+	    "./.pre-commit-config.yaml"
+	git add \
+	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	git commit --all --signoff -m \
+	    "build(deps): Upgrade requirements latest versions"
+# Fail if upgrading left untracked files in VCS
+	$(MAKE) "check-clean"
+# Push any upgrades to the remote for review
+	git push --set-upstream --force-with-lease "origin" "$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login
@@ -591,10 +625,14 @@ expand-template: $(HOME)/.local/var/log/python-project-structure-host-install.lo
 	set +x
 	if [ -e "$(target)" ]
 	then
+ifeq ($(TEMPLATE_IGNORE_EXISTING),true)
+	    exit
+else
 	    diff -u "$(target)" "$(template)" || true
 	    echo "ERROR: Template $(template) has been updated:"
 	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false
+endif
 	fi
 	envsubst <"$(template)" >"$(target)"
 

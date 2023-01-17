@@ -271,8 +271,7 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify -o "ci.skip" --tags \
-	   "origin" "v$$(cat "./build/next-version.txt")"
+	git push --no-verify -o "ci.skip" --tags "origin" "$(VCS_BRANCH)"
 endif
 
 .PHONY: start

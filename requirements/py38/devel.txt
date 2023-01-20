@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py38/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.13.2
+astroid==2.13.3
     # via
     #   pylint
     #   pylint-celery
@@ -84,7 +84,7 @@ lazy-object-proxy==1.9.0
     # via astroid
 mando==0.6.4
     # via radon
-markupsafe==2.1.1
+markupsafe==2.1.2
     # via jinja2
 mccabe==0.7.0
     # via
@@ -132,7 +132,7 @@ pycodestyle==2.10.0
     #   prospector
 pydantic==1.10.4
     # via rstcheck-core
-pydocstyle==6.2.3
+pydocstyle==6.3.0
     # via prospector
 pyflakes==2.5.0
     # via
@@ -225,11 +225,11 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
-trove-classifiers==2023.1.12
+trove-classifiers==2023.1.20
     # via pyroma
 typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.19.1.1
+types-docutils==0.19.1.2
     # via rstcheck-core
 typing-extensions==4.4.0
     # via

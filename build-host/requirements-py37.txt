@@ -31,13 +31,13 @@ platformdirs==2.6.2
     #   virtualenv
 pluggy==1.0.0
     # via tox
-pyproject-api==1.4.0
+pyproject-api==1.5.0
     # via tox
 tomli==2.0.1
     # via
     #   pyproject-api
     #   tox
-tox==4.3.2
+tox==4.3.5
     # via -r build-host/requirements.txt.in
 typing-extensions==4.4.0
     # via

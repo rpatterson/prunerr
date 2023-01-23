@@ -59,7 +59,8 @@ services:
   docker-pushrm:
     image: "chko/docker-pushrm"
     depends_on:
-      - "pandoc"
+      pandoc:
+        condition: "service_completed_successfully"
     environment:
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
       DOCKER_PASS: "${DOCKER_PASS}"

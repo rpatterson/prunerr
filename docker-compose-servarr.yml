@@ -43,3 +43,8 @@ services:
         curl -Lv
         "http://radarr:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
         grep '"appData": *"/config"'
+
+  prunerr-daemon:
+    depends_on:
+      - "sonarr"
+      - "radarr"

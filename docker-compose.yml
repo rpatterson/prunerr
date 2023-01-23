@@ -31,7 +31,7 @@ services:
       # Intended for use in the image
       - "./transmission/config/:/config/"
       # The volume on which Transmission's `download-dir` is stored
-      - "${DOWNLOAD_VOLUME}:${DOWNLOAD_VOLUME}"
+      - "${DOWNLOAD_VOLUME:-/media/Library/}:${DOWNLOAD_VOLUME:-/media/Library/}"
     # Transmission seems to be very poorly behaved when disk space is exhausted: items
     # become corrupted, items lose track of their data/files, etc..  Guard against that,
     # for example if Prunerr stops running for any reason, by shutting it down before
@@ -47,8 +47,8 @@ services:
       # `./.env` so that the `HEALTHCHECK` fails and the container is restart when that
       # happens.
       test: >-
-        test "$(df --output="avail" "${DOWNLOAD_VOLUME}" | tail -n +2)"
-        -gt "${CRITICAL_AVAIL}" || /sbin/shutdown &&
+        test "$(df --output="avail" "${DOWNLOAD_VOLUME:-/media/Library/}" | tail -n +2)"
+        -gt "${CRITICAL_AVAIL:-1048576}" || /sbin/shutdown &&
         curl -LI -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
         "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '
@@ -76,12 +76,12 @@ services:
       # outside the container.  Default to the common/standard main/first user and group
       # IDs
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-${PUID:-1000}}"
+      PGID: "${PGID:-100}"
       # Un-comment to get more verbose `DEBUG` logging
       # DEBUG: "true"
     volumes:
       # Use the Prunerr config from the Prunerr checkout
       - "./home/.config/:/home/prunerr/.config/"
       # The volume on which Transmission's `download-dir` is stored
-      - "${DOWNLOAD_VOLUME}:${DOWNLOAD_VOLUME}"
+      - "${DOWNLOAD_VOLUME:-/media/Library/}:${DOWNLOAD_VOLUME:-/media/Library/}"
     restart: "unless-stopped"

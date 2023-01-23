@@ -34,7 +34,7 @@ services:
     environment:
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-${PUID:-1000}}"
+      PGID: "${PGID:-100}"
     volumes:
       # Ensure local changes are reflected inside the container.
       - "./:/usr/local/src/prunerr/"

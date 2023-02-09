@@ -31,7 +31,11 @@ services:
       # Intended for use in the image
       - "./transmission/config/:/config/"
       # The volume on which Transmission's `download-dir` is stored
-      - "${DOWNLOAD_VOLUME:-/media/Library/}:${DOWNLOAD_VOLUME:-/media/Library/}"
+      - type: bind
+        source: "${DOWNLOAD_VOLUME:-/media/Library/}"
+        target: "${DOWNLOAD_VOLUME:-/media/Library/}"
+        bind:
+          propagation: "shared"
     # Transmission seems to be very poorly behaved when disk space is exhausted: items
     # become corrupted, items lose track of their data/files, etc..  Guard against that,
     # for example if Prunerr stops running for any reason, by shutting it down before
@@ -47,7 +51,7 @@ services:
       # `./.env` so that the `HEALTHCHECK` fails and the container is restart when that
       # happens.
       test: >-
-        test "$(df --output="avail" "${DOWNLOAD_VOLUME:-/media/Library/}" | tail -n +2)"
+        test "$(df --output="avail" "${DOWNLOAD_DIR:-/media/Library/}" | tail -n +2)"
         -gt "${CRITICAL_AVAIL:-1048576}" || /sbin/shutdown &&
         curl -LI -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
         "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
@@ -81,5 +85,9 @@ services:
       # Use the Prunerr config from the Prunerr checkout
       - "./home/.config/:/home/prunerr/.config/"
       # The volume on which Transmission's `download-dir` is stored
-      - "${DOWNLOAD_VOLUME:-/media/Library/}:${DOWNLOAD_VOLUME:-/media/Library/}"
+      - type: bind
+        source: "${DOWNLOAD_VOLUME:-/media/Library/}"
+        target: "${DOWNLOAD_VOLUME:-/media/Library/}"
+        bind:
+          propagation: "shared"
     restart: "unless-stopped"

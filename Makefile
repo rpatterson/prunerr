@@ -52,6 +52,7 @@ ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
 export PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
+export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:

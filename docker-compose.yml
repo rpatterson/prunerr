@@ -54,7 +54,7 @@ services:
       test: >-
         test "$(df --output="avail" "${DOWNLOAD_DIR:-/media/Library/}" | tail -n +2)"
         -gt "${CRITICAL_AVAIL:-1048576}" || /sbin/shutdown &&
-        curl -LI -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
+        curl -LI -X GET -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
         "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '
     labels:

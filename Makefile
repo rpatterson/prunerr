@@ -29,6 +29,13 @@ USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 export CHECKOUT_DIR=$(PWD)
+export TZ=Etc/UTC
+ifneq ("$(wildcard /usr/share/zoneinfo/)","")
+export TZ=$(shell \
+  realpath --relative-to=/usr/share/zoneinfo/ \
+  $(firstword $(realpath /private/etc/localtime /etc/localtime)) \
+)
+endif
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')

@@ -294,7 +294,7 @@ expand-template: $(HOME)/.local/var/log/python-project-structure-host-install.lo
 ifeq ($(TEMPLATE_IGNORE_EXISTING),true)
 	    exit
 else
-	    diff -u "$(target)" "$(template)" || true
+	    envsubst <"$(template)" | diff -u "$(target)" "-" || true
 	    echo "ERROR: Template $(template) has been updated:"
 	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false

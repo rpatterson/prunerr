@@ -112,11 +112,15 @@ endif
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
-	$(MAKE) -e -j \
-	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
-	    "./build-host/requirements-$(@:build-requirements-%=%).txt"
+	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
+	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    ./requirements/$(@:build-requirements-%=%)/build.txt \
+	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+# Workaround race conditions in pip's HTTP file cache:
+# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
+	$(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets}
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -304,27 +308,22 @@ endif
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-# Workaround race conditions in pip's HTTP file cache with
-# `--pip-args "--no-cache-dir"`:
-# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --extra "devel" \
-	    --pip-args "--no-cache-dir" --output-file "$(@)" "$(<)"
+	    --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --pip-args "--no-cache-dir" \
-	    --output-file "$(@)" "$(<)"
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --pip-args "--no-cache-dir" \
-	     --output-file "$(@)" "$(<)"
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -341,8 +340,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --pip-args "--no-cache-dir" \
-	    --output-file "$(@)" "$(<)"
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \

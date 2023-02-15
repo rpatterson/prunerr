@@ -1,3 +1,12 @@
+Pythonprojectstructure 0.1.0b3 (2023-02-15)
+===========================================
+
+Misc
+----
+
+- ci-detached-head, upgrade-branch
+
+
 Pythonprojectstructure 0.1.0b2 (2023-01-16)
 ===========================================
 

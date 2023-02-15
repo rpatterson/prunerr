@@ -106,21 +106,21 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
 	fi
 endif
-# Running `$ pip-compile` in parallel generates a lot of network requests so if your
-# network connection is intermittent, even rarely, you'll probably see these errors:
-#     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
-#     Content-Type: .  The only supported Content-Type is text/html
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
-	$(MAKE) -e -j \
-	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
-	    "./build-host/requirements-$(@:build-requirements-%=%).txt"
+	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
+	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    ./requirements/$(@:build-requirements-%=%)/build.txt \
+	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+# Workaround race conditions in pip's HTTP file cache:
+# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
+	$(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets}
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \

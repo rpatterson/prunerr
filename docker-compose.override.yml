@@ -8,6 +8,7 @@ services:
   ## Configuration specific to this checkout
   python-project-structure:
     image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    container_name: "python-project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR}/"
       args:
@@ -21,6 +22,7 @@ services:
   ## Container for use by developers
   python-project-structure-devel:
     image: "merpatterson/python-project-structure:devel-${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    container_name: "python-project-structure-devel"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
@@ -29,6 +31,7 @@ services:
         PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
@@ -52,6 +55,8 @@ services:
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
     image: "hadolint/hadolint"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/usr/local/src/python-project-structure/"
     working_dir: "/usr/local/src/python-project-structure/"
@@ -59,6 +64,8 @@ services:
   pandoc:
     image: "pandoc/core"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
     command: >-
@@ -67,8 +74,10 @@ services:
   docker-pushrm:
     image: "chko/docker-pushrm"
     depends_on:
-      - "pandoc"
+      pandoc:
+        condition: "service_completed_successfully"
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
       DOCKER_PASS: "${DOCKER_PASS}"
     volumes:
@@ -90,6 +99,7 @@ services:
       - "~/.ssh/:/home/runner/.ssh/"
     env_file: "./.env"
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       PUID: "${PUID:-1000}"
       PGID: "${DOCKER_GID:-${PGID:-${PUID:-1000}}}"
       # DEBUG: "true"

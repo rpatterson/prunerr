@@ -63,6 +63,7 @@ stages:
   - "bump"
   - "build-test"
   - "release"
+  - "scheduled"
 
 # Ensure the image used for the rest of this run is up to date
 build-host:
@@ -74,6 +75,11 @@ build-host:
 bump:
   stage: "bump"
   needs: ["build-host"]
+  rules:
+    - if: >-
+        $CI_PIPELINE_SOURCE == "schedule"
+      when: "never"
+    - when: "always"
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
@@ -92,6 +98,11 @@ bump:
 build-test:
   stage: "build-test"
   needs: ["build-host", "bump"]
+  rules:
+    - if: >-
+        $CI_PIPELINE_SOURCE == "schedule"
+      when: "never"
+    - when: "always"
   parallel:
     matrix:
       - PYTHON_MINORS:
@@ -124,9 +135,25 @@ build-test:
 release:
   stage: "release"
   needs: ["build-host", "build-test"]
+  rules:
+    - if: >-
+        $CI_PIPELINE_SOURCE == "schedule"
+      when: "never"
+    - when: "always"
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
   artifacts:
     paths:
       - "./dist/python?project?structure-*"
+
+scheduled:
+  stage: "scheduled"
+  needs: ["build-host"]
+  rules:
+    - if: >-
+        $CI_PIPELINE_SOURCE == "schedule"
+      when: "always"
+  script:
+    - >-
+      entrypoint make -e ${SCHEDULED_TARGETS}

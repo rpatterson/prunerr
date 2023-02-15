@@ -172,7 +172,7 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify -o "ci.skip" --tags "origin" "$(VCS_BRANCH)"
+	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: check-push
@@ -270,7 +270,7 @@ upgrade-branch:
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
 # Push any upgrades to the remote for review
-	git push --set-upstream --force-with-lease "origin" "$(VCS_BRANCH)-upgrade"
+	git push --set-upstream --force-with-lease "origin" "HEAD:$(VCS_BRANCH)-upgrade"
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible

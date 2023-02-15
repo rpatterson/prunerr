@@ -79,6 +79,7 @@ bump:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"
       when: "never"
+    - when: "always"
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
@@ -101,6 +102,7 @@ build-test:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"
       when: "never"
+    - when: "always"
   parallel:
     matrix:
       - PYTHON_MINORS:
@@ -137,6 +139,7 @@ release:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"
       when: "never"
+    - when: "always"
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
@@ -150,6 +153,7 @@ scheduled:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"
       when: "always"
+    - when: "never"
   script:
     - >-
       entrypoint make -e ${SCHEDULED_TARGETS}

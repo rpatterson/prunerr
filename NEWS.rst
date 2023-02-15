@@ -1,3 +1,12 @@
+Pythonprojectstructure 0.1.0b4 (2023-02-15)
+===========================================
+
+Misc
+----
+
+- ci-gitlab-scheduled-upgrade
+
+
 Pythonprojectstructure 0.1.0b3 (2023-02-15)
 ===========================================
 

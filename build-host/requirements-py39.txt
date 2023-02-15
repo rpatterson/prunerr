@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=build-host/requirements-py39.txt --resolver=backtracking build-host/requirements.txt.in
 #
-cachetools==5.2.1
+cachetools==5.3.0
     # via tox
 chardet==5.1.0
     # via tox
@@ -20,7 +20,7 @@ packaging==23.0
     # via
     #   pyproject-api
     #   tox
-platformdirs==2.6.2
+platformdirs==3.0.0
     # via
     #   tox
     #   virtualenv
@@ -32,7 +32,7 @@ tomli==2.0.1
     # via
     #   pyproject-api
     #   tox
-tox==4.3.5
+tox==4.4.5
     # via -r build-host/requirements.txt.in
-virtualenv==20.17.1
+virtualenv==20.19.0
     # via tox

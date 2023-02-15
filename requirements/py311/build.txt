@@ -6,7 +6,7 @@
 #
 argcomplete==2.0.0
     # via commitizen
-bleach==5.0.1
+bleach==6.0.0
     # via readme-renderer
 certifi==2022.12.7
     # via requests
@@ -20,9 +20,9 @@ charset-normalizer==2.1.1
     #   requests
 colorama==0.4.6
     # via commitizen
-commitizen==2.39.1
+commitizen==2.42.0
     # via -r requirements/build.txt.in
-cryptography==39.0.0
+cryptography==39.0.1
     # via secretstorage
 decli==0.5.2
     # via commitizen
@@ -32,7 +32,7 @@ docutils==0.19
     # via readme-renderer
 filelock==3.9.0
     # via virtualenv
-identify==2.5.13
+identify==2.5.18
     # via pre-commit
 idna==3.4
     # via requests
@@ -64,9 +64,9 @@ packaging==23.0
     # via commitizen
 pkginfo==1.9.6
     # via twine
-platformdirs==2.6.2
+platformdirs==3.0.0
     # via virtualenv
-pre-commit==2.21.0
+pre-commit==3.0.4
     # via -r requirements/build.txt.in
 prompt-toolkit==3.0.36
     # via questionary
@@ -92,7 +92,7 @@ requests-toolbelt==0.10.1
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.2.0
+rich==13.3.1
     # via twine
 secretstorage==3.3.3
     # via keyring
@@ -104,19 +104,19 @@ tomlkit==0.11.6
     # via commitizen
 twine==4.0.2
     # via -r requirements/build.txt.in
-typing-extensions==4.4.0
+typing-extensions==4.5.0
     # via commitizen
 urllib3==1.26.14
     # via
     #   requests
     #   twine
-virtualenv==20.17.1
+virtualenv==20.19.0
     # via pre-commit
 wcwidth==0.2.6
     # via prompt-toolkit
 webencodings==0.5.1
     # via bleach
-zipp==3.11.0
+zipp==3.13.0
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:

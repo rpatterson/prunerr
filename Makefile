@@ -14,6 +14,7 @@ EMPTY=
 COMMA=,
 
 # Variables/options that affect behavior
+export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
@@ -32,6 +33,13 @@ USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 export CHECKOUT_DIR=$(PWD)
+export TZ=Etc/UTC
+ifneq ("$(wildcard /usr/share/zoneinfo/)","")
+export TZ=$(shell \
+  realpath --relative-to=/usr/share/zoneinfo/ \
+  $(firstword $(realpath /private/etc/localtime /etc/localtime)) \
+)
+endif
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
@@ -48,6 +56,7 @@ ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
 export PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
+export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
 # Values derived from constants
 # Support passing in the Python versions to test, including testing one version:
@@ -226,15 +235,15 @@ build-docker-tags:
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
-# Running `$ pip-compile` in parallel generates a lot of network requests so if your
-# network connection is intermittent, even rarely, you'll probably see these errors:
-#     WARNING: Skipping page https://pypi.org/simple/wheel/ because the GET request got
-#     Content-Type: .  The only supported Content-Type is text/html
-	$(MAKE) -e -j \
-	    "./requirements/$(@:build-requirements-%=%)/user.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/devel.txt" \
-	    "./requirements/$(@:build-requirements-%=%)/build.txt" \
-	    "./build-host/requirements-$(@:build-requirements-%=%).txt"
+	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
+	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    ./requirements/$(@:build-requirements-%=%)/build.txt \
+	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+# Workaround race conditions in pip's HTTP file cache:
+# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
+	$(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets}
 
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
@@ -347,12 +356,10 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS:
-	git push -o ci.skip --no-verify --tags \
-	    "origin" "v$$(cat "./build/next-version.txt")"
+	git push -o ci.skip --no-verify --tags "origin" "$(VCS_BRANCH)"
 # Ensure the tag is in place on the GitHub mirror so we can create the project host
 # release object there:
-	git push -o ci.skip --no-verify --tags \
-	    "github" "v$$(cat "./build/next-version.txt")"
+	git push -o ci.skip --no-verify --tags "github" "$(VCS_BRANCH)"
 endif
 
 .PHONY: start
@@ -557,6 +564,39 @@ upgrade:
 	$(MAKE) -e PUID=$(PUID) "build-docker"
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
+.PHONY: upgrade-branch
+### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
+upgrade-branch:
+	git fetch "origin" "$(VCS_BRANCH)"
+	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
+	then
+# Reset an existing local branch to the latest upstream before upgrading
+	    git checkout "$(VCS_BRANCH)-upgrade"
+	    git reset --hard "origin/$(VCS_BRANCH)"
+	else
+# Create a new local branch from the latest upstream before upgrading
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
+	fi
+	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
+	if $(MAKE) "check-clean"
+	then
+# No changes from upgrade, exit successfully but push nothing
+	    exit
+	fi
+# Commit the upgrade changes
+	echo "Upgrade all requirements and dependencies to the latest versions." \
+	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	git add --update \
+	    './build-host/requirements-*.txt' './requirements/*/build.txt' \
+	    "./.pre-commit-config.yaml"
+	git add \
+	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	git commit --all --signoff -m \
+	    "build(deps): Upgrade requirements latest versions"
+# Fail if upgrading left untracked files in VCS
+	$(MAKE) "check-clean"
+# Push any upgrades to the remote for review
+	git push --set-upstream --force-with-lease "origin" "$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login
@@ -593,10 +633,14 @@ expand-template: $(HOME)/.local/var/log/python-project-structure-host-install.lo
 	set +x
 	if [ -e "$(target)" ]
 	then
-	    diff -u "$(target)" "$(template)" || true
+ifeq ($(TEMPLATE_IGNORE_EXISTING),true)
+	    exit
+else
+	    envsubst <"$(template)" | diff -u "$(target)" "-" || true
 	    echo "ERROR: Template $(template) has been updated:"
 	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
 	    false
+endif
 	fi
 	envsubst <"$(template)" >"$(target)"
 

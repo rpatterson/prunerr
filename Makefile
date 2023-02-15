@@ -312,22 +312,19 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	$(MAKE) "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --extra "devel" \
-	    --cache-dir ~/.cache/pip-tools-$(@:requirements/%/devel.txt=%-devel) \
-	    --output-file "$(@)" "$(<)"
+	    --pip-args "--no-cache-dir" --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade \
-	    --cache-dir ~/.cache/pip-tools-$(@:requirements/%/user.txt=%-user) \
+	    --resolver "backtracking" --upgrade --pip-args "--no-cache-dir" \
 	    --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade \
-	    --cache-dir ~/.cache/pip-tools-$(@:build-host/requirements-%.txt=%-host) \
-	    --output-file "$(@)" "$(<)"
+	    --resolver "backtracking" --upgrade --pip-args "--no-cache-dir" \
+	     --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -344,8 +341,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade \
-	    --cache-dir ~/.cache/pip-tools-$(@:requirements/%/build.txt=%-build) \
+	    --resolver "backtracking" --upgrade --pip-args "--no-cache-dir" \
 	    --output-file "$(@)" "$(<)"
 
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`

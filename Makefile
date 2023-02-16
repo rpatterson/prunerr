@@ -203,6 +203,15 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
+.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
+### Pull container images and compile fixed/pinned dependency versions if necessary
+$(PYTHON_MINORS:%=build-docker-requirements-%):
+	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
+	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
+	docker compose run --rm -T python-project-structure-devel \
+	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	        build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
+
 
 .PHONY: build-wheel
 ### Build the package/distribution format that is fastest to install
@@ -445,7 +454,7 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
-	$(MAKE) -e "build-docker"
+	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch

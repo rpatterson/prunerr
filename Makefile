@@ -246,7 +246,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    $(MAKE) -e -j $${targets}
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary
-$(PYTHON_MINORS:%=build-docker-requirements-%):
+$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
 	docker compose run --rm -T python-project-structure-devel \

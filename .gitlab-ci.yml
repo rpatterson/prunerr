@@ -51,8 +51,6 @@ cache:
   key: "v4"
   paths:
     - "./.cache/pip"
-    - "./.tox"
-    - "./var/docker/py*/.tox"
     - "./dist/.current.whl"
 
 # Delegate to the `./Makefile` as much as possible to keep as much portable between CI

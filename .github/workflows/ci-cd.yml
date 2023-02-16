@@ -63,17 +63,15 @@ jobs:
         uses: "actions/checkout@master"
 
       # Cache build artifacts to speed up CI runs
-      - name: "Cache tox virtual environments"
+      - name: "Cache build resources"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
           # Increment to force clearing the cache
-          cache-name: "tox-v1"
+          cache-name: "v1"
         with:
           path: |
             ~/.local
-            ./.tox
-            ./var/docker/py*/.tox
             ./dist
           # Never get a cache hit to force always caching any upgraded dependencies
           # Use hashFiles to force venv recreation when dependencies change
@@ -120,16 +118,14 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Cache tox virtual environments"
+      - name: "Cache build resources"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
-          cache-name: "tox-v1"
+          cache-name: "v1"
         with:
           path: |
             ~/.local
-            ./.tox
-            ./var/docker/py*/.tox
             ./dist
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
@@ -214,16 +210,14 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Cache tox virtual environments"
+      - name: "Cache build resources"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
         env:
-          cache-name: "tox-v1"
+          cache-name: "v1"
         with:
           path: |
             ~/.local
-            ./.tox
-            ./var/docker/py*/.tox
             ./dist
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-3.10-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}

@@ -17,7 +17,7 @@ write_to = "src/pythonprojectstructure/version.py"
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
 changelog_start_rev = "v0.0.0"
-version = "0.1.0b5"
+version = "0.1.0b6"
 tag_format = "v$version"
 annotated_tag = true
 bump_message = """\

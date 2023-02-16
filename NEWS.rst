@@ -1,3 +1,12 @@
+Pythonprojectstructure 0.1.0b7 (2023-02-16)
+===========================================
+
+Misc
+----
+
+- upgrade-branch-docker
+
+
 Pythonprojectstructure 0.1.0b6 (2023-02-16)
 ===========================================
 

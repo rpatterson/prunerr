@@ -75,9 +75,7 @@ bump:
   needs: ["build-host"]
   rules:
     - if: >-
-        $CI_PIPELINE_SOURCE == "schedule"
-      when: "never"
-    - when: "always"
+        $CI_PIPELINE_SOURCE != "schedule"
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
@@ -98,9 +96,7 @@ build-test:
   needs: ["build-host", "bump"]
   rules:
     - if: >-
-        $CI_PIPELINE_SOURCE == "schedule"
-      when: "never"
-    - when: "always"
+        $CI_PIPELINE_SOURCE != "schedule"
   parallel:
     matrix:
       - PYTHON_MINORS:
@@ -135,9 +131,7 @@ release:
   needs: ["build-host", "build-test"]
   rules:
     - if: >-
-        $CI_PIPELINE_SOURCE == "schedule"
-      when: "never"
-    - when: "always"
+        $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
@@ -151,7 +145,6 @@ scheduled:
   rules:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"
-      when: "always"
   script:
     - >-
       entrypoint make -e ${SCHEDULED_TARGETS}

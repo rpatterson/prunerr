@@ -454,6 +454,8 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
+# Ensure the network is create first to avoid race conditions
+	docker compose create python-project-structure-devel
 	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate

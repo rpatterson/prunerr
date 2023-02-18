@@ -465,6 +465,7 @@ upgrade: ./.env $(DOCKER_VOLUMES)
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
 upgrade-branch: ~/.gitconfig
 	git fetch "origin" "$(VCS_BRANCH)"
+	git fetch "origin" "$(VCS_BRANCH)-upgrade"
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then
 # Reset an existing local branch to the latest upstream before upgrading

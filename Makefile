@@ -97,6 +97,7 @@ ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
 DOCKER_VOLUMES=\
+./var/ ./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
@@ -249,6 +250,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
+	$(MAKE) build-docker-volumes-$${PYTHON_ENV}
 	docker compose run --rm -T python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	        build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
@@ -568,7 +570,7 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
-upgrade: ./.env
+upgrade: ./.env $(DOCKER_VOLUMES)
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
@@ -814,17 +816,28 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
-# Ensure access permissions to build artifacts in container volumes.
+
+.PHONY: $(PYTHON_ENVS:%=build-docker-volumes-%)
+### Ensure access permissions to build artifacts in Python version container volumes
 # If created by `# dockerd`, they end up owned by `root`.
+$(PYTHON_ENVS:%=build-docker-volumes-%): \
+		./var/ ./src/python_project_structure.egg-info/ ./.tox/
+	$(MAKE) \
+	    $(@:build-docker-volumes-%=./var/docker/%/) \
+	    $(@:build-docker-volumes-%=./var/docker/%/python_project_structure.egg-info/) \
+	    $(@:build-docker-volumes-%=./var/docker/%/.tox/)
+./var/ $(PYTHON_ENVS:%=./var/docker/%/) \
 ./src/python_project_structure.egg-info/ \
 $(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
 ./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/):
 	mkdir -pv "$(@)"
+
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel.
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
+
 # Target for use as a prerequisite in host targets that depend on the virtualenv having
 # been built.
 $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):

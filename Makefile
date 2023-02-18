@@ -251,9 +251,10 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
 	$(MAKE) build-docker-volumes-$${PYTHON_ENV}
-	docker compose run --rm -T python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
-	        build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
+	docker compose run --rm -T python-project-structure-devel make -e \
+	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
+	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
 .PHONY: build-wheel
@@ -574,7 +575,8 @@ upgrade: ./.env $(DOCKER_VOLUMES)
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
-	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-requirements-%)
+	$(MAKE) -e PIP_COMPILE_ARGS="--upgrade" -j \
+	    $(PYTHON_MINORS:%=build-docker-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch

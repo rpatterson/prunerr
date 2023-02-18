@@ -178,7 +178,7 @@ endif
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
-	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/develop"
+	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log

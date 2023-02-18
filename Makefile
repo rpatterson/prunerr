@@ -233,6 +233,7 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git fetch --tags origin "$(VCS_BRANCH)"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -309,7 +310,7 @@ run: build-docker
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
 	docker compose run --rm python-project-structure-devel \
-	    towncrier check --compare-with "origin/develop"
+	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log

@@ -126,6 +126,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 build-bump: \
 	~/.gitconfig $(HOME)/.local/var/log/python-project-structure-host-install.log
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git fetch --tags origin "$(VCS_BRANCH)"
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
@@ -178,7 +179,7 @@ endif
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
-	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/develop"
+	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
@@ -235,13 +236,14 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade:
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
-	$(MAKE) -e "build"
+	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch:
+upgrade-branch: ~/.gitconfig
 	git fetch "origin" "$(VCS_BRANCH)"
+	git fetch "origin" "$(VCS_BRANCH)-upgrade"
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then
 # Reset an existing local branch to the latest upstream before upgrading

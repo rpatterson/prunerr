@@ -272,32 +272,10 @@ build-wheel: \
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
-		~/.gitconfig \
+		~/.gitconfig ./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
-ifeq ($(RELEASE_PUBLISH),true)
-	set +x
-ifneq ($(VCS_REMOTE_PUSH_URL),)
-# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
-# variable value should be prefixed with the token name as a HTTP `user:password`
-# authentication string:
-# https://stackoverflow.com/a/73426417/624787
-	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
-# Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "origin"
-endif
-ifneq ($(GITHUB_ACTIONS),true)
-ifneq ($(PROJECT_GITHUB_PAT),)
-# Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
-# mirror.
-	git remote add "github" \
-	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
-	git push -o ci.skip --no-verify --tags "github"
-endif
-endif
-	set -x
-endif
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
@@ -581,7 +559,7 @@ upgrade: ./.env $(DOCKER_VOLUMES)
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig
+upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	git fetch "origin" "$(VCS_BRANCH)"
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then
@@ -934,6 +912,29 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
+./var/log/git-remotes.log:
+ifeq ($(RELEASE_PUBLISH),true)
+	set +x
+ifneq ($(VCS_REMOTE_PUSH_URL),)
+# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
+# variable value should be prefixed with the token name as a HTTP `user:password`
+# authentication string:
+# https://stackoverflow.com/a/73426417/624787
+	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
+# Fail fast if there's still no push access
+	git push -o ci.skip --no-verify --tags "origin"
+endif
+ifneq ($(GITHUB_ACTIONS),true)
+ifneq ($(PROJECT_GITHUB_PAT),)
+# Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
+# mirror.
+	git remote add "github" \
+	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+	git push -o ci.skip --no-verify --tags "github"
+endif
+endif
+	set -x
+endif
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 

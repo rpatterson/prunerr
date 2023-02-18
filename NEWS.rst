@@ -1,3 +1,12 @@
+Pythonprojectstructure 0.1.0b9 (2023-02-18)
+===========================================
+
+Misc
+----
+
+- ci-github-release-notes, ci-upgrade-prereq, ci-upgrade-volume_perms, docker-upgrade-parallel-net
+
+
 Pythonprojectstructure 0.1.0b8 (2023-02-17)
 ===========================================
 

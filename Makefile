@@ -240,7 +240,7 @@ upgrade:
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch:
+upgrade-branch: ~/.gitconfig
 	git fetch "origin" "$(VCS_BRANCH)"
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then

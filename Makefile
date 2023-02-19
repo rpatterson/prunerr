@@ -277,8 +277,7 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags origin "$(VCS_BRANCH)"
-	git fetch --tags origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch --tags --unshallow origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)

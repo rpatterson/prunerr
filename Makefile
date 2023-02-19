@@ -345,11 +345,10 @@ ifneq ($(CI),true)
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
-# that a published release is never *not* reflected in VCS:
+# that a published release is never *not* reflected in VCS.  Also ensure the tag is in
+# place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
+# well:
 	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
-# Ensure the tag is in place on the GitHub mirror so we can create the project host
-# release object there:
-	git push -o ci.skip --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start
@@ -589,7 +588,7 @@ upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	    "build(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
-# Push any upgrades to the remote for review
+# Push any upgrades to the push remotes for review:
 	git push --set-upstream --force-with-lease "origin" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
@@ -921,20 +920,19 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 # variable value should be prefixed with the token name as a HTTP `user:password`
 # authentication string:
 # https://stackoverflow.com/a/73426417/624787
-	git remote set-url --push "origin" "$(VCS_REMOTE_PUSH_URL)"
-# Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "origin"
+	git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
 # Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
 # mirror.
-	git remote add "github" \
+	git remote set-url --push --add "origin" \
 	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
-	git push -o ci.skip --no-verify --tags "github"
 endif
 endif
 	set -x
+# Fail fast if there's still no push access
+	git push -o ci.skip --no-verify --tags "origin"
 endif
 ~/.pypirc: ./home/.pypirc.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template

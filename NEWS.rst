@@ -1,3 +1,12 @@
+Pythonprojectstructure 0.1.0b10 (2023-02-19)
+============================================
+
+Misc
+----
+
+- ci-github-release-notes-2, ci-github-scheduled-upgrade, upgrade-requirements
+
+
 Pythonprojectstructure 0.1.0b9 (2023-02-18)
 ===========================================
 

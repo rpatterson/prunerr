@@ -4,6 +4,8 @@
 #
 #    pip-compile --output-file=requirements/py39/build.txt --resolver=backtracking requirements/build.txt.in
 #
+argcomplete==2.0.0
+    # via commitizen
 bleach==6.0.0
     # via readme-renderer
 certifi==2022.12.7
@@ -12,9 +14,13 @@ cffi==1.15.1
     # via cryptography
 cfgv==3.3.1
     # via pre-commit
-charset-normalizer==3.0.1
-    # via requests
-commitizen==1.0.0
+charset-normalizer==2.1.1
+    # via
+    #   commitizen
+    #   requests
+colorama==0.4.6
+    # via commitizen
+commitizen==2.42.0
     # via -r requirements/build.txt.in
 cryptography==39.0.1
     # via secretstorage
@@ -40,16 +46,22 @@ jeepney==0.8.0
     # via
     #   keyring
     #   secretstorage
+jinja2==3.1.2
+    # via commitizen
 keyring==23.13.1
     # via twine
 markdown-it-py==2.1.0
     # via rich
+markupsafe==2.1.2
+    # via jinja2
 mdurl==0.1.2
     # via markdown-it-py
 more-itertools==9.0.0
     # via jaraco-classes
 nodeenv==1.7.0
     # via pre-commit
+packaging==23.0
+    # via commitizen
 pkginfo==1.9.6
     # via twine
 platformdirs==3.0.0
@@ -65,7 +77,9 @@ pygments==2.14.0
     #   readme-renderer
     #   rich
 pyyaml==6.0
-    # via pre-commit
+    # via
+    #   commitizen
+    #   pre-commit
 questionary==1.10.0
     # via commitizen
 readme-renderer==37.3
@@ -84,8 +98,14 @@ secretstorage==3.3.3
     # via keyring
 six==1.16.0
     # via bleach
+termcolor==2.2.0
+    # via commitizen
+tomlkit==0.11.6
+    # via commitizen
 twine==4.0.2
     # via -r requirements/build.txt.in
+typing-extensions==4.5.0
+    # via commitizen
 urllib3==1.26.14
     # via
     #   requests

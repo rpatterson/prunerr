@@ -588,8 +588,12 @@ upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	    "build(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
-# Push any upgrades to the push remotes for review:
-	git push --set-upstream --force-with-lease "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
+# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
+# multiple `pushUrl`:
+	git push \
+	    --force-with-lease="$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade" \
+	    --no-verify "origin" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

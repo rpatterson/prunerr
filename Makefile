@@ -270,8 +270,12 @@ upgrade-branch: ~/.gitconfig
 	    "build(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
-# Push any upgrades to the remote for review
-	git push --set-upstream --force-with-lease "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
+# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
+# multiple `pushUrl`:
+	git push \
+	    --force-with-lease="$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade" \
+	    --no-verify "origin" "HEAD:$(VCS_BRANCH)-upgrade"
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible

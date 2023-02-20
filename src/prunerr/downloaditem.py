@@ -206,7 +206,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 continue
 
             if operation_config.get("remove", False):
-                result = dict(remove=True)
+                result = {"remove": True}
                 logger.info(
                     "Removing download item per %r review: %r",
                     operation_config["type"],

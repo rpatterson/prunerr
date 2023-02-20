@@ -214,12 +214,12 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "02-torrent-set-location": dict(
-                            json=functools.partial(
+                        "02-torrent-set-location": {
+                            "json": functools.partial(
                                 self.mock_move_torrent_response,
                                 delay=1,
                             ),
-                        ),
+                        },
                     },
                 },
             },
@@ -324,9 +324,9 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "02-torrent-set-location": dict(
-                            json=self.mock_move_torrent_response,
-                        ),
+                        "02-torrent-set-location": {
+                            "json": self.mock_move_torrent_response,
+                        },
                     },
                 },
             },
@@ -374,9 +374,9 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "02-torrent-set-location": dict(
-                            json=self.mock_move_torrent_response,
-                        ),
+                        "02-torrent-set-location": {
+                            "json": self.mock_move_torrent_response,
+                        },
                     },
                 },
             },
@@ -424,12 +424,12 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "02-torrent-set-location": dict(
-                            json=functools.partial(
+                        "02-torrent-set-location": {
+                            "json": functools.partial(
                                 self.mock_move_torrent_response,
                                 delay=1,
                             ),
-                        ),
+                        },
                     },
                 },
             },

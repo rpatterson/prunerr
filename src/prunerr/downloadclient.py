@@ -280,7 +280,7 @@ class PrunerrDownloadClient:
         if session.speed_limit_down_enabled and (
             not speed_limit_down or speed_limit_down != session.speed_limit_down
         ):
-            kwargs = dict(speed_limit_down_enabled=False)
+            kwargs = {"speed_limit_down_enabled": False}
             logger.info("Resuming downloading: %s", kwargs)
             self.client.set_session(**kwargs)
 

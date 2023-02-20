@@ -35,8 +35,8 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "01-torrent-get": dict(
-                            json=functools.partial(
+                        "01-torrent-get": {
+                            "json": functools.partial(
                                 self.mock_get_torrent_response,
                                 [
                                     {},
@@ -54,7 +54,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                                     },
                                 ],
                             ),
-                        ),
+                        },
                     },
                 },
             },
@@ -164,8 +164,8 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "01-torrent-get": dict(
-                            json=functools.partial(
+                        "01-torrent-get": {
+                            "json": functools.partial(
                                 self.mock_get_torrent_response,
                                 [
                                     {
@@ -180,7 +180,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                                     },
                                 ],
                             ),
-                        ),
+                        },
                     },
                 },
             },

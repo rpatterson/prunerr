@@ -282,7 +282,7 @@ class PrunerrRunner:
                     - download_client.client.session.download_dir_free_space,
                 ),
             )
-            kwargs = dict(speed_limit_down=0, speed_limit_down_enabled=True)
+            kwargs = {"speed_limit_down": 0, "speed_limit_down_enabled": True}
             # TODO: Notification when downloading is paused
             logger.info("Stopping downloading: %s", kwargs)
             download_client.client.set_session(**kwargs)

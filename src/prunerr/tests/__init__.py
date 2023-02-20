@@ -340,12 +340,12 @@ class PrunerrTestCase(
                 if response_path.name.endswith("~"):  # pragma: no cover
                     # Ignore backup files
                     continue
-                response_mock = dict(
-                    response_dir=response_path.parent.relative_to(
+                response_mock = {
+                    "response_dir": response_path.parent.relative_to(
                         pathlib.Path().resolve(),
                     ),
-                    headers={},
-                )
+                    "headers": {},
+                }
 
                 # Assemble headers from the file metadata
                 response_stat = response_path.stat()
@@ -358,7 +358,7 @@ class PrunerrTestCase(
                 )[0]
 
                 # Optionally read the expected response JSON from a sibling file
-                response_mock["request"] = dict(json={})
+                response_mock["request"] = {"json": {}}
                 request_json_path = response_path.parent / "request.json"
                 if request_json_path.exists():
                     with request_json_path.open() as request_json_opened:
@@ -390,13 +390,13 @@ class PrunerrTestCase(
             response_list = []
             for mock_order in sorted(responses.keys()):
                 response_list.append(
-                    dict(
-                        headers=responses[mock_order]["headers"],
-                        json=functools.partial(
+                    {
+                        "headers": responses[mock_order]["headers"],
+                        "json": functools.partial(
                             self.mock_response_callback,
                             responses[mock_order],
                         ),
-                    ),
+                    },
                 )
 
             with request_headers_path.open() as request_headers_opened:

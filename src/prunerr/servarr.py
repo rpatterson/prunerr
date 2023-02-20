@@ -47,32 +47,32 @@ class PrunerrServarrInstance:
     """
 
     # Map the different Servarr applications type terminology
-    TYPE_MAPS = dict(
-        sonarr=dict(
+    TYPE_MAPS = {
+        "sonarr": {
             # The top-level containing type, if applicable.  IOW, the type of items in
             # the top-level listing of the Servarr UI.  This is series for Sonarr as
             # contrasted with episode or season.  This is movie for Radarr.
-            dir_type="series",
+            "dir_type": "series",
             # File vs item is a little confusing.  Item refers to episodes/movies as
             # contrasted with the `dir_type`.  But an episode/movie may comprise of
             # multiple files and a file may contain multiple episodes.
-            item_type="episode",
-            file_has_multi=True,
-            client=arrapi.SonarrAPI,
-            download_dir_field="tvDirectory",
-            rename_template=(
+            "item_type": "episode",
+            "file_has_multi": True,
+            "client": arrapi.SonarrAPI,
+            "download_dir_field": "tvDirectory",
+            "rename_template": (
                 "{series[title]} - {episode[seasonEpisode]} - {episode[title]}"
             ),
-        ),
-        radarr=dict(
-            dir_type="movie",
-            item_type="movie",
-            file_has_multi=False,
-            client=arrapi.RadarrAPI,
-            download_dir_field="movieDirectory",
-            rename_template="{movie[title]} ({movie[release_year]})",
-        ),
-    )
+        },
+        "radarr": {
+            "dir_type": "movie",
+            "item_type": "movie",
+            "file_has_multi": False,
+            "client": arrapi.RadarrAPI,
+            "download_dir_field": "movieDirectory",
+            "rename_template": "{movie[title]} ({movie[release_year]})",
+        },
+    }
     EVENT_TYPES = {
         "grabbed": 1,
         "downloadFolderImported": 3,

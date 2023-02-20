@@ -79,17 +79,17 @@ class PrunerrDaemonTests(tests.PrunerrTestCase):
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
                     "POST": {
-                        "01-torrent-get": dict(json=self.mock_poll_delay_response),
+                        "01-torrent-get": {"json": self.mock_poll_delay_response},
                     },
                 },
                 "http://localhost:8989/api/v3/queue/1?apikey=&blacklist=true": {
                     "DELETE": {
-                        "0-response": dict(json=self.mock_network_retry_response),
+                        "0-response": {"json": self.mock_network_retry_response},
                     },
                 },
                 "http://localhost:8989/api/v3/system/status?apikey=": {
                     "GET": {
-                        "2-response": dict(json=self.mock_exit_daemon_response),
+                        "2-response": {"json": self.mock_exit_daemon_response},
                     },
                 },
             },

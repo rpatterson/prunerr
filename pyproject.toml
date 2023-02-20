@@ -32,7 +32,7 @@ package_dir = "src"
 #     $ pylint --generate-rcfile
 # BBB: Un-comment if this bug is fixed:
 # https://github.com/PyCQA/prospector/issues/573#issuecomment-1368566582
-# jobs = 0
+jobs = 0
 enable-all-extensions = true
 output-format = "colorized"
 ignore-paths = [

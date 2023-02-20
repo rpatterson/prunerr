@@ -12,7 +12,9 @@ from .. import tests
 
 
 @mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrServarrTests(tests.PrunerrTestCase):
+class PrunerrServarrTests(
+    tests.PrunerrTestCase,
+):  # pylint: disable=too-few-public-methods
     """
     Test Prunerr's interaction with Servarr instances.
     """

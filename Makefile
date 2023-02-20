@@ -305,18 +305,18 @@ endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
-start: build-docker
+start: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up -d
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging
-run: build-docker
+run: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build-docker
+check-push: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean

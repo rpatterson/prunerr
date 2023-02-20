@@ -484,7 +484,7 @@ class PrunerrTestCase(
         context=None,
         response_mock=None,
         delay=0,
-    ):  # pylint: disable=unused-argument
+    ):
         """
         Simulate the download client changing a download items location.
         """

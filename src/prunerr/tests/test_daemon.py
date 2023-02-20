@@ -52,7 +52,7 @@ class PrunerrDaemonTests(tests.PrunerrTestCase):
         request=None,
         context=None,
         response_mock=None,
-    ):  # pylint: disable=unused-argument
+    ):
         """
         Raise an exception while running `exec` that `daemon` catches.
         """
@@ -63,7 +63,7 @@ class PrunerrDaemonTests(tests.PrunerrTestCase):
         request=None,
         context=None,
         response_mock=None,
-    ):  # pylint: disable=unused-argument
+    ):
         """
         Simulate an exception to exit the `daemon` sub-command.
         """

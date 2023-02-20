@@ -24,7 +24,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
 
     def test_move_usual_lifecycle(
         self,
-    ):  # pylint: disable=too-many-statements,too-many-locals
+    ):  # pylint: disable=too-many-statements
         """
         Download items are moved to `seeding` when imported by Servarr.
         """

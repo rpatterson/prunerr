@@ -84,6 +84,10 @@ TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 CI=false
+DOCKER_COMPOSE_RUN_ARGS=--rm
+ifneq ($(CI),true)
+DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
+endif
 DOCKER_BUILD_ARGS=
 DOCKER_REGISTRIES=DOCKER GITLAB GITHUB
 export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
@@ -251,7 +255,8 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
 	$(MAKE) build-docker-volumes-$${PYTHON_ENV}
-	docker compose run --rm -T python-project-structure-devel make -e \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel make -e \
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
@@ -265,7 +270,8 @@ build-wheel: \
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(VCS_BRANCH)"
 	ln -sfv "$$(
-	    docker compose run --rm python-project-structure-devel pyproject-build -w |
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	        python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
 	)" "./dist/.current.whl"
 
@@ -277,7 +283,12 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags --unshallow origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git_fetch_args=--tags
+	if [ "$(git rev-parse --is-shallow-repository)" == "true" ]
+	then
+	    git_fetch_args+= --unshallow
+	fi
+	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
@@ -311,7 +322,7 @@ endif
 	    exit $$exit_code
 	fi
 # Update the release notes/changelog
-	docker compose run --rm python-project-structure-devel \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -326,7 +337,7 @@ endif
 	    towncrier build --version "$${next_version}" --draft --yes \
 	        >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
-	docker compose run --rm python-project-structure-devel \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
@@ -353,19 +364,19 @@ endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
-start: build-docker
+start: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up -d
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging
-run: build-docker
+run: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build-docker
-	docker compose run --rm python-project-structure-devel \
+check-push: build-docker-$(PYTHON_MINOR) ./.env
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -409,7 +420,8 @@ endif
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
-	docker compose run --rm python-project-structure-devel pyproject-build -s
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 	$(MAKE) "check-clean"
@@ -462,7 +474,7 @@ $(PYTHON_MINORS:%=release-docker-%):
 	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
-	docker compose run --rm docker-pushrm
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
 .PHONY: $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ### Publish all container images to one container registry
@@ -496,9 +508,12 @@ format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
 lint-docker: ./.env $(DOCKER_VOLUMES)
-	docker compose run --rm hadolint hadolint "./Dockerfile"
-	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
-	docker compose run --rm hadolint hadolint "./build-host/Dockerfile"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	    hadolint "./Dockerfile"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	    hadolint "./Dockerfile.devel"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
@@ -550,6 +565,11 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade: ./.env $(DOCKER_VOLUMES)
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
+ifeq ($(CI),true)
+# Pull separately to reduce noisy interactive TTY output where it shouldn't be:
+	docker compose pull --quiet python-project-structure-devel
+endif
+	docker compose create python-project-structure-devel
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
 	$(MAKE) -e PIP_COMPILE_ARGS="--upgrade" -j \
@@ -749,6 +769,10 @@ ifneq ($(VCS_BRANCH),master)
 endif
 endif
 # This variant is the default used for tags such as `latest`
+ifeq ($(CI),true)
+# Workaround broken interactive session detection
+	docker pull "python:${PYTHON_MINOR}"
+endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
@@ -781,7 +805,7 @@ ifneq ($(VCS_BRANCH),master)
 	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 endif
-	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
+	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
@@ -796,8 +820,9 @@ endif
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 ifeq ($(BUILD_REQUIREMENTS),true)
-	docker compose run --rm -T python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	    build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
 
@@ -827,8 +852,8 @@ $(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
 $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	python_env=$(notdir $(@:%/bin/activate=%))
 	$(MAKE) "./var/docker/$${python_env}/log/build.log"
-	docker compose run --rm -T python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    "./var/log/tox/$${python_env}/build.log"
 
 # Local environment variables from a template

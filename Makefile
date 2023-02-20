@@ -80,6 +80,10 @@ TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 CI=false
+DOCKER_COMPOSE_RUN_ARGS=--rm
+ifneq ($(CI),true)
+DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
+endif
 DOCKER_BUILD_ARGS=
 DOCKER_REGISTRIES=DOCKER
 export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
@@ -210,9 +214,10 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
 	$(MAKE) build-docker-volumes-$${PYTHON_ENV}
-	docker compose run --rm -T python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
-	        build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel make -e \
+	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
 .PHONY: build-wheel
@@ -221,7 +226,8 @@ build-wheel: \
 		./var/docker/$(PYTHON_ENV)/log/build.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 	ln -sfv "$$(
-	    docker compose run --rm python-project-structure-devel pyproject-build -w |
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	        python-project-structure-devel pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
 	)" "./dist/.current.whl"
 
@@ -262,7 +268,7 @@ endif
 	    exit $$exit_code
 	fi
 # Update the release notes/changelog
-	docker compose run --rm python-project-structure-devel \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -271,7 +277,7 @@ endif
 	    false
 	fi
 # Build and stage the release notes to be commited by `$ cz bump`
-	docker compose run --rm python-project-structure-devel \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
@@ -308,7 +314,7 @@ run: build-docker
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker
-	docker compose run --rm python-project-structure-devel \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -343,7 +349,8 @@ endif
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
-	docker compose run --rm python-project-structure-devel pyproject-build -s
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 	$(MAKE) "check-clean"
@@ -370,7 +377,7 @@ $(PYTHON_MINORS:%=release-docker-%):
 	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
-	docker compose run --rm docker-pushrm
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
 .PHONY: $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ### Publish all container images to one container registry
@@ -404,9 +411,12 @@ format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
 lint-docker: ./.env $(DOCKER_VOLUMES)
-	docker compose run --rm hadolint hadolint "./Dockerfile"
-	docker compose run --rm hadolint hadolint "./Dockerfile.devel"
-	docker compose run --rm hadolint hadolint "./build-host/Dockerfile"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	    hadolint "./Dockerfile"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	    hadolint "./Dockerfile.devel"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters
@@ -456,6 +466,11 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade: ./.env $(DOCKER_VOLUMES)
 	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
+ifeq ($(CI),true)
+# Pull separately to reduce noisy interactive TTY output where it shouldn't be:
+	docker compose pull --quiet python-project-structure-devel
+endif
+	docker compose create python-project-structure-devel
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
 	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-requirements-%)
@@ -627,6 +642,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	do
 	    docker_build_user_tags+="--tag $${user_tag} "
 	done
+ifeq ($(CI),true)
+# Workaround broken interactive session detection
+	docker pull "python:${PYTHON_MINOR}"
+endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
 	    "./"
 	docker_build_devel_tags=""
@@ -636,7 +655,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	do
 	    docker_build_devel_tags+="--tag $${devel_tag} "
 	done
-	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
+	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
 	date >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
@@ -644,8 +663,9 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 ifeq ($(BUILD_REQUIREMENTS),true)
-	docker compose run --rm -T python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	    build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
 
@@ -675,8 +695,8 @@ $(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
 $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	python_env=$(notdir $(@:%/bin/activate=%))
 	$(MAKE) "./var/docker/$${python_env}/log/build.log"
-	docker compose run --rm -T python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    "./var/log/tox/$${python_env}/build.log"
 
 # Local environment variables from a template

@@ -91,7 +91,7 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
 
     def assert_download_client(self, runner, download_client_url):
         """
-        An individual download client is configured correctly.
+        Confirm that an individual download client is configured correctly.
         """
         self.assertIn(
             download_client_url,

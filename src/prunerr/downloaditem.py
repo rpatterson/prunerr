@@ -85,7 +85,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     @property
     def files_parent(self):
         """
-        The path in which the download item's files are currently stored.
+        Determine the path in which the download item's files are currently stored.
 
         This may be the `incomplete_dir` while the item is downloading.
         """
@@ -103,14 +103,14 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     @property
     def age(self):
         """
-        The total time since the item was added.
+        Determine the total time since the item was added.
         """
         return time.time() - self._fields["addedDate"].value
 
     @property
     def seconds_since_done(self):
         """
-        Number of seconds elapsed since the download item was completely downloaded.
+        Determine the number of seconds since the item was completely downloaded.
 
         Best available estimation of total seeding time.
         """
@@ -146,7 +146,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     @property
     def rate_total(self):
         """
-        The total download rate across the whole download time.
+        Determine the total download rate across the whole download time.
         """
         done_date = self._fields["doneDate"].value
         if not done_date:
@@ -262,6 +262,9 @@ class PrunerrDownloadItemFile:
         self.rpc_file = rpc_file
 
     def __getattr__(self, name):
+        """
+        Make `stat()` properties available as attributes.
+        """
         try:
             return getattr(self.rpc_file, name)
         except AttributeError:

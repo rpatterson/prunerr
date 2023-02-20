@@ -63,7 +63,7 @@ class PrunerrOperations:
 
     def exec_operations(self, operation_configs, item):
         """
-        Execute each of the configured indexer priority operations
+        Execute each of the configured indexer priority operations.
         """
         # TODO: Add `name` to operation configs and use in log/exc messages
         sort_key = []
@@ -92,7 +92,6 @@ class PrunerrOperations:
         """
         Apply any restrictions that can apply across different operation types.
         """
-
         sort_bool = None
         if "equals" in operation_config:
             sort_bool = sort_value == operation_config["equals"]

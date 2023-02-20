@@ -42,7 +42,7 @@ class PrunerrTestCase(
     Constants and set-up used in all Prunerr tests.
     """
 
-    maxDiff = None
+    maxDiff = None  # noqa: F841
 
     # HTTP methods taken from /usr/lib/python3.10/wsgiref/validate.py:340
     HTTP_METHODS_RE = re.compile("^(GET|HEAD|POST|OPTIONS|PATCH|PUT|DELETE|TRACE)")

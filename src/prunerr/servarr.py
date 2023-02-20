@@ -4,7 +4,6 @@ Prunerr interaction with Servarr instances.
 
 import dataclasses
 import time
-import datetime
 import urllib.parse
 import pathlib
 import logging
@@ -73,26 +72,7 @@ class PrunerrServarrInstance:
             "rename_template": "{movie[title]} ({movie[release_year]})",
         },
     }
-    EVENT_TYPES = {
-        "grabbed": 1,
-        "downloadFolderImported": 3,
-        "downloadIgnored": 7,
-        "downloadFailed": 4,
-        "fileDeleted": 5,
-        "fileRenamed": 6,
-    }
     MAX_PAGE_SIZE = 250
-    # Number of seconds to wait for new file import history records to appear in Servarr
-    # history.  This should be the maximum amount of time it might take to import a
-    # single file in the download client item, not necessarily the entire item.  Imagine
-    # how long might it take Sonarr to finish importing a download client item when:
-    #
-    # - Sonarr is configured to copy rather than making hard links
-    # - the host running Sonarr is under high load
-    # - the RAID array is being rebuilt
-    # - etc.
-    # TODO: Move to config
-    HISTORY_WAIT = datetime.timedelta(seconds=120)
 
     config = None
     client = None
@@ -104,14 +84,6 @@ class PrunerrServarrInstance:
         """
         self.runner = runner
         self.download_clients = {}
-
-        # Initialize any data cached in instance state across updates
-        self.history = dict(
-            page=0,
-            records=dict(download_ids={}, source_titles={}),
-            event_types=dict(download_ids={}, source_titles={}),
-            dirs={},
-        )
 
     def __repr__(self):
         """

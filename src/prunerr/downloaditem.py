@@ -100,7 +100,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             )
         return files_parent.resolve()
 
-    @property
+    @property  # noqa: F841
     def age(self):
         """
         Determine the total time since the item was added.

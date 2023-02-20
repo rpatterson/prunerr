@@ -126,7 +126,10 @@ $(PYTHON_ENVS:%=build-requirements-%):
 build-bump: \
 	~/.gitconfig $(HOME)/.local/var/log/python-project-structure-host-install.log
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags --unshallow origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	if [ "$(git rev-parse --is-shallow-repository)" == "true" ]
+	then
+	    git fetch --tags --unshallow origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	fi
 # Collect the versions involved in this release according to conventional commits
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)

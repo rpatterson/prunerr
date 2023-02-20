@@ -275,7 +275,8 @@ build-wheel: \
 	git fetch --tags origin "$(VCS_BRANCH)"
 	ln -sfv "$$(
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        prunerr-devel pyproject-build -w |
+	        prunerr-devel tox exec -q -e $(PYTHON_ENV) -- \
+	        pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
 	)" "./dist/.current.whl"
 
@@ -327,6 +328,7 @@ endif
 	fi
 # Update the release notes/changelog
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
+	    $(TOX_EXEC_ARGS) \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -337,12 +339,12 @@ endif
 # Capture the release notes for *just this* release for creating the GitHub release.
 # Have to run before the real `$ towncrier build` run without the `--draft` option
 # because after that the `newsfragments` will have been deleted.
-	docker compose run --rm prunerr-devel \
+	docker compose run --rm prunerr-devel $(TOX_EXEC_ARGS) \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	        >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
-	    towncrier build --version "$${next_version}" --yes
+	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
@@ -387,6 +389,7 @@ run-debug: ./var/log/editable.log
 ### Perform any checks that should only be run before pushing
 check-push: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
+	    $(TOX_EXEC_ARGS) \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -431,7 +434,7 @@ endif
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
-	    pyproject-build -s
+	    $(TOX_EXEC_ARGS) pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/prunerr-*
 	$(MAKE) "check-clean"

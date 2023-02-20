@@ -7,7 +7,7 @@ import os
 import functools
 import re
 import pathlib
-import subprocess
+import subprocess  # nosec B404
 import mimetypes
 import email.utils
 import email.message
@@ -494,7 +494,7 @@ class PrunerrTestCase(
         if delay:
             # Simulate a delay using a subprocess
             self.addCleanup(
-                subprocess.Popen(  # pylint: disable=consider-using-with
+                subprocess.Popen(  # nosec B603, pylint: disable=consider-using-with
                     args=[
                         sys.executable,
                         "-c",

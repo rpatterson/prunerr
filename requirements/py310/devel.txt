@@ -226,7 +226,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
-trove-classifiers==2023.2.8
+trove-classifiers==2023.2.20
     # via pyroma
 typer[all]==0.7.0
     # via rstcheck

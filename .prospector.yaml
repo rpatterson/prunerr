@@ -54,3 +54,9 @@ ignore-paths:
   - "src/prunerr/version.py"
   - ".tox"
   - "var"
+
+  # Prospector's file finding process seems quite expensive, best to aggressively
+  # exclude directories it should never have to check:
+  - "src/prunerr/home"
+  - "src/prunerr/tests/home"
+  - "src/prunerr/tests/responses"

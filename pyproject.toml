@@ -59,7 +59,7 @@ max-line-length = "88"
 # appropriate context where the change should happen.  It helps my recall.  If someone
 # else wants to take the time to move the `TODO`s into `./TODO.rst`, I won't object as
 # long as sufficient context comes along with them.
-disable = ["fixme"]
+disable = ["fixme", "relative-beyond-top-level"]
 [[tool.mypy.overrides]]
 module = ["argcomplete", "transmission_rpc", "arrapi.*"]
 ignore_missing_imports = true

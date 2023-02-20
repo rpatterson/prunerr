@@ -5,7 +5,8 @@ Test the Prunerr Command-Line Interface.
 import sys
 import os
 import io
-import subprocess
+import runpy
+import subprocess  # nosec B404
 import contextlib
 import pathlib
 
@@ -26,7 +27,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         """
         The Python package is on `sys.path` and thus importable.
         """
-        import_process = subprocess.run(
+        import_process = subprocess.run(  # nosec B603
             [sys.executable, "-c", "import prunerr"],
             check=False,
         )
@@ -102,11 +103,11 @@ class PrunerrCLITests(tests.PrunerrTestCase):
             "Wrong invalid option message",
         )
 
-    def test_cli_module_main(self):
+    def test_cli_dash_m_option(self):
         """
-        The package/module supports execution via Python's `-m` option.
+        The package supports execution via Python's `-m` CLI option.
         """
-        module_main_process = subprocess.run(
+        module_main_process = subprocess.run(  # nosec B603
             [sys.executable, "-m", "prunerr", "exec", "--help"],
             check=False,
         )
@@ -114,6 +115,18 @@ class PrunerrCLITests(tests.PrunerrTestCase):
             module_main_process.returncode,
             0,
             "Running via Python's `-m` option exited with non-zero status code",
+        )
+
+    def test_cli_module_main(self):
+        """
+        The package supports execution via Python's `-m` option.
+        """
+        with self.assertRaises(SystemExit, msg="CLI didn't exit") as exc_context:
+            runpy.run_module("prunerr")
+        self.assertEqual(
+            exc_context.exception.code,
+            2,
+            "Wrong `runpy` exit status code",
         )
 
     def test_cli_exit_code(self):
@@ -124,10 +137,10 @@ class PrunerrCLITests(tests.PrunerrTestCase):
         prefix_path = pathlib.Path(sys.argv[0]).parent
         while not (prefix_path / "bin").is_dir():
             prefix_path = prefix_path.parent
-            if prefix_path.parent is prefix_path.parents[-1]:  # pragma: no cover
+            if prefix_path.parent is list(prefix_path.parents)[-1]:  # pragma: no cover
                 raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
 
-        script_process = subprocess.run(
+        script_process = subprocess.run(  # nosec B603
             [prefix_path / "bin" / "prunerr", "exec", "--help"],
             check=False,
         )

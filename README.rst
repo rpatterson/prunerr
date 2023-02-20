@@ -104,6 +104,13 @@ other means, e.g. `FlexGet`_.
 
 See the `Usage`_ section below for full details.
 
+Do not use the ``develop`` or ``master`` branches in your project as those branches are
+used to test the CI/CD automatic releases process and as such contain bumped versions,
+release notes, and other release artifacts that shouldn't be merged into real projects.
+On that same note, when adding this template as a remote be sure to configure it with
+``$ git config remote.template.tagOpt --no-tags`` to avoid clashing VCS versions in your
+project.
+
 
 ************
 Installation
@@ -115,6 +122,8 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
 details.
+
+Optional shell tab completion is available via `argcomplete`_.
 
 
 *****
@@ -252,6 +261,7 @@ automated but aren't by anything I could find.  So I added them to Prunerr as we
 .. _`FlexGet`: https://flexget.com/
 
 .. _pip: https://pip.pypa.io/en/stable/installation/
+.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
 .. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/master/docker-compose.yml

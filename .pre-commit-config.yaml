@@ -3,7 +3,7 @@ fail_fast: true
 repos:
 # Check commit message format and style before pushing to a remote
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: "v2.38.0"
+    rev: "v2.42.0"
     hooks:
       - id: "commitizen"
 # Checks defined in the `./Makefile`
@@ -13,13 +13,13 @@ repos:
     - id: "check-push"
       name: "check-push"
       stages: ["push"]
-      entry: "make check-push"
+      entry: "make -e check-push"
       language: "python"
       pass_filenames: false
 # Only run the longer running test check after everything else
     - id: "test"
       name: "test"
       stages: ["commit", "merge-commit", "push", "manual"]
-      entry: "make test"
+      entry: "make -e test"
       language: "python"
       pass_filenames: false

@@ -1,3 +1,4 @@
+# PYTHON_ARGCOMPLETE_OK
 """
 Remove Servarr download client items to preserve disk space according to rules.
 """
@@ -10,6 +11,8 @@ import argparse
 import mimetypes
 import json
 import pdb
+
+import argcomplete
 
 import prunerr.runner
 import prunerr.downloadclient
@@ -158,11 +161,15 @@ parser_daemon = subparsers.add_parser(
     description=daemon.__doc__.strip(),  # type: ignore
 )
 parser_daemon.set_defaults(command=daemon)
+# Register shell tab completion
+argcomplete.autocomplete(parser)
 
 
 def config_cli_logging(
-    root_level=logging.INFO, log_level=parser.get_default("--log-level"), **kwargs
-):  # pylint: disable=unused-argument
+    root_level=logging.INFO,
+    log_level=parser.get_default("--log-level"),
+    **_,
+):
     """
     Configure logging CLI usage as early as possible to affect all output.
     """

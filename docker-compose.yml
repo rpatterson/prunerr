@@ -73,8 +73,8 @@ services:
     container_name: "prunerr-daemon"
     depends_on:
       - "transmission"
-    # Match permissions inside and outside the container
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       # Make the run-time user configurable in `./.env` to match permissions inside and
       # outside the container.  Default to the common/standard main/first user and group
       # IDs

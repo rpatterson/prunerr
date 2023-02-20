@@ -18,41 +18,67 @@ services:
 
   ## Configuration specific to this checkout
   prunerr-daemon:
-    image: "merpatterson/prunerr:local"
-    container_name: "prunerr-devel-daemon"
-    build: "./"
+    container_name: "prunerr-daemon-checkout"
+    image: "merpatterson/prunerr:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    build:
+      context: "${CHECKOUT_DIR}/"
+      args:
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
-      - "./home/:/home/prunerr/"
+      - "${CHECKOUT_DIR}/home/:/home/prunerr/"
 
   ## Container for use by developers
   prunerr-devel:
-    image: "merpatterson/prunerr:devel"
+    image: "merpatterson/prunerr:devel-${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    container_name: "prunerr-devel"
     build:
-      context: "./"
-      dockerfile: "./Dockerfile.devel"
+      context: "${CHECKOUT_DIR}/"
+      dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
+      args:
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        VERSION: "${VERSION:-}"
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-100}"
+      PGID: "${PGID:-${PUID:-1000}}"
+      # Variables from the environment we want to be passed through into the container:
+      CI: "${CI:-false}"
+      # DEBUG: "true"
     volumes:
       # Ensure local changes are reflected inside the container.
-      - "./:/usr/local/src/prunerr/"
+      - "${CHECKOUT_DIR}/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR}/:/usr/local/src/prunerr/"
       # Preserve caches caches between container runs
-      - "./home/:/home/prunerr/"
-      # Ensure access permissions to build artifacts inside docker.
-      # If created by `# dockerd`, it ends up owned by `root`.
-      - "./var-docker/:/usr/local/src/prunerr/var/"
-      - "./.tox-docker/:/usr/local/src/prunerr/.tox/"
-      - "./src/prunerr-docker.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
+      - "${CHECKOUT_DIR}/home/:/home/prunerr/"
+      # Avoid any clashes between image variants and/or the local host at both build and
+      # run-time.
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/prunerr/var/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/prunerr/.tox/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/prunerr.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
 
-  ## Contianers used during release
+  ## Contianers during development and release
+
+  # https://github.com/hadolint/hadolint#how-to-use
+  hadolint:
+    image: "hadolint/hadolint"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - "${CHECKOUT_DIR}/:/usr/local/src/prunerr/"
+    working_dir: "/usr/local/src/prunerr/"
 
   pandoc:
     image: "pandoc/core"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "./:/data/"
+      - "${CHECKOUT_DIR}/:/data/"
     command: >-
       "./README.rst" -f "rst" -t "markdown" -o "./README.md"
 
@@ -62,24 +88,35 @@ services:
       pandoc:
         condition: "service_completed_successfully"
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
       DOCKER_PASS: "${DOCKER_PASS}"
     volumes:
-      - "./:/data/"
+      - "${CHECKOUT_DIR}/:/data/"
     command: >-
       --file "/data/README.md" --short "prunerr foundation or template"
       --debug "merpatterson/prunerr"
 
   ## Container for use by end users
-  dind:
-    image: "docker:dind"
+  build-host:
+    image: "merpatterson/prunerr:build-host"
+    build: "${CHECKOUT_DIR}/build-host/"
     privileged: true
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./:/usr/local/src/prunerr/"
-      - "./var-dind/:/usr/local/src/prunerr/var/"
-      - "./.tox-dind/:/usr/local/src/prunerr/.tox/"
-    working_dir: "/usr/local/src/prunerr/"
+      - "${CHECKOUT_DIR}/:${CHECKOUT_DIR}"
+      - "${CHECKOUT_DIR}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
+      # Share local SSH authentication to repository remotes
+      - "~/.ssh/:/home/runner/.ssh/"
+    env_file: "./.env"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+      PUID: "${PUID:-1000}"
+      PGID: "${DOCKER_GID:-${PGID:-${PUID:-1000}}}"
+      # DEBUG: "true"
+    working_dir: "${CHECKOUT_DIR}"
+    command: >-
+      make -e build-docker test-docker release
 
   gitlab-release-cli:
     image: "registry.gitlab.com/gitlab-org/release-cli:latest"

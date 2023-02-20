@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Wrappper for the Dockerfile linter in a container
+
+set -eu -o pipefail
+shopt -s inherit_errexit
+if [ -n "${DEBUG:=}" ]
+then
+    # Echo commands for easier debugging
+    PS4='$0:$LINENO+'
+    set -x
+fi
+
+
+main() {
+    # Delegate to the container
+    exec docker compose run --rm hadolint "$@"
+}
+
+
+main "$@"

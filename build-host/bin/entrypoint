@@ -1,0 +1,67 @@
+#!/bin/ash
+#
+# Shared set up for local testing of CI/CD
+
+set -eu -o pipefail
+CHOWN_ARGS="-R"
+if [ "${DEBUG:=false}" = "true" ]
+then
+    # Echo commands for easier debugging
+    set -x
+    PS4='${0}:${LINENO}+'
+    CHOWN_ARGS="${CHOWN_ARGS} -c"
+fi
+
+
+main() {
+    # The build host image depends on the baked in `HOME` directory for the installed
+    # host requirements:
+    export HOME=/home/runner
+    # Signal to `$ make` that host requirements are baked into the image and need not be
+    # reinstalled:
+    touch "${HOME}/.local/var/log/prunerr-host-install.log"
+
+    # Run as the user from the enironment, adding that user if necessary
+    if [ -n "${PUID:-}" ]
+    then
+        if [ "$(id -u)" != "0" ]
+        then
+            set +x
+            echo "ERROR: Can't create a user when not run as root" 1>&2
+            false
+        fi
+	# Ensure the home directory in the image has the correct permissions:
+	chown -R "${PUID}:${PGID:-${PUID}}" "/home/runner/"
+        # Add an unprivileged user to cover those use cases and more closely match local
+	# development
+        if ! getent group "${PGID}" >"/dev/null"
+        then
+            addgroup -g "${PGID}" "runner"
+        fi
+	group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
+        if ! getent passwd "${PUID}" >"/dev/null"
+        then
+            adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D \
+		    -s "/bin/bash" "runner"
+        fi
+	user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
+	if [ -e "/var/run/docker.sock" ]
+        then
+            # Ensure the user can talk to `# dockerd`:
+            docker_gid=$(stat -c "%g" "/var/run/docker.sock")
+            if ! getent group ${docker_gid} >"/dev/null"
+            then
+                addgroup -g "${docker_gid}" "docker"
+                adduser "${user_name}" "docker"
+            fi
+        fi
+	# Run the rest of the CLI arguments as the unprivileged user:
+	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"
+    fi
+
+    # Run un-altered as the user passed in by docker
+    exec "$@"
+}
+
+
+main "$@"

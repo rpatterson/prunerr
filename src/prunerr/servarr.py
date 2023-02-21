@@ -124,7 +124,8 @@ class PrunerrServarrInstance:
             if (
                 not download_client_config["enable"]
                 or download_client_config["implementation"] != "Transmission"
-            ):
+            ):  # pragma: no cover
+                # BBB: Why misidentified as not covered under Python 3.9?
                 continue
             download_client_config = deserialize_servarr_download_client(
                 download_client_config,

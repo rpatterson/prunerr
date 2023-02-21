@@ -165,7 +165,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         ) / (done_date - self._fields["addedDate"].value)
 
     @cached_property
-    def files(self):  # pylint: disable=invalid-overridden-method
+    def files(self):  # pylint: disable=invalid-overridden-method,useless-suppression
         """
         Iterate over all download item file paths that exist.
 

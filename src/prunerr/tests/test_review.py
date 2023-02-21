@@ -267,8 +267,17 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
             self.RESPONSES_DIR.parent / "review-edge-cases",
         )
         runner.update()
-        with self.assertNoLogs(
-            prunerr.downloaditem.logger,
-            level=logging.WARNING,
-        ):
-            runner.review()
+        if hasattr(self, "assertNoLogs"):  # pragma: no cover
+            with self.assertNoLogs(
+                prunerr.downloaditem.logger,
+                level=logging.WARNING,
+            ):
+                runner.review()
+        else:  # pragma: no cover
+            # BBB: Python <3.10 compat
+            with self.assertRaises(AssertionError):
+                with self.assertLogs(
+                    prunerr.downloaditem.logger,
+                    level=logging.WARNING,
+                ):
+                    runner.review()

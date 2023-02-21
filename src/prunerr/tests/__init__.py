@@ -330,8 +330,8 @@ class PrunerrTestCase(
                 str(url_unquoted_path.relative_to(url_unquoted_path.parents[-3])),
             )
             url_split = urllib.parse.SplitResult(
-                scheme=url_unquoted_path.parents[-2].name,  # pylint: disable=no-member
-                netloc=url_unquoted_path.parents[-3].name,  # pylint: disable=no-member
+                scheme=url_unquoted_path.parents[-2].name,
+                netloc=url_unquoted_path.parents[-3].name,
                 path=url_path_split.path,
                 query=url_path_split.query,
                 fragment=url_path_split.fragment,
@@ -388,7 +388,10 @@ class PrunerrTestCase(
                 .items()
             ):
                 mock_kwargs["from_mock_dir"] = responses[mock_order]
-                responses[mock_order] = responses[mock_order] | mock_kwargs
+                responses[mock_order] = dict(
+                    responses[mock_order],
+                    **mock_kwargs,
+                )
 
             # Use the callback to make assertions on the request bodies
             response_list = []
@@ -429,6 +432,8 @@ class PrunerrTestCase(
         """
         Assert that one request mock has been called once for each response.
         """
+        mock_method = request_mock._method  # pylint: disable=protected-access
+        mock_url = request_mock._url  # pylint: disable=protected-access
         if request_mock.call_count < len(mock_responses):
             response_contents = []
             for response_params in mock_responses.values():
@@ -448,9 +453,7 @@ class PrunerrTestCase(
             self.assertEqual(
                 response_contents,
                 response_contents[: request_mock.call_count],
-                "Some response mocks not called: "
-                f"{request_mock._method} "  # pylint: disable=protected-access
-                f"{request_mock._url}",  # pylint: disable=protected-access
+                f"Some response mocks not called: {mock_method} {mock_url}",
             )
         elif request_mock.call_count > len(mock_responses):
             request_contents = []
@@ -466,9 +469,7 @@ class PrunerrTestCase(
             self.assertEqual(
                 request_contents[: len(mock_responses)],
                 request_contents,
-                "More requests than mocks: "
-                f"{request_mock._method} "  # pylint: disable=protected-access
-                f"{request_mock._url}",  # pylint: disable=protected-access
+                f"More requests than mocks: {mock_method} {mock_url}",
             )
 
     def mock_download_client_complete_item(

@@ -110,7 +110,6 @@ DOCKER_VOLUMES=\
 ./var/docker/$(PYTHON_ENV)/prunerr.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
 
-
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
 BUILD_REQUIREMENTS=true
@@ -162,6 +161,9 @@ CI_REGISTRY_IMAGE=$(CI_REGISTRY)/prunerr
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
 PROJECT_GITHUB_PAT=
+
+# Prunerr-specific defaults:
+export DOWNLOAD_VOLUME=/media/Library/
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x

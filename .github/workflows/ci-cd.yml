@@ -96,6 +96,7 @@ jobs:
         PUID: "1001"
         PGID: "123"
         CHECKOUT_DIR: "${{ github.workspace }}"
+        DOWNLOAD_VOLUME: "${{ github.workspace }}/media/Library/"
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"

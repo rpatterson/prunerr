@@ -255,9 +255,9 @@ trove-classifiers==2023.2.20
     # via pyroma
 typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.19.1.4
+types-docutils==0.19.1.5
     # via rstcheck-core
-types-pyyaml==6.0.12.7
+types-pyyaml==6.0.12.8
     # via prunerr (pyproject.toml)
 typing-extensions==4.5.0
     # via

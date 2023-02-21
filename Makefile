@@ -534,6 +534,8 @@ test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test-docker: ./.env build-wheel
+# Avoid race condition starting service dependencies:
+	docker compose run --rm prunerr-daemon true
 	$(MAKE) -e -j \
 	    TOX_RUN_ARGS="run --installpkg ./dist/$$(
 	        readlink "./dist/.current.whl"

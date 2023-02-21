@@ -3,11 +3,16 @@ Prunerr interaction with download clients.
 """
 
 import os
-import functools
 import time
 import urllib.parse
 import json
 import logging
+
+try:
+    from functools import cached_property  # type: ignore
+except ImportError:  # pragma: no cover
+    # BBB: Python <3.8 compatibility
+    from backports.cached_property import cached_property  # type: ignore
 
 try:
     import pathlib3x as pathlib  # BBB: Python <3.10 compat
@@ -76,7 +81,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             return file_roots[0]
         return self.name
 
-    @functools.cached_property
+    @cached_property
     def path(self):
         """
         Return the root path for all files in the download item.
@@ -159,7 +164,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
         ) / (done_date - self._fields["addedDate"].value)
 
-    @functools.cached_property
+    @cached_property
     def files(self):  # pylint: disable=invalid-overridden-method
         """
         Iterate over all download item file paths that exist.
@@ -274,14 +279,14 @@ class PrunerrDownloadItemFile:
         except AttributeError:
             return getattr(self.stat, name)
 
-    @functools.cached_property
+    @cached_property
     def path(self):
         """
         Assemble a `pathlib` path for this item file only as needed and only once.
         """
         return self.download_item.path.parent / self.rpc_file.name
 
-    @functools.cached_property
+    @cached_property
     def stat(self):
         """
         Lookup item file `stat` metadata only as needed and only once.
@@ -290,7 +295,7 @@ class PrunerrDownloadItemFile:
             return self.path.stat()
         return None
 
-    @functools.cached_property
+    @cached_property
     def size_imported(self):
         """
         Return the file's size if the file has more than one hard link.

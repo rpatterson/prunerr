@@ -20,6 +20,8 @@ autoflake==1.7.8
     # via prunerr (pyproject.toml)
 autopep8==2.0.1
     # via prunerr (pyproject.toml)
+backports-cached-property==1.0.2 ; python_version < "3.8"
+    # via prunerr (pyproject.toml)
 bandit==1.7.4
     # via prospector
 black==23.1.0
@@ -52,6 +54,7 @@ click-default-group==1.2.2
 colorama==0.4.6
     # via
     #   radon
+    #   tox
     #   typer
 commonmark==0.9.1
     # via rich

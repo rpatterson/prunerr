@@ -8,6 +8,8 @@ argcomplete==2.0.0
     # via prunerr (pyproject.toml)
 arrapi==1.4.2
     # via prunerr (pyproject.toml)
+backports-cached-property==1.0.2 ; python_version < "3.8"
+    # via prunerr (pyproject.toml)
 certifi==2022.12.7
     # via requests
 charset-normalizer==3.0.1

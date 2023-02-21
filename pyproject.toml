@@ -61,7 +61,12 @@ max-line-length = "88"
 # long as sufficient context comes along with them.
 disable = ["fixme", "relative-beyond-top-level"]
 [[tool.mypy.overrides]]
-module = ["pathlib3x", "argcomplete", "transmission_rpc", "arrapi.*"]
+module = [
+       # BBB: Compatibility with older Python versions
+       "backports.cached_property", "pathlib3x",
+       # Direct dependencies
+       "argcomplete", "transmission_rpc", "arrapi.*",
+       ]
 ignore_missing_imports = true
 
 [tool.isort]

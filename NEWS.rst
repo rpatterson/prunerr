@@ -1,3 +1,12 @@
+Prunerr 1.1.0b11 (2023-02-21)
+=============================
+
+Features
+--------
+
+- Support all currently maintained versions of Python. (python-versions)
+
+
 Prunerr 1.1.0b10 (2023-01-27)
 =============================
 

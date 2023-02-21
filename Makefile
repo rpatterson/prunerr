@@ -285,7 +285,7 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
-	if [ "$(git rev-parse --is-shallow-repository)" == "true" ]
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
 	    git_fetch_args+= --unshallow
 	fi

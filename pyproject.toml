@@ -53,6 +53,10 @@ ignored-classes = ["lxml.etree.QName.localname"]
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#pylint
 [tool.pylint.format]
 max-line-length = "88"
+[tool.pylint."messages control"]
+# Workaround Prospector bug with PyLint:
+# https://github.com/PyCQA/prospector/issues/596#issue-1592499675
+disable = ["relative-beyond-top-level"]
 [[tool.mypy.overrides]]
 module = ["argcomplete"]
 ignore_missing_imports = true

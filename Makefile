@@ -129,7 +129,7 @@ build-bump: \
 	git_fetch_args=--tags
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
-	    git_fetch_args+= --unshallow
+	    git_fetch_args+=" --unshallow"
 	fi
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits

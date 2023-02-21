@@ -5,8 +5,12 @@ Prunerr interaction with Servarr instances.
 import dataclasses
 import time
 import urllib.parse
-import pathlib
 import logging
+
+try:
+    import pathlib3x as pathlib  # BBB: Python <3.10 compat
+except ImportError:  # pragma: no cover
+    import pathlib  # type: ignore
 
 import arrapi
 import arrapi.apis.base

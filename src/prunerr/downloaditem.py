@@ -5,10 +5,14 @@ Prunerr interaction with download clients.
 import os
 import functools
 import time
-import pathlib
 import urllib.parse
 import json
 import logging
+
+try:
+    import pathlib3x as pathlib  # BBB: Python <3.10 compat
+except ImportError:  # pragma: no cover
+    import pathlib  # type: ignore
 
 import transmission_rpc
 
@@ -25,7 +29,7 @@ def parallel_to(base_path, parallel_path, root_basename):
         common_path
         / root_basename
         / pathlib.Path(parallel_path).relative_to(
-            parallel_path.parents[-(len(base_path.parts))],
+            list(parallel_path.parents)[-(len(base_path.parts))],
         )
     )
 

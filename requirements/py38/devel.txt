@@ -37,10 +37,17 @@ chardet==5.1.0
     # via tox
 charset-normalizer==3.0.1
     # via requests
+cli-exit-tools==1.2.3.2
+    # via
+    #   lib-detect-testenv
+    #   pathlib3x
 click==8.1.3
     # via
     #   black
+    #   cli-exit-tools
     #   click-default-group
+    #   lib-detect-testenv
+    #   pathlib3x
     #   pip-tools
     #   towncrier
     #   typer
@@ -97,6 +104,8 @@ jinja2==3.1.2
     # via towncrier
 lazy-object-proxy==1.9.0
     # via astroid
+lib-detect-testenv==2.0.3
+    # via cli-exit-tools
 main-wrapper==0.1.1
     # via service-logging
 mando==0.6.4
@@ -124,6 +133,8 @@ packaging==23.0
     #   requirements-detector
     #   setuptools-scm
     #   tox
+pathlib3x==2.0.2.1 ; python_version < "3.10"
+    # via prunerr (pyproject.toml)
 pathspec==0.11.0
     # via black
 pbr==5.11.1

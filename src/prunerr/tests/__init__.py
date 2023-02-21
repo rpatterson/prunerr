@@ -6,7 +6,6 @@ import sys
 import os
 import functools
 import re
-import pathlib
 import subprocess  # nosec B404
 import mimetypes
 import email.utils
@@ -16,6 +15,11 @@ import json
 import tempfile
 import shutil
 import unittest
+
+try:
+    import pathlib3x as pathlib  # BBB: Python <3.10 compat
+except ImportError:  # pragma: no cover
+    import pathlib  # type: ignore
 
 import yaml
 import requests_mock

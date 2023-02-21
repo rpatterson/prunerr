@@ -3,10 +3,14 @@ Prunerr interaction with download clients.
 """
 
 import re
-import pathlib
 import shutil
 import urllib.parse
 import logging
+
+try:
+    import pathlib3x as pathlib  # BBB: Python <3.10 compat
+except ImportError:  # pragma: no cover
+    import pathlib  # type: ignore
 
 import transmission_rpc
 

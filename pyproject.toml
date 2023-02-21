@@ -55,11 +55,16 @@ ignored-classes = ["lxml.etree.QName.localname"]
 [tool.pylint.format]
 max-line-length = "88"
 [tool.pylint."messages control"]
-# I'm not sure I agree with PyLiint here.  I prefer my `TODO`s to be in the the most
-# appropriate context where the change should happen.  It helps my recall.  If someone
-# else wants to take the time to move the `TODO`s into `./TODO.rst`, I won't object as
-# long as sufficient context comes along with them.
-disable = ["fixme", "relative-beyond-top-level"]
+disable = [
+    # Workaround Prospector bug with PyLint:
+    # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
+    "relative-beyond-top-level",
+    # I'm not sure I agree with PyLiint here.  I prefer my `TODO`s to be in the the most
+    # appropriate context where the change should happen.  It helps my recall.  If someone
+    # else wants to take the time to move the `TODO`s into `./TODO.rst`, I won't object as
+    # long as sufficient context comes along with them.
+    "fixme",
+]
 [[tool.mypy.overrides]]
 module = [
        # BBB: Compatibility with older Python versions

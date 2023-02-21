@@ -289,9 +289,9 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
-	if [ "$(git rev-parse --is-shallow-repository)" == "true" ]
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
-	    git_fetch_args+= --unshallow
+	    git_fetch_args+=" --unshallow"
 	fi
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
@@ -674,6 +674,19 @@ endif
 	fi
 	envsubst <"$(template)" >"$(target)"
 
+
+## Debug targets
+
+.PHONY: debug-github-checkout
+## Reproduce the GitHub Actions shallow git checkout
+debug-github-checkout:
+	git init "$(CHECKOUT_DIR)"
+	cd "$(CHECKOUT_DIR)"
+	git remote add origin \
+	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure"
+	git -c protocol.version=2 fetch --no-tags --prune --progress \
+	    --no-recurse-submodules --depth=1 "origin" "$(VCS_BRANCH)"
+	git checkout --progress --force -B "$(VCS_BRANCH)" "origin/$(VCS_BRANCH)"
 
 ## Real targets
 

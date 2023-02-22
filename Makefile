@@ -455,7 +455,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    docker_run_args+=" -T"
 	fi
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run $${docker_run_args} python-project-structure \
+	docker compose run --no-deps $${docker_run_args} python-project-structure \
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \

@@ -24,6 +24,7 @@ GITLAB_REPOSITORY_OWNER=rpatterson
 GITHUB_REPOSITORY_OWNER=$(GITLAB_REPOSITORY_OWNER)
 
 # Options affecting target behavior
+export DOWNLOAD_VOLUME=/media/Library/
 PRUNERR_CMD=exec
 PRUNERR_ARGS=$(PRUNERR_CMD)
 
@@ -108,7 +109,8 @@ DOCKER_VOLUMES=\
 ./var/ ./var/docker/$(PYTHON_ENV)/ \
 ./src/prunerr.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/prunerr.egg-info/ \
-./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
+./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/ \
+$(DOWNLOAD_VOLUME)
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -161,9 +163,6 @@ CI_REGISTRY_IMAGE=$(CI_REGISTRY)/prunerr
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
 PROJECT_GITHUB_PAT=
-
-# Prunerr-specific defaults:
-export DOWNLOAD_VOLUME=/media/Library/
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x

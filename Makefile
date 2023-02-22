@@ -867,7 +867,8 @@ $(PYTHON_ENVS:%=build-docker-volumes-%): \
 ./var/ $(PYTHON_ENVS:%=./var/docker/%/) \
 ./src/prunerr.egg-info/ \
 $(PYTHON_ENVS:%=./var/docker/%/prunerr.egg-info/) \
-./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/):
+./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/) \
+$(DOWNLOAD_VOLUME):
 	mkdir -pv "$(@)"
 
 # Marker file used to trigger the rebuild of the image for just one Python version.

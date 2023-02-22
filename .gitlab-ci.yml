@@ -49,7 +49,7 @@ variables:
 # them in a virtualenv and cache it as well.
 cache:
   # Increment to clear the cache
-  key: "v4"
+  key: "v5"
   paths:
     - "./.cache/pip"
     - "./dist/.current.whl"

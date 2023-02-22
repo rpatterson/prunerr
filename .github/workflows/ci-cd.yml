@@ -24,6 +24,7 @@ jobs:
         #     /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
         #     ... -v "/home/runner/work":"/__w" ...
         CHECKOUT_DIR: "${{ github.workspace }}"
+        DOWNLOAD_VOLUME: "${{ github.workspace }}/media/Library/"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
       packages: "write"
@@ -49,6 +50,7 @@ jobs:
         PUID: "1001"
         PGID: "123"
         CHECKOUT_DIR: "${{ github.workspace }}"
+        DOWNLOAD_VOLUME: "${{ github.workspace }}/media/Library/"
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
@@ -192,6 +194,7 @@ jobs:
         PUID: "1001"
         PGID: "123"
         CHECKOUT_DIR: "${{ github.workspace }}"
+        DOWNLOAD_VOLUME: "${{ github.workspace }}/media/Library/"
         CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
         # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"

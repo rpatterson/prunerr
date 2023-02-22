@@ -285,9 +285,9 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
-	if [ "$(git rev-parse --is-shallow-repository)" == "true" ]
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
-	    git_fetch_args+= --unshallow
+	    git_fetch_args+=" --unshallow"
 	fi
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
@@ -547,9 +547,9 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    docker_run_args+=" -T"
 	fi
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run $${docker_run_args} python-project-structure \
+	docker compose run --no-deps $${docker_run_args} python-project-structure \
 	    python -m pythonprojectstructure --help
-	docker compose run $${docker_run_args} python-project-structure \
+	docker compose run --no-deps $${docker_run_args} python-project-structure \
 	    python-project-structure --help
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \

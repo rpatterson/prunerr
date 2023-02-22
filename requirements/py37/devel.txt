@@ -280,7 +280,7 @@ typed-ast==1.5.4
     #   mypy
 typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.19.1.5
+types-docutils==0.19.1.6
     # via rstcheck-core
 types-pyyaml==6.0.12.8
     # via prunerr (pyproject.toml)

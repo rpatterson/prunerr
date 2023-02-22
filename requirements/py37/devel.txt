@@ -239,7 +239,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
-trove-classifiers==2023.2.8
+trove-classifiers==2023.2.20
     # via pyroma
 typed-ast==1.5.4
     # via
@@ -248,7 +248,7 @@ typed-ast==1.5.4
     #   mypy
 typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.19.1.4
+types-docutils==0.19.1.5
     # via rstcheck-core
 typing-extensions==4.5.0
     # via

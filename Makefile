@@ -271,7 +271,8 @@ build-wheel: \
 	git fetch --tags origin "$(VCS_BRANCH)"
 	ln -sfv "$$(
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        python-project-structure-devel pyproject-build -w |
+	        python-project-structure-devel tox exec -q -e $(PYTHON_ENV) -- \
+	        pyproject-build -w |
 	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
 	)" "./dist/.current.whl"
 
@@ -284,9 +285,9 @@ build-bump: \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
-	if [ "$(git rev-parse --is-shallow-repository)" == "true" ]
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
-	    git_fetch_args+= --unshallow
+	    git_fetch_args+=" --unshallow"
 	fi
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Collect the versions involved in this release according to conventional commits
@@ -323,6 +324,7 @@ endif
 	fi
 # Update the release notes/changelog
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    $(TOX_EXEC_ARGS) \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 	if ! git diff --cached --exit-code
 	then
@@ -333,12 +335,12 @@ endif
 # Capture the release notes for *just this* release for creating the GitHub release.
 # Have to run before the real `$ towncrier build` run without the `--draft` option
 # because after that the `newsfragments` will have been deleted.
-	docker compose run --rm python-project-structure-devel \
+	docker compose run --rm python-project-structure-devel $(TOX_EXEC_ARGS) \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	        >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    towncrier build --version "$${next_version}" --yes
+	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Prevent uploading unintended distributions
@@ -377,6 +379,7 @@ run: build-docker-$(PYTHON_MINOR) ./.env
 ### Perform any checks that should only be run before pushing
 check-push: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    $(TOX_EXEC_ARGS) \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -421,7 +424,7 @@ endif
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    pyproject-build -s
+	    $(TOX_EXEC_ARGS) pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 	$(MAKE) "check-clean"
@@ -661,6 +664,19 @@ endif
 	fi
 	envsubst <"$(template)" >"$(target)"
 
+
+## Debug targets
+
+.PHONY: debug-github-checkout
+## Reproduce the GitHub Actions shallow git checkout
+debug-github-checkout:
+	git init "$(CHECKOUT_DIR)"
+	cd "$(CHECKOUT_DIR)"
+	git remote add origin \
+	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure"
+	git -c protocol.version=2 fetch --no-tags --prune --progress \
+	    --no-recurse-submodules --depth=1 "origin" "$(VCS_BRANCH)"
+	git checkout --progress --force -B "$(VCS_BRANCH)" "origin/$(VCS_BRANCH)"
 
 ## Real targets
 

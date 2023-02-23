@@ -20,6 +20,7 @@ RUN \
     "curl" \
     "tar" \
     "github-cli" \
+    "apg" \
     && rm -rf /var/cache/apk/*
 
 # Find the same home directory even when run as another user, e.g. `root`.

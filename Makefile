@@ -665,19 +665,6 @@ endif
 	envsubst <"$(template)" >"$(target)"
 
 
-## Debug targets
-
-.PHONY: debug-github-checkout
-## Reproduce the GitHub Actions shallow git checkout
-debug-github-checkout:
-	git init "$(CHECKOUT_DIR)"
-	cd "$(CHECKOUT_DIR)"
-	git remote add origin \
-	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure"
-	git -c protocol.version=2 fetch --no-tags --prune --progress \
-	    --no-recurse-submodules --depth=1 "origin" "$(VCS_BRANCH)"
-	git checkout --progress --force -B "$(VCS_BRANCH)" "origin/$(VCS_BRANCH)"
-
 ## Real targets
 
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each

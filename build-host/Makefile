@@ -38,3 +38,17 @@ build: ./Dockerfile
 ### Publish the image to this specific CI/CD platform for future caching
 release: build
 	docker push "$(DOCKER_IMAGE):build-host"
+
+
+## Debug targets
+
+.PHONY: debug-github-checkout
+## Reproduce the GitHub Actions shallow git checkout
+debug-github-checkout:
+	git init "$(CHECKOUT_DIR)"
+	cd "$(CHECKOUT_DIR)"
+	git remote add origin \
+	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure"
+	git -c protocol.version=2 fetch --no-tags --prune --progress \
+	    --no-recurse-submodules --depth=1 "origin" "$(VCS_BRANCH)"
+	git checkout --progress --force -B "$(VCS_BRANCH)" "origin/$(VCS_BRANCH)"

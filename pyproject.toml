@@ -17,7 +17,7 @@ write_to = "src/prunerr/version.py"
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
 changelog_start_rev = "v0.0.0"
-version = "1.1.0b16"
+version = "1.1.0b17"
 tag_format = "v$version"
 annotated_tag = true
 bump_message = """\

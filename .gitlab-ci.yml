@@ -108,6 +108,7 @@ build-test:
           - "3.7"
   script:
     - >-
+      printenv "CI_PRE_CLONE_SCRIPT"
       entrypoint make -e build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}
       release-docker-${PYTHON_MINORS} check-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
@@ -119,6 +120,8 @@ build-test:
       - "./build/py*/htmlcov"
       - "./build/py*/prospector*"
       - "./dist/prunerr-*"
+      - "./src/prunerr/tests/test_operations.py"
+      - "./src/prunerr/tests/test_servarr.py"
     reports:
       junit:
         - "./build/py*/pytest-junit.xml"

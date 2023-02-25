@@ -571,8 +571,6 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local:
-	$(MAKE) check-clean || true
-	tox exec -e py311 -- pylint "./src/prunerr/" || true
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 .PHONY: test-debug
 ### Run tests in the main/default environment and invoke the debugger on errors/failures

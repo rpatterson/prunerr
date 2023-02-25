@@ -53,7 +53,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         super().update(timeout=timeout)
         vars(self).pop("path", None)
 
-    @property
+    @cached_property
     def root_name(self):
         """
         Return the name of the first path element for all items in the download item.
@@ -83,7 +83,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         return (pathlib.Path(self.download_dir) / self.root_name).resolve()
 
-    @property
+    @cached_property
     def files_parent(self):
         """
         Determine the path in which the download item's files are currently stored.
@@ -101,14 +101,14 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             )
         return files_parent.resolve()
 
-    @property  # noqa: F841
+    @cached_property
     def age(self):
         """
         Determine the total time since the item was added.
         """
         return time.time() - self._fields["addedDate"].value
 
-    @property
+    @cached_property
     def seconds_since_done(self):
         """
         Determine the number of seconds since the item was completely downloaded.
@@ -144,7 +144,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         )
         return None
 
-    @property
+    @cached_property
     def rate_total(self):
         """
         Determine the total download rate across the whole download time.

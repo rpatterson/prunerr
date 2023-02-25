@@ -145,16 +145,48 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         return None
 
     @cached_property
+    def seconds_downloading(self):
+        """
+        Determine the number of seconds spent downloading the item.
+
+        Best available estimation of total downloading duration.
+        """
+        done_date = self._fields["doneDate"].value
+        if done_date == self._fields["addedDate"].value:
+            logger.warning(
+                "Done date is the same as added date: %r",
+                self,
+            )
+        elif done_date < self._fields["addedDate"].value:
+            logger.warning(
+                "Done date is before added date: %r",
+                self,
+            )
+        if not done_date:
+            done_date = time.time()
+            if done_date == self._fields["addedDate"].value:
+                logger.warning(  # pragma: no cover
+                    "Added date is now: %r",
+                    self,
+                )
+            elif done_date < self._fields["addedDate"].value:
+                logger.warning(
+                    "Added date is in the future: %r",
+                    self,
+                )
+        return done_date - self._fields["addedDate"].value
+
+    @cached_property
     def rate_total(self):
         """
         Determine the total download rate across the whole download time.
         """
-        done_date = self._fields["doneDate"].value
-        if not done_date:
-            done_date = time.time()
+        seconds_downloading = self.seconds_downloading
+        if seconds_downloading <= 0:
+            return None
         return (
             self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
-        ) / (done_date - self._fields["addedDate"].value)
+        ) / seconds_downloading
 
     @cached_property
     def files(self):  # pylint: disable=invalid-overridden-method,useless-suppression

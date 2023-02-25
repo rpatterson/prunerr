@@ -23,6 +23,9 @@ indexers:
               name: "age"
               maximum: 604800
             - type: "value"
+              name: "seconds_downloading"
+              maximum: 0
+            - type: "value"
               name: "rate_total"
               minimum: 50
           remove: true

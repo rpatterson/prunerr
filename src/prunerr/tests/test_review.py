@@ -226,8 +226,9 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         """
         Review of a download item without a queue record logs a warning.
 
-        Also covers deleting download item without a blacklisting it and a review
-        without any configured change in the request mock assertions.
+        Also covers deleting download item without a blacklisting it, a review
+        without any configured change in the request mock assertions, and nonsensical
+        item timestamps.
         """
         runner = prunerr.runner.PrunerrRunner(
             config=pathlib.Path(__file__).parent
@@ -238,6 +239,42 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
         )
         self.mock_responses(
             self.RESPONSES_DIR.parent / "review-edge-cases",
+            # Insert a dynamic response mock to nonsensical dates
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        "01-torrent-get": {
+                            "json": functools.partial(
+                                self.mock_get_torrent_response,
+                                [
+                                    {},
+                                    {},
+                                    {},
+                                    {
+                                        # Done date is before added date
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                            - datetime.timedelta(days=1)
+                                        ).timestamp(),
+                                        "doneDate": (
+                                            datetime.datetime.now()
+                                            - datetime.timedelta(days=2)
+                                        ).timestamp(),
+                                    },
+                                    {
+                                        # Added date is in the future
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                            + datetime.timedelta(days=1)
+                                        ).timestamp(),
+                                        "doneDate": 0,
+                                    },
+                                ],
+                            ),
+                        },
+                    },
+                },
+            },
         )
         runner.update()
         with self.assertLogs(

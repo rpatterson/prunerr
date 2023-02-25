@@ -66,6 +66,10 @@ indexers:
               # 1 week * 7 days * 24 hours * 60 minutes * 60 seconds
               maximum: 604800
             - type: "value"
+              name: "seconds_downloading"
+              # Don't remove items that haven't started downloading yet
+              maximum: 0
+            - type: "value"
               name: "rate_total"
               # Minimum Bps of total throughput before an item is considered stalled
               minimum: 50
@@ -108,6 +112,9 @@ indexers:
             - type: "value"
               name: "age"
               maximum: 604800
+            - type: "value"
+              name: "seconds_downloading"
+              maximum: 0
             - type: "value"
               name: "rate_total"
               minimum: 50

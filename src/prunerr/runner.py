@@ -9,12 +9,6 @@ import pathlib
 import json
 import logging
 
-try:
-    from functools import cached_property  # type: ignore
-except ImportError:  # pragma: no cover
-    # BBB: Python <3.8 compatibility
-    from backports.cached_property import cached_property  # type: ignore
-
 import yaml
 import tenacity
 import transmission_rpc
@@ -22,6 +16,7 @@ import arrapi
 
 import prunerr.downloadclient
 import prunerr.servarr
+from .utils import cached_property
 
 logger = logging.getLogger(__name__)
 

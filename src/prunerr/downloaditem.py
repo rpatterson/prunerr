@@ -8,18 +8,10 @@ import urllib.parse
 import json
 import logging
 
-try:
-    from functools import cached_property  # type: ignore
-except ImportError:  # pragma: no cover
-    # BBB: Python <3.8 compatibility
-    from backports.cached_property import cached_property  # type: ignore
-
-try:
-    import pathlib3x as pathlib  # BBB: Python <3.10 compat
-except ImportError:  # pragma: no cover
-    import pathlib  # type: ignore
-
 import transmission_rpc
+
+from .utils import pathlib
+from .utils import cached_property
 
 logger = logging.getLogger(__name__)
 

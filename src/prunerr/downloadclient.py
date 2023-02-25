@@ -7,15 +7,11 @@ import shutil
 import urllib.parse
 import logging
 
-try:
-    import pathlib3x as pathlib  # BBB: Python <3.10 compat
-except ImportError:  # pragma: no cover
-    import pathlib  # type: ignore
-
 import transmission_rpc
 
 import prunerr.downloaditem
 import prunerr.operations
+from .utils import pathlib
 
 logger = logging.getLogger(__name__)
 

@@ -16,15 +16,11 @@ import tempfile
 import shutil
 import unittest
 
-try:
-    import pathlib3x as pathlib  # BBB: Python <3.10 compat
-except ImportError:  # pragma: no cover
-    import pathlib  # type: ignore
-
 import yaml
 import requests_mock
 
 import prunerr
+from ..utils import pathlib
 
 
 def parse_content_type(content_type):  # pragma: no cover

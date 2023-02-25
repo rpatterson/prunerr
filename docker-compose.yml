@@ -5,8 +5,7 @@ version: "3.8"
 services:
 
   transmission:
-    # TODO: Upgrade to v4.0 when more widely available and RPC library is compatible.
-    image: "linuxserver/transmission:version-3.00-r8"
+    image: "linuxserver/transmission"
     container_name: "transmission"
     # command:
     #   # From `# pgrep -fla transmission`:

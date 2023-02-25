@@ -112,6 +112,7 @@ build-test:
       release-docker-${PYTHON_MINORS} check-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
+    when: "always"
     paths:
       - "./build/py*/pytest*"
       - "./build/py*/.coverage*"

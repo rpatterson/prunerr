@@ -26,7 +26,7 @@ class PrunerrDownloadItemTests(tests.PrunerrTestCase):
     CONFIG = test_downloaditem.PrunerrDownloadItemTests.CONFIG
     RESPONSES_DIR = test_downloaditem.PrunerrDownloadItemTests.RESPONSES_DIR
 
-    def setUp(self):  # pylint: disable=invalid-name
+    def setUp(self):
         """
         Assemble the components required to run operations.
         """

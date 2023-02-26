@@ -11,10 +11,12 @@ try:
     # BBB: Python <3.10 compat
     import pathlib3x as pathlib  # pylint: disable=unused-import
 except ImportError:  # pragma: no cover
-    import pathlib  # pylint: disable=unused-import
+    import pathlib  # type: ignore # pylint: disable=unused-import
 
 try:
-    from functools import cached_property  # pylint: disable=unused-import
+    from functools import (  # type: ignore # pylint: disable=unused-import
+        cached_property,
+    )
 except ImportError:  # pragma: no cover
     # BBB: Python <3.8 compatibility
     from backports.cached_property import cached_property  # type: ignore

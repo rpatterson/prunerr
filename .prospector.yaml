@@ -13,8 +13,12 @@ bandit:
   run: true
 mypy:
   run: true
+# Tools that report more when run independently:
+# https://github.com/PyCQA/prospector/issues/599#issuecomment-1445406215
 vulture:
-  run: true
+  run: false
+pylint:
+  run: false
 # Deprecated in favor of PyFlakes:
 # https://github.com/timothycrosley/deprecated.frosted#important-note-frosted-is-deprecated-long-live-flake8
 # frosted:

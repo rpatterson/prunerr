@@ -46,5 +46,5 @@ typing-extensions==4.5.0
     #   tox
 virtualenv==20.19.0
     # via tox
-zipp==3.14.0
+zipp==3.15.0
     # via importlib-metadata

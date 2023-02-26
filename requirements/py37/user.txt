@@ -47,7 +47,7 @@ six==1.16.0
     # via main-wrapper
 tenacity==8.2.1
     # via prunerr (pyproject.toml)
-transmission-rpc==3.4.0
+transmission-rpc==3.4.1
     # via prunerr (pyproject.toml)
 typing-extensions==4.5.0
     # via
@@ -55,5 +55,5 @@ typing-extensions==4.5.0
     #   transmission-rpc
 urllib3==1.26.14
     # via requests
-zipp==3.14.0
+zipp==3.15.0
     # via importlib-metadata

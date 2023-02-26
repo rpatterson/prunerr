@@ -31,11 +31,9 @@ package = "prunerr"
 package_dir = "src"
 
 [tool.pylint.MASTER]
-# Auto-detect the number of processors available to use from:
-#     $ pylint --generate-rcfile
-# BBB: Un-comment if this bug is fixed:
-# https://github.com/PyCQA/prospector/issues/573#issuecomment-1368566582
-jobs = 0
+# Ensure `duplicate-code` and any other errors that depend on not runnining in parallel
+# are reported:
+jobs = 1
 enable-all-extensions = true
 output-format = "colorized"
 ignore-paths = [
@@ -74,6 +72,10 @@ module = [
        "argcomplete", "transmission_rpc", "arrapi.*",
        ]
 ignore_missing_imports = true
+
+[tool.vulture]
+# https://github.com/jendrikseipp/vulture#ignoring-files
+exclude = ["src/prunerr/version.py"]
 
 [tool.isort]
 # Match Black's defaults

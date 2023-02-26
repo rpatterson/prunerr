@@ -10,5 +10,5 @@ importlib-metadata==4.13.0
     # via argcomplete
 typing-extensions==4.5.0
     # via importlib-metadata
-zipp==3.14.0
+zipp==3.15.0
     # via importlib-metadata

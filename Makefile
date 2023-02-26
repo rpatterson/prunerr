@@ -110,7 +110,7 @@ DOCKER_VOLUMES=\
 ./src/prunerr.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/prunerr.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/ \
-$(DOWNLOAD_VOLUME)
+./media/Library/
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -855,7 +855,7 @@ $(PYTHON_ENVS:%=build-docker-volumes-%): \
 ./src/prunerr.egg-info/ \
 $(PYTHON_ENVS:%=./var/docker/%/prunerr.egg-info/) \
 ./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/) \
-$(DOWNLOAD_VOLUME):
+./media/Library/:
 	mkdir -pv "$(@)"
 
 # Marker file used to trigger the rebuild of the image for just one Python version.

@@ -182,6 +182,7 @@ jobs:
           name: "linter-reports"
           path: |
             ./build/*/prospector*
+            ./build/*/pylint*
 
   release:
     runs-on: "ubuntu-latest"

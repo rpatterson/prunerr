@@ -28,7 +28,7 @@ six==1.16.0
     # via main-wrapper
 tenacity==8.2.1
     # via prunerr (pyproject.toml)
-transmission-rpc==3.4.0
+transmission-rpc==3.4.1
     # via prunerr (pyproject.toml)
 typing-extensions==4.5.0
     # via transmission-rpc

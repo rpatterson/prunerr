@@ -243,7 +243,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.12.0
     # via prunerr (pyproject.toml)
-transmission-rpc==3.4.0
+transmission-rpc==3.4.1
     # via prunerr (pyproject.toml)
 trove-classifiers==2023.2.20
     # via pyroma

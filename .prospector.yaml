@@ -13,8 +13,6 @@ bandit:
   run: true
 mypy:
   run: true
-vulture:
-  run: true
 # Deprecated in favor of PyFlakes:
 # https://github.com/timothycrosley/deprecated.frosted#important-note-frosted-is-deprecated-long-live-flake8
 # frosted:

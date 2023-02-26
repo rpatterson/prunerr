@@ -20,7 +20,7 @@ charset-normalizer==2.1.1
     #   requests
 colorama==0.4.6
     # via commitizen
-commitizen==2.42.0
+commitizen==2.42.1
     # via -r requirements/build.txt.in
 cryptography==39.0.1
     # via secretstorage
@@ -126,7 +126,7 @@ wcwidth==0.2.6
     # via prompt-toolkit
 webencodings==0.5.1
     # via bleach
-zipp==3.14.0
+zipp==3.15.0
     # via
     #   importlib-metadata
     #   importlib-resources

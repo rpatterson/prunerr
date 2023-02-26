@@ -5,6 +5,8 @@ Python project structure foundation or template, top-level package.
 # TEMPLATE: Projects using this template should remove the linter disable/ignore
 # comments and use `utils` as appropriate for the project.
 from . import utils  # pylint: disable=unused-import,useless-suppression
+if utils is None:
+    raise ImportError("Import of `utils` failed")
 
 # Manage version through the VCS CI/CD process
 __version__ = None

@@ -24,7 +24,7 @@ GITLAB_REPOSITORY_OWNER=rpatterson
 GITHUB_REPOSITORY_OWNER=$(GITLAB_REPOSITORY_OWNER)
 
 # Options affecting target behavior
-export DOWNLOAD_VOLUME=/media/Library/
+export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/media/Library/
 PRUNERR_CMD=exec
 PRUNERR_ARGS=$(PRUNERR_CMD)
 

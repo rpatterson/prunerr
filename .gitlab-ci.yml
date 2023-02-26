@@ -37,7 +37,6 @@ variables:
   PUID: "1001"
   PGID: "1001"
   DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}"
-  DOWNLOAD_VOLUME: "$CI_PROJECT_DIR/media/Library/"
 
   # Uncomment to get more debugging output
   # DEBUG: "true"

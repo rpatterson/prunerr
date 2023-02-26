@@ -44,7 +44,7 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-coverage==7.1.0
+coverage==7.2.1
     # via python-project-structure (pyproject.toml)
 dill==0.3.6
     # via pylint
@@ -102,6 +102,7 @@ packaging==23.0
     #   black
     #   build
     #   prospector
+    #   pyroma
     #   pytest
     #   requirements-detector
     #   setuptools-scm
@@ -109,8 +110,6 @@ pathspec==0.11.0
     # via black
 pbr==5.11.1
     # via stevedore
-pep517==0.13.0
-    # via pyroma
 pep8==1.7.1
     # via flake8
 pep8-naming==0.10.0
@@ -165,7 +164,7 @@ pylint-plugin-utils==0.7
     #   pylint-flask
 pyproject-hooks==1.0.0
     # via build
-pyroma==4.1
+pyroma==4.2
     # via prospector
 pytest==7.2.1
     # via python-project-structure (pyproject.toml)
@@ -214,7 +213,6 @@ tomli==2.0.1
     #   black
     #   build
     #   mypy
-    #   pep517
     #   pylint
     #   pyproject-hooks
     #   pytest
@@ -241,9 +239,7 @@ urllib3==1.26.14
 vulture==2.7
     # via prospector
 wheel==0.38.4
-    # via
-    #   pip-tools
-    #   pyroma
+    # via pip-tools
 wrapt==1.14.1
     # via astroid
 xenon==0.9.0

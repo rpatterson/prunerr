@@ -338,7 +338,6 @@ class PrunerrDownloadClient:
             item.hashString: item
             for item in self.items
             if item.hashString not in self.verifying_items
-            and item.status == "stopped"
             and item.error == 3
             and (
                 "verif" in item.errorString.lower()

@@ -117,6 +117,7 @@ build-test:
       - "./build/py*/coverage*"
       - "./build/py*/htmlcov"
       - "./build/py*/prospector*"
+      - "./build/py*/pylint*"
       - "./dist/prunerr-*"
     reports:
       junit:

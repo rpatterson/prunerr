@@ -53,6 +53,10 @@ max-line-length = "88"
 # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
 disable = ["relative-beyond-top-level"]
 
+[tool.vulture]
+# https://github.com/jendrikseipp/vulture#ignoring-files
+exclude = ["src/pythonprojectstructure/version.py"]
+
 [tool.isort]
 # Match Black's defaults
 # https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#isort

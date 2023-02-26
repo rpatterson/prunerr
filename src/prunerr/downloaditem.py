@@ -69,6 +69,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                     "Files in %r have multiple roots, using: %s",
                     self,
                     file_roots[0],
+                    extra={"runner": self.download_client.runner},
                 )
             return file_roots[0]
         return self.name
@@ -156,11 +157,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             logger.warning(
                 "Done date is the same as added date: %r",
                 self,
+                extra={"runner": self.download_client.runner},
             )
         elif done_date < self._fields["addedDate"].value:
             logger.warning(
                 "Done date is before added date: %r",
                 self,
+                extra={"runner": self.download_client.runner},
             )
         if not done_date:
             done_date = time.time()
@@ -168,11 +171,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 logger.warning(  # pragma: no cover
                     "Added date is now: %r",
                     self,
+                    extra={"runner": self.download_client.runner},
                 )
             elif done_date < self._fields["addedDate"].value:
                 logger.warning(
                     "Added date is in the future: %r",
                     self,
+                    extra={"runner": self.download_client.runner},
                 )
         return done_date - self._fields["addedDate"].value
 
@@ -245,12 +250,12 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                     operation_config["type"],
                     self,
                 )
-                if queue_id is None:
-                    if not queue_record and not self.download_client.runner.quiet:
-                        logger.warning(
-                            "Download item not in any Servarr queue: %r",
-                            self,
-                        )
+                if not queue_record:
+                    logger.warning(
+                        "Download item not in any Servarr queue: %r",
+                        self,
+                        extra={"runner": self.download_client.runner},
+                    )
                 else:
                     delete_params = {}
                     if operation_config.get("blacklist", False):

@@ -16,6 +16,9 @@ import argcomplete
 
 import prunerr.runner
 import prunerr.downloadclient
+import prunerr.downloaditem
+import prunerr.operations
+import prunerr.servarr
 from . import utils
 
 logger = logging.getLogger(__name__)
@@ -181,6 +184,23 @@ def config_cli_logging(
         if utils.DEBUG:  # pragma: no cover
             log_level = "DEBUG"
     logger.setLevel(getattr(logging, log_level.strip().upper()))
+    # Log a given message only once per daemon session, the first loop.
+    logger.addFilter(utils.daemon_once_filter)
+    logging.getLogger(prunerr.runner.__name__).addFilter(
+        utils.daemon_once_filter,
+    )
+    logging.getLogger(prunerr.downloadclient.__name__).addFilter(
+        utils.daemon_once_filter,
+    )
+    logging.getLogger(prunerr.downloaditem.__name__).addFilter(
+        utils.daemon_once_filter,
+    )
+    logging.getLogger(prunerr.operations.__name__).addFilter(
+        utils.daemon_once_filter,
+    )
+    logging.getLogger(prunerr.servarr.__name__).addFilter(
+        utils.daemon_once_filter,
+    )
 
     # Avoid logging all JSON responses, particularly the very large history responses
     # from Servarr APIs

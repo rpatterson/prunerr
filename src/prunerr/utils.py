@@ -9,17 +9,19 @@ import logging
 
 try:
     # BBB: Python <3.10 compat
-    import pathlib3x as pathlib  # pylint: disable=unused-import
+    import pathlib3x as pathlib
 except ImportError:  # pragma: no cover
-    import pathlib  # type: ignore # pylint: disable=unused-import
+    import pathlib  # type: ignore
+if pathlib is None:
+    raise ImportError("Import of `pathlib` failed")
 
 try:
-    from functools import (  # type: ignore # pylint: disable=unused-import
-        cached_property,
-    )
+    from functools import cached_property  # type: ignore
 except ImportError:  # pragma: no cover
     # BBB: Python <3.8 compatibility
     from backports.cached_property import cached_property  # type: ignore
+if cached_property is None:
+    raise ImportError("Import of `cached_property` failed")
 
 TRUE_STRS = {"1", "true", "yes", "on"}
 DEBUG = (  # noqa: F841

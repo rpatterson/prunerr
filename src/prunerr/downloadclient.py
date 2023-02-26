@@ -284,7 +284,7 @@ class PrunerrDownloadClient:
             logger.info("Resuming downloading: %s", kwargs)
             self.client.set_session(**kwargs)
 
-    def find_unregistered(self):
+    def find_unregistered(self):  # noqa: V105
         """
         Filter already imported items that are no longer recognized by their tracker.
 
@@ -313,7 +313,7 @@ class PrunerrDownloadClient:
             )
         )
 
-    def find_seeding(self):
+    def find_seeding(self):  # noqa: V105
         """
         Filter items that have not yet been imported by Servarr, order by priority.
         """

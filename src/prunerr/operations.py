@@ -124,7 +124,7 @@ class PrunerrOperations:
 
         return include, sort_value
 
-    def exec_operation_value(self, operation_config, item):
+    def exec_operation_value(self, operation_config, item):  # noqa: V105
         """
         Return the attribute or key value for the download item.
         """
@@ -135,7 +135,7 @@ class PrunerrOperations:
             return value
         return None
 
-    def exec_operation_or(self, operation_config, item):
+    def exec_operation_or(self, operation_config, item):  # noqa: V105
         """
         Return `True` if any of the nested operations return `True`.
         """
@@ -148,7 +148,7 @@ class PrunerrOperations:
                 return sort_value
         return sort_key[-1] if sort_key else False
 
-    def exec_operation_and(self, operation_config, download_item):
+    def exec_operation_and(self, operation_config, download_item):  # noqa: V105
         """
         Return `False` if any of the nested operations return `False`.
         """
@@ -161,7 +161,7 @@ class PrunerrOperations:
                 return sort_value
         return sort_key[-1]
 
-    def exec_operation_files(self, operation_config, download_item):
+    def exec_operation_files(self, operation_config, download_item):  # noqa: V105
         """
         Return aggregated values from item files.
         """

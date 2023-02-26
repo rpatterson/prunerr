@@ -67,7 +67,7 @@ subparsers = parser.add_subparsers(
 )
 
 
-def verify(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def verify(runner, *args, **kwargs):  # noqa: D103, pylint: disable=missing-function-docstring
     runner.update()
     runner.verify(*args, **kwargs)
     # Wait for all verifying torrents to finish when doing a single `verify` run.
@@ -83,7 +83,7 @@ parser_verify = subparsers.add_parser(
 parser_verify.set_defaults(command=verify)
 
 
-def move(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def move(runner, *args, **kwargs):  # noqa: D103, pylint: disable=missing-function-docstring
     runner.update()
     return runner.move(*args, **kwargs)
 
@@ -97,7 +97,7 @@ parser_move = subparsers.add_parser(
 parser_move.set_defaults(command=move)
 
 
-def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def review(runner, *args, **kwargs):  # noqa: D103, pylint: disable=missing-function-docstring
     runner.update()
     return runner.review(*args, **kwargs)
 
@@ -113,7 +113,7 @@ parser_review = subparsers.add_parser(
 parser_review.set_defaults(command=review)
 
 
-def free_space(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def free_space(runner, *args, **kwargs):  # noqa: D103, pylint: disable=missing-function-docstring
     runner.update()
     return runner.free_space(*args, **kwargs)
 
@@ -127,7 +127,7 @@ parser_free_space = subparsers.add_parser(
 parser_free_space.set_defaults(command=free_space)
 
 
-def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def exec_(runner, *args, **kwargs):  # noqa: D103, pylint: disable=missing-function-docstring
     runner.update()
     results = {}
     exec_results = runner.exec_(*args, **kwargs)
@@ -153,7 +153,7 @@ parser_exec = subparsers.add_parser(
 parser_exec.set_defaults(command=exec_)
 
 
-def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def daemon(runner, *args, **kwargs):  # noqa: D103, pylint: disable=missing-function-docstring
     return runner.daemon(*args, **kwargs)
 
 
@@ -209,7 +209,7 @@ def config_cli_logging(
     return log_level
 
 
-def main(args=None):  # pylint: disable=missing-function-docstring
+def main(args=None):  # noqa: D103, pylint: disable=missing-function-docstring
     try:
         _main(args=args)
     except Exception:  # pragma: no cover

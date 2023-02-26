@@ -102,7 +102,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             )
         return files_parent.resolve()
 
-    @cached_property
+    @cached_property  # noqa: V105
     def age(self):
         """
         Determine the total time since the item was added.
@@ -324,7 +324,7 @@ class PrunerrDownloadItemFile:
             return self.path.stat()
         return None
 
-    @cached_property
+    @cached_property  # noqa: V105
     def size_imported(self):
         """
         Return the file's size if the file has more than one hard link.

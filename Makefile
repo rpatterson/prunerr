@@ -875,7 +875,7 @@ $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 
 # Local environment variables from a template
 ./.env: ./.env.in
-	export TRANSMISSION_PASS="$$(apg -n 1)"
+	export TRANSMISSION_PASS="$$(apg -M ncl -n 1)"
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 # Perform any one-time local checkout set up

@@ -128,7 +128,7 @@ pep8==1.7.1
     # via flake8
 pep8-naming==0.10.0
     # via prospector
-pip-tools==6.12.2
+pip-tools==6.12.3
     # via python-project-structure (pyproject.toml)
 platformdirs==3.0.0
     # via
@@ -267,7 +267,7 @@ vulture==2.7
     # via prospector
 wheel==0.38.4
     # via pip-tools
-wrapt==1.14.1
+wrapt==1.15.0
     # via astroid
 xenon==0.9.0
     # via python-project-structure (pyproject.toml)

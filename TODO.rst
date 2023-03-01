@@ -40,9 +40,8 @@ Nice to Have
 
 #. Improve configure-ability, particularly the various download client paths:
 
-   Currently, Prunerr strongly depends on using the ``.../incomplete/``,
-   ``.../downloads/``, ``.../imported/``,  and ``.../deleted/`` paths.  In theory, these
-   paths are all configurable, but that's untested.
+   Currently, Prunerr hard-codes the ``.../incomplete/``, ``.../downloads/``, and
+   ``.../seeding/`` paths.
 
 #. Unit tests
 

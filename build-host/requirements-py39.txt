@@ -34,5 +34,5 @@ tomli==2.0.1
     #   tox
 tox==4.4.6
     # via -r build-host/requirements.txt.in
-virtualenv==20.19.0
+virtualenv==20.20.0
     # via tox

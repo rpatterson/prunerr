@@ -2,6 +2,7 @@
 Run Prunerr commands across multiple Servarr instances and download clients.
 """
 
+import gc
 import os
 import time
 import socket
@@ -71,12 +72,9 @@ class PrunerrRunner:
         servarrs = {}
         for servarr_name, servarr_config in self.config.get("servarrs", {}).items():
             servarr_config.setdefault("name", servarr_name)
-            if servarr_config["url"] in self.servarrs:
-                servarrs[servarr_config["url"]] = self.servarrs[servarr_config["url"]]
-            else:
-                servarrs[
-                    servarr_config["url"]
-                ] = prunerr.servarr.PrunerrServarrInstance(self)
+            servarrs[servarr_config["url"]] = prunerr.servarr.PrunerrServarrInstance(
+                self
+            )
             servarrs[servarr_config["url"]].update(servarr_config)
         self.servarrs = servarrs
 
@@ -323,13 +321,18 @@ class PrunerrRunner:
                 self.quiet = True
             logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
 
-            # Wait for the next interval
+            # Determine the poll interval before clearing the config
             poll = (
                 self.config["daemon"]["poll"]
                 if self.config.get("daemon") is not None
                 and "poll" in self.config["daemon"]
                 else 60
             )
+
+            # Free any memory possible between daemon loops
+            self.clear()
+
+            # Wait for the next interval
             time_left = poll - (time.time() - start)
             if time_left > 0:
                 time.sleep(time_left)
@@ -456,3 +459,19 @@ class PrunerrRunner:
             if resumed_items:
                 resume_results[download_client_url] = resumed_items
         return resume_results
+
+    def clear(self):
+        """
+        Free any memory possible between daemon loops.
+        """
+        del self.config
+        self.servarrs.clear()
+        # Clear discreet download client caches to preserve verifying download items
+        for _, download_client in self.download_clients.items():
+            del download_client.config
+            del download_client.operations
+            del download_client.client
+            download_client.servarrs.clear()
+            del download_client.items
+        # Tell Python it's a good time to free memory
+        gc.collect()

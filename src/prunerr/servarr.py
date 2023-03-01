@@ -126,16 +126,10 @@ class PrunerrServarrInstance:
             download_client_config = deserialize_servarr_download_client(
                 download_client_config,
             )
-            if download_client_config["url"] in self.download_clients:
-                # Preserve any cached state in existing download clients
-                download_clients[download_client_config["url"]] = self.download_clients[
-                    download_client_config["url"]
-                ]
-            else:
-                # Instantiate newly defined download clients
-                download_clients[
-                    download_client_config["url"]
-                ] = PrunerrServarrDownloadClient(self)
+            # Instantiate newly defined download clients
+            download_clients[
+                download_client_config["url"]
+            ] = PrunerrServarrDownloadClient(self)
             download_clients[download_client_config["url"]].update(
                 download_client_config
             )

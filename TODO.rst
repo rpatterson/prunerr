@@ -14,8 +14,6 @@ Required
 High Priority
 *************
 
-#. Update requirements in CI/CD.
-
 #. Any documentation improvements!
 
    Documentation benefits perhaps most from the attention of fresh eyes.  If you find

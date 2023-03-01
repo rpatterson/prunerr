@@ -77,6 +77,69 @@ Nice to Have
 
 #. Items deleted from download client outside of Prunerr being re-added.
 
+#. Limit total number of torrents by deleting imported public torrents
+
+   One private tracker kept reporting that Transmission is not seeding torrents I see as
+   seeding in the UI.  I paused all seeding public torrents, amounting to ~1/2 of ~1500
+   total torrents.  Then I started resuming torrents until the tracker started reported
+   those torrents as seeding again, but I forgot to write down the numbers.  At this
+   moment the private tracker is reporting torrents as not seeding again and current
+   numbers are:
+
+     - All = 1463
+     - Downloading = 62
+     - Seeding = 1193
+     - Paused = 208
+     - Complete = 1398
+     - Incomplete = 65
+     - Active = 234
+
+   The private tracker now reports all torrents as seeding:
+
+     - All = 1464
+     - Downloading = 64
+     - Seeding = 1164
+     - Paused = 236
+     - Complete = 1398
+     - Incomplete = 66
+     - Active = 255
+
+   Seems like maybe the threshold is ~1200 unpaused torrents
+   Still reporting seeding:
+
+     - All = 1465
+     - Downloading = 59
+     - Seeding = 1170
+     - Paused = 236
+     - Complete = 1404
+     - Incomplete = 61
+     - Active = 259
+
+   It occurs to me that the issue could be with some specific subset of torrents rather
+   than the number of torrents.  So I resumed all torrents that were already paused
+   before the last round of pausing torrents.
+
+     - All = 1465
+     - Downloading = 59
+     - Seeding = 1375
+     - Paused = 31
+     - Complete = 1404
+     - Incomplete = 61
+     - Active = 302
+
+   The tracker still reports all items seeding so this may be specific to some subset of
+   torrents.  It may be that it's related to particularly active torrents.
+
+   Tracker still reports all seeding even with all torrents un-paused:
+
+     - All = 1467
+     - Downloading = 59
+     - Seeding = 1408
+     - Paused =
+     - Complete = 1408
+     - Incomplete = 59
+     - Active = 392
+
 
 .. _`Transmission`: https://transmissionbt.com/
 .. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/

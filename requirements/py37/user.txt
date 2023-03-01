@@ -45,7 +45,7 @@ service-logging==0.1.1
     # via prunerr (pyproject.toml)
 six==1.16.0
     # via main-wrapper
-tenacity==8.2.1
+tenacity==8.2.2
     # via prunerr (pyproject.toml)
 transmission-rpc==3.4.1
     # via prunerr (pyproject.toml)

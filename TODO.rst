@@ -74,8 +74,6 @@ Nice to Have
 
 #. Fix items with character mapping (Samba) treated as orphans.
 
-#. Items deleted from download client outside of Prunerr being re-added.
-
 
 .. _`Transmission`: https://transmissionbt.com/
 .. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/

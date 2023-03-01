@@ -1,3 +1,25 @@
+Prunerr 1.1.0b22 (2023-03-01)
+=============================
+
+Features
+--------
+
+- Reduce memory consumption by clearing cached download client and Servarr data. (daemon-loop-memory)
+
+
+Bugfixes
+--------
+
+- Workaround incorrect timestamps causing ``ZeroDivisionError`` while reviewing items. (incorrect-timestamps)
+- Also verify running items with the correct error, not just paused/stopped items. (verify-running)
+
+
+Misc
+----
+
+- lint-missing-reports
+
+
 Prunerr 1.1.0b21 (2023-02-25)
 =============================
 

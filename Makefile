@@ -21,7 +21,9 @@ export DOCKER_USER=merpatterson
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME:=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+USER_FULL_NAME:=$(shell \
+    getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1 \
+)
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
@@ -38,7 +40,9 @@ export TZ=$(shell \
 endif
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
-PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+PYTHON_HOST_MINOR:=$(shell \
+    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p' \
+)
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
@@ -473,7 +477,8 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
 upgrade: ./.env $(DOCKER_VOLUMES)
-	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
+	touch "./setup.cfg" "./requirements/build.txt.in" \
+	    "./build-host/requirements.txt.in"
 ifeq ($(CI),true)
 # Pull separately to reduce noisy interactive TTY output where it shouldn't be:
 	docker compose pull --quiet python-project-structure-devel

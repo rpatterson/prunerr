@@ -100,10 +100,10 @@ build: \
 	./.git/hooks/pre-commit \
 	$(HOME)/.local/var/log/python-project-structure-host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./build/next-version.txt" ]
+	if [ -e "./.tox/.pkg/dist/.next-version.txt" ]
 	then
 # Ensure the build is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	    git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
 	fi
 endif
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
@@ -146,7 +146,7 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
-	rm -fv "./build/next-version.txt"
+	rm -fv "./.tox/.pkg/dist/.next-version.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
@@ -154,7 +154,7 @@ endif
 	elif (( $$exit_code == 0 ))
 	then
 	    mkdir -pv "./build/"
-	    echo "$${next_version}" >"./build/next-version.txt"
+	    echo "$${next_version}" >"./.tox/.pkg/dist/.next-version.txt"
 	else
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
@@ -199,14 +199,14 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log ~/.pypirc
 ifeq ($(RELEASE_PUBLISH),true)
 # Ensure the release is made from the version bump commit if it was done elsewhere:
-	git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
 endif
 # Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
 	$(TOX_EXEC_ARGS) pyproject-build --outdir "./.tox/.pkg/dist/" -w
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/python?project?structure-*
 	$(MAKE) "check-clean"
-	if [ ! -e "./build/next-version.txt" ]
+	if [ ! -e "./.tox/.pkg/dist/.next-version.txt" ]
 	then
 	    exit
 	fi

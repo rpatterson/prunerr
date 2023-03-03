@@ -142,10 +142,10 @@ build: ./.git/hooks/pre-commit build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log
 ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./build/next-version.txt" ]
+	if [ -e "./dist/.next-version.txt" ]
 	then
 # Ensure the build is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	    git pull --ff-only "origin" "v$$(cat "./dist/.next-version.txt")"
 	fi
 endif
 # Avoid parallel tox recreations stomping on each other
@@ -260,15 +260,15 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
-	rm -fv "./build/next-version.txt"
+	rm -fv "./dist/.next-version.txt"
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
 	    exit
 	elif (( $$exit_code == 0 ))
 	then
-	    mkdir -pv "./build/"
-	    echo "$${next_version}" >"./build/next-version.txt"
+	    mkdir -pv "./dist/"
+	    echo "$${next_version}" >"./dist/.next-version.txt"
 	else
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
@@ -344,10 +344,10 @@ release-python: \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./.env $(DOCKER_VOLUMES) ~/.pypirc ./dist/.current.whl
 ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./build/next-version.txt" ]
+	if [ -e "./dist/next-version.txt" ]
 	then
 # Ensure the release is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
+	    git pull --ff-only "origin" "v$$(cat "./dist/.next-version.txt")"
 	fi
 endif
 # Build Python packages/distributions from the development Docker container for
@@ -362,7 +362,7 @@ endif
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 	$(MAKE) "check-clean"
-	if [ ! -e "./build/next-version.txt" ]
+	if [ ! -e "./dist/.next-version.txt" ]
 	then
 	    exit
 	fi

@@ -14,7 +14,7 @@ attrs==22.2.0
     # via pytest
 autoflake==1.7.8
     # via python-project-structure (pyproject.toml)
-autopep8==2.0.1
+autopep8==2.0.2
     # via python-project-structure (pyproject.toml)
 bandit==1.7.4
     # via prospector
@@ -114,7 +114,7 @@ pep8-naming==0.10.0
     # via prospector
 pip-tools==6.12.3
     # via python-project-structure (pyproject.toml)
-platformdirs==3.0.0
+platformdirs==3.1.0
     # via
     #   black
     #   pylint
@@ -141,7 +141,7 @@ pygments==2.14.0
     # via
     #   pyroma
     #   rich
-pylint==2.16.2
+pylint==2.16.3
     # via
     #   prospector
     #   pylint-celery

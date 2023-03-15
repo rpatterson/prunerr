@@ -4,9 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py37/devel.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==2.0.0
-    # via python-project-structure (pyproject.toml)
-astroid==2.14.2
+astroid==2.15.0
     # via
     #   pylint
     #   pylint-celery
@@ -18,7 +16,7 @@ autoflake==1.7.8
     # via python-project-structure (pyproject.toml)
 autopep8==2.0.2
     # via python-project-structure (pyproject.toml)
-bandit==1.7.4
+bandit==1.7.5
     # via prospector
 black==23.1.0
     # via python-project-structure (pyproject.toml)
@@ -29,7 +27,7 @@ build==0.10.0
     #   python-project-structure (pyproject.toml)
 certifi==2022.12.7
     # via requests
-charset-normalizer==3.0.1
+charset-normalizer==3.1.0
     # via requests
 click==8.1.3
     # via
@@ -56,7 +54,7 @@ docutils==0.19
     #   rstcheck-core
 dodgy==0.2.1
     # via prospector
-exceptiongroup==1.1.0
+exceptiongroup==1.1.1
     # via pytest
 flake8==2.3.0
     # via
@@ -76,7 +74,6 @@ idna==3.4
     # via requests
 importlib-metadata==4.13.0
     # via
-    #   argcomplete
     #   build
     #   click
     #   pluggy
@@ -105,7 +102,7 @@ mccabe==0.7.0
     #   flake8
     #   prospector
     #   pylint
-mypy==1.0.1
+mypy==1.1.1
     # via prospector
 mypy-extensions==1.0.0
     # via
@@ -120,7 +117,7 @@ packaging==23.0
     #   pytest
     #   requirements-detector
     #   setuptools-scm
-pathspec==0.11.0
+pathspec==0.11.1
     # via black
 pbr==5.11.1
     # via stevedore
@@ -130,7 +127,7 @@ pep8-naming==0.10.0
     # via prospector
 pip-tools==6.12.3
     # via python-project-structure (pyproject.toml)
-platformdirs==3.1.0
+platformdirs==3.1.1
     # via
     #   black
     #   pylint
@@ -144,7 +141,7 @@ pycodestyle==2.10.0
     # via
     #   autopep8
     #   prospector
-pydantic==1.10.5
+pydantic==1.10.6
     # via rstcheck-core
 pydocstyle==6.3.0
     # via prospector
@@ -157,7 +154,7 @@ pygments==2.14.0
     # via
     #   pyroma
     #   rich
-pylint==2.16.3
+pylint==2.17.0
     # via
     #   prospector
     #   pylint-celery
@@ -180,7 +177,7 @@ pyproject-hooks==1.0.0
     # via build
 pyroma==4.2
     # via prospector
-pytest==7.2.1
+pytest==7.2.2
     # via python-project-structure (pyproject.toml)
 pyyaml==6.0
     # via
@@ -196,8 +193,10 @@ requests==2.28.2
 requirements-detector==1.1.0
     # via prospector
 rich==12.6.0
-    # via typer
-rstcheck==6.1.1
+    # via
+    #   bandit
+    #   typer
+rstcheck==6.1.2
     # via python-project-structure (pyproject.toml)
 rstcheck-core==1.0.3
     # via rstcheck
@@ -236,7 +235,7 @@ tomlkit==0.11.6
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
-trove-classifiers==2023.2.20
+trove-classifiers==2023.3.9
     # via pyroma
 typed-ast==1.5.4
     # via
@@ -261,11 +260,11 @@ typing-extensions==4.5.0
     #   rstcheck
     #   rstcheck-core
     #   setuptools-scm
-urllib3==1.26.14
+urllib3==1.26.15
     # via requests
 vulture==2.7
     # via prospector
-wheel==0.38.4
+wheel==0.40.0
     # via pip-tools
 wrapt==1.15.0
     # via astroid

@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/py37/build.txt --resolver=backtracking requirements/build.txt.in
 #
-argcomplete==2.0.0
+argcomplete==2.0.6
     # via commitizen
 bleach==6.0.0
     # via readme-renderer
@@ -30,13 +30,13 @@ distlib==0.3.6
     # via virtualenv
 docutils==0.19
     # via readme-renderer
-filelock==3.9.0
+filelock==3.9.1
     # via virtualenv
-identify==2.5.18
+identify==2.5.20
     # via pre-commit
 idna==3.4
     # via requests
-importlib-metadata==4.13.0
+importlib-metadata==5.2.0
     # via
     #   argcomplete
     #   keyring
@@ -69,7 +69,7 @@ packaging==23.0
     # via commitizen
 pkginfo==1.9.6
     # via twine
-platformdirs==3.1.0
+platformdirs==3.1.1
     # via virtualenv
 pre-commit==2.21.0
     # via -r requirements/build.txt.in
@@ -97,7 +97,7 @@ requests-toolbelt==0.10.1
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.3.1
+rich==13.3.2
     # via twine
 secretstorage==3.3.3
     # via keyring
@@ -116,11 +116,11 @@ typing-extensions==4.5.0
     #   markdown-it-py
     #   platformdirs
     #   rich
-urllib3==1.26.14
+urllib3==1.26.15
     # via
     #   requests
     #   twine
-virtualenv==20.20.0
+virtualenv==20.21.0
     # via pre-commit
 wcwidth==0.2.6
     # via prompt-toolkit

@@ -44,7 +44,7 @@ colorama==0.4.6
     #   typer
 commonmark==0.9.1
     # via rich
-coverage==7.2.1
+coverage==7.2.2
     # via python-project-structure (pyproject.toml)
 dill==0.3.6
     # via pylint

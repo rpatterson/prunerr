@@ -241,7 +241,11 @@ upgrade:
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
 upgrade-branch: ~/.gitconfig
 	git fetch "origin" "$(VCS_BRANCH)"
-	git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	remote_branch_exists=false
+	if git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	then
+	    remote_branch_exists=true
+	fi
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then
 # Reset an existing local branch to the latest upstream before upgrading
@@ -272,9 +276,13 @@ upgrade-branch: ~/.gitconfig
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
-	git push \
-	    --force-with-lease="$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade" \
-	    --no-verify "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+	git_push_args="--no-verify"
+	if [ "$${remote_branch_exists=true}" == "true" ]
+	then
+	    git_push_args+=" \
+	        --force-with-lease=$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade"
+	fi
+	git push $${git_push_args} "origin" "HEAD:$(VCS_BRANCH)-upgrade"
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible

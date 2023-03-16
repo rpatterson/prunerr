@@ -264,8 +264,7 @@ upgrade-branch: ~/.gitconfig
 # Commit the upgrade changes
 	echo "Upgrade all requirements and dependencies to the latest versions." \
 	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
-	git add --update \
-	    './build-host/requirements-*.txt' './requirements/*/build.txt' \
+	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add \
 	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"

@@ -132,33 +132,23 @@ build-bump: \
 	    git_fetch_args+=" --unshallow"
 	fi
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
-# Collect the versions involved in this release according to conventional commits
+# Check if the conventional commits since the last release require new release and thus
+# a version bump:
+	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	then
+	    exit
+	fi
+# Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
-# Run first in case any input is needed from the developer
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-# Check if a release and thus a version bump is needed for the commits since the last
-# release:
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
 	rm -fv "./.tox/.pkg/dist/.next-version.txt"
-	if (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-# No release necessary for the commits since the last release, don't publish a release
-	    exit
-	elif (( $$exit_code == 0 ))
-	then
-	    mkdir -pv "./build/"
-	    echo "$${next_version}" >"./.tox/.pkg/dist/.next-version.txt"
-	else
-# Commitizen returned an unexpected exit status code, fail
-	    exit $$exit_code
-	fi
+	echo "$${next_version}" >"./.tox/.pkg/dist/.next-version.txt"
 # Update the release notes/changelog
 	$(TOX_EXEC_ARGS) towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
@@ -183,7 +173,11 @@ endif
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
-	$(TOX_EXEC_ARGS) towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	then
+	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
+	        "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log

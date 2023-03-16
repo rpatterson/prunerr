@@ -294,7 +294,13 @@ build-bump: \
 	    git_fetch_args+=" --unshallow"
 	fi
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
-# Collect the versions involved in this release according to conventional commits
+# Check if the conventional commits since the last release require new release and thus
+# a version bump:
+	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	then
+	    exit
+	fi
+# Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
@@ -304,28 +310,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-# Run first in case any input is needed from the developer
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-# Check if a release and thus a version bump is needed for the commits since the last
-# release:
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
 	rm -fv "./dist/.next-version.txt"
-	if (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-# No release necessary for the commits since the last release, don't publish a release
-	    exit
-	elif (( $$exit_code == 0 ))
-	then
-	    mkdir -pv "./dist/"
-	    echo "$${next_version}" >"./dist/.next-version.txt"
-	else
-# Commitizen returned an unexpected exit status code, fail
-	    exit $$exit_code
-	fi
+	echo "$${next_version}" >"./dist/.next-version.txt"
 # Update the release notes/changelog
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) \
@@ -382,9 +372,12 @@ run: build-docker-$(PYTHON_MINOR) ./.env
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker-$(PYTHON_MINOR) ./.env
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    $(TOX_EXEC_ARGS) \
-	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	then
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	        python-project-structure-devel $(TOX_EXEC_ARGS) \
+	        towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
 check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
@@ -588,7 +581,11 @@ endif
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
 upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	git fetch "origin" "$(VCS_BRANCH)"
-	git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	remote_branch_exists=false
+	if git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	then
+	    remote_branch_exists=true
+	fi
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then
 # Reset an existing local branch to the latest upstream before upgrading
@@ -606,22 +603,25 @@ upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements and dependencies to the latest versions." \
-	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
-	git add --update \
-	    './build-host/requirements-*.txt' './requirements/*/build.txt' \
+	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
+	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add \
-	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
 	git commit --all --signoff -m \
-	    "build(deps): Upgrade requirements latest versions"
+	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
-	git push \
-	    --force-with-lease="$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade" \
-	    --no-verify "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+	git_push_args="--no-verify"
+	if [ "$${remote_branch_exists=true}" == "true" ]
+	then
+	    git_push_args+=" \
+	        --force-with-lease=$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade"
+	fi
+	git push $${git_push_args} "origin" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

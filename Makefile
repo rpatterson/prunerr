@@ -259,14 +259,14 @@ upgrade-branch: ~/.gitconfig
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements and dependencies to the latest versions." \
-	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
 	git add --update \
 	    './build-host/requirements-*.txt' './requirements/*/build.txt' \
 	    "./.pre-commit-config.yaml"
 	git add \
-	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.misc.rst"
+	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
 	git commit --all --signoff -m \
-	    "build(deps): Upgrade requirements latest versions"
+	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref

@@ -4,5 +4,5 @@
 #
 #    pip-compile --output-file=requirements/py310/user.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==2.1.1
+argcomplete==2.1.2
     # via python-project-structure (pyproject.toml)

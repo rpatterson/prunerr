@@ -265,6 +265,7 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
+	mkdir -pv "./dist/"
 	rm -fv "./dist/.next-version.txt"
 	echo "$${next_version}" >"./dist/.next-version.txt"
 # Update the release notes/changelog

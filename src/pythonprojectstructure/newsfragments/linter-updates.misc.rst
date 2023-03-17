@@ -1,1 +1,0 @@
-Linter updates and improvements.

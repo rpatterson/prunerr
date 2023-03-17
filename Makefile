@@ -278,13 +278,12 @@ endif
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
+ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
-# Prevent uploading unintended distributions
-	rm -vf ./dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch \
@@ -296,10 +295,11 @@ ifneq ($(CI),true)
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
 endif
-ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
+# Prevent uploading unintended distributions
+	rm -vf ./dist/*
 endif
 
 .PHONY: start

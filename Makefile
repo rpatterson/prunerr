@@ -159,16 +159,16 @@ endif
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
+ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
-# Prevent uploading unintended distributions
-	rm -vf ./.tox/.pkg/dist/*
-ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
+# Prevent uploading unintended distributions
+	rm -vf ./.tox/.pkg/dist/*
 endif
 
 .PHONY: check-push

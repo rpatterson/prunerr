@@ -82,6 +82,7 @@ PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+PYPI_REPO=pypi
 endif
 
 # Done with `$(shell ...)`, echo recipe commands going forward
@@ -185,7 +186,7 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    echo "Checkout is not clean"
 	    false
 	fi
 

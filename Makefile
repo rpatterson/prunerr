@@ -186,7 +186,7 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    echo "Checkout is not clean"
 	    false
 	fi
 

@@ -153,6 +153,7 @@ GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+PYPI_REPO=pypi
 endif
 endif
 CI_REGISTRY_USER=$(GITLAB_REPOSITORY_OWNER)
@@ -385,7 +386,7 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    echo "Checkout is not clean"
 	    false
 	fi
 

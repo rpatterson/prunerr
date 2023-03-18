@@ -168,8 +168,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
-# Prevent uploading unintended distributions
-	rm -vf ./.tox/.pkg/dist/*
 endif
 
 .PHONY: check-push
@@ -197,10 +195,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Ensure the release is made from the version bump commit if it was done elsewhere:
 	git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
 endif
-# Build the actual release artifacts, tox builds the `sdist` so here we build the wheel
-	$(TOX_EXEC_ARGS) pyproject-build --outdir "./.tox/.pkg/dist/" -w
+# Build the actual release artifacts, let tox decide whether to rebuild:
+	tox exec -e "$(PYTHON_ENV)" -- python --version
+	wheel="$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)"
+	tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
+	    python --version
+	sdist="$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./.tox/.pkg/dist/python?project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) twine check "$${wheel}" "$${sdist}"
 	$(MAKE) "check-clean"
 	if [ ! -e "./.tox/.pkg/dist/.next-version.txt" ]
 	then
@@ -209,8 +211,7 @@ endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    ./.tox/.pkg/dist/python?project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" "$${wheel}" "$${sdist}"
 endif
 
 .PHONY: format
@@ -355,12 +356,12 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
 	    tee -a "$(@)"
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"

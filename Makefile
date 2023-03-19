@@ -225,18 +225,6 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
-.PHONY: build-wheel
-### Build the package/distribution format that is fastest to install
-build-wheel: \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
-	ln -sfv "$$(
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        python-project-structure-devel tox exec -q -e $(PYTHON_ENV) -- \
-	        pyproject-build -w |
-	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
-	)" "./dist/.current.whl"
-
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -339,7 +327,7 @@ release: release-python release-docker
 ### Publish installable Python packages to PyPI
 release-python: \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./.env $(DOCKER_VOLUMES) ~/.pypirc ./dist/.current.whl
+		./.env $(DOCKER_VOLUMES) ~/.pypirc
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./dist/next-version.txt" ]
 	then
@@ -433,11 +421,8 @@ lint-docker: ./.env $(DOCKER_VOLUMES)
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env build-wheel
+test-docker: ./.env
 	$(MAKE) -e -j \
-	    TOX_RUN_ARGS="run --installpkg ./dist/$$(
-	        readlink "./dist/.current.whl"
-	    )" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
@@ -631,10 +616,6 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
-
-# Build a wheel package but only if one hasn't already been made
-./dist/.current.whl:
-	$(MAKE) build-wheel
 
 # Docker targets
 ./var/docker/$(PYTHON_ENV)/log/build.log: \

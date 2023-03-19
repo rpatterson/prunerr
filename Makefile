@@ -636,17 +636,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${VERSION}"
-	docker_build_user_tags=""
-	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
-	do
-	    docker_build_user_tags+="--tag $${user_tag} "
-	done
 ifeq ($(CI),true)
 # Workaround broken interactive session detection
 	docker pull "python:${PYTHON_MINOR}"
 endif
-	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
-	    "./"
 	docker_build_devel_tags=""
 	for devel_tag in $$(
 	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
@@ -656,17 +649,32 @@ endif
 	done
 	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
-	date >>"$(@)"
-# The image installs the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build.log=%/host-install.log)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 ifeq ($(BUILD_REQUIREMENTS),true)
+	date >>"$(@)"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
+# Let tox decide whether to rebuild the project package:
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel \
+	    tox exec -e "$(PYTHON_ENV)" -- python --version
+# Build the end-user image now that all required artifacts are built"
+	docker_build_user_tags=""
+	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
+	do
+	    docker_build_user_tags+="--tag $${user_tag} "
+	done
+	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	    --build-arg PYTHON_WHEEL="$$(
+	        ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
+	    )" "./"
+	date >>"$(@)"
+# The image installs the host requirements, reflect that in the bind mount volumes
+	date >>"$(@:%/build.log=%/host-install.log)"
 
 .PHONY: $(PYTHON_ENVS:%=build-docker-volumes-%)
 ### Ensure access permissions to build artifacts in Python version container volumes

@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py38/devel.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==2.1.2
+argcomplete==3.0.0
     # via python-project-structure (pyproject.toml)
 astroid==2.15.0
     # via

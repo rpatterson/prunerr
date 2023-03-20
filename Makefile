@@ -638,9 +638,6 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))" \
-# Workaround issues with local images and the development image depending on the end
-# user image.  It seems that `depends_on` isn't sufficient.
-	$(MAKE) $(HOME)/.local/var/log/python-project-structure-host-install.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \

@@ -213,6 +213,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
+
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary
 $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
@@ -224,6 +225,14 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
+.PHONY: build-wheel
+### Ensure the built package is current when used outside of tox
+build-wheel:
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    tox exec -e "$(PYTHON_ENV)" -- python --version
+	ln -sfv --relative "$$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
+	)" "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
@@ -342,16 +351,17 @@ endif
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
-# Build the actual release artifacts, let tox decide whether to rebuild:
+# Build the actual package distributions:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    tox exec -e "$(PYTHON_ENV)" -- python --version
-	wheel="$$(ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1)"
+	    make -e "build-wheel"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
 	        python --version
 	sdist="$$(ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check "$${wheel}" "$${sdist}"
+	$(TOX_EXEC_BUILD_ARGS) twine check "$$(
+	    readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	)" "$${sdist}"
 	$(MAKE) "check-clean"
 	if [ ! -e "./dist/.next-version.txt" ]
 	then
@@ -360,7 +370,9 @@ endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" "$${wheel}" "$${sdist}"
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" "$$(
+	    readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	)" "$${sdist}"
 endif
 
 .PHONY: release-docker

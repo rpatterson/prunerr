@@ -164,7 +164,7 @@ $(PYTHON_MINORS:%=build-docker-%):
 	    PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    PYTHON_MINOR="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
-	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
+	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build-user.log"
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
 $(DOCKER_REGISTRIES:%=build-docker-tags-%):
@@ -227,8 +227,9 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 
 .PHONY: build-wheel
 ### Ensure the built package is current when used outside of tox
-build-wheel:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+build-wheel: ./var/docker/$(PYTHON_ENV)/log/build-devel.log
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" -- python --version
 	ln -sfv --relative "$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
@@ -239,7 +240,7 @@ build-wheel:
 build-bump: \
 		~/.gitconfig \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
 		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
@@ -291,7 +292,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 ifneq ($(CI),true)
 # If running under CI/CD then the image will be updated in the next pipeline stage.
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
 endif
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
@@ -349,7 +350,7 @@ endif
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
-	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
+	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 # Build the actual package distributions:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
@@ -630,8 +631,9 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    pip install -e "./" | tee -a "$(@)"
 
 # Docker targets
-./var/docker/$(PYTHON_ENV)/log/build.log: \
-		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
+# Build the development image:
+./var/docker/$(PYTHON_ENV)/log/build-devel.log: \
+		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
 		./docker-compose.override.yml ./.env ./var/log/tox/build/build.log \
@@ -667,11 +669,20 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	    build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
-# Let tox decide whether to rebuild the project package:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
-	    python-project-structure-devel \
-	    tox exec -e "$(PYTHON_ENV)" -- python --version
-# Build the end-user image now that all required artifacts are built"
+# Build the end-user image:
+./var/docker/$(PYTHON_ENV)/log/build-user.log: \
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
+	true DEBUG Updated prereqs: $(?)
+	mkdir -pv "$(dir $(@))"
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+# https://github.com/moby/moby/issues/39003#issuecomment-879441675
+	docker_build_args="$(DOCKER_BUILD_ARGS) \
+	    --build-arg BUILDKIT_INLINE_CACHE=1 \
+	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
+	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
+	    --build-arg VERSION=$${VERSION}"
+	$(MAKE) -e "build-wheel"
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
 	do
@@ -710,7 +721,7 @@ $(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
 # been built.
 $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	python_env=$(notdir $(@:%/bin/activate=%))
-	$(MAKE) "./var/docker/$${python_env}/log/build.log"
+	$(MAKE) "./var/docker/$${python_env}/log/build-devel.log"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    "./var/log/tox/$${python_env}/build.log"

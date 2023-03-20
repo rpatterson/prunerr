@@ -637,7 +637,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./docker-compose.override.yml ./.env ./var/log/tox/build/build.log \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
 	true DEBUG Updated prereqs: $(?)
-	mkdir -pv "$(dir $(@))" \
+	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \

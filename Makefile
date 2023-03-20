@@ -108,6 +108,7 @@ DOCKER_VOLUMES=\
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
 BUILD_REQUIREMENTS=true
+export PYTHON_WHEEL=
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
@@ -145,7 +146,8 @@ build: ./.git/hooks/pre-commit build-docker
 
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log
+build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log \
+		build-wheel
 ifeq ($(RELEASE_PUBLISH),true)
 	if [ -e "./dist/.next-version.txt" ]
 	then
@@ -155,7 +157,9 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "./var/log/tox/build/build.log"
-	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
+	$(MAKE) -e -j PYTHON_WHEEL="./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/$$(
+	        readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	    )" DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
@@ -228,6 +232,8 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 .PHONY: build-wheel
 ### Ensure the built package is current when used outside of tox
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build-devel.log
+# NOTE: This depends on the development image having already been built.  It is used
+# during the build of the end-user image
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" -- python --version
@@ -353,8 +359,7 @@ endif
 	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 # Build the actual package distributions:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    make -e "build-wheel"
+	$(MAKE) -e "build-wheel"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
 	        python --version
@@ -434,8 +439,11 @@ lint-docker: ./.env $(DOCKER_VOLUMES)
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env
+test-docker: ./.env build-wheel
 	$(MAKE) -e -j \
+	    TOX_RUN_ARGS="run --installpkg ./.tox/.pkg/dist/$$(
+	        readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	    )" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
@@ -682,16 +690,20 @@ endif
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${VERSION}"
+# Build the end-user image now that all required artifacts are built"
+ifeq ($(PYTHON_WHEEL),)
 	$(MAKE) -e "build-wheel"
+	PYTHON_WHEEL="./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/$$(
+	    readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	)"
+endif
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
 	do
 	    docker_build_user_tags+="--tag $${user_tag} "
 	done
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
-	    --build-arg PYTHON_WHEEL="$$(
-	        ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
-	    )" "./"
+	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" "./"
 	date >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build.log=%/host-install.log)"

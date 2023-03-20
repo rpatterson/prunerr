@@ -122,6 +122,14 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
+
+.PHONY: build-wheel
+### Ensure the built package is current when used outside of tox
+build-wheel:
+	tox exec -e "$(PYTHON_ENV)" -- python --version
+	ln -sfv --relative "$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)" \
+	    "./.tox/.pkg/dist/.current.whl"
+
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
@@ -190,19 +198,19 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log ~/.pypirc
+release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-wheel \
+		~/.pypirc
 ifeq ($(RELEASE_PUBLISH),true)
 # Ensure the release is made from the version bump commit if it was done elsewhere:
 	git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
 endif
-# Build the actual release artifacts, let tox decide whether to rebuild:
-	tox exec -e "$(PYTHON_ENV)" -- python --version
-	wheel="$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)"
+# Also build the source distribution:
 	tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
 	    python --version
 	sdist="$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check "$${wheel}" "$${sdist}"
+	$(TOX_EXEC_BUILD_ARGS) twine check \
+	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
 	$(MAKE) "check-clean"
 	if [ ! -e "./.tox/.pkg/dist/.next-version.txt" ]
 	then
@@ -211,7 +219,8 @@ endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" "$${wheel}" "$${sdist}"
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
 endif
 
 .PHONY: format

@@ -549,7 +549,7 @@ clean:
 	$(TOX_EXEC_BUILD_ARGS) pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
 	rm -rfv "./var/log/"
-	rm -rf "./var/docker/"
+	rm -rf "./var/docker/*/"
 
 
 ## Utility targets

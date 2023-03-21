@@ -52,7 +52,6 @@ cache:
   paths:
     - "./.cache/pip"
     - "./dist/.current.whl"
-    - "./dist/.next-version.txt"
 
 # Delegate to the `./Makefile` as much as possible to keep as much portable between CI
 # platforms

@@ -45,15 +45,14 @@ The ``$ make test`` target also runs the ``$ make format`` target to format code
 according to this project's guidelines and rules.
 
 Once work is finished and all the tests are passing locally, open a PR and push your
-changes there.  Address any issues revealed by any failed CI/CD jobs for your PR
-branch/fork.  Once all CI/CD checks are green, project maintainers can merge your work
-into the ``develop`` branch where CI/CD will publish a pre-release for your changes.
-When the project maintainers think it's time to make a final release with all the
-outstanding work on ``develop``, they can merge ``develop`` into ``master`` and CI/CD
-will then publish a final release including container images and PyPI packages.  Project
-maintainers may test the release process locally using the `Makefile`_::
+changes there.  Address any issues revealed by any failed CI/CD jobs for your PR branch.
+Once all CI/CD checks are green, project maintainers can merge your work into the
+``develop`` branch where CI/CD will publish a pre-release for your changes including
+container images and PyPI packages.  When the project maintainers think it's time to
+make a final release with all the outstanding work on ``develop``, they can merge
+``develop`` into ``master`` and CI/CD will then publish a final release::
 
-  $ make build-bump test-docker release
+  $ make build-bump release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions

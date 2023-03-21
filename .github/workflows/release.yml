@@ -1,0 +1,65 @@
+name: "Release"
+
+on:
+  # Only run for version tags
+  push:
+    branches:
+      - "!**"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+jobs:
+
+  release:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        # Enable the GitHub CLI
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        # Requires the secrets to be added to GitHub either through the web UI or the
+        # GitHub CLI tool:
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+        TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+    needs: ["build-test"]
+    permissions:
+      packages: "write"
+    steps:
+
+      # Shared/common set up
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Cache build resources"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        env:
+          cache-name: "v1"
+        with:
+          path: |
+            ~/.local
+            ./dist
+          key: >-
+            ${{ env.cache-name }}-${{ runner.os }}-3.10-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
+          restore-keys: >-
+            ${{ env.cache-name }}-${{ runner.os }}-3.10-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
+
+      - name: "Publish release artifacts"
+        run: >-
+          entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
+      - name: "Archive built packages"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "built-packages"
+          path: |
+            ./dist/python?project?structure-*

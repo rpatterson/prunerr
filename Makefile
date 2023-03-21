@@ -668,10 +668,10 @@ endif
 	done
 	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
+	date >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 ifeq ($(BUILD_REQUIREMENTS),true)
-	date >>"$(@)"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    build-requirements-$(PYTHON_ENV)

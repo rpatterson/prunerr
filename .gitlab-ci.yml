@@ -57,22 +57,13 @@ cache:
 # platforms
 
 stages:
-  - "build-host"
   - "bump"
   - "build-test"
   - "release"
   - "scheduled"
 
-# Ensure the image used for the rest of this run is up to date
-build-host:
-  stage: "build-host"
-  script:
-    - "entrypoint make -e ./var/log/docker-login-GITLAB.log"
-    - "entrypoint make -C ./build-host/ -e release"
-
 bump:
   stage: "bump"
-  needs: ["build-host"]
   rules:
     - if: >-
         $CI_PIPELINE_SOURCE != "schedule"
@@ -93,7 +84,7 @@ bump:
 
 build-test:
   stage: "build-test"
-  needs: ["build-host", "bump"]
+  needs: ["bump"]
   rules:
     - if: >-
         $CI_PIPELINE_SOURCE != "schedule"
@@ -129,7 +120,7 @@ build-test:
 
 release:
   stage: "release"
-  needs: ["build-host", "build-test"]
+  needs: ["build-test"]
   rules:
     - if: >-
         $CI_PIPELINE_SOURCE != "schedule"
@@ -142,7 +133,6 @@ release:
 
 scheduled:
   stage: "scheduled"
-  needs: ["build-host"]
   rules:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"

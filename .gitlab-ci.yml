@@ -107,7 +107,7 @@ bump:
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false build-bump build-wheel check-clean
+      entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
   artifacts:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html

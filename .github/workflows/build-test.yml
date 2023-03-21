@@ -155,4 +155,4 @@ jobs:
 
       - name: "Bump the version if publishing a release"
         run: >-
-          entrypoint make -e BUILD_REQUIREMENTS=false build-bump build-wheel check-clean
+          entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean

@@ -649,8 +649,9 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
 		./docker-compose.override.yml ./.env ./var/log/tox/build/build.log \
-		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) $(DOCKER_VOLUMES)
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675

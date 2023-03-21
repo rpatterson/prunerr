@@ -131,6 +131,9 @@ RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 endif
 
+# Makefile functions
+current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)
+
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
@@ -154,10 +157,10 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		build-wheel
+		build-pkgs
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "./var/log/tox/build/build.log"
-	$(MAKE) -e -j PYTHON_WHEEL="$$(readlink "./dist/.current.whl")" \
+	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -228,20 +231,25 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
-.PHONY: build-wheel
+.PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-wheel: ./var/docker/$(PYTHON_ENV)/log/build-devel.log
+build-pkgs:
+	mkdir -pv "./dist/"
+# Defined as a .PHONY recipe so that multiple targets can depend on this as a
+# pre-requisite and it will only be run once per invocation.
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    python-project-structure-devel tox run -e "$(PYTHON_ENV)" --pkg-only
+# Copy the wheel to a location accessible to all containers:
+	cp -lfv "$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
+	)" "./dist/"
+# Also build the source distribution:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel \
-	    tox exec -e "$(PYTHON_ENV)" -- python --version
-	wheel_path="$$(
-	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
-	)"
-# Copy the wheel to a location accessible to all containers:
-	mkdir -pv "./dist/"
-	cp -lfv "$${wheel_path}" "./dist/"
-# Record which wheel is the one just built:
-	ln -sfv "$$(basename "$${wheel_path}")" "./dist/.current.whl"
+	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
+	cp -lfv "$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
+	)" "./dist/"
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
@@ -342,7 +350,7 @@ release: release-python release-docker
 ### Publish installable Python packages to PyPI
 release-python: \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./.env $(DOCKER_VOLUMES) ~/.pypirc
+		build-pkgs ./.env $(DOCKER_VOLUMES) ~/.pypirc
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	export VERSION=$$(./.tox/build/bin/cz version --project)
@@ -351,20 +359,20 @@ release-python: \
 	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 # Build the actual package distributions:
-	$(MAKE) -e "build-wheel"
+	$(MAKE) -e "build-pkgs"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
 	        python --version
 	sdist="$$(ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
-	    "$$(realpath "./dist/.current.whl")" "$${sdist}"
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	$(MAKE) "check-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    "$$(realpath "./dist/.current.whl")" "$${sdist}"
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 endif
 
 .PHONY: release-docker
@@ -425,8 +433,8 @@ lint-docker: ./.env $(DOCKER_VOLUMES)
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env build-wheel
-	$(MAKE) -e -j PYTHON_WHEEL="$$(readlink "./dist/.current.whl")" \
+test-docker: ./.env build-pkgs
+	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
@@ -612,7 +620,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
+	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
@@ -676,8 +684,8 @@ endif
 	    --build-arg VERSION=$${VERSION}"
 # Build the end-user image now that all required artifacts are built"
 ifeq ($(PYTHON_WHEEL),)
-	$(MAKE) -e "build-wheel"
-	PYTHON_WHEEL="$$(readlink "./dist/.current.whl")"
+	$(MAKE) -e "build-pkgs"
+	PYTHON_WHEEL="$(call current_pkg,.whl)"
 endif
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)

@@ -240,9 +240,11 @@ build-wheel: ./var/docker/$(PYTHON_ENV)/log/build-devel.log
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" -- python --version
-	ln -sfv --relative "$$(
+	wheel_basename="$$(basename "$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
-	)" "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	)")"
+	ln -sfv "$${wheel_basename}" \
+	    "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release

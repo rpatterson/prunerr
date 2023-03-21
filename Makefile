@@ -85,6 +85,9 @@ RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 endif
 
+# Makefile functions
+current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)
+
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
@@ -100,13 +103,6 @@ all: build
 build: \
 	./.git/hooks/pre-commit \
 	$(HOME)/.local/var/log/python-project-structure-host-install.log
-ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./.tox/.pkg/dist/.next-version.txt" ]
-	then
-# Ensure the build is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
-	fi
-endif
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
@@ -123,12 +119,14 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
 
-.PHONY: build-wheel
+.PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-wheel:
-	tox exec -e "$(PYTHON_ENV)" -- python --version
-	ln -sfv --relative "$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)" \
-	    "./.tox/.pkg/dist/.current.whl"
+build-pkgs:
+# Defined as a .PHONY recipe so that multiple targets can depend on this as a
+# pre-requisite and it will only be run once per invocation.
+	tox run -e "$(PYTHON_ENV)" --pkg-only
+# Also build the source distribution:
+	tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
@@ -152,13 +150,6 @@ build-bump: \
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
-	next_version=$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
-	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
-	) || true
-	mkdir -pv "./.tox/.pkg/dist/"
-	rm -fv "./.tox/.pkg/dist/.next-version.txt"
-	echo "$${next_version}" >"./.tox/.pkg/dist/.next-version.txt"
 # Update the release notes/changelog
 	$(TOX_EXEC_ARGS) towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
@@ -170,6 +161,10 @@ endif
 	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
+	next_version=$$(
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
+	) || true
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
@@ -198,29 +193,17 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-wheel \
+release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-pkgs \
 		~/.pypirc
-ifeq ($(RELEASE_PUBLISH),true)
-# Ensure the release is made from the version bump commit if it was done elsewhere:
-	git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
-endif
-# Also build the source distribution:
-	tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
-	    python --version
-	sdist="$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
-	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	$(MAKE) "check-clean"
-	if [ ! -e "./.tox/.pkg/dist/.next-version.txt" ]
-	then
-	    exit
-	fi
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 endif
 
 .PHONY: format
@@ -368,7 +351,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
+	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):

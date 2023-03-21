@@ -155,13 +155,6 @@ build: ./.git/hooks/pre-commit build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		build-wheel
-ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./dist/.next-version.txt" ]
-	then
-# Ensure the build is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./dist/.next-version.txt")"
-	fi
-endif
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(MAKE) -e -j PYTHON_WHEEL="$$(readlink "./dist/.current.whl")" \
@@ -275,13 +268,6 @@ build-bump: \
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
-	next_version=$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
-	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
-	) || true
-	mkdir -pv "./dist/"
-	rm -fv "./dist/.next-version.txt"
-	echo "$${next_version}" >"./dist/.next-version.txt"
 # Update the release notes/changelog
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) \
@@ -294,6 +280,10 @@ endif
 	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
+	next_version=$$(
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
+	) || true
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
@@ -353,13 +343,6 @@ release: release-python release-docker
 release-python: \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./.env $(DOCKER_VOLUMES) ~/.pypirc
-ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./dist/next-version.txt" ]
-	then
-# Ensure the release is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./dist/.next-version.txt")"
-	fi
-endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	export VERSION=$$(./.tox/build/bin/cz version --project)
@@ -377,10 +360,6 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$$(realpath "./dist/.current.whl")" "$${sdist}"
 	$(MAKE) "check-clean"
-	if [ ! -e "./dist/.next-version.txt" ]
-	then
-	    exit
-	fi
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine

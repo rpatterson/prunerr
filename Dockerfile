@@ -6,6 +6,7 @@ FROM python:${PYTHON_MINOR}
 
 ARG PYTHON_ENV=py311
 ARG VERSION=
+ARG PYTHON_WHEEL
 
 # Put the `ENTRYPOINT` on the `$PATH`
 RUN \
@@ -21,7 +22,9 @@ COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" 
 RUN pip install --no-cache-dir -r "./requirements/${PYTHON_ENV}/user.txt"
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
-RUN --mount=type=bind,source=./,target=./,rw pip install --no-cache-dir "./"
+COPY [ "${PYTHON_WHEEL}", "${PYTHON_WHEEL}" ]
+# hadolint ignore=DL3013
+RUN pip install --no-cache-dir "${PYTHON_WHEEL}" && rm -fv "${PYTHON_WHEEL}"
 
 # Find the same home directory even when run as another user, e.g. `root`.
 ENV HOME="/home/python-project-structure"

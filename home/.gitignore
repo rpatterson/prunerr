@@ -1,5 +1,4 @@
-/.gnupg
-/.pypirc
-/.cache
-/.local/share/virtualenv
-/.bash_history
+# Ignore everything but files managed by VCS:
+/*
+!/.git*
+!/*.in

@@ -37,10 +37,10 @@ The ``$ make test`` target also runs the ``$ make format`` target to format code
 according to this project's guidelines and rules.
 
 Once work is finished and all the tests are passing, project maintainers can merge your
-work, bump the version, run all checks and tests to confirm your work, build release
-packages, and publish them to PyPI::
+work and run all checks and tests as above to confirm your work.  Then they can, bump
+the version, build release packages, and publish them to PyPI::
 
-  $ make build-bump test release
+  $ make build-bump release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions

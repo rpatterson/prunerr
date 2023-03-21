@@ -100,13 +100,6 @@ all: build
 build: \
 	./.git/hooks/pre-commit \
 	$(HOME)/.local/var/log/python-project-structure-host-install.log
-ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./.tox/.pkg/dist/.next-version.txt" ]
-	then
-# Ensure the build is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
-	fi
-endif
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary
@@ -152,13 +145,6 @@ build-bump: \
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
-	next_version=$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
-	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
-	) || true
-	mkdir -pv "./.tox/.pkg/dist/"
-	rm -fv "./.tox/.pkg/dist/.next-version.txt"
-	echo "$${next_version}" >"./.tox/.pkg/dist/.next-version.txt"
 # Update the release notes/changelog
 	$(TOX_EXEC_ARGS) towncrier check \
 	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
@@ -170,6 +156,10 @@ endif
 	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
+	next_version=$$(
+	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
+	) || true
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
@@ -200,10 +190,6 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 ### Publish installable Python packages to PyPI
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-wheel \
 		~/.pypirc
-ifeq ($(RELEASE_PUBLISH),true)
-# Ensure the release is made from the version bump commit if it was done elsewhere:
-	git pull --ff-only "origin" "v$$(cat "./.tox/.pkg/dist/.next-version.txt")"
-endif
 # Also build the source distribution:
 	tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
 	    python --version
@@ -212,10 +198,6 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
 	$(MAKE) "check-clean"
-	if [ ! -e "./.tox/.pkg/dist/.next-version.txt" ]
-	then
-	    exit
-	fi
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine

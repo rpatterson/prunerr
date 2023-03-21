@@ -83,7 +83,7 @@ else
 TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 endif
 ifneq ($(PYTHON_WHEEL),)
-TOX_RUN_ARGS+= --installpkg "./dist/$(PYTHON_WHEEL)"
+TOX_RUN_ARGS+= --installpkg "$(PYTHON_WHEEL)"
 endif
 export TOX_RUN_ARGS
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
@@ -231,21 +231,28 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-pkgs:
-	mkdir -pv "./dist/"
+build-pkgs: ./var/log/tox/build/build.log
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
+	mkdir -pv "./dist/"
+# Build Python packages/distributions from the development Docker container for
+# consistency/reproducibility.
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
+	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel tox run -e "$(PYTHON_ENV)" --pkg-only
 # Copy the wheel to a location accessible to all containers:
-	cp -lfv "$(
+	cp -lfv "$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
 	)" "./dist/"
 # Also build the source distribution:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel \
 	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
-	cp -lfv "$(
+	cp -lfv "$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
 	)" "./dist/"
 
@@ -349,19 +356,6 @@ release: release-python release-docker
 release-python: \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		build-pkgs ./.env $(DOCKER_VOLUMES) ~/.pypirc
-# Build Python packages/distributions from the development Docker container for
-# consistency/reproducibility.
-	export VERSION=$$(./.tox/build/bin/cz version --project)
-	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
-	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
-# Build the actual package distributions:
-	$(MAKE) -e "build-pkgs"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
-	        python --version
-	sdist="$$(ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
@@ -681,7 +675,7 @@ endif
 # Build the end-user image now that all required artifacts are built"
 ifeq ($(PYTHON_WHEEL),)
 	$(MAKE) -e "build-pkgs"
-	PYTHON_WHEEL="$(call current_pkg,.whl)"
+	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
 endif
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)

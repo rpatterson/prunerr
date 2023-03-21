@@ -304,9 +304,7 @@ build-pkgs: ./var/log/tox/build/build.log
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 		~/.gitconfig ./var/log/git-remotes.log \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
+		$(HOME)/.local/var/log/python-project-structure-host-install.log
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
@@ -331,6 +329,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
 # Update the release notes/changelog
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
+	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) \
 	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"

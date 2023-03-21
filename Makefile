@@ -119,7 +119,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-wheel
 ### Ensure the built package is current when used outside of tox
 build-wheel:
-	tox exec -e "$(PYTHON_ENV)" -- python --version
+	tox run -e "$(PYTHON_ENV)" --pkg-only
 	ln -sfv --relative "$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)" \
 	    "./.tox/.pkg/dist/.current.whl"
 
@@ -191,8 +191,7 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-wheel \
 		~/.pypirc
 # Also build the source distribution:
-	tox exec -e "$(PYTHON_ENV)" --override "testenv.package=sdist" -- \
-	    python --version
+	tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
 	sdist="$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
@@ -350,7 +349,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
+	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):

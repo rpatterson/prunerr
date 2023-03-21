@@ -858,7 +858,7 @@ ifeq ($(GITLAB_CI),true)
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
-nnendif
+endif
 	date >>"$(@)"
 # The images install the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build.log=%/host-install.log)"

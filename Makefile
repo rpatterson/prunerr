@@ -77,10 +77,14 @@ export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
+export PYTHON_WHEEL=
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
 export TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 export TOX_RUN_ARGS=run
+endif
+ifneq ($(PYTHON_WHEEL),)
+export TOX_RUN_ARGS=+ --installpkg "$(PYTHON_WHEEL)"
 endif
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
 # by tox
@@ -114,7 +118,6 @@ DOCKER_VOLUMES=\
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
 BUILD_REQUIREMENTS=true
-export PYTHON_WHEEL=
 PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 TOWNCRIER_COMPARE_BRANCH=develop
@@ -532,8 +535,7 @@ test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test-docker: ./.env build-wheel
-	$(MAKE) -e -j \
-	    TOX_RUN_ARGS="run --installpkg ./.tox/.pkg/dist/$$(
+	$(MAKE) -e -j PYTHON_WHEEL="./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/$$(
 	        readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
 	    )" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
@@ -799,7 +801,6 @@ endif
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 ifeq ($(BUILD_REQUIREMENTS),true)
-	date >>"$(@)"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    build-requirements-$(PYTHON_ENV)

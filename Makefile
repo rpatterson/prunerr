@@ -1047,6 +1047,7 @@ export GPG_PASSPHRASE=
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
 ./var/log/gpg-import.log:
 # In each CI run, import the private signing key from the CI secrets
+	mkdir -pv "$(dir $(@))"
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"

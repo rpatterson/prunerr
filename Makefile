@@ -85,6 +85,9 @@ RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 endif
 
+# Makefile functions
+current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)
+
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
@@ -116,12 +119,14 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
 
-.PHONY: build-wheel
+.PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-wheel:
+build-pkgs:
+# Defined as a .PHONY recipe so that multiple targets can depend on this as a
+# pre-requisite and it will only be run once per invocation.
 	tox run -e "$(PYTHON_ENV)" --pkg-only
-	ln -sfv --relative "$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)" \
-	    "./.tox/.pkg/dist/.current.whl"
+# Also build the source distribution:
+	tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
@@ -188,20 +193,17 @@ check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
 
 .PHONY: release
 ### Publish installable Python packages to PyPI
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-wheel \
+release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-pkgs \
 		~/.pypirc
-# Also build the source distribution:
-	tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
-	sdist="$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
-	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	$(MAKE) "check-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    "$$(readlink "./.tox/.pkg/dist/.current.whl")" "$${sdist}"
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 endif
 
 .PHONY: format

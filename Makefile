@@ -157,9 +157,7 @@ build: ./.git/hooks/pre-commit build-docker
 .PHONY: build-docker
 ### Set up for development in Docker containers
 build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		build-pkgs
-# Avoid parallel tox recreations stomping on each other
-	$(MAKE) "./var/log/tox/build/build.log"
+		./var/log/tox/build/build.log build-pkgs
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
@@ -377,14 +375,12 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries
-release-docker: build-docker
-	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
+release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(PYTHON_MINORS:%=release-docker-%)
 .PHONY: $(PYTHON_MINORS:%=release-docker-%)
 ### Publish the container images for one Python version to all container registry
-$(PYTHON_MINORS:%=release-docker-%):
+$(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
-	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm

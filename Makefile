@@ -775,6 +775,8 @@ endif
 	done
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
+	$(MAKE) -e "./var/log/docker-login-GITLAB.log"
+# Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
 	docker pull "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
@@ -782,6 +784,7 @@ ifneq ($(VCS_BRANCH),master)
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
+	$(MAKE) -e "./var/log/docker-login-GITHUB.log"
 ifneq ($(VCS_BRANCH),master)
 	docker pull "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	docker_build_caches+=" --cache-from \
@@ -833,8 +836,6 @@ endif
 	done
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
-# Don't cache when building final releases on `master`
-	$(MAKE) -e "./var/log/docker-login-GITLAB.log"
 ifneq ($(VCS_BRANCH),master)
 	docker pull "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
 	docker_build_caches+=" \
@@ -842,7 +843,6 @@ ifneq ($(VCS_BRANCH),master)
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
-	$(MAKE) -e "./var/log/docker-login-GITHUB.log"
 ifneq ($(VCS_BRANCH),master)
 # Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
 	docker pull "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)" || true

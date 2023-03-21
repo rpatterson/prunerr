@@ -107,8 +107,6 @@ bump:
   script:
     # Hand off the rest to `$ make` as the unprivileged user
     - >-
-      printenv CI_COMMIT_BRANCH CI_COMMIT_REF_NAME
-    - >-
       entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
   artifacts:
     # Upload build artifacts:

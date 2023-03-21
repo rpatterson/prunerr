@@ -229,19 +229,24 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
+.PHONY: build-docker-pull
+### Pull the development image and simulate as if it had been built here
+build-docker-pull: ./.env ./var/log/tox/build/build.log
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
+	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
+	    "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
+
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-pkgs: ./var/log/tox/build/build.log
+build-pkgs: build-docker-pull
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	export VERSION=$$(./.tox/build/bin/cz version --project)
-	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
-	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel tox run -e "$(PYTHON_ENV)" --pkg-only
 # Copy the wheel to a location accessible to all containers:
@@ -258,11 +263,7 @@ build-pkgs: ./var/log/tox/build/build.log
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: \
-		~/.gitconfig \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
+build-bump: ~/.gitconfig ./var/log/tox/build/build.log build-docker-pull
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]

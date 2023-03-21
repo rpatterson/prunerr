@@ -21,7 +21,6 @@ __pycache__
 env/
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -29,6 +28,7 @@ lib/
 lib64/
 parts/
 sdist/
+var/
 *.egg-info
 **/*.egg-info
 .installed.cfg
@@ -123,11 +123,3 @@ ENV/
 **/.local
 .gnupg
 **/.gnupg
-/var/*
-!/var/docker
-/var/docker/*/*
-!/var/docker/*/.tox
-/var/docker/*/.tox/*
-!/var/docker/*/.tox/.pkg
-/var/docker/*/.tox/.pkg/*
-!/var/docker/*/.tox/.pkg/dist

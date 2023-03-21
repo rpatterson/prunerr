@@ -77,12 +77,13 @@ PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 export PYTHON_WHEEL=
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
-TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
+else
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 endif
 ifneq ($(PYTHON_WHEEL),)
-TOX_RUN_ARGS=+ --installpkg "$(PYTHON_WHEEL)"
+TOX_RUN_ARGS+= --installpkg "./dist/$(PYTHON_WHEEL)"
 endif
 export TOX_RUN_ARGS
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
@@ -163,9 +164,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) "./var/log/tox/build/build.log"
-	$(MAKE) -e -j PYTHON_WHEEL="./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/$$(
-	        readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
-	    )" DOCKER_BUILD_ARGS="--progress plain" \
+	$(MAKE) -e -j PYTHON_WHEEL="$$(readlink "./dist/.current.whl")" \
+	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
@@ -238,16 +238,17 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 .PHONY: build-wheel
 ### Ensure the built package is current when used outside of tox
 build-wheel: ./var/docker/$(PYTHON_ENV)/log/build-devel.log
-# NOTE: This depends on the development image having already been built.  It is used
-# during the build of the end-user image
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel \
 	    tox exec -e "$(PYTHON_ENV)" -- python --version
-	wheel_basename="$$(basename "$$(
+	wheel_path="$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
-	)")"
-	ln -sfv "$${wheel_basename}" \
-	    "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
+	)"
+# Copy the wheel to a location accessible to all containers:
+	mkdir -pv "./dist/"
+	cp -lfv "$${wheel_path}" "./dist/"
+# Record which wheel is the one just built:
+	ln -sfv "$$(basename "$${wheel_path}")" "./dist/.current.whl"
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
@@ -373,9 +374,8 @@ endif
 	        python --version
 	sdist="$$(ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1)"
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check "$$(
-	    readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
-	)" "$${sdist}"
+	$(TOX_EXEC_BUILD_ARGS) twine check \
+	    "$$(realpath "./dist/.current.whl")" "$${sdist}"
 	$(MAKE) "check-clean"
 	if [ ! -e "./dist/.next-version.txt" ]
 	then
@@ -384,9 +384,8 @@ endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" "$$(
-	    readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
-	)" "$${sdist}"
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	    "$$(realpath "./dist/.current.whl")" "$${sdist}"
 endif
 
 .PHONY: release-docker
@@ -448,9 +447,7 @@ test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
 test-docker: ./.env build-wheel
-	$(MAKE) -e -j PYTHON_WHEEL="./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/$$(
-	        readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
-	    )" \
+	$(MAKE) -e -j PYTHON_WHEEL="$$(readlink "./dist/.current.whl")" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
@@ -474,7 +471,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" TOX_RUN_ARGS="$(TOX_RUN_ARGS)" \
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
 	        test-local
 .PHONY: test-local
 ### Run the full suite of tests on the local host
@@ -701,9 +698,7 @@ endif
 # Build the end-user image now that all required artifacts are built"
 ifeq ($(PYTHON_WHEEL),)
 	$(MAKE) -e "build-wheel"
-	PYTHON_WHEEL="./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/$$(
-	    readlink "./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/.current.whl"
-	)"
+	PYTHON_WHEEL="$$(readlink "./dist/.current.whl")"
 endif
 	docker_build_user_tags=""
 	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)

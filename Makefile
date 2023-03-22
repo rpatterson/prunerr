@@ -275,11 +275,15 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
 		./var/log/tox/build/build.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
-	docker compose pull python-project-structure-devel
-	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
-	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
-	    "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
+	if docker compose pull python-project-structure-devel
+	then
+	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
+	    touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
+	        "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
+	    $(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
+	else
+	    $(MAKE) "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
+	fi
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox

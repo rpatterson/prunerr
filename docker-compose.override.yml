@@ -105,4 +105,4 @@ services:
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR}"
     command: >-
-      make -e build-docker test-docker release
+      make -e build-docker test-docker build-bump release

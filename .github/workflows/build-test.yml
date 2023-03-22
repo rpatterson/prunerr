@@ -49,7 +49,6 @@ jobs:
         with:
           path: |
             ~/.local
-            ./dist
           key: >-
             ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
           restore-keys: >-

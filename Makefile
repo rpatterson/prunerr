@@ -493,6 +493,7 @@ upgrade-branch: ~/.gitconfig
 # Create a new local branch from the latest upstream before upgrading
 	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
 	fi
+	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
 	if $(MAKE) "check-clean"
 	then
@@ -500,7 +501,7 @@ upgrade-branch: ~/.gitconfig
 	    exit
 	fi
 # Commit the upgrade changes
-	echo "Upgrade all requirements and dependencies to the latest versions." \
+	echo "Upgrade all requirements to the latest versions as of $${now}." \
 	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"

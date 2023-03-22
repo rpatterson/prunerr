@@ -349,14 +349,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Capture the release notes for *just this* release for creating the GitHub release.
 # Have to run before the real `$ towncrier build` run without the `--draft` option
 # because after that the `newsfragments` will have been deleted.
-	docker compose run --rm python-project-structure-devel $(TOX_EXEC_ARGS) \
-	    towncrier build --version "$${next_version}" --draft --yes \
-	        >"./NEWS-release.rst"
-# Build and stage the release notes to be commited by `$ cz bump`
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
+	docker compose run --rm python-project-structure-devel $(TOX_EXEC_ARGS) \
+	    towncrier build --version "$${next_version}" --draft --yes \
+	        >"./NEWS-release.rst"
+# Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS

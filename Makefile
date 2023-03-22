@@ -156,8 +156,7 @@ build: ./.git/hooks/pre-commit build-docker
 
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/log/tox/build/build.log build-pkgs
+build-docker: build-pkgs
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
@@ -234,7 +233,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
 		./var/log/tox/build/build.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
-	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
+	docker compose pull python-project-structure-devel
 	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
 	    "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
@@ -342,7 +341,7 @@ check-push: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.e
 	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
-check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
+check-clean:
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
@@ -356,9 +355,7 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log \
-		build-pkgs ./.env ~/.pypirc
+release-python: ./var/log/tox/build/build.log build-pkgs ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
@@ -405,7 +402,7 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
+format:  ./var/log/tox/$(PYTHON_ENV)/build.log
 	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
@@ -427,7 +424,7 @@ lint-docker: ./.env build-docker-volumes-$(PYTHON_ENV)
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env build-pkgs
+test-docker: build-pkgs
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
@@ -611,8 +608,8 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
@@ -629,10 +626,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
-		./docker-compose.override.yml ./.env ./var/log/tox/build/build.log \
+		./docker-compose.override.yml ./.env \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) build-docker-volumes-$(PYTHON_ENV)
+	$(MAKE) build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
@@ -668,6 +665,7 @@ endif
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
+	$(MAKE) "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
@@ -751,7 +749,7 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	) | tee -a "$(@)"
 
 ./.git/hooks/pre-commit:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

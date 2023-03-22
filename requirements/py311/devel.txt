@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py311/devel.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==3.0.3
+argcomplete==3.0.4
     # via python-project-structure (pyproject.toml)
 astroid==2.15.0
     # via
@@ -130,7 +130,7 @@ pycodestyle==2.10.0
     # via
     #   autopep8
     #   prospector
-pydantic==1.10.6
+pydantic==1.10.7
     # via rstcheck-core
 pydocstyle==6.3.0
     # via prospector
@@ -143,7 +143,7 @@ pygments==2.14.0
     # via
     #   pyroma
     #   rich
-pylint==2.17.0
+pylint==2.17.1
     # via
     #   prospector
     #   pylint-celery

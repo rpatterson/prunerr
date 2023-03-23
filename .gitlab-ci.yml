@@ -9,6 +9,12 @@ default:
     - "docker:dind"
   before_script:
     - "chown -R ${PUID}:${PGID} ./"
+  cache:
+    # Increment `v#` in keys to clear those caches:
+    - key: "tox-${$CI_COMMIT_REF_SLUG}-v1"
+      paths:
+        - "./.tox"
+        - "./var/docker/*/.tox"
 
 variables:
   # Secrets from the GitLab CI/CD Variables UI:

@@ -44,6 +44,17 @@ jobs:
       # Shared/common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        with:
+          path: |
+            ./.tox
+            ./var/docker/*/.tox
+          key: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+          restore-keys: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
       - name: "Change checkout owner"
         # https://stackoverflow.com/a/58474340/624787
         run: >-
@@ -119,6 +130,17 @@ jobs:
       # Shared/common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        with:
+          path: |
+            ./.tox
+            ./var/docker/*/.tox
+          key: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+          restore-keys: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
       - name: "Change checkout owner"
         run: >-
           chown -R ${PUID}:${PGID} ./

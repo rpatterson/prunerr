@@ -23,12 +23,13 @@ WORKDIR "/usr/local/src/python-project-structure/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
 # because this step takes the most time and changes the least frequently.
 COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" ]
+# hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache \
     pip install -r "./requirements/${PYTHON_ENV}/user.txt"
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
 COPY [ "${PYTHON_WHEEL}", "${PYTHON_WHEEL}" ]
-# hadolint ignore=DL3013
+# hadolint ignore=DL3013,DL3042
 RUN --mount=type=cache,target=/root/.cache \
     pip install "${PYTHON_WHEEL}" && \
     rm -rfv "./dist/"

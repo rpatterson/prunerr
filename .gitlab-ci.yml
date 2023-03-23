@@ -9,17 +9,11 @@ default:
     - "docker:dind"
   before_script:
     - "chown -R ${PUID}:${PGID} ./"
-  # Pip's cache doesn't store the python packages
-  # https://pip.pypa.io/en/stable/topics/caching/
-  #
-  # If you want to also cache the installed packages, you have to install
-  # them in a virtualenv and cache it as well.
   cache:
     # Increment `v#` in keys to clear those caches
-    - key: "v4"
-      # https://pip.pypa.io/en/stable/topics/caching/#default-paths
+    - key: "home-v1"
       paths:
-        - "./.cache/pip"
+        - "./.cache"
 
 variables:
   # Secrets from the GitLab CI/CD Variables UI:
@@ -31,15 +25,14 @@ variables:
   TEST_PYPI_PASSWORD: "$TEST_PYPI_PASSWORD"
   PROJECT_GITHUB_PAT: "$PROJECT_GITHUB_PAT"
 
-  # Change pip's cache directory to be inside the project directory since we can only
-  # cache local items:
-  # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
   # Variables controlling behavior
   PUID: "1001"
   PGID: "1001"
   DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}"
+
+  # Make `${HOME}/.cache/` cache-able:
+  # https://pip.pypa.io/en/stable/topics/caching/#default-paths
+  XDG_CACHE_HOME: "$CI_PROJECT_DIR/.cache"
 
   # Uncomment to get more debugging output
   # DEBUG: "true"

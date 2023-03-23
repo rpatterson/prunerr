@@ -24,6 +24,9 @@ jobs:
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        # Make `${HOME}/.cache/` cache-able:
+        # https://pip.pypa.io/en/stable/topics/caching/#default-paths
+        XDG_CACHE_HOME: "${{ github.workspace }}/.cache"
     permissions:
       packages: "write"
       checks: "write"
@@ -41,18 +44,14 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Cache build resources"
+      - name: "Cache user HOME data"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
-        env:
-          cache-name: "v1"
         with:
           path: |
-            ~/.local
-          key: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
-          restore-keys: >-
-            ${{ env.cache-name }}-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+            ./.cache
+          key: "home-v1"
+          restore-keys: "home-v1"
       - name: "Change checkout owner"
         # https://stackoverflow.com/a/58474340/624787
         run: >-
@@ -122,6 +121,7 @@ jobs:
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        XDG_CACHE_HOME: "${{ github.workspace }}/.cache"
     permissions:
       packages: "write"
     steps:
@@ -129,25 +129,14 @@ jobs:
       # Shared/common set up
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-
-      # Cache build artifacts to speed up CI runs
-      - name: "Cache build resources"
+      - name: "Cache user HOME data"
         if: "github.ref != 'refs/heads/master'"
         uses: "actions/cache@master"
-        env:
-          # Increment to force clearing the cache
-          cache-name: "v1"
         with:
           path: |
-            ~/.local
-            ./dist
-          # Never get a cache hit to force always caching any upgraded dependencies
-          # Use hashFiles to force venv recreation when dependencies change
-          key: >-
-            ${{ env.cache-name }}-${{ runner.os }}-3.10-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('tox.ini') }}-${{ github.sha }}
-          # Always re-use the cache and then upgrade
-          restore-keys: >-
-            ${{ env.cache-name }}-${{ runner.os }}-3.10-${{ hashFiles('pyproject.*') }}-${{ hashFiles('setup.*') }}-${{ hashFiles('requirements*.txt') }}-${{ hashFiles('tox.ini') }}-
+            ./.cache
+          key: "home-v1"
+          restore-keys: "home-v1"
       - name: "Change checkout owner"
         run: >-
           chown -R ${PUID}:${PGID} ./

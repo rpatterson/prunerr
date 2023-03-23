@@ -9,11 +9,6 @@ default:
     - "docker:dind"
   before_script:
     - "chown -R ${PUID}:${PGID} ./"
-  cache:
-    # Increment `v#` in keys to clear those caches:
-    - key: "home-v1"
-      paths:
-        - "./.cache"
 
 variables:
   # Secrets from the GitLab CI/CD Variables UI:
@@ -29,10 +24,6 @@ variables:
   PUID: "1001"
   PGID: "1001"
   DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}"
-
-  # Make `${HOME}/.cache/` cache-able:
-  # https://pip.pypa.io/en/stable/topics/caching/#default-paths
-  XDG_CACHE_HOME: "$CI_PROJECT_DIR/.cache"
 
   # Uncomment to get more debugging output:
   # DEBUG: "true"

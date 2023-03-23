@@ -27,9 +27,6 @@ jobs:
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-        # Make `${HOME}/.cache/` cache-able:
-        # https://pip.pypa.io/en/stable/topics/caching/#default-paths
-        XDG_CACHE_HOME: "${{ github.workspace }}/.cache"
     permissions:
       packages: "write"
       checks: "write"
@@ -47,14 +44,6 @@ jobs:
       # Shared/common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Cache user HOME data"
-        if: "github.ref != 'refs/heads/master'"
-        uses: "actions/cache@master"
-        with:
-          path: |
-            ./.cache
-          key: "home-v1"
-          restore-keys: "home-v1"
       - name: "Change checkout owner"
         # https://stackoverflow.com/a/58474340/624787
         run: >-
@@ -130,14 +119,6 @@ jobs:
       # Shared/common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      - name: "Cache user HOME data"
-        if: "github.ref != 'refs/heads/master'"
-        uses: "actions/cache@master"
-        with:
-          path: |
-            ./.cache
-          key: "home-v1"
-          restore-keys: "home-v1"
       - name: "Change checkout owner"
         run: >-
           chown -R ${PUID}:${PGID} ./

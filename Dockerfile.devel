@@ -25,12 +25,12 @@ WORKDIR "/usr/local/src/python-project-structure/"
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
 # package and all the development tools into the image.
 COPY [ "./build-host/requirements-${PYTHON_ENV}.txt", "./build-host/" ]
-COPY [ "./home/.cache", "/root/.cache" ]
-RUN pip install -r "./build-host/requirements-${PYTHON_ENV}.txt"
+RUN --mount=type=cache,target=/root/.cache \
+    pip install -r "./build-host/requirements-${PYTHON_ENV}.txt"
 COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
 COPY [ "./tox.ini", "./" ]
-RUN tox --skip-pkg-install --notest -e "${PYTHON_ENV}" && \
-    rm -rfv "/root/.cache"
+RUN --mount=type=cache,target=/root/.cache \
+    tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"

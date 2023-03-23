@@ -579,6 +579,8 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip --cache-dir "./home/.cache/pip" \
+	    download -r "$(@)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
@@ -586,6 +588,8 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.i
 	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip --cache-dir "./home/.cache/pip" \
+	    download -r "$(@)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
@@ -593,17 +597,19 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+# Don't install tox into one of it's own virtual environments
+	if [ -n "$${VIRTUAL_ENV:-}" ]
+	then
+	    pip_bin="$$(which -a pip | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
+	else
+	    pip_bin="pip"
+	fi
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
-# Don't install tox into one of it's own virtual environments
-	    if [ -n "$${VIRTUAL_ENV:-}" ]
-	    then
-	        pip_bin="$$(which -a pip | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
-	    else
-	        pip_bin="pip"
-	    fi
 	    "$${pip_bin}" install -r "$(@)"
+	else
+	    "$${pip_bin}" download -r "$(@)"
 	fi
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"

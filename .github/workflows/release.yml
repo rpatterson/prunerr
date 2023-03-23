@@ -1,7 +1,7 @@
 name: "Release"
 
 on:
-  # Only run for version tags
+  # Only run for version tags:
   push:
     branches:
       - "!**"
@@ -19,11 +19,7 @@ jobs:
         PGID: "123"
         CHECKOUT_DIR: "${{ github.workspace }}"
         CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
-        # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-        # Requires the secrets to be added to GitHub either through the web UI or the
-        # GitHub CLI tool:
-        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
         GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
@@ -35,7 +31,7 @@ jobs:
       packages: "write"
     steps:
 
-      # Shared/common set up
+      # Shared/common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
       - name: "Cache user HOME data"
@@ -50,6 +46,7 @@ jobs:
         run: >-
           chown -R ${PUID}:${PGID} ./
 
+      # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Publish release artifacts"
         run: >-
           entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean

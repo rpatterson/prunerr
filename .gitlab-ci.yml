@@ -10,7 +10,7 @@ default:
   before_script:
     - "chown -R ${PUID}:${PGID} ./"
   cache:
-    # Increment `v#` in keys to clear those caches
+    # Increment `v#` in keys to clear those caches:
     - key: "home-v1"
       paths:
         - "./.cache"
@@ -25,7 +25,7 @@ variables:
   TEST_PYPI_PASSWORD: "$TEST_PYPI_PASSWORD"
   PROJECT_GITHUB_PAT: "$PROJECT_GITHUB_PAT"
 
-  # Variables controlling behavior
+  # Variables controlling behavior:
   PUID: "1001"
   PGID: "1001"
   DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}"
@@ -34,11 +34,8 @@ variables:
   # https://pip.pypa.io/en/stable/topics/caching/#default-paths
   XDG_CACHE_HOME: "$CI_PROJECT_DIR/.cache"
 
-  # Uncomment to get more debugging output
+  # Uncomment to get more debugging output:
   # DEBUG: "true"
-
-# Delegate to the `./Makefile` as much as possible to keep as much portable between CI
-# platforms
 
 stages:
   - "build-test"
@@ -63,11 +60,14 @@ build-test:
           - "3.8"
           - "3.7"
   script:
+    # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
       entrypoint make -e build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}
       release-docker-${PYTHON_MINORS} check-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
+    # Upload build artifacts:
+    # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
       - "./build/py*/pytest*"
       - "./build/py*/.coverage*"
@@ -97,12 +97,9 @@ bump:
     - if: >-
         $CI_PIPELINE_SOURCE != "schedule"
   script:
-    # Hand off the rest to `$ make` as the unprivileged user
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
   artifacts:
-    # Upload build artifacts:
-    # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
       # TODO: GitLab CI/CD issues a warning when not on `develop` or `master` because it
       # isn't actually used, IOW this is an expected condition on feature branches:

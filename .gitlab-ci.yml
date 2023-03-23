@@ -9,6 +9,17 @@ default:
     - "docker:dind"
   before_script:
     - "chown -R ${PUID}:${PGID} ./"
+  # Pip's cache doesn't store the python packages
+  # https://pip.pypa.io/en/stable/topics/caching/
+  #
+  # If you want to also cache the installed packages, you have to install
+  # them in a virtualenv and cache it as well.
+  cache:
+    # Increment `v#` in keys to clear those caches
+    - key: "v4"
+      # https://pip.pypa.io/en/stable/topics/caching/#default-paths
+      paths:
+        - "./.cache/pip"
 
 variables:
   # Secrets from the GitLab CI/CD Variables UI:
@@ -32,17 +43,6 @@ variables:
 
   # Uncomment to get more debugging output
   # DEBUG: "true"
-
-# Pip's cache doesn't store the python packages
-# https://pip.pypa.io/en/stable/topics/caching/
-#
-# If you want to also cache the installed packages, you have to install
-# them in a virtualenv and cache it as well.
-cache:
-  # Increment to clear the cache
-  key: "v4"
-  paths:
-    - "./.cache/pip"
 
 # Delegate to the `./Makefile` as much as possible to keep as much portable between CI
 # platforms

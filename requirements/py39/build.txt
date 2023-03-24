@@ -22,7 +22,7 @@ colorama==0.4.6
     # via commitizen
 commitizen==2.42.1
     # via -r requirements/build.txt.in
-cryptography==39.0.2
+cryptography==40.0.0
     # via secretstorage
 decli==0.5.2
     # via commitizen

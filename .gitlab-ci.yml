@@ -36,7 +36,6 @@ variables:
 
 stages:
   - "build-test"
-  - "bump"
   - "release"
   - "scheduled"
 
@@ -78,7 +77,6 @@ build-test:
       - "./build/py*/htmlcov"
       - "./build/py*/prospector*"
       - "./build/py*/pylint*"
-      - "./dist/python?project?structure-*"
     reports:
       junit:
         - "./build/py*/pytest-junit.xml"
@@ -87,8 +85,8 @@ build-test:
         coverage_format: "cobertura"
         path: "./build/py*/coverage.xml"
 
-bump:
-  stage: "bump"
+release:
+  stage: "release"
   needs: ["build-test"]
   # Avoid unnecessary artifact downloads:
   # https://docs.gitlab.com/ee/ci/yaml/#dependencies
@@ -98,34 +96,16 @@ bump:
         $CI_COMMIT_TAG
       when: "never"
     - if: >-
-        (
-          $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_TITLE !~
-          /^build\(release\): Version [0-9]\.[0-9]\.[0-9][a-z0-9-.]* → [0-9]\.[0-9]\.[0-9][a-z0-9-.]*$/
-        )
+        $CI_COMMIT_REF_PROTECTED == "true"
         && $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
+      entrypoint make -e BUILD_REQUIREMENTS=false
+      build-bump check-clean
+      release-python check-clean
   artifacts:
     paths:
-      # TODO: GitLab CI/CD issues a warning when not on `develop` or `master` because it
-      # isn't actually used, IOW this is an expected condition on feature branches:
-      #     WARNING: ./NEWS-release.rst: no matching files. Ensure that the artifact path is relative to the working directory
-      # Is there a way to make paths conditional?
       - "./NEWS-release.rst"
-      - "./dist/python?project?structure-*"
-
-release:
-  stage: "release"
-  rules:
-    - if: >-
-        $CI_COMMIT_REF_PROTECTED == "true" &&
-        $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+[a-z0-9-.]*/
-  script:
-    - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
-  artifacts:
-    paths:
       - "./dist/python?project?structure-*"
 
 scheduled:

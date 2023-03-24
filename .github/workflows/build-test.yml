@@ -125,7 +125,6 @@ jobs:
         GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-        XDG_CACHE_HOME: "${{ github.workspace }}/.cache"
     permissions:
       packages: "write"
     steps:

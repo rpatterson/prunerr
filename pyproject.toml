@@ -29,6 +29,7 @@ build(release): Version $current_version → $new_version
 # https://towncrier.readthedocs.io/en/stable/#quick-start
 package = "pythonprojectstructure"
 package_dir = "src"
+name = "python-project-structure"
 
 [tool.pylint.MASTER]
 # Ensure `duplicate-code` and any other errors that depend on not runnining in parallel

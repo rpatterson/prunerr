@@ -275,7 +275,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
 		./var/log/tox/build/build.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
-	if docker compose pull python-project-structure-devel
+	if docker compose pull --quiet python-project-structure-devel
 	then
 	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	    touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \

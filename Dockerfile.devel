@@ -26,11 +26,11 @@ WORKDIR "/usr/local/src/python-project-structure/"
 # package and all the development tools into the image.
 COPY [ "./build-host/requirements-${PYTHON_ENV}.txt", "./build-host/" ]
 # hadolint ignore=DL3042
-RUN --mount=type=cache,target=/root/.cache \
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip install -r "./build-host/requirements-${PYTHON_ENV}.txt"
 COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
 COPY [ "./tox.ini", "./" ]
-RUN --mount=type=cache,target=/root/.cache \
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/python-project-structure/.tox/${PYTHON_ENV}"

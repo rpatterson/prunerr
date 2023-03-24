@@ -376,7 +376,7 @@ endif
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
-	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start

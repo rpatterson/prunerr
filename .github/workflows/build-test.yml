@@ -141,9 +141,9 @@ jobs:
             ./.tox
             ./var/docker/*/.tox
           key: >-
-            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+            tox-${{ runner.os }}-3.10-${{ github.ref }}-v1
           restore-keys: >-
-            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+            tox-${{ runner.os }}-3.10-${{ github.ref }}-v1
       - name: "Change checkout owner"
         run: >-
           chown -R ${PUID}:${PGID} ./

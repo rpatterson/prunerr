@@ -88,6 +88,9 @@ build-test:
 bump:
   stage: "bump"
   needs: ["build-test"]
+  # Avoid unnecessary artifact downloads:
+  # https://docs.gitlab.com/ee/ci/yaml/#dependencies
+  dependencies: []
   rules:
     - if: >-
         $CI_COMMIT_TAG

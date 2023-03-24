@@ -26,6 +26,8 @@ jobs:
         TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
     needs: ["build-test"]
+    if: >-
+      ${{ github.ref_protected }}
     permissions:
       packages: "write"
     steps:

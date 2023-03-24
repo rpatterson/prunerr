@@ -313,6 +313,12 @@ build-pkgs: build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 ### Bump the package version if on a branch that should trigger a release
 build-bump: ~/.gitconfig ./var/log/git-remotes.log ./var/log/tox/build/build.log \
 		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+	if ! git diff --cached --exit-code
+	then
+	    set +x
+	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
+	fi
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
@@ -322,9 +328,15 @@ build-bump: ~/.gitconfig ./var/log/git-remotes.log ./var/log/tox/build/build.log
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
-	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
+# No release necessary for the commits since the last release, don't publish a release
 	    exit
+	else
+# Commitizen returned an unexpected exit status code, fail
+	    exit $$exit_code
 	fi
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
@@ -336,15 +348,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    $(TOX_EXEC_ARGS) \
-	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
-	if ! git diff --cached --exit-code
-	then
-	    set +x
-	    echo "CRITICAL: Cannot bump version with staged changes"
-	    false
-	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Capture the release notes for *just this* release for creating the GitHub release.
 # Have to run before the real `$ towncrier build` run without the `--draft` option

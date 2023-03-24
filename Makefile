@@ -170,7 +170,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: check-push

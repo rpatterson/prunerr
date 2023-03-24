@@ -48,7 +48,7 @@ build-test:
       when: "never"
     - if: >-
         (
-          $CI_COMMIT_REF_PROTECTED && $CI_COMMIT_REF_NAME !~
+          $CI_COMMIT_REF_PROTECTED != "true" || $CI_COMMIT_REF_NAME !~
           /^build\(release\): Version [0-9]\.[0-9]\.[0-9][a-z0-9-.]* → [0-9]\.[0-9]\.[0-9][a-z0-9-.]*$/
         )
         && $CI_PIPELINE_SOURCE != "schedule"
@@ -94,7 +94,7 @@ bump:
       when: "never"
     - if: >-
         (
-          $CI_COMMIT_REF_PROTECTED && $CI_COMMIT_REF_NAME !~
+          $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_REF_NAME !~
           /^build(release): Version [0-9].[0-9].[0-9][a-z0-9-.]* → [0-9].[0-9].[0-9][a-z0-9-.]*$/
         )
         && $CI_PIPELINE_SOURCE != "schedule"
@@ -114,7 +114,7 @@ release:
   stage: "release"
   rules:
     - if: >-
-        $CI_COMMIT_REF_PROTECTED &&
+        $CI_COMMIT_REF_PROTECTED == "true" &&
         $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9]/
   script:
     - >-

@@ -63,6 +63,10 @@ jobs:
           /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
+      - name: "Check for any required release notes"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          check-push
       - name: "Build the container image in which to run the tests"
         run: >-
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}

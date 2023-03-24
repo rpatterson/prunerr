@@ -393,6 +393,12 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
+ifeq ($(CI),true)
+ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+# Don't waste CI time, only check for the canonical version:
+	exit
+endif
+endif
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
 	then
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \

@@ -63,7 +63,9 @@ build-test:
   script:
     # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
-      entrypoint make -e build-docker-$PYTHON_MINORS test-docker-$PYTHON_MINORS
+      entrypoint make -e check-push
+      build-docker-$PYTHON_MINORS
+      test-docker-$PYTHON_MINORS
       release-docker-$PYTHON_MINORS check-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:

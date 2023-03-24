@@ -147,9 +147,15 @@ build-bump: \
 	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
-	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
+# No release necessary for the commits since the last release, don't publish a release
 	    exit
+	else
+# Commitizen returned an unexpected exit status code, fail
+	    exit $$exit_code
 	fi
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"

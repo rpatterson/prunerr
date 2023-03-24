@@ -416,13 +416,8 @@ release: release-python
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/tox/build/build.log build-pkgs ~/.pypirc \
-		./var/log/codecov-install.log ./.env build-docker-volumes-$(PYTHON_ENV)
-# Upload any build or test artifacts to CI/CD providers
-ifeq ($(GITLAB_CI),true)
-	codecov --nonZero -t "$(CODECOV_TOKEN)" \
-	    --file "./build/$(PYTHON_ENV)/coverage.xml"
-endif
+release-python: ./var/log/tox/build/build.log build-pkgs ~/.pypirc ./.env \
+		build-docker-volumes-$(PYTHON_ENV)
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
@@ -534,7 +529,8 @@ $(PYTHON_MINORS:%=test-docker-%):
 	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" \
 	    test-docker-pyminor
 .PHONY: test-docker-pyminor
-test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR)
+test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) \
+		./var/log/codecov-install.log
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -550,6 +546,13 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 	docker compose run $${docker_run_args} python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
 	        test-local
+# Upload any build or test artifacts to CI/CD providers
+ifeq ($(GITLAB_CI),true)
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+	codecov --nonZero -t "$(CODECOV_TOKEN)" \
+	    --file "./build/$(PYTHON_ENV)/coverage.xml"
+endif
+endif
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local:

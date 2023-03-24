@@ -132,6 +132,12 @@ build-pkgs:
 ### Bump the package version if on a branch that should trigger a release
 build-bump: \
 	~/.gitconfig $(HOME)/.local/var/log/python-project-structure-host-install.log
+	if ! git diff --cached --exit-code
+	then
+	    set +x
+	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
+	fi
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
@@ -150,15 +156,6 @@ build-bump: \
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
-# Update the release notes/changelog
-	$(TOX_EXEC_ARGS) towncrier check \
-	    --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
-	if ! git diff --cached --exit-code
-	then
-	    set +x
-	    echo "CRITICAL: Cannot bump version with staged changes"
-	    false
-	fi
 ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
 	next_version=$$(

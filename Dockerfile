@@ -1,10 +1,10 @@
 ## Container image for use by end users
 
 # Stay as close to a vanilla Python environment as possible
-ARG PYTHON_MINOR=3.11
+ARG PYTHON_MINOR=3.10
 FROM python:${PYTHON_MINOR}
 
-ARG PYTHON_ENV=py311
+ARG PYTHON_ENV=py310
 ARG VERSION=
 ARG PYTHON_WHEEL
 

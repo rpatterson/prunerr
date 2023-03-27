@@ -11,7 +11,7 @@ default:
     - "chown -R $PUID:$PGID ./"
   cache:
     # Increment `v#` in keys to clear those caches:
-    - key: "tox-$CI_COMMIT_REF_SLUG-v1"
+    - key: "tox-$CI_COMMIT_REF_SLUG-v2"
       paths:
         - "./.tox"
         - "./var/docker/*/.tox"

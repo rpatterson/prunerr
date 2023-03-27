@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/py37/user.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==3.0.4
+argcomplete==3.0.5
     # via python-project-structure (pyproject.toml)
 importlib-metadata==5.2.0
     # via argcomplete

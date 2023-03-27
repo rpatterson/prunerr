@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py311/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.15.0
+astroid==2.15.1
     # via
     #   pylint
     #   pylint-celery
@@ -114,7 +114,7 @@ pep8-naming==0.10.0
     # via prospector
 pip-tools==6.12.3
     # via python-project-structure (pyproject.toml)
-platformdirs==3.1.1
+platformdirs==3.2.0
     # via
     #   black
     #   pylint
@@ -206,7 +206,7 @@ toml==0.10.2
     #   prospector
     #   requirements-detector
     #   vulture
-tomlkit==0.11.6
+tomlkit==0.11.7
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
@@ -214,7 +214,7 @@ trove-classifiers==2023.3.9
     # via pyroma
 typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.19.1.6
+types-docutils==0.19.1.7
     # via rstcheck-core
 typing-extensions==4.5.0
     # via

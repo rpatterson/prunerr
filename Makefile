@@ -291,8 +291,10 @@ build-pkgs: build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
+ifeq ($(CI),true)
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(VCS_BRANCH)"
+endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
@@ -757,8 +759,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) $(HOME)/.local/var/log/python-project-structure-host-install.log
+ifeq ($(CI),true)
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git fetch --tags origin "$(VCS_BRANCH)"
+endif
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \

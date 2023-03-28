@@ -153,7 +153,7 @@ build-bump: \
 	then
 # No release necessary for the commits since the last release, don't publish a release
 	    exit
-	else
+	elif (( $$exit_code != 0 ))
 # Commitizen returned an unexpected exit status code, fail
 	    exit $$exit_code
 	fi

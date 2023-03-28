@@ -320,7 +320,7 @@ ifneq ($(CI),true)
 endif
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify -o "ci.skip" --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start

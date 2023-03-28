@@ -71,18 +71,19 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
 RELEASE_PUBLISH=false
-TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
 VCS_BRANCH:=$(shell git branch --show-current)
+VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 VCS_REMOTE:=$(shell git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
-TOWNCRIER_COMPARE_BRANCH=master
+VCS_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+VCS_COMPARE_BRANCH=develop
 PYPI_REPO=pypi
 endif
 
@@ -145,7 +146,7 @@ build-bump: \
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
-	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
@@ -180,10 +181,12 @@ endif
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..$(VCS_BRANCH)"
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
 	then
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
-	        "$(VCS_REMOTE)/$(TOWNCRIER_COMPARE_BRANCH)"
+	        "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes

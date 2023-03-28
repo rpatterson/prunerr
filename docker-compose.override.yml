@@ -7,13 +7,13 @@ services:
 
   ## Configuration specific to this checkout
   python-project-structure:
-    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    image: "merpatterson/python-project-structure:${PYTHON_ENV:-py310}-${VCS_BRANCH:-develop}"
     container_name: "python-project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR}/"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
-        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
+        PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
@@ -21,14 +21,14 @@ services:
 
   ## Container for use by developers
   python-project-structure-devel:
-    image: "merpatterson/python-project-structure:devel-${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    image: "merpatterson/python-project-structure:devel-${PYTHON_ENV:-py310}-${VCS_BRANCH:-develop}"
     container_name: "python-project-structure-devel"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
-        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
+        PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
@@ -46,9 +46,9 @@ services:
       - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/python-project-structure/var/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/python-project-structure/.tox/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/:/usr/local/src/python-project-structure/var/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/:/usr/local/src/python-project-structure/.tox/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
   ## Contianers during development and release
 

@@ -52,9 +52,9 @@ jobs:
             ./.tox
             ./var/docker/*/.tox
           key: >-
-            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v2
           restore-keys: >-
-            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v2
       - name: "Change checkout owner"
         # https://stackoverflow.com/a/58474340/624787
         run: >-
@@ -143,9 +143,9 @@ jobs:
             ./.tox
             ./var/docker/*/.tox
           key: >-
-            tox-${{ runner.os }}-3.10-${{ github.ref }}-v1
+            tox-${{ runner.os }}-3.10-${{ github.ref }}-v2
           restore-keys: >-
-            tox-${{ runner.os }}-3.10-${{ github.ref }}-v1
+            tox-${{ runner.os }}-3.10-${{ github.ref }}-v2
       - name: "Change checkout owner"
         run: >-
           chown -R ${PUID}:${PGID} ./

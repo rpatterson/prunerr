@@ -75,6 +75,7 @@ TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
 VCS_BRANCH:=$(shell git branch --show-current)
+VCS_REMOTE:=$(shell git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 TOWNCRIER_COMPARE_BRANCH=master
@@ -144,7 +145,7 @@ build-bump: \
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
-	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(TOWNCRIER_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
@@ -173,7 +174,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: check-push
@@ -182,7 +183,7 @@ check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
 	then
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
-	        "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	        "$(VCS_REMOTE)/$(TOWNCRIER_COMPARE_BRANCH)"
 	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -238,9 +239,9 @@ upgrade:
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
 upgrade-branch: ~/.gitconfig
-	git fetch "origin" "$(VCS_BRANCH)"
+	git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)"
 	remote_branch_exists=false
-	if git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
 	    remote_branch_exists=true
 	fi
@@ -248,10 +249,10 @@ upgrade-branch: ~/.gitconfig
 	then
 # Reset an existing local branch to the latest upstream before upgrading
 	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "origin/$(VCS_BRANCH)"
+	    git reset --hard "$(VCS_REMOTE)/$(VCS_BRANCH)"
 	else
 # Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_REMOTE)/$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
@@ -278,9 +279,9 @@ upgrade-branch: ~/.gitconfig
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
 	    git_push_args+=" \
-	        --force-with-lease=$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade"
+	        --force-with-lease=$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
 	fi
-	git push $${git_push_args} "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible

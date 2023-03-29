@@ -144,6 +144,12 @@ DOCKER_PUSH=false
 CI=false
 GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(CI),true)
+# Under CI, check commits and release notes against the branch to be merged into:
+ifeq ($(VCS_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifneq ($(VCS_BRANCH),master)
+VCS_COMPARE_BRANCH=develop
+endif
 # Compile requirements on CI/CD as a check to make sure all changes to dependencies have
 # been reflected in the frozen/pinned versions, but don't upgrade packages so that
 # external changes, such as new PyPI releases, don't turn CI/CD red spuriously and

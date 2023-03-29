@@ -123,12 +123,10 @@ VCS_REMOTE:=$(shell \
     git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
-VCS_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
-VCS_COMPARE_BRANCH=develop
 PYPI_REPO=pypi
 endif
 

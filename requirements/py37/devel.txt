@@ -20,7 +20,7 @@ autopep8==2.0.2
     # via python-project-structure (pyproject.toml)
 bandit==1.7.5
     # via prospector
-black==23.1.0
+black==23.3.0
     # via python-project-structure (pyproject.toml)
 build==0.10.0
     # via

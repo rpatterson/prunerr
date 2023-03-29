@@ -22,8 +22,7 @@ export DOCKER_USER=merpatterson
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME:=$(shell \
-    getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1 \
-)
+    getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
@@ -42,8 +41,7 @@ export TZ
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell \
-    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p' \
-)
+    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
@@ -121,7 +119,8 @@ PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
 export VCS_BRANCH:=$(shell git branch --show-current)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
-VCS_REMOTE:=$(shell git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
+VCS_REMOTE:=$(shell \
+    git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 VCS_COMPARE_BRANCH=master

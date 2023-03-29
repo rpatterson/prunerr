@@ -117,17 +117,19 @@ DOCKER_VOLUMES=\
 # hosts/indexes/registries:
 BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
-TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
 export VCS_BRANCH:=$(shell git branch --show-current)
+VCS_COMPARE_BRANCH=$(VCS_BRANCH)
+VCS_REMOTE:=$(shell git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
-TOWNCRIER_COMPARE_BRANCH=master
+VCS_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+VCS_COMPARE_BRANCH=develop
 PYPI_REPO=pypi
 endif
 
@@ -281,7 +283,7 @@ build-bump: ~/.gitconfig ./var/log/tox/build/build.log \
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
-	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
@@ -322,7 +324,7 @@ ifneq ($(CI),true)
 endif
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start
@@ -339,11 +341,14 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
 check-push: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..$(VCS_BRANCH)"
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
 	        python-project-structure-devel $(TOX_EXEC_ARGS) \
-	        towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	        towncrier check --compare-with "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -484,9 +489,9 @@ endif
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
 upgrade-branch: ~/.gitconfig
-	git fetch "origin" "$(VCS_BRANCH)"
+	git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)"
 	remote_branch_exists=false
-	if git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
 	    remote_branch_exists=true
 	fi
@@ -494,10 +499,10 @@ upgrade-branch: ~/.gitconfig
 	then
 # Reset an existing local branch to the latest upstream before upgrading
 	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "origin/$(VCS_BRANCH)"
+	    git reset --hard "$(VCS_REMOTE)/$(VCS_BRANCH)"
 	else
 # Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_REMOTE)/$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
@@ -524,9 +529,9 @@ upgrade-branch: ~/.gitconfig
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
 	    git_push_args+=" \
-	        --force-with-lease=$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade"
+	        --force-with-lease=$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
 	fi
-	git push $${git_push_args} "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

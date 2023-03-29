@@ -139,6 +139,9 @@ endif
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 VCS_REMOTE:=$(shell \
     git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
+ifeq ($(VCS_REMOTE),)
+VCS_REMOTE=origin
+endif
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false

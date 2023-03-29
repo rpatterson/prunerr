@@ -124,7 +124,6 @@ DOCKER_VOLUMES=\
 BUILD_REQUIREMENTS=true
 PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
-TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
 # Determine which branch is checked out depending on the environment
@@ -139,6 +138,8 @@ export VCS_BRANCH=$(GITHUB_REF_NAME)
 else
 export VCS_BRANCH:=$(shell git branch --show-current)
 endif
+VCS_COMPARE_BRANCH=$(VCS_BRANCH)
+VCS_REMOTE:=$(shell git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
@@ -153,7 +154,7 @@ endif
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
-TOWNCRIER_COMPARE_BRANCH=master
+VCS_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 PYPI_HOSTNAME=pypi.org
 DOCKER_PUSH=true
@@ -161,6 +162,7 @@ GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+VCS_COMPARE_BRANCH=develop
 PYPI_REPO=pypi
 endif
 endif
@@ -375,7 +377,7 @@ endif
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
-	git push --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start
@@ -399,11 +401,14 @@ ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 endif
 	$(MAKE) release-fetch
 endif
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..$(VCS_BRANCH)"
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
 	        python-project-structure-devel $(TOX_EXEC_ARGS) \
-	        towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+	        towncrier check --compare-with "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -506,7 +511,7 @@ release-fetch:
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
-	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
+	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
@@ -597,9 +602,9 @@ endif
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
 upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
-	git fetch "origin" "$(VCS_BRANCH)"
+	git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)"
 	remote_branch_exists=false
-	if git fetch "origin" "$(VCS_BRANCH)-upgrade"
+	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
 	    remote_branch_exists=true
 	fi
@@ -607,10 +612,10 @@ upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	then
 # Reset an existing local branch to the latest upstream before upgrading
 	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "origin/$(VCS_BRANCH)"
+	    git reset --hard "$(VCS_REMOTE)/$(VCS_BRANCH)"
 	else
 # Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_REMOTE)/$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
@@ -637,9 +642,9 @@ upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
 	    git_push_args+=" \
-	        --force-with-lease=$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade"
+	        --force-with-lease=$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
 	fi
-	git push $${git_push_args} "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

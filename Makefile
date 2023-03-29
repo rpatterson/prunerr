@@ -121,6 +121,9 @@ export VCS_BRANCH:=$(shell git branch --show-current)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 VCS_REMOTE:=$(shell \
     git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
+ifeq ($(VCS_REMOTE),)
+VCS_REMOTE=origin
+endif
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi

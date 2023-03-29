@@ -183,7 +183,8 @@ endif
 check-push: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
 	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..$(VCS_BRANCH)"
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
 	        "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"

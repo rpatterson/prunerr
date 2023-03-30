@@ -136,21 +136,14 @@ build-pkgs:
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: \
-	~/.gitconfig $(HOME)/.local/var/log/python-project-structure-host-install.log
+build-bump: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	if ! git diff --cached --exit-code
 	then
 	    set +x
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git_fetch_args=--tags
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
-	then
-	    git_fetch_args+=" --unshallow"
-	fi
-	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
@@ -246,8 +239,7 @@ upgrade:
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig
-	git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)"
+upgrade-branch: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -396,6 +388,15 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	    fi
 	) | tee -a "$(@)"
 
+./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH):
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git_fetch_args=--tags
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	then
+	    git_fetch_args+=" --unshallow"
+	fi
+	git fetch $${git_fetch_args} "$(notdir $(dir $(@)))" "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

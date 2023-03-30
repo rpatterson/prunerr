@@ -219,7 +219,8 @@ $(PYTHON_MINORS:%=build-docker-%):
 	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build-user.log"
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): \
+		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
@@ -280,8 +281,8 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 
 .PHONY: build-docker-pull
 ### Pull the development image and simulate as if it had been built here
-build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
-		./var/log/tox/build/build.log
+build-docker-pull: ./.env ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	if docker compose pull --quiet python-project-structure-devel
 	then
@@ -295,14 +296,11 @@ build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-pkgs: build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+build-pkgs: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
-ifeq ($(CI),true)
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags origin "$(VCS_BRANCH)"
-endif
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
@@ -321,7 +319,8 @@ endif
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/git-remotes.log ./var/log/tox/build/build.log \
+build-bump: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/git-remotes.log ./var/log/tox/build/build.log \
 		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 	if ! git diff --cached --exit-code
 	then
@@ -399,16 +398,17 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
+check-push: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 ifeq ($(CI),true)
 ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 # Don't waste CI time, only check for the canonical version:
 	exit
 endif
-	$(MAKE) release-fetch
 endif
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..$(VCS_BRANCH)"
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
 	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
@@ -509,16 +509,6 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 	    docker push "$${devel_tag}"
 	done
 
-.PHONY: release-fetch
-### Retrieve VCS data needed for versioning (tags) and release (release notes)
-release-fetch:
-	git_fetch_args=--tags
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
-	then
-	    git_fetch_args+=" --unshallow"
-	fi
-	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(VCS_COMPARE_BRANCH)"
-
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
 format:  ./var/log/tox/$(PYTHON_ENV)/build.log
@@ -607,8 +597,8 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
-	git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)"
+upgrade-branch: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/git-remotes.log
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -759,6 +749,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Docker targets
 # Build the development image:
 ./var/docker/$(PYTHON_ENV)/log/build-devel.log: \
+		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
@@ -830,6 +821,7 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 endif
 # Build the end-user image:
 ./var/docker/$(PYTHON_ENV)/log/build-user.log: \
+		 ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
@@ -979,6 +971,15 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	    fi
 	) | tee -a "$(@)"
 
+./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH):
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git_fetch_args=--tags
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	then
+	    git_fetch_args+=" --unshallow"
+	fi
+	git fetch $${git_fetch_args} "$(notdir $(dir $(@)))" "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

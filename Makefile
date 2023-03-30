@@ -82,9 +82,9 @@ VCS_REMOTE:=$(shell \
 ifeq ($(VCS_REMOTE),)
 VCS_REMOTE=origin
 endif
-VCS_FETCH_TARGETS=.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
-VCS_FETCH_TARGETS+=.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
@@ -131,7 +131,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-pkgs: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	tox run -e "$(PYTHON_ENV)" --pkg-only
@@ -140,7 +140,7 @@ build-pkgs: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	if ! git diff --cached --exit-code
 	then
@@ -181,8 +181,8 @@ endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
+check-push: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
 	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
@@ -245,7 +245,7 @@ upgrade:
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -403,6 +403,8 @@ $(VCS_FETCH_TARGETS):
 	fi
 	git fetch $${git_fetch_args} \
 	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))"
+	mkdir -pv "$(dir $(@))"
+	echo "$$(git rev-parse "$(@:var/git/refs/remotes/%=%)")" | tee -a "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

@@ -330,7 +330,6 @@ build-bump: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	fi
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
-	$(MAKE) release-fetch
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
@@ -433,7 +432,8 @@ release: release-python
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/tox/build/build.log build-pkgs ~/.pypirc ./.env \
+release-python: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log build-pkgs ~/.pypirc ./.env \
 		build-docker-volumes-$(PYTHON_ENV)
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
@@ -761,10 +761,6 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) $(HOME)/.local/var/log/python-project-structure-host-install.log
-ifeq ($(CI),true)
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags origin "$(VCS_BRANCH)"
-endif
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \

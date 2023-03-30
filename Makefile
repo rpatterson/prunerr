@@ -124,6 +124,9 @@ VCS_REMOTE:=$(shell \
 ifeq ($(VCS_REMOTE),)
 VCS_REMOTE=origin
 endif
+VCS_FETCH_TARGETS=./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
+VCS_FETCH_TARGETS+=./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)
 ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
@@ -759,8 +762,7 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	    fi
 	) | tee -a "$(@)"
 
-./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH):
+$(VCS_FETCH_TARGETS):
 # Retrieve VCS data needed for versioning (tags) and release (release notes)
 	git_fetch_args=--tags
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]

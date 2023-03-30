@@ -247,7 +247,8 @@ build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-pkgs: build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+build-pkgs: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
@@ -269,7 +270,8 @@ build-pkgs: build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/log/tox/build/build.log \
+build-bump: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log \
 		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 	if ! git diff --cached --exit-code
 	then
@@ -277,13 +279,6 @@ build-bump: ~/.gitconfig ./var/log/tox/build/build.log \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git_fetch_args=--tags
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
-	then
-	    git_fetch_args+=" --unshallow"
-	fi
-	git fetch $${git_fetch_args} "$(VCS_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
@@ -340,9 +335,11 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
+check-push: ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
+		 build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..$(VCS_BRANCH)"
+	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
 	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
@@ -488,8 +485,7 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig
-	git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)"
+upgrade-branch: ~/.gitconfig ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -760,6 +756,15 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	    fi
 	) | tee -a "$(@)"
 
+./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH):
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git_fetch_args=--tags
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	then
+	    git_fetch_args+=" --unshallow"
+	fi
+	git fetch $${git_fetch_args} "$(notdir $(dir $(@)))" "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

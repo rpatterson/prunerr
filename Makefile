@@ -749,14 +749,14 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 # Docker targets
 # Build the development image:
 ./var/docker/$(PYTHON_ENV)/log/build-devel.log: \
-		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
 		./docker-compose.override.yml ./.env \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
+	$(MAKE) "./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
@@ -817,11 +817,11 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 endif
 # Build the end-user image:
 ./var/docker/$(PYTHON_ENV)/log/build-user.log: \
-		 ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "./var/log/tox/build/build.log"
+	$(MAKE) "./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	    "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675

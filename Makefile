@@ -142,10 +142,6 @@ VCS_REMOTE:=$(shell \
 ifeq ($(VCS_REMOTE),)
 VCS_REMOTE=origin
 endif
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
-VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)
-endif
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
@@ -156,6 +152,10 @@ ifeq ($(VCS_BRANCH),develop)
 VCS_COMPARE_BRANCH=master
 else ifneq ($(VCS_BRANCH),master)
 VCS_COMPARE_BRANCH=develop
+endif
+VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
 # Compile requirements on CI/CD as a check to make sure all changes to dependencies have
 # been reflected in the frozen/pinned versions, but don't upgrade packages so that

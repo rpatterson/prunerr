@@ -767,7 +767,8 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
-	git fetch $${git_fetch_args} "$(notdir $(dir $(@)))" "$(@)"
+	git fetch $${git_fetch_args} \
+	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))"
 ./.git/hooks/pre-commit:
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

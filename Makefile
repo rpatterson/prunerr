@@ -172,7 +172,8 @@ $(PYTHON_MINORS:%=build-docker-%):
 	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build-user.log"
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): \
+		./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
@@ -232,8 +233,8 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 
 .PHONY: build-docker-pull
 ### Pull the development image and simulate as if it had been built here
-build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV) \
-		./var/log/tox/build/build.log
+build-docker-pull: ./.env ./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	if docker compose pull --quiet python-project-structure-devel
 	then
@@ -637,7 +638,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./docker-compose.override.yml ./.env \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
+	$(MAKE) "./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
@@ -673,7 +675,8 @@ endif
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "./var/log/tox/build/build.log"
+	$(MAKE) "./.git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	    "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675

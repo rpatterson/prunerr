@@ -890,7 +890,9 @@ ifeq ($(GITLAB_CI),true)
 	docker push "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(CI_IS_FORK),true)
 	docker push "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+endif
 endif
 	date >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
@@ -952,7 +954,9 @@ ifeq ($(GITLAB_CI),true)
 	docker push "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(CI_IS_FORK),true)
 	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+endif
 endif
 	date >>"$(@)"
 # The images install the host requirements, reflect that in the bind mount volumes

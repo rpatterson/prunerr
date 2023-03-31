@@ -17,11 +17,10 @@ COMMA=,
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
-export DOCKER_USER=merpatterson
 # Project-specific variables
+export DOCKER_USER=merpatterson
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-GITLAB_REPOSITORY_OWNER=rpatterson
-GITHUB_REPOSITORY_OWNER=$(GITLAB_REPOSITORY_OWNER)
+GITLAB_UPSTREAM_OWNER=rpatterson
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -153,7 +152,20 @@ DOCKER_VOLUMES=\
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
-
+GITLAB_REPOSITORY_OWNER=$(GITLAB_UPSTREAM_OWNER)
+GITHUB_UPSTREAM_OWNER=$(GITLAB_UPSTREAM_OWNER)
+GITHUB_REPOSITORY_OWNER=$(GITHUB_UPSTREAM_OWNER)
+# Determine if this checkout is a fork of the upstream project:
+CI_IS_FORK=false
+ifeq ($(GITLAB_CI),true)
+ifneq ($(GITLAB_REPOSITORY_OWNER),$(GITLAB_UPSTREAM_OWNER))
+CI_IS_FORK=true
+endif
+else ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(GITHUB_REPOSITORY_OWNER),$(GITHUB_UPSTREAM_OWNER))
+CI_IS_FORK=true
+endif
+endif
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -588,8 +600,16 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+ifneq ($(CODECOV_TOKEN),)
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \
 	    --file "./build/$(PYTHON_ENV)/coverage.xml"
+else
+ifneq ($(CI_IS_FORK),true)
+	set +x
+	echo "ERROR: CODECOV_TOKEN missing from ./.env or CI secrets"
+	false
+endif
+endif
 endif
 endif
 .PHONY: test-local
@@ -1034,6 +1054,10 @@ ifneq ($(PROJECT_GITHUB_PAT),)
 # mirror.
 	git remote set-url --push --add "origin" \
 	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+else ifneq ($(CI_IS_FORK),true)
+	set +x
+	echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
+	false
 endif
 endif
 	set -x
@@ -1048,26 +1072,47 @@ endif
 	set +x
 	source "./.env"
 	export DOCKER_PASS
-	set -x
-	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
+	if [ -n "$${DOCKER_PASS}" ]
+	then
+	    set -x
+	    printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: DOCKER_PASS missing from ./.env or CI secrets"
+	    false
+	fi
 	date | tee -a "$(@)"
 ./var/log/docker-login-GITLAB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
 	export CI_REGISTRY_PASSWORD
-	set -x
-	printenv "CI_REGISTRY_PASSWORD" |
-	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
+	then
+	    set -x
+	    printenv "CI_REGISTRY_PASSWORD" |
+	        docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: CI_REGISTRY_PASSWORD missing from ./.env or CI secrets"
+	    false
+	fi
 	date | tee -a "$(@)"
 ./var/log/docker-login-GITHUB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
 	export PROJECT_GITHUB_PAT
-	set -x
-	printenv "PROJECT_GITHUB_PAT" |
-	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
+	if [ -n "$${PROJECT_GITHUB_PAT}" ]
+	then
+	    set -x
+	    printenv "PROJECT_GITHUB_PAT" |
+	        docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
+	    false
+	fi
 	date | tee -a "$(@)"
 
 # GPG signing key creation and management in CI
@@ -1106,6 +1151,7 @@ export GPG_PASSPHRASE=
 ./var/log/gpg-import.log:
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
+ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
@@ -1114,3 +1160,12 @@ export GPG_PASSPHRASE=
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
 	    --sign | gpg --list-packets
+else
+ifneq ($(CI_IS_FORK),true)
+	set +x
+	echo "ERROR: GPG_SIGNING_PRIVATE_KEY or GPG_PASSPHRASE " \
+	    "missing from ./.env or CI secrets"
+	false
+endif
+	date | tee -a "$(@)"
+endif

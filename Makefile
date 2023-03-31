@@ -183,8 +183,7 @@ endif
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
+check-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
 	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"

@@ -75,7 +75,13 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
+VCS_UPSTREAM_REF:=$(shell \
+    git for-each-ref --format='%(upstream:remoteref)' "$$(git symbolic-ref -q HEAD)")
+ifneq ($(VCS_UPSTREAM_REF),)
+VCS_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
+else
 VCS_BRANCH:=$(shell git branch --show-current)
+endif
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 VCS_REMOTE:=$(shell \
     git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")

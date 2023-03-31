@@ -2,7 +2,7 @@
 
 default:
   image:
-    name: "$CI_REGISTRY_IMAGE:build-host"
+    name: "$CI_TEMPLATE_REGISTRY_HOST/rpatterson/$CI_PROJECT_NAME:build-host"
     entrypoint:
       - "docker-entrypoint.sh"
   services:

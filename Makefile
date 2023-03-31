@@ -21,6 +21,7 @@ PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 GITLAB_UPSTREAM_OWNER=rpatterson
+CI_PROJECT_NAME=python-project-structure
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
@@ -97,6 +98,15 @@ VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
+# Determine the sequence of branches to find closes existing build artifacts, such as
+# docker images:
+VCS_BRANCHES=$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_BRANCH),develop)
+VCS_BRANCHES+=develop
+endif
+VCS_BRANCHES+=master
+endif
 
 # Values inferred from constants above
 # Support passing in the Python versions to test, including testing one version:
@@ -138,10 +148,18 @@ endif
 DOCKER_BUILD_ARGS=
 DOCKER_REGISTRIES=DOCKER GITLAB GITHUB
 export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
-DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/python-project-structure
+DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/$(CI_PROJECT_NAME)
 DOCKER_IMAGE_GITLAB=$(CI_REGISTRY_IMAGE)
-DOCKER_IMAGE_GITHUB=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/python-project-structure
+DOCKER_IMAGE_GITHUB=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
 DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
+DOCKER_IMAGES=
+ifeq ($(GITLAB_CI),true)
+DOCKER_IMAGES+=$(DOCKER_IMAGE_GITLAB)
+else ifeq ($(GITHUB_ACTIONS),true)
+DOCKER_IMAGES+=$(DOCKER_IMAGE_GITHUB)
+else
+DOCKER_IMAGES+=$(DOCKER_IMAGE_DOCKER)
+endif
 export DOCKER_VARIANT=
 DOCKER_VARIANT_PREFIX=
 ifneq ($(DOCKER_VARIANT),)
@@ -160,10 +178,12 @@ CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
 ifneq ($(GITLAB_REPOSITORY_OWNER),$(GITLAB_UPSTREAM_OWNER))
 CI_IS_FORK=true
+DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
 endif
 else ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(GITHUB_REPOSITORY_OWNER),$(GITHUB_UPSTREAM_OWNER))
 CI_IS_FORK=true
+DOCKER_IMAGES+=ghcr.io/$(GITHUB_UPSTREAM_OWNER)/$(CI_PROJECT_NAME)
 endif
 endif
 
@@ -177,7 +197,6 @@ PYPI_HOSTNAME=test.pypi.org
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
 CI=false
-GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(CI),true)
 # Under CI, check commits and release notes against the branch to be merged into:
 ifeq ($(VCS_UPSTREAM_BRANCH),develop)
@@ -191,6 +210,7 @@ endif
 # unrelated to the contributor's actual changes.
 PIP_COMPILE_ARGS=
 endif
+GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_UPSTREAM_BRANCH),master)
 RELEASE_PUBLISH=true
@@ -206,7 +226,7 @@ endif
 endif
 CI_REGISTRY_USER=$(GITLAB_REPOSITORY_OWNER)
 CI_REGISTRY=registry.gitlab.com/$(GITLAB_REPOSITORY_OWNER)
-CI_REGISTRY_IMAGE=$(CI_REGISTRY)/python-project-structure
+CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
@@ -311,12 +331,32 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
+
+.PHONY: pull-docker
+### Pull an existing image best to use as a cache for building new images
+pull-docker:
+	for vcs_branch in $(VCS_BRANCHES)
+	do
+	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"
+	    for docker_image in $(DOCKER_IMAGES)
+	    do
+	        if docker pull "$${docker_image}:$${docker_tag}"
+	        then
+	            docker tag "$${docker_image}:$${docker_tag}" \
+	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
+	            exit
+	        fi
+	    done
+	done
+	set +x
+	echo "ERROR: Could not pull any existing docker image"
+	false
 .PHONY: build-docker-pull
 ### Pull the development image and simulate as if it had been built here
 build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
 		build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
-	if docker compose pull --quiet python-project-structure-devel
+	if $(MAKE) -e pull-docker
 	then
 	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	    touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
@@ -826,17 +866,21 @@ ifeq ($(GITLAB_CI),true)
 	$(MAKE) -e "./var/log/docker-login-GITLAB.log"
 # Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from \
+	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
+	then
+	    docker_build_caches+=" --cache-from \
 	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	fi
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 	$(MAKE) -e "./var/log/docker-login-GITHUB.log"
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from \
+	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
+	then
+	    docker_build_caches+=" --cache-from \
 	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	fi
 endif
 endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
@@ -885,17 +929,20 @@ endif
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" \
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" \
 	--cache-from $(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+	fi
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-# Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
-	docker pull "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" \
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" \
 	--cache-from $(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+	fi
 endif
 endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \

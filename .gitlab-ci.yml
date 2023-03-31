@@ -12,20 +12,10 @@ default:
   # TODO: Debug stale venv issues and restore cache once fixed
 
 variables:
-  # Secrets from the GitLab CI/CD Variables UI:
-  CODECOV_TOKEN: "$CODECOV_TOKEN"
-  DOCKER_PASS: "$DOCKER_PASS"
-  GPG_PASSPHRASE: "$GPG_PASSPHRASE"
-  GPG_SIGNING_PRIVATE_KEY: "$GPG_SIGNING_PRIVATE_KEY"
-  PYPI_PASSWORD: "$PYPI_PASSWORD"
-  TEST_PYPI_PASSWORD: "$TEST_PYPI_PASSWORD"
-  PROJECT_GITHUB_PAT: "$PROJECT_GITHUB_PAT"
-
   # Variables controlling behavior:
   PUID: "1001"
   PGID: "1001"
   DOCKER_IMAGE: "$CI_REGISTRY_IMAGE"
-
   # Uncomment to get more debugging output:
   # DEBUG: "true"
 

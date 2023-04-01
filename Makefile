@@ -57,7 +57,34 @@ PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
 export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
-# Values derived from constants
+# Values derived from VCS/git
+export VCS_BRANCH:=$(shell git branch --show-current)
+VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
+endif
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE=origin
+endif
+VCS_UPSTREAM_REF:=$(shell \
+    git for-each-ref --format='%(upstream:remoteref)' "refs/heads/$(VCS_BRANCH)")
+ifneq ($(VCS_UPSTREAM_REF),)
+VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
+else
+VCS_UPSTREAM_BRANCH=$(VCS_BRANCH)
+endif
+VCS_UPSTREAM_REMOTE:=$(shell \
+    git for-each-ref --format='%(upstream:remotename)' "refs/heads/$(VCS_BRANCH)")
+ifeq ($(VCS_UPSTREAM_REMOTE),)
+VCS_UPSTREAM_REMOTE=$(VCS_PUSH_REMOTE)
+endif
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
+endif
+
+# Values inferred from constants above
 # Support passing in the Python versions to test, including testing one version:
 #     $ make PYTHON_MINORS=3.11 test
 PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
@@ -117,21 +144,10 @@ BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
-export VCS_BRANCH:=$(shell git branch --show-current)
-VCS_COMPARE_BRANCH=$(VCS_BRANCH)
-VCS_REMOTE:=$(shell \
-    git for-each-ref --format='%(upstream:remotename)' "$$(git symbolic-ref -q HEAD)")
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE=origin
-endif
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
-VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)
-endif
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_UPSTREAM_BRANCH),master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
-else ifeq ($(VCS_BRANCH),develop)
+else ifeq ($(VCS_UPSTREAM_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
@@ -252,7 +268,7 @@ build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox
-build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+build-pkgs: ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
 		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
@@ -275,7 +291,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
 		./var/log/tox/build/build.log \
 		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
 	if ! git diff --cached --exit-code
@@ -288,7 +304,7 @@ build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 # a version bump:
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
+	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release
@@ -300,7 +316,7 @@ build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	fi
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
-ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_UPSTREAM_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
 ifeq ($(RELEASE_PUBLISH),true)
@@ -326,7 +342,7 @@ ifneq ($(CI),true)
 endif
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "$(VCS_PUSH_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start
@@ -342,17 +358,17 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH) \
-		build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
+check-push: $(VCS_FETCH_TARGETS) build-docker-volumes-$(PYTHON_ENV) \
+		build-docker-$(PYTHON_MINOR) ./.env
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
+	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
 	        python-project-structure-devel $(TOX_EXEC_ARGS) \
-	        towncrier check --compare-with "$(VCS_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	        towncrier check --compare-with \
+	        "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
@@ -492,9 +508,9 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
 	remote_branch_exists=false
-	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
+	if git fetch "$(VCS_PUSH_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
 	    remote_branch_exists=true
 	fi
@@ -502,10 +518,10 @@ upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	then
 # Reset an existing local branch to the latest upstream before upgrading
 	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "$(VCS_REMOTE)/$(VCS_BRANCH)"
+	    git reset --hard "$(VCS_BRANCH)"
 	else
 # Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_REMOTE)/$(VCS_BRANCH)"
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
@@ -531,10 +547,10 @@ upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	git_push_args="--no-verify"
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
-	    git_push_args+=" \
-	        --force-with-lease=$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
+	    git_push_args+=" --force-with-lease=\
+	$(VCS_BRANCH)-upgrade:$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)-upgrade"
 	fi
-	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
+	git push $${git_push_args} "$(VCS_PUSH_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

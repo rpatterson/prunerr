@@ -1116,6 +1116,9 @@ ifneq ($(PROJECT_GITHUB_PAT),)
 # mirror.
 	git remote set-url --push --add "origin" \
 	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+# Also add a fetch remote for the `$ gh ...` CLI tool to detect:
+	git remote add "github" \
+	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"

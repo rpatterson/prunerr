@@ -81,7 +81,7 @@ release:
         $CI_COMMIT_TAG
       when: "never"
     - if: >-
-        $GITLAB_REPOSITORY_OWNER == "rpatterson"
+        $CI_PROJECT_NAMESPACE == "rpatterson"
         && $CI_COMMIT_BRANCH =~ "^(develop|master)"
         && $CI_PIPELINE_SOURCE != "schedule"
   script:

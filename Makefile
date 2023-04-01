@@ -303,8 +303,7 @@ build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release

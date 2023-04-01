@@ -93,7 +93,19 @@ VCS_UPSTREAM_REMOTE:=$(shell \
 ifeq ($(VCS_UPSTREAM_REMOTE),)
 VCS_UPSTREAM_REMOTE=$(VCS_PUSH_REMOTE)
 endif
+CI=false
+ifeq ($(CI),true)
+# Under CI, check commits and release notes against the branch to be merged into:
+ifeq ($(VCS_UPSTREAM_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifneq ($(VCS_UPSTREAM_BRANCH),master)
+VCS_COMPARE_BRANCH=develop
+else
 VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+endif
+else
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+endif
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
@@ -198,14 +210,7 @@ PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
-CI=false
 ifeq ($(CI),true)
-# Under CI, check commits and release notes against the branch to be merged into:
-ifeq ($(VCS_UPSTREAM_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
-else ifneq ($(VCS_UPSTREAM_BRANCH),master)
-VCS_COMPARE_BRANCH=develop
-endif
 # Compile requirements on CI/CD as a check to make sure all changes to dependencies have
 # been reflected in the frozen/pinned versions, but don't upgrade packages so that
 # external changes, such as new PyPI releases, don't turn CI/CD red spuriously and

@@ -31,11 +31,7 @@ build-test:
         $CI_COMMIT_TAG
       when: "never"
     - if: >-
-        (
-          $CI_COMMIT_BRANCH !~ "^(develop|master)" || $CI_COMMIT_TITLE !~
-          /^build\(release\): Version [0-9]\.[0-9]\.[0-9][a-z0-9-.]* → [0-9]\.[0-9]\.[0-9][a-z0-9-.]*$/
-        )
-        && $CI_PIPELINE_SOURCE != "schedule"
+        $CI_PIPELINE_SOURCE != "schedule"
   parallel:
     matrix:
       - PYTHON_MINORS:

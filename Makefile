@@ -20,7 +20,7 @@ PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 # Project-specific variables
 export DOCKER_USER=merpatterson
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-GITLAB_UPSTREAM_OWNER=rpatterson
+CI_UPSTREAM_NAMESPACE=rpatterson
 CI_PROJECT_NAME=python-project-structure
 
 # Values derived from the environment
@@ -170,13 +170,13 @@ DOCKER_VOLUMES=\
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
-GITLAB_REPOSITORY_OWNER=$(GITLAB_UPSTREAM_OWNER)
-GITHUB_UPSTREAM_OWNER=$(GITLAB_UPSTREAM_OWNER)
+CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
+GITHUB_UPSTREAM_OWNER=$(CI_UPSTREAM_NAMESPACE)
 GITHUB_REPOSITORY_OWNER=$(GITHUB_UPSTREAM_OWNER)
 # Determine if this checkout is a fork of the upstream project:
 CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
-ifneq ($(GITLAB_REPOSITORY_OWNER),$(GITLAB_UPSTREAM_OWNER))
+ifneq ($(CI_PROJECT_NAMESPACE),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
 endif
@@ -224,8 +224,8 @@ RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 endif
 endif
-CI_REGISTRY_USER=$(GITLAB_REPOSITORY_OWNER)
-CI_REGISTRY=registry.gitlab.com/$(GITLAB_REPOSITORY_OWNER)
+CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
+CI_REGISTRY=registry.gitlab.com/$(CI_PROJECT_NAMESPACE)
 CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
 VCS_REMOTE_PUSH_URL=

@@ -390,7 +390,8 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: ./var/log/tox/build/build.log build-pkgs ~/.pypirc
+release-python: ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log build-pkgs ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"

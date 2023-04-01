@@ -8,6 +8,8 @@ on:
       - "**"
     tags:
       - "!**"
+      # Also run for open pull requests, including when pushed to:
+  pull_request: {}
 
 jobs:
 

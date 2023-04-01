@@ -793,10 +793,10 @@ $(VCS_FETCH_TARGETS):
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
-	git fetch $${git_fetch_args} \
-	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))"
 	mkdir -pv "$(dir $(@))"
-	echo "$$(git rev-parse "$(@:var/git/refs/remotes/%=%)")" | tee -a "$(@)"
+	(git fetch $${git_fetch_args} \
+	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))" || true) |&
+	    tee -a "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

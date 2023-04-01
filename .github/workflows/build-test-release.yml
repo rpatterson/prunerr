@@ -27,6 +27,8 @@ jobs:
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        # Different variable name needed by the GitHub CLI:
+        GH_TOKEN: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
       packages: "write"
       checks: "write"
@@ -119,6 +121,8 @@ jobs:
         PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
         TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        # Different variable name needed by the GitHub CLI:
+        GH_TOKEN: "${{ secrets.PROJECT_GITHUB_PAT }}"
     permissions:
       packages: "write"
     steps:

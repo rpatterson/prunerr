@@ -360,8 +360,13 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 ### Perform any checks that should only be run before pushing
 check-push: $(VCS_FETCH_TARGETS) build-docker-volumes-$(PYTHON_ENV) \
 		build-docker-$(PYTHON_MINOR) ./.env
+	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
+	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
+	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit $$exit_code
+	fi
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
 	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then

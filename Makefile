@@ -63,17 +63,21 @@ export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
 # Values derived from VCS/git:
 # Determine which branch is checked out depending on the environment
+VCS_BRANCH:=$(shell git branch --show-current)
 GITLAB_CI=false
 GITHUB_ACTIONS=false
 ifeq ($(GITLAB_CI),true)
-export VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+ifneq ($(CI_COMMIT_REF_NAME),)
+VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+endif
 USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
 else ifeq ($(GITHUB_ACTIONS),true)
-export VCS_BRANCH=$(GITHUB_REF_NAME)
-USER_EMAIL=$(USER_NAME)@actions.github.com
-else
-export VCS_BRANCH:=$(shell git branch --show-current)
+ifneq ($(GITHUB_REF_NAME),)
+VCS_BRANCH=$(GITHUB_REF_NAME)
 endif
+USER_EMAIL=$(USER_NAME)@actions.github.com
+endif
+export VCS_BRANCH
 VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
 ifeq ($(VCS_PUSH_REMOTE),)
 VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")

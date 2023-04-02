@@ -29,6 +29,8 @@ jobs:
         DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
         # Enable the GitHub CLI
         PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        CI_REPO_FULL_NAME:
+          "${{ github.event.pull_request.head.repo.full_name }}"
     permissions:
       packages: "write"
       checks: "write"
@@ -79,7 +81,10 @@ jobs:
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
-        if: "success() || failure()"    # run this step even if previous step failed
+        # run this step even if previous step failed
+        if: >-
+          (success() || failure())
+          && startsWith(github.event.pull_request.head.repo.full_name, 'rpatterson/')
         with:
           name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
           path: >-
@@ -106,7 +111,7 @@ jobs:
     runs-on: "ubuntu-latest"
     needs: ["build-test"]
     if: >-
-      github.repository_owner == 'rpatterson'
+      startsWith(github.event.pull_request.head.repo.full_name, 'rpatterson/')
       && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
     container:
       image: "ghcr.io/${{ github.repository }}:build-host"

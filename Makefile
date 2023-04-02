@@ -110,6 +110,11 @@ else ifeq ($(VCS_UPSTREAM_BRANCH),develop)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 endif
+# Address undefined variables warnings when running under local development
+PYPI_PASSWORD=
+export PYPI_PASSWORD
+TEST_PYPI_PASSWORD=
+export TEST_PYPI_PASSWORD
 
 # Makefile functions
 current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)

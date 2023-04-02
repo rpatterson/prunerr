@@ -902,7 +902,7 @@ ifneq ($(VCS_BRANCH),master)
 	)
 	then
 	    docker_build_caches+=" --cache-from \
-	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 	fi
 endif
 endif
@@ -914,7 +914,7 @@ ifneq ($(VCS_BRANCH),master)
 	)
 	then
 	    docker_build_caches+=" --cache-from \
-	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 	fi
 endif
 endif
@@ -922,11 +922,13 @@ endif
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	docker push \
+	    "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(CI_IS_FORK),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	docker push \
+	    "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 endif
 endif
 	date >>"$(@)"
@@ -969,7 +971,7 @@ ifneq ($(VCS_BRANCH),master)
 	if $(MAKE) -e pull-docker
 	then
 	    docker_build_caches+=" \
-	--cache-from $(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+	--cache-from $(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 	fi
 endif
 endif
@@ -978,7 +980,7 @@ ifneq ($(VCS_BRANCH),master)
 	if $(MAKE) -e pull-docker
 	then
 	    docker_build_caches+=" \
-	--cache-from $(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+	--cache-from $(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 	fi
 endif
 endif
@@ -986,11 +988,11 @@ endif
 	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+	docker push "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(CI_IS_FORK),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
+	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 endif
 endif
 	date >>"$(@)"

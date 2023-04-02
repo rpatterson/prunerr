@@ -212,10 +212,18 @@ DOCKER_REGISTRIES=GITHUB
 DOCKER_IMAGES+=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
 endif
 endif
-GITHUB_TOKEN=$(GH_TOKEN)
+# Take GitHub auth from env under GitHub actions but from secrets on other hosts:
+GITHUB_TOKEN=
+PROJECT_GITHUB_PAT=
+ifeq ($(GITHUB_TOKEN),)
+GITHUB_TOKEN=$(PROJECT_GITHUB_PAT)
+else ifeq ($(PROJECT_GITHUB_PAT),)
 PROJECT_GITHUB_PAT=$(GITHUB_TOKEN)
+endif
+GH_TOKEN=$(GITHUB_TOKEN)
 export GH_TOKEN
 export GITHUB_TOKEN
+export PROJECT_GITHUB_PAT
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:

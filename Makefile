@@ -212,6 +212,10 @@ DOCKER_REGISTRIES=GITHUB
 DOCKER_IMAGES+=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
 endif
 endif
+GITHUB_TOKEN=$(GH_TOKEN)
+PROJECT_GITHUB_PAT=$(GITHUB_TOKEN)
+export GH_TOKEN
+export GITHUB_TOKEN
 
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
@@ -253,7 +257,7 @@ TEST_PYPI_PASSWORD=
 export TEST_PYPI_PASSWORD
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
-PROJECT_GITHUB_PAT=
+GH_TOKEN=
 
 # Makefile functions
 current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)

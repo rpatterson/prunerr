@@ -177,6 +177,7 @@ DOCKER_VARIANT_PREFIX=
 ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
+DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
 DOCKER_VOLUMES=\
 ./var/ ./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
@@ -235,6 +236,10 @@ CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
 CI_REGISTRY=registry.gitlab.com/$(CI_PROJECT_NAMESPACE)
 CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
+PYPI_PASSWORD=
+export PYPI_PASSWORD
+TEST_PYPI_PASSWORD=
+export TEST_PYPI_PASSWORD
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
 PROJECT_GITHUB_PAT=
@@ -286,7 +291,7 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
@@ -295,7 +300,7 @@ ifeq ($(VCS_BRANCH),master)
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(VCS_BRANCH)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),master)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${major_version}
@@ -1078,10 +1083,12 @@ $(VCS_FETCH_TARGETS):
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
+	branch_path="$(@:var/git/refs/remotes/%=%)"
 	mkdir -pv "$(dir $(@))"
-	(git fetch $${git_fetch_args} \
-	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))" || true) |&
-	    tee -a "$(@)"
+	(
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" ||
+	    true
+	) |& tee -a "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

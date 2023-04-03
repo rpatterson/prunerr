@@ -3,6 +3,8 @@
 # To ease discovery for new contributors, variables that act as options affecting
 # behavior are at the top followed by the top-level/PHONY targets intended for use by
 # developers.  The real work, however, is in the recipes for real targets that follow.
+# If making changes here, please start by reading the philosophy commentary at the
+# bottom of this file.
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
@@ -522,3 +524,75 @@ export TEST_PYPI_PASSWORD
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
+
+
+## Makefile Development:
+#
+# Development primarily requires a balance of 2 priorities:
+#
+# - Ensure the correctness of the code and build artifacts
+# - Minimize iteration time overhead in the inner loop of development
+#
+# This project uses Make to balance those priorities.  Target recipes capture the
+# commands necessary to build artifacts, run tests, and check the code.  Top-level
+# targets assemble those recipes to put it all together and ensure correctness.  Target
+# prerequisites are used to define when build artifacts need to be updated so that
+# time isn't wasted on unnecessary updates in the inner loop of development.
+#
+# The most important Make concept to understand if making changes here is that of real
+# targets and prerequisites, as opposed to "phony" targets.  The target is only updated
+# if any of its prerequisites are newer, IOW have a more recent modification time, than
+# the target.  For example, if a new feature adds library as a new project dependency
+# then correctness requires that the fixed/pinned versions be updated to include the new
+# library.  Most of the time, however, the fixed/pinned versions don't need to be
+# updated and it would waste significant time to always update them in the inner loop of
+# development.  We express this relationship in Make by defining the files containing
+# the fixed/pinned versions as targets and the `./setup.cfg` file where dependencies are
+# defined as a prerequisite:
+#
+#    ./requirements.txt: setup.cfg
+#        ./.tox/py310/bin/pip-compile --output-file "$(@)" "$(<)"
+#
+# To that end, developers should use real target files whenever possible when adding
+# recipes to this file.
+#
+# Sometimes the task we need a recipe to accomplish should only be run when certain
+# changes have been made and as such we can use those changed files as prerequisites but
+# the task doesn't produce an artifact appropriate for use as the target for the recipe.
+# In that case, the recipe can write "simulated" artifact such as by piping output to a
+# log file:
+#
+#     ./var/log/foo.log:
+#         mkdir -pv "$(dir $(@))"
+#         ./.tox/build/bin/python "./bin/foo.py" | tee -a "$(@)"
+#
+# This is also useful when none of the modification times of produced artifacts can be
+# counted on to correctly reflect when any subsequent targets need to be updated when
+# using this target as a pre-requisite in turn.  If no output can be captured, then the
+# recipe can create arbitrary output:
+#
+#     ./var/log/foo.log:
+#         ./.tox/build/bin/python "./bin/foo.py"
+#         mkdir -pv "$(dir $(@))"
+#         date | tee -a "$(@)"
+#
+# We use a few more Make features than this core feature and welcome further use of such
+# features:
+#
+# - `$(@)`:
+#   The automatic variable containing the file path for the target
+#
+# - `$(<)`:
+#   The automatic variable containing the file path for the first prerequisite
+#
+# - `$(FOO:%=foo-%)`:
+#   Substitution references to generate transformations of space-separated values
+#
+# - `$ make FOO=bar ...`:
+#   Overriding variables on the command-line when invoking make as "options"
+#
+# We want to avoid, however, using many more features of Make, particularly the more
+# "magical" features, to keep it readable, discover-able, and otherwise accessible to
+# developers who may not have significant familiarity with Make.  If there's a good,
+# pragmatic reason to add use of further features feel free to make the case but avoid
+# them if possible.

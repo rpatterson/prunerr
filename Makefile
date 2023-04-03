@@ -1,15 +1,150 @@
 ## Development, build and maintenance tasks:
 #
 # To ease discovery for new contributors, variables that act as options affecting
-# behavior are at the top followed by the top-level/PHONY targets intended for use by
-# developers.  The real work, however, is in the recipes for real targets that follow.
-# If making changes here, please start by reading the philosophy commentary at the
-# bottom of this file.
+# behavior are at the top.  Then skip to `## Top-level targets:` below to find targets
+# intended for use by developers.  The real work, however, is in the recipes for real
+# targets that follow.  If making changes here, please start by reading the philosophy
+# commentary at the bottom of this file.
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
+
+
+## "Private" Variables:
+
+# Variables that aren't likely to be of concern those just using and reading top-level
+# targets.  Mostly variables whose values are derived from the environment or other
+# values.  If adding a variable whose value isn't a literal constant or intended for use
+# on the CLI as an option, add it to the appropriate grouping below.  Unfortunately,
+# variables referenced in targets or prerequisites need to be defined above those
+# references (as opposed to references in recipes), which means we can't move these
+# further below for readability and discover.
+
+### Defensive settings for make:
+#     https://tech.davis-hansson.com/p/make/
+SHELL:=bash
+.ONESHELL:
+.SHELLFLAGS:=-eu -o pipefail -c
+.SILENT:
+.DELETE_ON_ERROR:
+MAKEFLAGS+=--warn-undefined-variables
+MAKEFLAGS+=--no-builtin-rules
+PS1?=$$
+EMPTY=
+COMMA=,
+
+# Values derived from the environment:
+USER_NAME:=$(shell id -u -n)
+USER_FULL_NAME:=$(shell \
+    getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+ifeq ($(USER_FULL_NAME),)
+USER_FULL_NAME=$(USER_NAME)
+endif
+USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
+
+# Values concerning supported Python versions:
+# Use the same Python version tox would as a default.
+# https://tox.wiki/en/latest/config.html#base_python
+PYTHON_HOST_MINOR:=$(shell \
+    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
+# Determine the latest installed Python version of the supported versions
+PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
+PYTHON_AVAIL_EXECS:=$(foreach \
+    PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
+PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+PYTHON_MINOR=$(PYTHON_HOST_MINOR)
+ifeq ($(PYTHON_MINOR),)
+# Fallback to the latest installed supported Python version
+PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+endif
+PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
+PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+ifeq ($(PYTHON_MINOR),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
+PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+endif
+export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
+PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
+PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
+
+# Values derived from VCS/git:
+VCS_BRANCH:=$(shell git branch --show-current)
+VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
+endif
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE=origin
+endif
+VCS_UPSTREAM_REF:=$(shell \
+    git for-each-ref --format='%(upstream:remoteref)' "refs/heads/$(VCS_BRANCH)")
+ifneq ($(VCS_UPSTREAM_REF),)
+VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
+else
+VCS_UPSTREAM_BRANCH=$(VCS_BRANCH)
+endif
+VCS_UPSTREAM_REMOTE:=$(shell \
+    git for-each-ref --format='%(upstream:remotename)' "refs/heads/$(VCS_BRANCH)")
+ifeq ($(VCS_UPSTREAM_REMOTE),)
+VCS_UPSTREAM_REMOTE=$(VCS_PUSH_REMOTE)
+endif
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
+endif
+
+# Values used to run Tox:
+TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
+ifeq ($(words $(PYTHON_MINORS)),1)
+TOX_RUN_ARGS=run
+endif
+# The options that allow for rapid execution of arbitrary commands in the venvs managed
+# by tox
+TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
+TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
+
+# Values used for publishing releases:
+# Safe defaults for testing the release process without publishing to the final/official
+# hosts/indexes/registries:
+RELEASE_PUBLISH=false
+PYPI_REPO=testpypi
+# Only publish releases from the `master` or `develop` branches:
+ifeq ($(VCS_UPSTREAM_BRANCH),master)
+RELEASE_PUBLISH=true
+PYPI_REPO=pypi
+else ifeq ($(VCS_UPSTREAM_BRANCH),develop)
+# Publish pre-releases from the `develop` branch:
+RELEASE_PUBLISH=true
+PYPI_REPO=pypi
+endif
+# Address undefined variables warnings when running under local development
+PYPI_PASSWORD=
+export PYPI_PASSWORD
+TEST_PYPI_PASSWORD=
+export TEST_PYPI_PASSWORD
+
+# Done with `$(shell ...)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
+
+
+## Makefile "functions":
+#
+# Snippets whose output is frequently used including across recipes.  Used for output
+# only, not actually making any changes.
+# https://www.gnu.org/software/make/manual/html_node/Call-Function.html
+
+# Return the most recently built package:
+current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)
 
 
 ## Top-level targets:
@@ -391,138 +526,6 @@ else
 endif
 	fi
 	envsubst <"$(template)" >"$(target)"
-
-
-## Makefile "functions":
-#
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
-# https://www.gnu.org/software/make/manual/html_node/Call-Function.html
-
-# Return the most recently built package:
-current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)
-
-
-## "Private" Variables:
-
-# Variables that aren't likely to be of concern those just using and reading top-level
-# targets.  Mostly variables whose values are derived from the environment or other
-# values.  If adding a variable whose value isn't a literal constant or intended for use
-# on the CLI as an option, add it to the appropriate grouping below.
-
-### Defensive settings for make:
-#     https://tech.davis-hansson.com/p/make/
-SHELL:=bash
-.ONESHELL:
-.SHELLFLAGS:=-eu -o pipefail -c
-.SILENT:
-.DELETE_ON_ERROR:
-MAKEFLAGS+=--warn-undefined-variables
-MAKEFLAGS+=--no-builtin-rules
-PS1?=$$
-EMPTY=
-COMMA=,
-
-# Values derived from the environment:
-USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME:=$(shell \
-    getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
-ifeq ($(USER_FULL_NAME),)
-USER_FULL_NAME=$(USER_NAME)
-endif
-USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
-
-# Values concerning supported Python versions:
-# Use the same Python version tox would as a default.
-# https://tox.wiki/en/latest/config.html#base_python
-PYTHON_HOST_MINOR:=$(shell \
-    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
-export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
-# Determine the latest installed Python version of the supported versions
-PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
-PYTHON_AVAIL_EXECS:=$(foreach \
-    PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
-PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
-PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
-PYTHON_MINOR=$(PYTHON_HOST_MINOR)
-ifeq ($(PYTHON_MINOR),)
-# Fallback to the latest installed supported Python version
-PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
-endif
-PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
-PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
-ifeq ($(PYTHON_MINOR),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
-else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
-endif
-export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
-PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
-PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
-PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
-
-# Values derived from VCS/git:
-VCS_BRANCH:=$(shell git branch --show-current)
-VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
-ifeq ($(VCS_PUSH_REMOTE),)
-VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
-endif
-ifeq ($(VCS_PUSH_REMOTE),)
-VCS_PUSH_REMOTE=origin
-endif
-VCS_UPSTREAM_REF:=$(shell \
-    git for-each-ref --format='%(upstream:remoteref)' "refs/heads/$(VCS_BRANCH)")
-ifneq ($(VCS_UPSTREAM_REF),)
-VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
-else
-VCS_UPSTREAM_BRANCH=$(VCS_BRANCH)
-endif
-VCS_UPSTREAM_REMOTE:=$(shell \
-    git for-each-ref --format='%(upstream:remotename)' "refs/heads/$(VCS_BRANCH)")
-ifeq ($(VCS_UPSTREAM_REMOTE),)
-VCS_UPSTREAM_REMOTE=$(VCS_PUSH_REMOTE)
-endif
-VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
-ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
-VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
-endif
-
-# Values used to run Tox:
-TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
-TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
-ifeq ($(words $(PYTHON_MINORS)),1)
-TOX_RUN_ARGS=run
-endif
-# The options that allow for rapid execution of arbitrary commands in the venvs managed
-# by tox
-TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
-TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
-TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
-
-# Values used for publishing releases:
-# Safe defaults for testing the release process without publishing to the final/official
-# hosts/indexes/registries:
-RELEASE_PUBLISH=false
-PYPI_REPO=testpypi
-# Only publish releases from the `master` or `develop` branches:
-ifeq ($(VCS_UPSTREAM_BRANCH),master)
-RELEASE_PUBLISH=true
-PYPI_REPO=pypi
-else ifeq ($(VCS_UPSTREAM_BRANCH),develop)
-# Publish pre-releases from the `develop` branch:
-RELEASE_PUBLISH=true
-PYPI_REPO=pypi
-endif
-# Address undefined variables warnings when running under local development
-PYPI_PASSWORD=
-export PYPI_PASSWORD
-TEST_PYPI_PASSWORD=
-export TEST_PYPI_PASSWORD
-
-# Done with `$(shell ...)`, echo recipe commands going forward
-.SHELLFLAGS+= -x
 
 
 ## Makefile Development:

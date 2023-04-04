@@ -51,4 +51,4 @@ debug-github-checkout:
 	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/prunerr"
 	git -c protocol.version=2 fetch --no-tags --prune --progress \
 	    --no-recurse-submodules --depth=1 "origin" "$(VCS_BRANCH)"
-	git checkout --progress --force -B "$(VCS_BRANCH)" "origin/$(VCS_BRANCH)"
+	git checkout --progress --detach "origin/$(VCS_BRANCH)"

@@ -17,11 +17,11 @@ COMMA=,
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
-export DOCKER_USER=merpatterson
 # Project-specific variables
+export DOCKER_USER=merpatterson
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-GITLAB_REPOSITORY_OWNER=rpatterson
-GITHUB_REPOSITORY_OWNER=$(GITLAB_REPOSITORY_OWNER)
+CI_UPSTREAM_NAMESPACE=rpatterson
+CI_PROJECT_NAME=prunerr
 
 # Options affecting target behavior
 export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/media/Library/
@@ -30,7 +30,8 @@ PRUNERR_ARGS=$(PRUNERR_CMD)
 
 # Values derived from the environment
 USER_NAME:=$(shell id -u -n)
-USER_FULL_NAME:=$(shell getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
+USER_FULL_NAME:=$(shell \
+    getent passwd "$(USER_NAME)" | cut -d ":" -f 5 | cut -d "," -f 1)
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
@@ -38,16 +39,18 @@ USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 export CHECKOUT_DIR=$(PWD)
-export TZ=Etc/UTC
+TZ=Etc/UTC
 ifneq ("$(wildcard /usr/share/zoneinfo/)","")
-export TZ=$(shell \
+TZ=$(shell \
   realpath --relative-to=/usr/share/zoneinfo/ \
   $(firstword $(realpath /private/etc/localtime /etc/localtime)) \
 )
 endif
+export TZ
 # Use the same Python version tox would as a default:
 # https://tox.wiki/en/latest/config.html#base_python
-PYTHON_HOST_MINOR:=$(shell pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+PYTHON_HOST_MINOR:=$(shell \
+    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
@@ -56,14 +59,77 @@ define PYTHON_AVAIL_EXECS :=
 endef
 PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
 PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
-export PYTHON_MINOR=$(PYTHON_HOST_MINOR)
+PYTHON_MINOR=$(PYTHON_HOST_MINOR)
 ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
-export PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
 export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
-# Values derived from constants
+# Values derived from VCS/git:
+# Determine which branch is checked out depending on the environment
+VCS_BRANCH:=$(shell git branch --show-current)
+GITLAB_CI=false
+GITHUB_ACTIONS=false
+ifeq ($(GITLAB_CI),true)
+ifneq ($(CI_COMMIT_REF_NAME),)
+VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+endif
+USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
+else ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(GITHUB_REF_NAME),)
+VCS_BRANCH=$(GITHUB_REF_NAME)
+endif
+USER_EMAIL=$(USER_NAME)@actions.github.com
+endif
+export VCS_BRANCH
+VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
+endif
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE=origin
+endif
+VCS_UPSTREAM_REF:=$(shell \
+    git for-each-ref --format='%(upstream:remoteref)' "refs/heads/$(VCS_BRANCH)")
+ifneq ($(VCS_UPSTREAM_REF),)
+VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
+else
+VCS_UPSTREAM_BRANCH=$(VCS_BRANCH)
+endif
+VCS_UPSTREAM_REMOTE:=$(shell \
+    git for-each-ref --format='%(upstream:remotename)' "refs/heads/$(VCS_BRANCH)")
+ifeq ($(VCS_UPSTREAM_REMOTE),)
+VCS_UPSTREAM_REMOTE=$(VCS_PUSH_REMOTE)
+endif
+CI=false
+ifeq ($(CI),true)
+# Under CI, check commits and release notes against the branch to be merged into:
+ifeq ($(VCS_UPSTREAM_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifneq ($(VCS_UPSTREAM_BRANCH),master)
+VCS_COMPARE_BRANCH=develop
+else
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+endif
+else
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+endif
+VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
+endif
+# Determine the sequence of branches to find closes existing build artifacts, such as
+# docker images:
+VCS_BRANCHES=$(VCS_BRANCH)
+ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_BRANCH),develop)
+VCS_BRANCHES+=develop
+endif
+VCS_BRANCHES+=master
+endif
+
+# Values inferred from constants above
 # Support passing in the Python versions to test, including testing one version:
 #     $ make PYTHON_MINORS=3.11 test
 PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
@@ -74,15 +140,22 @@ export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
 export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
 endif
+export PYTHON_MINOR
 export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
+export PYTHON_WHEEL=
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
-export TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
-export TOX_RUN_ARGS=run
+TOX_RUN_ARGS=run
+else
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 endif
+ifneq ($(PYTHON_WHEEL),)
+TOX_RUN_ARGS+= --installpkg "$(PYTHON_WHEEL)"
+endif
+export TOX_RUN_ARGS
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
 # by tox
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
@@ -96,15 +169,24 @@ endif
 DOCKER_BUILD_ARGS=
 DOCKER_REGISTRIES=DOCKER GITLAB GITHUB
 export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
-DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/prunerr
+DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/$(CI_PROJECT_NAME)
 DOCKER_IMAGE_GITLAB=$(CI_REGISTRY_IMAGE)
-DOCKER_IMAGE_GITHUB=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/prunerr
+DOCKER_IMAGE_GITHUB=ghcr.io/$(CI_PROJECT_NAMESPACE)/$(CI_PROJECT_NAME)
 DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
+DOCKER_IMAGES=
+ifeq ($(GITLAB_CI),true)
+DOCKER_IMAGES+=$(DOCKER_IMAGE_GITLAB)
+else ifeq ($(GITHUB_ACTIONS),true)
+DOCKER_IMAGES+=$(DOCKER_IMAGE_GITHUB)
+else
+DOCKER_IMAGES+=$(DOCKER_IMAGE_DOCKER)
+endif
 export DOCKER_VARIANT=
 DOCKER_VARIANT_PREFIX=
 ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
+DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
 DOCKER_VOLUMES=\
 ./var/ ./var/docker/$(PYTHON_ENV)/ \
 ./src/prunerr.egg-info/ \
@@ -112,30 +194,52 @@ DOCKER_VOLUMES=\
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/ \
 ./media/Library/
 
+# Values derived from CI environments:
+CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
+ifneq ($(CI_REPO_FULL_NAME),)
+CI_PROJECT_NAMESPACE:=$(shell \
+    CI_REPO_FULL_NAME="$(CI_REPO_FULL_NAME)" && echo "$${CI_REPO_FULL_NAME%/*}")
+else
+CI_REPO_FULL_NAME=$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
+endif
+GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
+# Determine if this checkout is a fork of the upstream project:
+CI_IS_FORK=false
+ifeq ($(GITLAB_CI),true)
+ifneq ($(CI_PROJECT_NAMESPACE),$(CI_UPSTREAM_NAMESPACE))
+CI_IS_FORK=true
+DOCKER_REGISTRIES=GITLAB
+DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
+endif
+else ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(CI_PROJECT_NAMESPACE),$(GITHUB_REPOSITORY_OWNER))
+CI_IS_FORK=true
+DOCKER_REGISTRIES=GITHUB
+DOCKER_IMAGES+=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
+endif
+endif
+# Take GitHub auth from env under GitHub actions but from secrets on other hosts:
+GITHUB_TOKEN=
+PROJECT_GITHUB_PAT=
+ifeq ($(GITHUB_TOKEN),)
+GITHUB_TOKEN=$(PROJECT_GITHUB_PAT)
+else ifeq ($(PROJECT_GITHUB_PAT),)
+PROJECT_GITHUB_PAT=$(GITHUB_TOKEN)
+endif
+GH_TOKEN=$(GITHUB_TOKEN)
+export GH_TOKEN
+export GITHUB_TOKEN
+export PROJECT_GITHUB_PAT
+
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
 BUILD_REQUIREMENTS=true
 PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
-TOWNCRIER_COMPARE_BRANCH=develop
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
-# Determine which branch is checked out depending on the environment
-GITLAB_CI=false
-GITHUB_ACTIONS=false
-ifeq ($(GITLAB_CI),true)
-USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
-export VCS_BRANCH=$(CI_COMMIT_REF_NAME)
-else ifeq ($(GITHUB_ACTIONS),true)
-USER_EMAIL=$(USER_NAME)@actions.github.com
-export VCS_BRANCH=$(GITHUB_REF_NAME)
-else
-export VCS_BRANCH:=$(shell git branch --show-current)
-endif
 # Only publish releases from the `master` or `develop` branches:
 DOCKER_PUSH=false
-CI=false
-GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(CI),true)
 # Compile requirements on CI/CD as a check to make sure all changes to dependencies have
 # been reflected in the frozen/pinned versions, but don't upgrade packages so that
@@ -143,26 +247,42 @@ ifeq ($(CI),true)
 # unrelated to the contributor's actual changes.
 PIP_COMPILE_ARGS=
 endif
+GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_UPSTREAM_BRANCH),master)
 RELEASE_PUBLISH=true
-TOWNCRIER_COMPARE_BRANCH=master
 PYPI_REPO=pypi
 PYPI_HOSTNAME=pypi.org
 DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
-else ifeq ($(VCS_BRANCH),develop)
+else ifeq ($(VCS_UPSTREAM_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+PYPI_REPO=pypi
 endif
 endif
-CI_REGISTRY_USER=$(GITLAB_REPOSITORY_OWNER)
-CI_REGISTRY=registry.gitlab.com/$(GITLAB_REPOSITORY_OWNER)
-CI_REGISTRY_IMAGE=$(CI_REGISTRY)/prunerr
+CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
+CI_REGISTRY=registry.gitlab.com/$(CI_PROJECT_NAMESPACE)
+CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
+PYPI_PASSWORD=
+export PYPI_PASSWORD
+TEST_PYPI_PASSWORD=
+export TEST_PYPI_PASSWORD
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
-PROJECT_GITHUB_PAT=
+DOCKER_PASS=
+export DOCKER_PASS
+CI_PROJECT_ID=
+export CI_PROJECT_ID
+CI_JOB_TOKEN=
+export CI_JOB_TOKEN
+CI_REGISTRY_PASSWORD=
+export CI_REGISTRY_PASSWORD
+GH_TOKEN=
+
+# Makefile functions
+current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -186,17 +306,9 @@ build: ./.git/hooks/pre-commit build-docker
 
 .PHONY: build-docker
 ### Set up for development in Docker containers
-build-docker: ./.env $(HOME)/.local/var/log/prunerr-host-install.log
-ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./build/next-version.txt" ]
-	then
-# Ensure the build is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
-	fi
-endif
-# Avoid parallel tox recreations stomping on each other
-	$(MAKE) "./var/log/tox/build/build.log"
-	$(MAKE) -e -j DOCKER_BUILD_ARGS="--progress plain" \
+build-docker: build-pkgs
+	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
+	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
 ### Set up for development in a Docker container for one Python version
@@ -205,17 +317,18 @@ $(PYTHON_MINORS:%=build-docker-%):
 	    PYTHON_MINORS="$(@:build-docker-%=%)" \
 	    PYTHON_MINOR="$(@:build-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
-	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build.log"
+	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build-user.log"
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): \
+		./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(VCS_BRANCH)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),master)
 # Only update tags end users may depend on to be stable from the `master` branch
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
@@ -224,7 +337,7 @@ ifeq ($(VCS_BRANCH),master)
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(VCS_BRANCH)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),master)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${major_version}
@@ -254,6 +367,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
+
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary
 $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
@@ -267,37 +381,90 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
-.PHONY: build-wheel
-### Build the package/distribution format that is fastest to install
-build-wheel: \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags origin "$(VCS_BRANCH)"
-	ln -sfv "$$(
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        prunerr-devel tox exec -q -e $(PYTHON_ENV) -- \
-	        pyproject-build -w |
-	    sed -nE 's|^Successfully built (.+\.whl)$$|\1|p'
-	)" "./dist/.current.whl"
+.PHONY: pull-docker
+### Pull an existing image best to use as a cache for building new images
+pull-docker:
+	for vcs_branch in $(VCS_BRANCHES)
+	do
+	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"
+	    for docker_image in $(DOCKER_IMAGES)
+	    do
+	        if docker pull "$${docker_image}:$${docker_tag}"
+	        then
+	            docker tag "$${docker_image}:$${docker_tag}" \
+	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
+	            exit
+	        fi
+	    done
+	done
+	set +x
+	echo "ERROR: Could not pull any existing docker image"
+	false
+.PHONY: build-docker-pull
+### Pull the development image and simulate as if it had been built here
+build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+	if $(MAKE) -e pull-docker
+	then
+	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
+	    touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
+	        "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
+	    $(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
+	else
+	    $(MAKE) "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
+	fi
+
+.PHONY: build-pkgs
+### Ensure the built package is current when used outside of tox
+build-pkgs: ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+# Defined as a .PHONY recipe so that multiple targets can depend on this as a
+# pre-requisite and it will only be run once per invocation.
+	mkdir -pv "./dist/"
+# Build Python packages/distributions from the development Docker container for
+# consistency/reproducibility.
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    prunerr-devel tox run -e "$(PYTHON_ENV)" --pkg-only
+# Copy the wheel to a location accessible to all containers:
+	cp -lfv "$$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
+	)" "./dist/"
+# Also build the source distribution:
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    prunerr-devel \
+	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
+	cp -lfv "$$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
+	)" "./dist/"
 
 .PHONY: build-bump
 ### Bump the package version if on a branch that should trigger a release
-build-bump: \
-		~/.gitconfig ./var/log/git-remotes.log \
-		$(HOME)/.local/var/log/prunerr-host-install.log \
-		./var/docker/$(PYTHON_ENV)/log/build.log \
-		./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git_fetch_args=--tags
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+build-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+		./var/log/git-remotes.log ./var/log/tox/build/build.log \
+		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+	if ! git diff --cached --exit-code
 	then
-	    git_fetch_args+=" --unshallow"
+	    set +x
+	    echo "CRITICAL: Cannot bump version with staged changes"
+	    false
 	fi
-	git fetch $${git_fetch_args} origin "$(TOWNCRIER_COMPARE_BRANCH)"
-# Collect the versions involved in this release according to conventional commits
+# Check if the conventional commits since the last release require new release and thus
+# a version bump:
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+# No release necessary for the commits since the last release, don't publish a release
+	    exit
+	elif (( $$exit_code != 0 ))
+	then
+# Commitizen returned an unexpected exit status code, fail
+	    exit $$exit_code
+	fi
+# Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
-ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_UPSTREAM_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
 ifeq ($(RELEASE_PUBLISH),true)
@@ -305,41 +472,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-# Run first in case any input is needed from the developer
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --dry-run || exit_code=$$?
-# Check if a release and thus a version bump is needed for the commits since the last
-# release:
+ifeq ($(RELEASE_PUBLISH),true)
+# Capture the release notes for *just this* release for creating the GitHub release.
+# Have to run before the real `$ towncrier build` run without the `--draft` option
+# because after that the `newsfragments` will have been deleted.
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
-	rm -fv "./build/next-version.txt"
-	if (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-# No release necessary for the commits since the last release, don't publish a release
-	    exit
-	elif (( $$exit_code == 0 ))
-	then
-	    mkdir -pv "./build/"
-	    echo "$${next_version}" >"./build/next-version.txt"
-	else
-# Commitizen returned an unexpected exit status code, fail
-	    exit $$exit_code
-	fi
-# Update the release notes/changelog
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
-	    $(TOX_EXEC_ARGS) \
-	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
-	if ! git diff --cached --exit-code
-	then
-	    set +x
-	    echo "CRITICAL: Cannot bump version with staged changes"
-	    false
-	fi
-# Capture the release notes for *just this* release for creating the GitHub release.
-# Have to run before the real `$ towncrier build` run without the `--draft` option
-# because after that the `newsfragments` will have been deleted.
 	docker compose run --rm prunerr-devel $(TOX_EXEC_ARGS) \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	        >"./NEWS-release.rst"
@@ -348,8 +488,6 @@ endif
 	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
-# Prevent uploading unintended distributions
-	rm -vf ./dist/*
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch \
@@ -359,24 +497,23 @@ endif
 ifneq ($(CI),true)
 # If running under CI/CD then the image will be updated in the next pipeline stage.
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build.log"
+	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
 endif
-ifeq ($(RELEASE_PUBLISH),true)
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
-	git push -o ci.skip --no-verify --tags "origin" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "$(VCS_PUSH_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons
-start: build-docker-$(PYTHON_MINOR) ./.env
+start: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up -d
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging
-run: build-docker-$(PYTHON_MINOR) ./.env
+run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up
 .PHONY: run-debug
@@ -388,17 +525,36 @@ run-debug: ./var/log/editable.log
 
 .PHONY: check-push
 ### Perform any checks that should only be run before pushing
-check-push: build-docker-$(PYTHON_MINOR) ./.env
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
-	    $(TOX_EXEC_ARGS) \
-	    towncrier check --compare-with "origin/$(TOWNCRIER_COMPARE_BRANCH)"
+check-push: $(VCS_FETCH_TARGETS) build-docker-volumes-$(PYTHON_ENV) \
+		build-docker-$(PYTHON_MINOR) ./.env
+ifeq ($(CI),true)
+ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+# Don't waste CI time, only check for the canonical version:
+	exit
+endif
+endif
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
+	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
+	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit $$exit_code
+	fi
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	then
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	        prunerr-devel $(TOX_EXEC_ARGS) \
+	        towncrier check --compare-with \
+	        "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	fi
 .PHONY: check-clean
 ### Confirm that the checkout is free of uncommitted VCS changes
-check-clean: $(HOME)/.local/var/log/prunerr-host-install.log
+check-clean:
 	if [ -n "$$(git status --porcelain)" ]
 	then
 	    set +x
-	    echo "CRITICAL: Checkout is not clean, not publishing release"
+	    echo "Checkout is not clean"
 	    false
 	fi
 
@@ -409,45 +565,22 @@ release: release-python
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI
-release-python: \
-		~/.pypirc ./var/log/codecov-install.log \
-		$(HOME)/.local/var/log/prunerr-host-install.log \
-		./.env $(DOCKER_VOLUMES) ./dist/.current.whl
-# Upload any build or test artifacts to CI/CD providers
-ifeq ($(GITLAB_CI),true)
-	codecov --nonZero -t "$(CODECOV_TOKEN)" \
-	    --file "./build/$(PYTHON_ENV)/coverage.xml"
-endif
+release-python: ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log build-pkgs ~/.pypirc ./.env \
+		build-docker-volumes-$(PYTHON_ENV)
 ifeq ($(RELEASE_PUBLISH),true)
-	if [ -e "./build/next-version.txt" ]
-	then
-# Ensure the release is made from the version bump commit if it was done elsewhere:
-	    git pull --ff-only "origin" "v$$(cat "./build/next-version.txt")"
-	fi
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-# Build Python packages/distributions from the development Docker container for
-# consistency/reproducibility.
-	export VERSION=$$(./.tox/build/bin/cz version --project)
-	docker pull "$(DOCKER_IMAGE):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
-	touch "./var/docker/$(PYTHON_ENV)/log/build.log"
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
-	    $(TOX_EXEC_ARGS) pyproject-build -s
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/prunerr-*
+	$(TOX_EXEC_BUILD_ARGS) twine check \
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	$(MAKE) "check-clean"
-	if [ ! -e "./build/next-version.txt" ]
-	then
-	    exit
-	fi
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/prunerr-*
+	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" ./dist/prunerr-*
@@ -478,14 +611,13 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries
-release-docker: build-docker
-	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
+release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(PYTHON_MINORS:%=release-docker-%)
 .PHONY: $(PYTHON_MINORS:%=release-docker-%)
 ### Publish the container images for one Python version to all container registry
-$(PYTHON_MINORS:%=release-docker-%):
+$(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
-	$(MAKE) $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
@@ -512,7 +644,7 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 
 .PHONY: format
 ### Automatically correct code in this checkout according to linters and style checkers
-format: $(HOME)/.local/var/log/prunerr-host-install.log
+format:  ./var/log/tox/$(PYTHON_ENV)/build.log
 	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/prunerr/"
@@ -521,7 +653,7 @@ format: $(HOME)/.local/var/log/prunerr-host-install.log
 
 .PHONY: lint-docker
 ### Check the style and content of the `./Dockerfile*` files
-lint-docker: ./.env $(DOCKER_VOLUMES)
+lint-docker: ./.env build-docker-volumes-$(PYTHON_ENV)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -534,13 +666,10 @@ lint-docker: ./.env $(DOCKER_VOLUMES)
 test: lint-docker test-docker
 .PHONY: test-docker
 ### Format the code and run the full suite of tests, coverage checks, and linters
-test-docker: ./.env build-wheel
+test-docker: build-pkgs ./var/log/codecov-install.log
 # Avoid race condition starting service dependencies:
 	docker compose run --rm prunerr-daemon true
-	$(MAKE) -e -j \
-	    TOX_RUN_ARGS="run --installpkg ./dist/$$(
-	        readlink "./dist/.current.whl"
-	    )" \
+	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
@@ -552,7 +681,8 @@ $(PYTHON_MINORS:%=test-docker-%):
 	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" \
 	    test-docker-pyminor
 .PHONY: test-docker-pyminor
-test-docker-pyminor: build-docker-$(PYTHON_MINOR)
+test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) \
+		./var/log/codecov-install.log
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -566,8 +696,23 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	    prunerr --help
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} prunerr-devel \
-	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" TOX_RUN_ARGS="$(TOX_RUN_ARGS)" \
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
 	        test-local
+# Upload any build or test artifacts to CI/CD providers
+ifeq ($(GITLAB_CI),true)
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+ifneq ($(CODECOV_TOKEN),)
+	codecov --nonZero -t "$(CODECOV_TOKEN)" \
+	    --file "./build/$(PYTHON_ENV)/coverage.xml"
+else
+ifneq ($(CI_IS_FORK),true)
+	set +x
+	echo "ERROR: CODECOV_TOKEN missing from ./.env or CI secrets"
+	false
+endif
+endif
+endif
+endif
 .PHONY: test-local
 ### Run the full suite of tests on the local host
 test-local:
@@ -579,8 +724,9 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 
 .PHONY: upgrade
 ### Update all fixed/pinned dependencies to their latest available versions
-upgrade: ./.env $(DOCKER_VOLUMES)
-	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
+upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
+	touch "./setup.cfg" "./requirements/build.txt.in" \
+	    "./build-host/requirements.txt.in"
 ifeq ($(CI),true)
 # Pull separately to reduce noisy interactive TTY output where it shouldn't be:
 	docker compose pull --quiet prunerr-devel
@@ -594,18 +740,23 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
 .PHONY: upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review
-upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
-	git fetch "origin" "$(VCS_BRANCH)"
-	git fetch "origin" "$(VCS_BRANCH)-upgrade"
+upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+		./var/log/git-remotes.log
+	remote_branch_exists=false
+	if git fetch "$(VCS_PUSH_REMOTE)" "$(VCS_BRANCH)-upgrade"
+	then
+	    remote_branch_exists=true
+	fi
 	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
 	then
 # Reset an existing local branch to the latest upstream before upgrading
 	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "origin/$(VCS_BRANCH)"
+	    git reset --hard "$(VCS_BRANCH)"
 	else
 # Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "origin/$(VCS_BRANCH)"
+	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
 	fi
+	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" upgrade
 	if $(MAKE) "check-clean"
 	then
@@ -613,23 +764,26 @@ upgrade-branch: ~/.gitconfig ./var/log/git-remotes.log
 	    exit
 	fi
 # Commit the upgrade changes
-	echo "Upgrade all requirements and dependencies to the latest versions." \
-	    >"./src/prunerr/newsfragments/upgrade-requirements.misc.rst"
-	git add --update \
-	    './build-host/requirements-*.txt' './requirements/*/build.txt' \
+	echo "Upgrade all requirements to the latest versions as of $${now}." \
+	    >"./src/prunerr/newsfragments/upgrade-requirements.bugfix.rst"
+	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add \
-	    "./src/prunerr/newsfragments/upgrade-requirements.misc.rst"
+	    "./src/prunerr/newsfragments/upgrade-requirements.bugfix.rst"
 	git commit --all --signoff -m \
-	    "build(deps): Upgrade requirements latest versions"
+	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) "check-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
-	git push \
-	    --force-with-lease="$(VCS_BRANCH)-upgrade:origin/$(VCS_BRANCH)-upgrade" \
-	    --no-verify "origin" "HEAD:$(VCS_BRANCH)-upgrade"
+	git_push_args="--no-verify"
+	if [ "$${remote_branch_exists=true}" == "true" ]
+	then
+	    git_push_args+=" --force-with-lease=\
+	$(VCS_BRANCH)-upgrade:$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)-upgrade"
+	fi
+	git push $${git_push_args} "$(VCS_PUSH_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login
@@ -723,36 +877,33 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
-		$(HOME)/.local/var/log/prunerr-host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
+	$(MAKE) "$(HOME)/.local/var/log/prunerr-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" -- python -c "" |
+	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	$(MAKE) "$(HOME)/.local/var/log/prunerr-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
 
-# Build a wheel package but only if one hasn't already been made
-./dist/.current.whl:
-	$(MAKE) build-wheel
-
 # Docker targets
-./var/docker/$(PYTHON_ENV)/log/build.log: \
-		./Dockerfile ./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
+# Build the development image:
+./var/docker/$(PYTHON_ENV)/log/build-devel.log: \
+		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
-		./docker-compose.override.yml ./.env ./var/log/tox/build/build.log \
-		./var/docker/$(PYTHON_ENV)/log/rebuild.log $(DOCKER_VOLUMES)
+		./docker-compose.override.yml ./.env \
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	mkdir -pv "$(dir $(@))" \
+	$(MAKE) "./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)" \
+	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
+	mkdir -pv "$(dir $(@))"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
 	$(MAKE) $(HOME)/.local/var/log/prunerr-host-install.log
-# Retrieve VCS data needed for versioning (tags) and release (release notes)
-	git fetch --tags origin "$(VCS_BRANCH)"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
@@ -760,45 +911,10 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
 	    --build-arg VERSION=$${VERSION}"
-	docker_build_user_tags=""
-	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
-	do
-	    docker_build_user_tags+="--tag $${user_tag} "
-	done
-	docker_build_caches=""
-ifeq ($(GITLAB_CI),true)
-# Don't cache when building final releases on `master`
-	$(MAKE) -e "./var/log/docker-login-GITLAB.log"
-ifneq ($(VCS_BRANCH),master)
-	docker pull "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" \
-	--cache-from $(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)"
-endif
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-	$(MAKE) -e "./var/log/docker-login-GITHUB.log"
-ifneq ($(VCS_BRANCH),master)
-# Can't use the GitHub Actions cache when we're only pushing images from GitLab CI/CD
-	docker pull "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" \
-	--cache-from $(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
-endif
-endif
-# This variant is the default used for tags such as `latest`
 ifeq ($(CI),true)
 # Workaround broken interactive session detection
 	docker pull "python:${PYTHON_MINOR}"
 endif
-	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
-	    $${docker_build_caches} "./"
-# Ensure any subsequent builds have optimal caches
-ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(VCS_BRANCH)"
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(VCS_BRANCH)"
-endif
-# Build the development image
 	docker_build_devel_tags=""
 	for devel_tag in $$(
 	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
@@ -808,31 +924,44 @@ endif
 	done
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
+# Don't cache when building final releases on `master`
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from \
-	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	if (
+	    $(MAKE) -e "./var/log/docker-login-GITLAB.log" &&
+	    $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
+	)
+	then
+	    docker_build_caches+=" --cache-from \
+	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
 ifneq ($(VCS_BRANCH),master)
-	docker pull "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)" || true
-	docker_build_caches+=" --cache-from \
-	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	if (
+	    $(MAKE) -e "./var/log/docker-login-GITHUB.log" &&
+	    $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
+	)
+	then
+	    docker_build_caches+=" --cache-from \
+	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
 endif
 endif
 	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+	docker push \
+	    "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 endif
 ifeq ($(GITHUB_ACTIONS),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(VCS_BRANCH)"
+ifneq ($(CI_IS_FORK),true)
+	docker push \
+	    "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+endif
 endif
 	date >>"$(@)"
-# The image installs the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build.log=%/host-install.log)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 ifeq ($(BUILD_REQUIREMENTS),true)
@@ -841,6 +970,64 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	    build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
 endif
+# Build the end-user image:
+./var/docker/$(PYTHON_ENV)/log/build-user.log: \
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
+	true DEBUG Updated prereqs: $(?)
+	$(MAKE) "./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)" \
+	    "./var/log/tox/build/build.log"
+	mkdir -pv "$(dir $(@))"
+	export VERSION=$$(./.tox/build/bin/cz version --project)
+# https://github.com/moby/moby/issues/39003#issuecomment-879441675
+	docker_build_args="$(DOCKER_BUILD_ARGS) \
+	    --build-arg BUILDKIT_INLINE_CACHE=1 \
+	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
+	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
+	    --build-arg VERSION=$${VERSION}"
+# Build the end-user image now that all required artifacts are built"
+ifeq ($(PYTHON_WHEEL),)
+	$(MAKE) -e "build-pkgs"
+	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
+endif
+	docker_build_user_tags=""
+	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
+	do
+	    docker_build_user_tags+="--tag $${user_tag} "
+	done
+	docker_build_caches=""
+ifeq ($(GITLAB_CI),true)
+ifneq ($(VCS_BRANCH),master)
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" \
+	--cache-from $(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
+endif
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(VCS_BRANCH),master)
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" \
+	--cache-from $(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
+endif
+endif
+	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" $${docker_build_caches} "./"
+# Ensure any subsequent builds have optimal caches
+ifeq ($(GITLAB_CI),true)
+	docker push "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(CI_IS_FORK),true)
+	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+endif
+endif
+	date >>"$(@)"
+# The images install the host requirements, reflect that in the bind mount volumes
+	date >>"$(@:%/build.log=%/host-install.log)"
 
 .PHONY: $(PYTHON_ENVS:%=build-docker-volumes-%)
 ### Ensure access permissions to build artifacts in Python version container volumes
@@ -868,7 +1055,8 @@ $(PYTHON_ENVS:%=./var/docker/%/prunerr.egg-info/) \
 # been built.
 $(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
 	python_env=$(notdir $(@:%/bin/activate=%))
-	$(MAKE) "./var/docker/$${python_env}/log/build.log"
+	$(MAKE) build-docker-volumes-$(PYTHON_ENV) \
+	    "./var/docker/$${python_env}/log/build-devel.log"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    prunerr-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    "./var/log/tox/$${python_env}/build.log"
@@ -941,8 +1129,21 @@ $(HOME)/.local/var/log/prunerr-host-install.log:
 	    fi
 	) | tee -a "$(@)"
 
+$(VCS_FETCH_TARGETS):
+# Retrieve VCS data needed for versioning (tags) and release (release notes)
+	git_fetch_args=--tags
+	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	then
+	    git_fetch_args+=" --unshallow"
+	fi
+	branch_path="$(@:var/git/refs/remotes/%=%)"
+	mkdir -pv "$(dir $(@))"
+	(
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" ||
+	    true
+	) |& tee -a "$(@)"
 ./.git/hooks/pre-commit:
-	$(MAKE) "$(HOME)/.local/var/log/prunerr-host-install.log"
+	$(MAKE) "./var/log/tox/build/build.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
@@ -975,6 +1176,13 @@ ifneq ($(PROJECT_GITHUB_PAT),)
 # mirror.
 	git remote set-url --push --add "origin" \
 	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+# Also add a fetch remote for the `$ gh ...` CLI tool to detect:
+	git remote add "github" \
+	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+else ifneq ($(CI_IS_FORK),true)
+	set +x
+	echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
+	false
 endif
 endif
 	set -x
@@ -989,30 +1197,52 @@ endif
 	set +x
 	source "./.env"
 	export DOCKER_PASS
-	set -x
-	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
+	if [ -n "$${DOCKER_PASS}" ]
+	then
+	    set -x
+	    printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: DOCKER_PASS missing from ./.env or CI secrets"
+	    false
+	fi
 	date | tee -a "$(@)"
 ./var/log/docker-login-GITLAB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
 	export CI_REGISTRY_PASSWORD
-	set -x
-	printenv "CI_REGISTRY_PASSWORD" |
-	    docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
+	then
+	    set -x
+	    printenv "CI_REGISTRY_PASSWORD" |
+	        docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: CI_REGISTRY_PASSWORD missing from ./.env or CI secrets"
+	    false
+	fi
 	date | tee -a "$(@)"
 ./var/log/docker-login-GITHUB.log: ./.env
 	mkdir -pv "$(dir $(@))"
 	set +x
 	source "./.env"
 	export PROJECT_GITHUB_PAT
-	set -x
-	printenv "PROJECT_GITHUB_PAT" |
-	    docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
+	if [ -n "$${PROJECT_GITHUB_PAT}" ]
+	then
+	    set -x
+	    printenv "PROJECT_GITHUB_PAT" |
+	        docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
+	    false
+	fi
 	date | tee -a "$(@)"
 
 # GPG signing key creation and management in CI
 export GPG_PASSPHRASE=
+GPG_SIGNING_PRIVATE_KEY=
 ./var/ci-cd-signing-subkey.asc:
 # We need a private key in the CI/CD environment for signing release commits and
 # artifacts.  Use a subkey so that it can be revoked without affecting your main key.
@@ -1046,6 +1276,8 @@ export GPG_PASSPHRASE=
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
 ./var/log/gpg-import.log:
 # In each CI run, import the private signing key from the CI secrets
+	mkdir -pv "$(dir $(@))"
+ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
@@ -1054,3 +1286,12 @@ export GPG_PASSPHRASE=
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
 	    --sign | gpg --list-packets
+else
+ifneq ($(CI_IS_FORK),true)
+	set +x
+	echo "ERROR: GPG_SIGNING_PRIVATE_KEY or GPG_PASSPHRASE " \
+	    "missing from ./.env or CI secrets"
+	false
+endif
+	date | tee -a "$(@)"
+endif

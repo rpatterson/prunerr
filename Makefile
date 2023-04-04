@@ -77,9 +77,9 @@ PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 # Values derived from VCS/git:
 VCS_BRANCH:=$(shell git branch --show-current)
 # Make best guess at the right remote to use for comparison to determine release data:
-VCS_REMOTE:=$(shell git-config "branch.$(VCS_BRANCH).remote")
+VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
 ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git-config "branch.$(VCS_BRANCH).pushRemote")
+VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).pushRemote")
 endif
 ifeq ($(VCS_REMOTE),)
 VCS_REMOTE:=$(shell git config "remote.pushDefault")

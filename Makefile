@@ -407,6 +407,7 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
+	docker compose pull hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -479,6 +480,7 @@ release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
 $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
+	docker compose pull pandoc docker-pushrm
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif

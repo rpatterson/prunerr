@@ -246,7 +246,6 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-
 	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
-# https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 endif

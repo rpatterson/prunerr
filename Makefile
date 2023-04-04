@@ -610,8 +610,7 @@ test-clean:
 
 .PHONY: release
 ### Publish installable Python packages to PyPI and container images to Docker Hub.
-release: release-python
-	$(MAKE) -e release-docker
+release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.

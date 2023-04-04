@@ -288,7 +288,8 @@ build-docker-tags:
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
 $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')

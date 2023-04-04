@@ -146,6 +146,9 @@ TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images and run containers:
+CI=false
+GITLAB_CI=false
+GITHUB_ACTIONS=false
 DOCKER_COMPOSE_RUN_ARGS=--rm
 ifneq ($(CI),true)
 DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
@@ -178,9 +181,6 @@ DOCKER_VOLUMES=\
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
 
 # Values derived from or overridden by CI environments:
-CI=false
-GITLAB_CI=false
-GITHUB_ACTIONS=false
 ifeq ($(GITLAB_CI),true)
 ifneq ($(CI_COMMIT_REF_NAME),)
 VCS_BRANCH=$(CI_COMMIT_REF_NAME)
@@ -201,6 +201,7 @@ VCS_COMPARE_BRANCH=develop
 endif
 endif
 CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
+CI_REPO_FULL_NAME=
 ifneq ($(CI_REPO_FULL_NAME),)
 CI_PROJECT_NAMESPACE:=$(shell \
     CI_REPO_FULL_NAME="$(CI_REPO_FULL_NAME)" && echo "$${CI_REPO_FULL_NAME%/*}")

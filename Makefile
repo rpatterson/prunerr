@@ -1446,4 +1446,3 @@ bootstrap-project: \
 # developers who may not have significant familiarity with Make.  If there's a good,
 # pragmatic reason to add use of further features feel free to make the case but avoid
 # them if possible.
->>>>>>> docker

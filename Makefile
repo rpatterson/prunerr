@@ -238,8 +238,8 @@ test-clean:
 
 .PHONY: release
 ### Publish installable Python packages to PyPI.
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-pkgs \
-		~/.pypirc
+release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) build-pkgs ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"

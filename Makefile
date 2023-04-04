@@ -92,9 +92,9 @@ export PYTHON_WHEEL=
 # Values derived from VCS/git:
 VCS_BRANCH:=$(shell git branch --show-current)
 # Make best guess at the right remote to use for comparison to determine release data:
-VCS_REMOTE:=$(shell git-config "branch.$(VCS_BRANCH).remote")
+VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
 ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git-config "branch.$(VCS_BRANCH).pushRemote")
+VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).pushRemote")
 endif
 ifeq ($(VCS_REMOTE),)
 VCS_REMOTE:=$(shell git config "remote.pushDefault")
@@ -214,7 +214,9 @@ run: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit build-docker
+build: ./.git/hooks/pre-commit \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log \
+		build-docker
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -401,6 +403,7 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 	docker compose run $${docker_run_args} python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
 	        test-local
+
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
@@ -410,6 +413,36 @@ test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
 	    hadolint "./Dockerfile.devel"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
+
+.PHONY: test-push
+### Perform any checks that should only be run before pushing.
+test-push: $(VCS_FETCH_TARGETS) \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
+	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit $$exit_code
+	fi
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	then
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	        python-project-structure-devel $(TOX_EXEC_ARGS) \
+	        towncrier check --compare-with \
+		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	fi
+
+.PHONY: test-clean
+### Confirm that the checkout is free of uncommitted VCS changes.
+test-clean:
+	if [ -n "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "Checkout is not clean"
+	    false
+	fi
 
 
 ## Release Targets:
@@ -423,12 +456,12 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.
-release-python: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/log/tox/build/build.log build-pkgs ~/.pypirc
+release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) build-pkgs ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	$(MAKE) "check-clean"
+	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
@@ -526,41 +559,6 @@ endif
 endif
 
 
-## Check Targets:
-#
-# Recipes that confirm development conditions.
-
-.PHONY: check-push
-### Perform any checks that should only be run before pushing.
-check-push: $(VCS_FETCH_TARGETS) build-docker-volumes-$(PYTHON_ENV) \
-		build-docker-$(PYTHON_MINOR) ./.env
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
-	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-	    exit $$exit_code
-	fi
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	then
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        python-project-structure-devel $(TOX_EXEC_ARGS) \
-	        towncrier check --compare-with \
-		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	fi
-
-.PHONY: check-clean
-### Confirm that the checkout is free of uncommitted VCS changes.
-check-clean:
-	if [ -n "$$(git status --porcelain)" ]
-	then
-	    set +x
-	    echo "Checkout is not clean"
-	    false
-	fi
-
-
 ## Development Targets:
 #
 # Recipes used by developers to make changes to the code.
@@ -608,7 +606,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	fi
 	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
-	if $(MAKE) "check-clean"
+	if $(MAKE) "test-clean"
 	then
 # No changes from upgrade, exit successfully but push nothing
 	    exit
@@ -623,7 +621,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	git commit --all --signoff -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
-	$(MAKE) "check-clean"
+	$(MAKE) "test-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
@@ -974,8 +972,15 @@ bootstrap-project: ./var/log/docker-login-DOCKER.log
 #         mkdir -pv "$(dir $(@))"
 #         date | tee -a "$(@)"
 #
-# We use a few more Make features than this core feature and welcome further use of such
-# features:
+# If a target is needed by the recipe of another target but should *not* trigger updates
+# when it's newer, such as one-time host install tasks, then use that target in a
+# sub-make instead of as a prerequisite:
+#
+#     ./var/log/foo.log:
+#         $(MAKE) "./var/log/bar.log"
+#
+# We use a few more Make features than these core features and welcome further use of
+# such features:
 #
 # - `$(@)`:
 #   The automatic variable containing the file path for the target

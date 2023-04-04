@@ -113,6 +113,15 @@ endif
 # Support using a different remote and branch for comparison to determine release data:
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 VCS_COMPARE_REMOTE=$(VCS_REMOTE)
+CI=false
+ifeq ($(CI),true)
+# Under CI, check commits and release notes against the branch to be merged into:
+ifeq ($(VCS_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifneq ($(VCS_BRANCH),master)
+VCS_COMPARE_BRANCH=develop
+endif
+endif
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -146,7 +155,6 @@ TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images and run containers:
-CI=false
 GITLAB_CI=false
 GITHUB_ACTIONS=false
 DOCKER_COMPOSE_RUN_ARGS=--rm
@@ -191,14 +199,6 @@ ifneq ($(GITHUB_REF_NAME),)
 VCS_BRANCH=$(GITHUB_REF_NAME)
 endif
 USER_EMAIL=$(USER_NAME)@actions.github.com
-endif
-ifeq ($(CI),true)
-# Under CI, check commits and release notes against the branch to be merged into:
-ifeq ($(VCS_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
-else ifneq ($(VCS_BRANCH),master)
-VCS_COMPARE_BRANCH=develop
-endif
 endif
 CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
 CI_REPO_FULL_NAME=

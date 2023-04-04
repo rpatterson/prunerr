@@ -10,10 +10,10 @@ repos:
   - repo: "local"
     hooks:
 # Fail fast, run quicker checks first
-    - id: "check-push"
-      name: "check-push"
+    - id: "test-push"
+      name: "test-push"
       stages: ["push"]
-      entry: "make -e check-push"
+      entry: "make -e test-push"
       language: "python"
       pass_filenames: false
 # Only run the longer running test check after everything else

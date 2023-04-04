@@ -402,7 +402,8 @@ build-docker-tags:
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
 $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
@@ -558,6 +559,7 @@ endif
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files.
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
+	docker compose pull hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -669,6 +671,7 @@ release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
 $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
+	docker compose pull pandoc docker-pushrm
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
@@ -782,7 +785,7 @@ devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
 	    "./build-host/requirements.txt.in"
 ifeq ($(CI),true)
 # Pull separately to reduce noisy interactive TTY output where it shouldn't be:
-	docker compose pull --quiet python-project-structure-devel
+	$(MAKE) build-docker-pull
 endif
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel

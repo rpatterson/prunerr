@@ -419,7 +419,8 @@ test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
 .PHONY: test-push
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log
+		$(HOME)/.local/var/log/python-project-structure-host-install.log \
+		build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR) ./.env
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
 	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?

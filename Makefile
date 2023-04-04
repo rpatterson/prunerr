@@ -76,29 +76,27 @@ PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 
 # Values derived from VCS/git:
 VCS_BRANCH:=$(shell git branch --show-current)
-VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
-ifeq ($(VCS_PUSH_REMOTE),)
-VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
+# Make best guess at the right remote to use for comparison to determine release data:
+VCS_REMOTE:=$(shell git-config "branch.$(VCS_BRANCH).remote")
+ifeq ($(VCS_REMOTE),)
+VCS_REMOTE:=$(shell git-config "branch.$(VCS_BRANCH).pushRemote")
 endif
-ifeq ($(VCS_PUSH_REMOTE),)
-VCS_PUSH_REMOTE=origin
+ifeq ($(VCS_REMOTE),)
+VCS_REMOTE:=$(shell git config "remote.pushDefault")
 endif
-VCS_UPSTREAM_REF:=$(shell \
-    git for-each-ref --format='%(upstream:remoteref)' "refs/heads/$(VCS_BRANCH)")
-ifneq ($(VCS_UPSTREAM_REF),)
-VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
-else
-VCS_UPSTREAM_BRANCH=$(VCS_BRANCH)
+ifeq ($(VCS_REMOTE),)
+VCS_REMOTE:=$(shell git config "checkout.defaultRemote")
 endif
-VCS_UPSTREAM_REMOTE:=$(shell \
-    git for-each-ref --format='%(upstream:remotename)' "refs/heads/$(VCS_BRANCH)")
-ifeq ($(VCS_UPSTREAM_REMOTE),)
-VCS_UPSTREAM_REMOTE=$(VCS_PUSH_REMOTE)
+ifeq ($(VCS_REMOTE),)
+VCS_REMOTE=origin
 endif
-VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
-ifneq ($(VCS_BRANCH),$(VCS_COMPARE_BRANCH))
-VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)
+# Support using a different remote and branch for comparison to determine release data:
+VCS_COMPARE_BRANCH=$(VCS_BRANCH)
+VCS_COMPARE_REMOTE=$(VCS_REMOTE)
+# Assemble the targets used to avoid redundant fetches during release tasks:
+VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
 
 # Values used to run Tox:
@@ -119,10 +117,10 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Only publish releases from the `master` or `develop` branches:
-ifeq ($(VCS_UPSTREAM_BRANCH),master)
+ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
-else ifeq ($(VCS_UPSTREAM_BRANCH),develop)
+else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
@@ -181,7 +179,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
-build-pkgs: ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
+build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	tox run -e "$(PYTHON_ENV)" --pkg-only
@@ -226,7 +224,7 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
-release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH) \
+release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	if ! git diff --cached --exit-code
 	then
@@ -249,7 +247,7 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANC
 	fi
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
-ifneq ($(VCS_UPSTREAM_BRANCH),master)
+ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
 ifeq ($(RELEASE_PUBLISH),true)
@@ -263,7 +261,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags "$(VCS_PUSH_REMOTE)" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 
@@ -277,16 +275,16 @@ check-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
 	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 	    exit $$exit_code
 	fi
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
-		"$(VCS_UPSTREAM_REMOTE)/$(VCS_COMPARE_BRANCH)"
+		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
 
 .PHONY: check-clean
@@ -323,9 +321,9 @@ devel-upgrade:
 
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
-devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)
+devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	remote_branch_exists=false
-	if git fetch "$(VCS_PUSH_REMOTE)" "$(VCS_BRANCH)-upgrade"
+	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
 	    remote_branch_exists=true
 	fi
@@ -363,9 +361,9 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_PUSH_REMOTE)/$(V
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
 	    git_push_args+=" --force-with-lease=\
-	$(VCS_BRANCH)-upgrade:$(VCS_PUSH_REMOTE)/$(VCS_BRANCH)-upgrade"
+	$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
 	fi
-	git push $${git_push_args} "$(VCS_PUSH_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
+	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 
 ## Clean Targets:

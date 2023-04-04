@@ -60,7 +60,7 @@ jobs:
       - name: "Check for any required release notes"
         run: >-
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          check-push
+          test-push
       - name: "Build the container image in which to run the tests"
         run: >-
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
@@ -68,7 +68,7 @@ jobs:
       - name: "Run the tests and code checks inside the built container"
         run: >-
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          test-docker-${{ matrix.PYTHON_MINORS }} check-clean
+          test-docker-${{ matrix.PYTHON_MINORS }} test-clean
 
       # Upload build artifacts:
       # https://github.com/actions/upload-artifact#usage
@@ -140,10 +140,10 @@ jobs:
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Bump the version if publishing a release"
         run: >-
-          entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
+          entrypoint make -e BUILD_REQUIREMENTS=false build-bump test-clean
       - name: "Publish release artifacts"
         run: >-
-          entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
+          entrypoint make -e BUILD_REQUIREMENTS=false release-python test-clean
 
       # Upload build artifacts:
       - name: "Archive built packages"

@@ -46,10 +46,10 @@ build-test:
   script:
     # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
-      entrypoint make -e check-push
+      entrypoint make -e test-push
       build-docker-$PYTHON_MINORS
       test-docker-$PYTHON_MINORS
-      release-docker-$PYTHON_MINORS check-clean
+      release-docker-$PYTHON_MINORS test-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:
@@ -86,8 +86,8 @@ release:
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false
-      build-bump check-clean
-      release-python check-clean
+      build-bump test-clean
+      release-python test-clean
   artifacts:
     paths:
       - "./NEWS-release.rst"

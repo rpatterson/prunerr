@@ -86,7 +86,7 @@ release:
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false
-      build-bump test-clean
+      release-bump test-clean
       release-python test-clean
   artifacts:
     paths:

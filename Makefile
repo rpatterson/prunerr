@@ -162,6 +162,7 @@ build: \
 	./.git/hooks/pre-commit \
 	$(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
+
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):

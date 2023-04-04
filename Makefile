@@ -423,8 +423,8 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log): \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
@@ -572,8 +572,15 @@ endif
 #         mkdir -pv "$(dir $(@))"
 #         date | tee -a "$(@)"
 #
-# We use a few more Make features than this core feature and welcome further use of such
-# features:
+# If a target is needed by the recipe of another target but should *not* trigger updates
+# when it's newer, such as one-time host install tasks, then use that target in a
+# sub-make instead of as a prerequisite:
+#
+#     ./var/log/foo.log:
+#         $(MAKE) "./var/log/bar.log"
+#
+# We use a few more Make features than these core features and welcome further use of
+# such features:
 #
 # - `$(@)`:
 #   The automatic variable containing the file path for the target

@@ -652,6 +652,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	\"url\":\"https://hub.docker.com/r/merpatterson/$(CI_PROJECT_NAME)/tags\",\
 	\"link_type\":\"image\"\
 	}"
+	docker compose pull gitlab-release-cli
 	docker compose run --rm gitlab-release-cli release-cli \
 	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
 	    create $${release_cli_args}

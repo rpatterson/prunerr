@@ -309,7 +309,8 @@ devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
 devel-upgrade:
-	touch "./setup.cfg" "./requirements/build.txt.in" "./build-host/requirements.txt.in"
+	touch "./setup.cfg" "./requirements/build.txt.in" \
+	    "./build-host/requirements.txt.in"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate

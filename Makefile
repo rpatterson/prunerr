@@ -616,8 +616,7 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/log/tox/build/build.log \
+release: ./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) build-pkgs \
 		~/.pypirc ./.env build-docker-volumes-$(PYTHON_ENV)
 ifeq ($(RELEASE_PUBLISH),true)
@@ -625,12 +624,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check \
+	./.tox/build/bin/twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release

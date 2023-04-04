@@ -201,6 +201,34 @@ test: build
 test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 	$(TOX_EXEC_ARGS) pytest --pdb
 
+.PHONY: test-push
+### Perform any checks that should only be run before pushing.
+test-push: $(VCS_FETCH_TARGETS) \
+		$(HOME)/.local/var/log/python-project-structure-host-install.log
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
+	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit $$exit_code
+	fi
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	then
+	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
+		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	fi
+
+.PHONY: test-clean
+### Confirm that the checkout is free of uncommitted VCS changes.
+test-clean:
+	if [ -n "$$(git status --porcelain)" ]
+	then
+	    set +x
+	    echo "Checkout is not clean"
+	    false
+	fi
+
 
 ## Release Targets:
 #
@@ -214,7 +242,7 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log build-
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	$(MAKE) "check-clean"
+	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # https://twine.readthedocs.io/en/latest/#using-twine
@@ -265,39 +293,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 
 
-## Check Targets:
-#
-# Recipes that confirm development conditions.
-
-.PHONY: check-push
-### Perform any checks that should only be run before pushing.
-check-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
-	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-	    exit $$exit_code
-	fi
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	then
-	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
-		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	fi
-
-.PHONY: check-clean
-### Confirm that the checkout is free of uncommitted VCS changes.
-check-clean: $(HOME)/.local/var/log/python-project-structure-host-install.log
-	if [ -n "$$(git status --porcelain)" ]
-	then
-	    set +x
-	    echo "Checkout is not clean"
-	    false
-	fi
-
-
 ## Development Targets:
 #
 # Recipes used by developers to make changes to the code.
@@ -338,7 +333,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	fi
 	now=$$(date -u)
 	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
-	if $(MAKE) "check-clean"
+	if $(MAKE) "test-clean"
 	then
 # No changes from upgrade, exit successfully but push nothing
 	    exit
@@ -353,7 +348,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	git commit --all --signoff -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
-	$(MAKE) "check-clean"
+	$(MAKE) "test-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:

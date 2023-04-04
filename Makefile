@@ -583,7 +583,7 @@ devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
 	    "./build-host/requirements.txt.in"
 ifeq ($(CI),true)
 # Pull separately to reduce noisy interactive TTY output where it shouldn't be:
-	docker compose pull --quiet python-project-structure-devel
+	$(MAKE) build-docker-pull
 endif
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel

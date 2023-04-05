@@ -246,6 +246,9 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
+# The VCS remote should reflect the release before the release is published to ensure
+# that a published release is never *not* reflected in VCS.
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
 endif
@@ -278,7 +281,6 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 ifneq ($(VCS_BRANCH),master)
 	cz_bump_args+=" --prerelease beta"
 endif
-ifeq ($(RELEASE_PUBLISH),true)
 # Build and stage the release notes to be commited by `$ cz bump`
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
@@ -287,10 +289,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
-# The VCS remote should reflect the release before the release is published to ensure
-# that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
-endif
 
 
 ## Development Targets:

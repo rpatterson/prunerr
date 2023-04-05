@@ -1166,7 +1166,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	) |& tee -a "$(@)"
 
 ./.git/hooks/pre-commit:
-	$(MAKE) "./var/log/tox/build/build.log"
+	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 

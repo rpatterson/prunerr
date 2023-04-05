@@ -81,7 +81,8 @@ release:
       when: "never"
     - if: >-
         $CI_PROJECT_NAMESPACE == "rpatterson"
-        && $CI_COMMIT_BRANCH =~ "^(develop|master)"
+        && $CI_COMMIT_BRANCH != null
+        && $CI_COMMIT_BRANCH =~ "^(develop|master)$"
         && $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-

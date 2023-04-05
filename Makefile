@@ -95,6 +95,13 @@ export PYTHON_WHEEL=
 
 # Values derived from VCS/git:
 VCS_BRANCH:=$(shell git branch --show-current)
+CI_COMMIT_REF_NAME=
+GITHUB_REF_NAME=
+ifneq ($(CI_COMMIT_REF_NAME),)
+VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+else ifneq ($(GITHUB_REF_NAME),)
+VCS_BRANCH=$(GITHUB_REF_NAME)
+endif
 export VCS_BRANCH
 # Make best guess at the right remote to use for comparison to determine release data:
 VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
@@ -157,6 +164,10 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 # Values used to build Docker images and run containers:
 GITLAB_CI=false
 GITHUB_ACTIONS=false
+CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
+CI_TEMPLATE_REGISTRY_HOST=registry.gitlab.com
+CI_REGISTRY=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_PROJECT_NAMESPACE)
+CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 DOCKER_COMPOSE_RUN_ARGS=--rm
 ifneq ($(CI),true)
 DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
@@ -189,28 +200,18 @@ DOCKER_VOLUMES=\
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
 
 # Values derived from or overridden by CI environments:
-ifeq ($(GITLAB_CI),true)
-ifneq ($(CI_COMMIT_REF_NAME),)
-VCS_BRANCH=$(CI_COMMIT_REF_NAME)
-endif
-USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
-else ifeq ($(GITHUB_ACTIONS),true)
-ifneq ($(GITHUB_REF_NAME),)
-VCS_BRANCH=$(GITHUB_REF_NAME)
-endif
-USER_EMAIL=$(USER_NAME)@actions.github.com
-endif
-CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
 GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
 # Determine if this checkout is a fork of the upstream project:
 CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
+USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
 ifneq ($(CI_PROJECT_NAMESPACE),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_REGISTRIES=GITLAB
 DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
 endif
 else ifeq ($(GITHUB_ACTIONS),true)
+USER_EMAIL=$(USER_NAME)@actions.github.com
 ifneq ($(GITHUB_REPOSITORY_OWNER),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_REGISTRIES=GITHUB
@@ -264,7 +265,6 @@ PYPI_REPO=pypi
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
-CI_REGISTRY=registry.gitlab.com/$(CI_PROJECT_NAMESPACE)
 CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=

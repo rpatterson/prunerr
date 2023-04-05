@@ -438,25 +438,6 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
-.PHONY: pull-docker
-### Pull an existing image best to use as a cache for building new images
-pull-docker:
-	for vcs_branch in $(VCS_BRANCHES)
-	do
-	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"
-	    for docker_image in $(DOCKER_IMAGES)
-	    do
-	        if docker pull "$${docker_image}:$${docker_tag}"
-	        then
-	            docker tag "$${docker_image}:$${docker_tag}" \
-	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
-	            exit
-	        fi
-	    done
-	done
-	set +x
-	echo "ERROR: Could not pull any existing docker image"
-	false
 .PHONY: build-docker-pull
 ### Pull the development image and simulate as if it had been built here.
 build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
@@ -1345,6 +1326,26 @@ else
 endif
 	fi
 	envsubst <"$(template)" >"$(target)"
+
+.PHONY: pull-docker
+### Pull an existing image best to use as a cache for building new images
+pull-docker:
+	for vcs_branch in $(VCS_BRANCHES)
+	do
+	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"
+	    for docker_image in $(DOCKER_IMAGES)
+	    do
+	        if docker pull "$${docker_image}:$${docker_tag}"
+	        then
+	            docker tag "$${docker_image}:$${docker_tag}" \
+	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
+	            exit
+	        fi
+	    done
+	done
+	set +x
+	echo "ERROR: Could not pull any existing docker image"
+	false
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

@@ -459,7 +459,7 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
+release-python: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) build-pkgs ~/.pypirc
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check \

@@ -778,7 +778,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	then
 # Reset an existing local branch to the latest upstream before upgrading
 	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "$(VCS_BRANCH)"
+	    git reset --hard "$(VCS_BRANCH)" --
 	else
 # Create a new local branch from the latest upstream before upgrading
 	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"

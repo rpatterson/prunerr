@@ -6,7 +6,7 @@
 #
 argcomplete==3.0.5
     # via python-project-structure (pyproject.toml)
-astroid==2.15.1
+astroid==2.15.2
     # via
     #   pylint
     #   pylint-celery
@@ -157,7 +157,7 @@ pygments==2.14.0
     # via
     #   pyroma
     #   rich
-pylint==2.17.1
+pylint==2.17.2
     # via
     #   prospector
     #   pylint-celery

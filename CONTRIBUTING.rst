@@ -1,6 +1,6 @@
-************
+########################################################################################
 CONTRIBUTING
-************
+########################################################################################
 
 Development requires fairly standard development tools, but ``git`` and ``make`` to
 bootstrap the local development environment.  Once installed, clone the repository::
@@ -40,7 +40,7 @@ Once work is finished and all the tests are passing, project maintainers can mer
 work and run all checks and tests as above to confirm your work.  Then they can, bump
 the version, build release packages, and publish them to PyPI::
 
-  $ make build-bump release
+  $ make release-bump release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions
@@ -53,6 +53,12 @@ to the latest versions::
 
 See also `the ./TODO.rst file`_ which lists known bugs and desirable features for which
 contributions are most welcome.
+
+If changes to development processes, such as build or release processes, are required,
+they should be captured in the `Makefile`_.  Similarly, if a development task is
+important enough to include in the documentation, then it's important enough to capture
+in executable form in the `Makefile`_.  See the philosophy commentary at the bottom of
+the `Makefile`_ for guidance on making contributions there.
 
 
 .. _`Python's post-mortem debugger`:

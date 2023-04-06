@@ -12,6 +12,7 @@ import argparse
 
 from commitizen import exceptions  # type: ignore # pylint: disable=import-error
 from commitizen import git  # pylint: disable=import-error
+from commitizen import bump  # pylint: disable=import-error
 from commitizen import config  # pylint: disable=import-error
 from commitizen import commands  # pylint: disable=import-error
 
@@ -20,7 +21,8 @@ arg_parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 arg_parser.add_argument(
-    "compare_ref",
+    "--compare-ref",
+    "-c",
     help="The git ref used as the start of the revision range whose commits to check.",
 )
 
@@ -56,9 +58,19 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     )
     bump_cmd = commands.Bump(config=conf, arguments=arguments)
 
+    compare_ref = parsed_args.compare_ref
+    if compare_ref is None:
+        # Reproduce last version lookup from `commitizen.commands.bump.Bump.__call__()`:
+        current_version = bump_cmd.config.settings["version"]
+        tag_format = bump_cmd.bump_settings["tag_format"]
+        compare_ref = bump.normalize_tag(
+            current_version, tag_format=tag_format
+        )
+
     # Only check if commits require a bump:
-    commits = git.get_commits(parsed_args.compare_ref)
+    commits = git.get_commits(compare_ref)
     increment = bump_cmd.find_increment(commits)
+
     if increment is not None:
         # Yes, a version bump is required by the conventional commits.
         print(increment)

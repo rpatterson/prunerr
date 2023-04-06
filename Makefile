@@ -240,7 +240,6 @@ RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
 # Only publish releases from the `master` or `develop` branches:
-DOCKER_PUSH=false
 ifeq ($(CI),true)
 # Compile requirements on CI/CD as a check to make sure all changes to dependencies have
 # been reflected in the frozen/pinned versions, but don't upgrade packages so that
@@ -256,7 +255,6 @@ ifeq ($(VCS_BRANCH),master)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 PYPI_HOSTNAME=pypi.org
-DOCKER_PUSH=true
 GITHUB_RELEASE_ARGS=
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:

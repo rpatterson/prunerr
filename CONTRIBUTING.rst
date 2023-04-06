@@ -48,7 +48,7 @@ Once work is finished and all the tests are passing, project maintainers can mer
 work and run all checks and tests as above to confirm your work.  Then they can, bump
 the version, build release packages, and publish them to PyPI::
 
-  $ make release-bump release
+  $ make release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions

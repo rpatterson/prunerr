@@ -461,7 +461,7 @@ test-clean:
 # end-users.
 
 .PHONY: release
-### Publish installable Python packages to PyPI and container images to Docker Hub.
+### Publish installable Python packages and container images as required by commits.
 release: release-python release-docker
 
 .PHONY: release-python
@@ -474,11 +474,15 @@ release-python: $(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
+# Only release if required by conventional commits and the version bump is committed:
+	if $(MAKE) release-bump
+	then
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
+	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
+	    $(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	        "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
+	fi
 endif
 
 .PHONY: release-docker
@@ -530,19 +534,9 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	fi
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
-	exit_code=0
 ifneq ($(VCS_BRANCH),master)
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
 endif
-	if (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-# No release necessary for the commits since the last release, don't publish a release
-	    exit
-	elif (( $$exit_code != 0 ))
-	then
-# Commitizen returned an unexpected exit status code, fail
-	    exit $$exit_code
-	fi
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)

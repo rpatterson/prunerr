@@ -933,11 +933,9 @@ endif
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `master`
+	$(MAKE) -e "./var/log/docker-login-GITLAB.log" || true
 ifneq ($(VCS_BRANCH),master)
-	if (
-	    $(MAKE) -e "./var/log/docker-login-GITLAB.log" &&
-	    $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
-	)
+	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
 	    docker_build_caches+=" --cache-from \
 	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
@@ -945,11 +943,9 @@ ifneq ($(VCS_BRANCH),master)
 endif
 endif
 ifeq ($(GITHUB_ACTIONS),true)
+	$(MAKE) -e "./var/log/docker-login-GITHUB.log" || true
 ifneq ($(VCS_BRANCH),master)
-	if (
-	    $(MAKE) -e "./var/log/docker-login-GITHUB.log" &&
-	    $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
-	)
+	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
 	    docker_build_caches+=" --cache-from \
 	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"

@@ -209,7 +209,7 @@ test-push: $(VCS_FETCH_TARGETS) \
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
 	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
-	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	if ! (( $$exit_code == 0 ||  $$exit_code == 3 || $$exit_code == 21 ))
 	then
 	    exit $$exit_code
 	fi

@@ -213,12 +213,19 @@ test-push: $(VCS_FETCH_TARGETS) \
 	then
 	    exit $$exit_code
 	fi
+ifneq ($(VCS_BRANCH),master)
 	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
 	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
 		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
+else
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	    python-project-structure-devel $(TOX_EXEC_ARGS) \
+	    towncrier check --compare-with \
+	        "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+endif
 
 .PHONY: test-clean
 ### Confirm that the checkout is free of uncommitted VCS changes.
@@ -266,7 +273,9 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 # Check if the conventional commits since the last release require new release and thus
 # a version bump:
 	exit_code=0
+ifneq ($(VCS_BRANCH),master)
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+endif
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No release necessary for the commits since the last release, don't publish a release

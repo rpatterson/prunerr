@@ -213,7 +213,7 @@ test-push: $(VCS_FETCH_TARGETS) \
 	then
 	    exit $$exit_code
 	fi
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
+	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
 	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	then
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \

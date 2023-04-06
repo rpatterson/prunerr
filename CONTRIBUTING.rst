@@ -52,7 +52,7 @@ container images and PyPI packages.  When the project maintainers think it's tim
 make a final release with all the outstanding work on ``develop``, they can merge
 ``develop`` into ``master`` and CI/CD will then publish a final release::
 
-  $ make release-bump release
+  $ make release
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions

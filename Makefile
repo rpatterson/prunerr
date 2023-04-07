@@ -148,7 +148,7 @@ DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
 export DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
 DOCKER_VOLUMES=\
-./var/ ./var/docker/$(PYTHON_ENV)/ \
+./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
@@ -347,7 +347,7 @@ build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 ### Ensure access permissions to build artifacts in Python version container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 $(PYTHON_ENVS:%=build-docker-volumes-%): \
-		./var/ ./src/python_project_structure.egg-info/ ./.tox/
+		./src/python_project_structure.egg-info/ ./.tox/
 	$(MAKE) \
 	    $(@:build-docker-volumes-%=./var/docker/%/) \
 	    $(@:build-docker-volumes-%=./var/docker/%/python_project_structure.egg-info/) \

@@ -586,16 +586,16 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-# https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check \
-	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	$(MAKE) "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Only release if required by conventional commits and the version bump is committed:
 	if $(MAKE) release-bump
 	then
 	    $(MAKE) DOCKER_BUILD_PULL="true" build-pkgs
+# https://twine.readthedocs.io/en/latest/#using-twine
+	    ./.tox/build/bin/twine check \
+	        "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
+	    $(MAKE) "test-clean"
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as

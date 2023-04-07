@@ -496,8 +496,8 @@ release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
 $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
-	docker compose pull pandoc docker-pushrm
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
+	docker compose pull pandoc docker-pushrm
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
 

@@ -165,10 +165,7 @@ jobs:
           chown -R ${PUID}:${PGID} ./
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
-      - name: "Bump the version if publishing a release"
-        run: >-
-          entrypoint make -e BUILD_REQUIREMENTS=false release-bump test-clean
-      - name: "Publish release artifacts"
+      - name: "Bump the version and publish a release if necessary"
         run: >-
           entrypoint make -e BUILD_REQUIREMENTS=false release-python test-clean
 

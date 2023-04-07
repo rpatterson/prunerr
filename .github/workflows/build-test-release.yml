@@ -167,7 +167,7 @@ jobs:
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Bump the version and publish a release if necessary"
         run: >-
-          entrypoint make -e BUILD_REQUIREMENTS=false release-python test-clean
+          entrypoint make -e release-python test-clean
 
       # Upload build artifacts:
       - name: "Archive built packages"

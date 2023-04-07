@@ -235,7 +235,6 @@ export PROJECT_GITHUB_PAT
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
-BUILD_REQUIREMENTS=true
 PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
@@ -969,10 +968,12 @@ endif
 	date >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
-ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    build-requirements-$(PYTHON_ENV)
+ifneq ($(CI),true)
+# On CI, any changes from compiling requirements is a failure so no need to waste time
+# rebuilding images:
 	$(MAKE) -e "$(@)"
 endif
 endif

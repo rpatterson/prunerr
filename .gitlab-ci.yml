@@ -86,8 +86,7 @@ release:
         && $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false
-      release-python test-clean
+      entrypoint make -e release-python test-clean
   artifacts:
     paths:
       - "./NEWS-release.rst"

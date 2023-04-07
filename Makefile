@@ -438,9 +438,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 
 .PHONY: build-docker-pull
 ### Pull the development image and simulate as if it had been built here.
-build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
-	export VERSION=$$(./.tox/build/bin/cz version --project)
+build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV)
 	if $(MAKE) -e pull-docker
 	then
 	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
@@ -1324,7 +1322,9 @@ endif
 
 .PHONY: pull-docker
 ### Pull an existing image best to use as a cache for building new images
-pull-docker:
+pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/tox/build/build.log
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 	for vcs_branch in $(VCS_BRANCHES)
 	do
 	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"

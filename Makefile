@@ -439,7 +439,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 .PHONY: build-docker-pull
 ### Pull the development image and simulate as if it had been built here.
 build-docker-pull: ./.env build-docker-volumes-$(PYTHON_ENV)
-	if $(MAKE) -e pull-docker
+	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
 	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
 	    touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \

@@ -525,7 +525,7 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/tox/build/build.log \
-		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+		./.env build-docker-volumes-$(PYTHON_ENV)
 	if ! git diff --cached --exit-code
 	then
 	    set +x

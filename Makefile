@@ -152,6 +152,7 @@ DOCKER_VOLUMES=\
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
+DOCKER_BUILD_PULL=false
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
@@ -221,7 +222,8 @@ build: ./.git/hooks/pre-commit \
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		build-docker-volumes-$(PYTHON_ENV) build-docker-pull
+		 ./var/docker/$(PYTHON_ENV)/log/build-devel.log \
+		build-docker-volumes-$(PYTHON_ENV)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
@@ -327,21 +329,6 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    python-project-structure-devel make -e \
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
-
-.PHONY: build-docker-pull
-### Pull the development image and simulate as if it had been built here.
-build-docker-pull: ./.env ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
-	export VERSION=$$(./.tox/build/bin/cz version --project)
-	if docker compose pull --quiet python-project-structure-devel
-	then
-	    mkdir -pv "./var/docker/$(PYTHON_ENV)/log/"
-	    touch "./var/docker/$(PYTHON_ENV)/log/build-devel.log" \
-	        "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
-	    $(MAKE) -e "./var/docker/$(PYTHON_ENV)/.tox/$(PYTHON_ENV)/bin/activate"
-	else
-	    $(MAKE) "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
-	fi
 
 .PHONY: $(PYTHON_ENVS:%=build-docker-volumes-%)
 ### Ensure access permissions to build artifacts in Python version container volumes.
@@ -477,7 +464,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Only release if required by conventional commits and the version bump is committed:
 	if $(MAKE) release-bump
 	then
-	    $(MAKE) build-pkgs
+	    $(MAKE) DOCKER_BUILD_PULL="true" build-pkgs
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
@@ -585,7 +572,8 @@ devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
 	    "./build-host/requirements.txt.in"
 ifeq ($(CI),true)
 # Pull separately to reduce noisy interactive TTY output where it shouldn't be:
-	$(MAKE) build-docker-pull
+	$(MAKE) DOCKER_BUILD_PULL="true" \
+	    "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
 endif
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
@@ -611,7 +599,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
-	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
+	$(MAKE) DOCKER_BUILD_PULL="true" TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) "test-clean"
 	then
 # No changes from upgrade, exit successfully but push nothing
@@ -737,6 +725,18 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
+ifeq ($(DOCKER_BUILD_PULL),true)
+# Pull the development image and simulate as if it had been built here.
+	if docker compose pull --quiet python-project-structure-devel
+	then
+	    touch "$(@)" "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
+# Ensure the virtualenv in the volume is also current:
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	        python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	        "./var/log/tox/$(PYTHON_ENV)/build.log"
+	    exit
+	fi
+else
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -764,6 +764,7 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
+endif
 endif
 
 # Build the end-user image:
@@ -808,16 +809,6 @@ $(PYTHON_ENVS:%=./var/docker/%/python_project_structure.egg-info/) \
 ./var/docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
-
-# Target for use as a prerequisite in host targets that depend on the virtualenv having
-# been built:
-$(PYTHON_ALL_ENVS:%=./var/docker/%/.tox/%/bin/activate):
-	python_env=$(notdir $(@:%/bin/activate=%))
-	$(MAKE) build-docker-volumes-$(PYTHON_ENV) \
-	    "./var/docker/$${python_env}/log/build-devel.log"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
-	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
-	    "./var/log/tox/$${python_env}/build.log"
 
 # Local environment variables from a template:
 ./.env: ./.env.in

@@ -146,7 +146,7 @@ DOCKER_VARIANT_PREFIX=
 ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
-DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
+export DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
 DOCKER_VOLUMES=\
 ./var/ ./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
@@ -291,7 +291,7 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
-	export VERSION=$$(./.tox/build/bin/cz version --project)
+	VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'

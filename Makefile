@@ -971,9 +971,11 @@ endif
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	    build-requirements-$(PYTHON_ENV)
-ifneq ($(CI),true)
+ifeq ($(CI),true)
 # On CI, any changes from compiling requirements is a failure so no need to waste time
 # rebuilding images:
+	touch "$(@)"
+else
 	$(MAKE) -e "$(@)"
 endif
 endif

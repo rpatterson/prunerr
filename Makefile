@@ -119,6 +119,12 @@ VCS_REMOTE=origin
 endif
 # Support using a different remote and branch for comparison to determine release data:
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifeq ($(VCS_BRANCH),master)
+# Compare with the previous merge to `master`:
+VCS_COMPARE_BRANCH=master^
+endif
 VCS_COMPARE_REMOTE=$(VCS_REMOTE)
 CI=false
 ifeq ($(CI),true)
@@ -516,11 +522,11 @@ endif
 ### Check the style and content of the `./Dockerfile*` files.
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
 	docker compose pull hadolint
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
 	    hadolint "./Dockerfile"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
 	    hadolint "./Dockerfile.devel"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
 	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test-push
@@ -535,28 +541,23 @@ ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	exit
 endif
 endif
-	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
-	if ! (( $$exit_code == 0 ||  $$exit_code == 3 || $$exit_code == 21 ))
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit
+	elif (( $$exit_code != 0 ))
 	then
 	    exit $$exit_code
-	fi
-ifneq ($(VCS_BRANCH),master)
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	then
+	else
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
 	        python-project-structure-devel $(TOX_EXEC_ARGS) \
 	        towncrier check --compare-with \
 		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
-else
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	    python-project-structure-devel $(TOX_EXEC_ARGS) \
-	    towncrier check --compare-with \
-	        "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-endif
 
 .PHONY: test-clean
 ### Confirm that the checkout is free of uncommitted VCS changes.
@@ -583,53 +584,61 @@ release: release-python release-docker
 release-python: ./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		~/.pypirc ./.env build-docker-volumes-$(PYTHON_ENV)
+# Only release if required by conventional commits:
+	exit_code=0
+	./.tox/build/bin/python ./bin/cz-check-bump || exit_code=$$?
+	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+# No commits require a release:
+	    exit
+	elif (( $$exit_code != 0 ))
+	then
+	    exit $$exit_code
+	fi
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
-# Only release if required by conventional commits and the version bump is committed:
-	if $(MAKE) -e release-bump
-	then
-	    $(MAKE) -e build-pkgs
+# Bump the version and build the final release packages:
+	$(MAKE) -e release-bump build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	    ./.tox/build/bin/twine check ./dist/python?project?structure-*
+	./.tox/build/bin/twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
-	    $(MAKE) -e "test-clean"
-	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
-	    ./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	        ./dist/python?project?structure-*
-	    export VERSION=$$(./.tox/build/bin/cz version --project)
+	$(MAKE) -e test-clean
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
+	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/python?project?structure-*
+	export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
-	    ./.tox/build/bin/twine upload -s -r "gitlab" \
-	        ./dist/python?project?structure-*
-	    release_cli_args="--description ./NEWS-release.rst"
-	    release_cli_args+=" --tag-name v$${VERSION}"
-	    release_cli_args+=" --assets-link {\
-	    \"name\":\"PyPI\",\
-	    \"url\":\"https://$(PYPI_HOSTNAME)/project/$(CI_PROJECT_NAME)/$${VERSION}/\",\
-	    \"link_type\":\"package\"\
-	    }"
-	    release_cli_args+=" --assets-link {\
-	    \"name\":\"GitLab-PyPI-Package-Registry\",\
-	    \"url\":\"$(CI_SERVER_URL)/$(CI_PROJECT_PATH)/-/packages/\",\
-	    \"link_type\":\"package\"\
-	    }"
-	    release_cli_args+=" --assets-link {\
-	    \"name\":\"Docker-Hub-Container-Registry\",\
-	    \"url\":\"https://hub.docker.com/r/merpatterson/$(CI_PROJECT_NAME)/tags\",\
-	    \"link_type\":\"image\"\
-	    }"
-	    docker compose pull gitlab-release-cli
-	    docker compose run --rm gitlab-release-cli release-cli \
-	        --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
-	        create $${release_cli_args}
+	./.tox/build/bin/twine upload -s -r "gitlab" \
+	    ./dist/python?project?structure-*
+	release_cli_args="--description ./NEWS-release.rst"
+	release_cli_args+=" --tag-name v$${VERSION}"
+	release_cli_args+=" --assets-link {\
+	\"name\":\"PyPI\",\
+	\"url\":\"https://$(PYPI_HOSTNAME)/project/$(CI_PROJECT_NAME)/$${VERSION}/\",\
+	\"link_type\":\"package\"\
+	}"
+	release_cli_args+=" --assets-link {\
+	\"name\":\"GitLab-PyPI-Package-Registry\",\
+	\"url\":\"$(CI_SERVER_URL)/$(CI_PROJECT_PATH)/-/packages/\",\
+	\"link_type\":\"package\"\
+	}"
+	release_cli_args+=" --assets-link {\
+	\"name\":\"Docker-Hub-Container-Registry\",\
+	\"url\":\"https://hub.docker.com/r/merpatterson/$(CI_PROJECT_NAME)/tags\",\
+	\"link_type\":\"image\"\
+	}"
+	docker compose pull gitlab-release-cli
+	docker compose run --rm gitlab-release-cli release-cli \
+	    --server-url "$(CI_SERVER_URL)" --project-id "$(CI_PROJECT_ID)" \
+	    create $${release_cli_args}
 # Create a GitHub release
-	    gh release create "v$${VERSION}" $(GITHUB_RELEASE_ARGS) \
-	        --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
-	fi
+	gh release create "v$${VERSION}" $(GITHUB_RELEASE_ARGS) \
+	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
 endif
 
 .PHONY: release-docker
@@ -680,11 +689,6 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
-# Check if the conventional commits since the last release require new release and thus
-# a version bump:
-ifneq ($(VCS_BRANCH),master)
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
-endif
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)

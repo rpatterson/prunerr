@@ -92,6 +92,12 @@ VCS_REMOTE=origin
 endif
 # Support using a different remote and branch for comparison to determine release data:
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifeq ($(VCS_BRANCH),master)
+# Compare with the previous merge to `master`:
+VCS_COMPARE_BRANCH=master^
+endif
 VCS_COMPARE_REMOTE=$(VCS_REMOTE)
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
@@ -212,7 +218,6 @@ test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
 	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
-ifneq ($(VCS_BRANCH),master)
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
 	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
@@ -226,10 +231,6 @@ ifneq ($(VCS_BRANCH),master)
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
 		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
-else
-	$(TOX_EXEC_ARGS) towncrier check --compare-with \
-	        "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-endif
 
 .PHONY: test-clean
 ### Confirm that the checkout is free of uncommitted VCS changes.
@@ -256,13 +257,8 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
 	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
-ifeq ($(VCS_BRANCH),master)
-# Always release on `master`:
-	    true
-else
 # No commits require a release:
 	    exit
-endif
 	elif (( $$exit_code != 0 ))
 	then
 	    exit $$exit_code

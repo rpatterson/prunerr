@@ -255,7 +255,7 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 # Only release if required by conventional commits:
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
-	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No commits require a release:
 	    exit

@@ -1264,7 +1264,7 @@ GPG_SIGNING_PRIVATE_KEY=
 #	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
-./var/log/gpg-import.log:
+./var/log/gpg-import.log: ~/.gitconfig
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
 ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)

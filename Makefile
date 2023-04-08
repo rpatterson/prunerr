@@ -225,9 +225,7 @@ ifneq ($(VCS_BRANCH),master)
 		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
 else
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	    python-project-structure-devel $(TOX_EXEC_ARGS) \
-	    towncrier check --compare-with \
+	$(TOX_EXEC_ARGS) towncrier check --compare-with \
 	        "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 endif
 

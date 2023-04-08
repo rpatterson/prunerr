@@ -152,7 +152,7 @@ DOCKER_VOLUMES=\
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
-DOCKER_BUILD_PULL=false
+export DOCKER_BUILD_PULL=false
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
@@ -222,8 +222,7 @@ build: ./.git/hooks/pre-commit \
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		 ./var/docker/$(PYTHON_ENV)/log/build-devel.log \
-		build-docker-volumes-$(PYTHON_ENV)
+		build-docker-$(PYTHON_MINOR) build-docker-volumes-$(PYTHON_ENV)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
@@ -324,7 +323,7 @@ endif
 $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
-	$(MAKE) -e build-docker-volumes-$${PYTHON_ENV}
+	$(MAKE) -e build-docker-volumes-$${PYTHON_ENV} build-docker-$(PYTHON_MINOR)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e \
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
@@ -464,7 +463,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Only release if required by conventional commits and the version bump is committed:
 	if $(MAKE) -e release-bump
 	then
-	    $(MAKE) -e DOCKER_BUILD_PULL="true" build-pkgs
+	    $(MAKE) -e build-pkgs
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
@@ -512,8 +511,8 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/log/tox/build/build.log \
-		./.env build-docker-volumes-$(PYTHON_ENV)
+		./var/log/git-remotes.log ./var/log/tox/build/build.log \
+		./.env build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR)
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -567,14 +566,9 @@ devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
+devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR)
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
-ifeq ($(CI),true)
-# Pull separately to reduce noisy interactive TTY output where it shouldn't be:
-	$(MAKE) -e DOCKER_BUILD_PULL="true" \
-	    "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
-endif
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
 	$(MAKE) -e -j $(PYTHON_MINORS:%=build-docker-requirements-%)
@@ -599,7 +593,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
-	$(MAKE) -e DOCKER_BUILD_PULL="true" TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
+	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit successfully but push nothing

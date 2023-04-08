@@ -210,17 +210,19 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
-	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
-	if ! (( $$exit_code == 0 ||  $$exit_code == 3 || $$exit_code == 21 ))
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
+ifneq ($(VCS_BRANCH),master)
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit
+	elif (( $$exit_code != 0 ))
 	then
 	    exit $$exit_code
-	fi
-ifneq ($(VCS_BRANCH),master)
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	then
+	else
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
 		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
@@ -249,21 +251,33 @@ test-clean:
 ### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
+# Only release if required by conventional commits:
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+ifeq ($(VCS_BRANCH),master)
+# Always release on `master`:
+	    true
+else
+# No commits require a release:
+	    exit
+endif
+	elif (( $$exit_code != 0 ))
+	then
+	    exit $$exit_code
+	fi
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
-# Only release if required by conventional commits and the version bump is committed:
-	if $(MAKE) -e release-bump
-	then
-	    $(MAKE) -e build-pkgs
+	$(MAKE) -e release-bump build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	    $(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
-	    $(MAKE) -e test-clean
-	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
-	    $(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	        ./dist/python?project?structure-*
-	fi
+	$(MAKE) -e test-clean
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
+	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/python?project?structure-*
 endif
 
 .PHONY: release-bump
@@ -276,11 +290,6 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
-# Check if the conventional commits since the last release require new release and thus
-# a version bump:
-ifneq ($(VCS_BRANCH),master)
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump
-endif
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
 ifneq ($(VCS_BRANCH),master)

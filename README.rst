@@ -37,6 +37,64 @@ that structure common to different variations can be merged back into the branch
 those specific variations.
 
 
+Template Usage
+==============
+
+This is a rough guide to applying this project template to your project.  This is not
+thoroughly tested as such tests would be so meta as to be extremely wasteful of
+developer time to create and maintain.  So report any issues you have or better yet
+figure it out and submit a PR with corrections to this section.
+
+#. Choose the right branch to use:
+
+   Is your project a CLI utility?  A web application?  Which project hosting provider
+   and/or CI/CD platform will you use?  Choose the appropriate branch for your project:
+
+   - ``dist``:
+
+     Basic Python distribution with build, tests, linters, code formatting and release
+     publishing from local developer checkouts.
+
+   - etc.
+
+#. Reconcile VCS history:
+
+   If starting a fresh project::
+
+     $ git clone --origin "template" --branch "dist" \
+     "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
+     $ cd "./foo-project"
+     $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
+     $ git checkout -B "master" --track "origin/master"
+
+   If merging into an existing project::
+
+     $ git remote add "template" \
+     "https://gitlab.com/rpatterson/python-project-structure.git"
+     $ git merge --allow-unrelated-histories "template/dist"
+
+#. Rename file and directory paths derived from the project name::
+
+     $ git ls-files | grep -iE 'python.?project.?structure'
+
+#. Rename strings derived from the project name and template author identity in project
+   files::
+
+     $ git grep -iE 'python.?project.?structure|ross|Patterson'
+
+#. Examine ``# TEMPLATE:`` comments and change as appropriate:
+
+   These are the bits that need the developer's attention and reasoning to take the
+   correct action.  So read the comments and address them with care and attention::
+
+     $ git grep "TEMPLATE"
+
+Finally, remove this section from this ``./README.rst`` and update the rest of it's
+content as appropriate for your project.  As fixes and features are added to the
+upstream template, you can merge them into your project and repeat steps 3-5 above as
+needed.
+
+
 ************
 Installation
 ************

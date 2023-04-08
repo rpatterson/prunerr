@@ -4,6 +4,9 @@ Seeking Contributions
 
 Known bugs and desirable features for which contributions are most welcome.
 
+TEMPLATE: Remove any of the following TODOs from the template that your project doesn't
+care about and add your own.
+
 
 ********
 Required

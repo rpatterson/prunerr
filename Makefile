@@ -142,7 +142,7 @@ export TEST_PYPI_PASSWORD
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
 # Return the most recently built package:
-current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)
+current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)
 
 
 ## Top-level targets:
@@ -183,9 +183,13 @@ $(PYTHON_ENVS:%=build-requirements-%):
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
+	rm -vf ./dist/*
 	tox run -e "$(PYTHON_ENV)" --pkg-only
+# Copy the wheel to a location not managed by tox:
+	cp -lfv "$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)" "./dist/"
 # Also build the source distribution:
 	tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
+	cp -lfv "$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)" "./dist/"
 
 
 ## Test Targets:
@@ -247,21 +251,20 @@ test-clean:
 ### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
-# https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check \
-	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	$(MAKE) -e "test-clean"
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Only release if required by conventional commits and the version bump is committed:
 	if $(MAKE) -e release-bump
 	then
 	    $(MAKE) -e build-pkgs
+# https://twine.readthedocs.io/en/latest/#using-twine
+	    $(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
+	    $(MAKE) -e test-clean
 	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	    $(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	        "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
+	        ./dist/python?project?structure-*
 	fi
 endif
 

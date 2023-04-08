@@ -65,17 +65,10 @@ jobs:
           /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
-      - name: "Check for any required release notes"
+      - name: "Build image and run tests and checks in a container"
         run: >-
           entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          test-push
-      - name: "Build the container image in which to run the tests"
-        run: >-
-          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          build-docker-${{ matrix.PYTHON_MINORS }}
-      - name: "Run the tests and code checks inside the built container"
-        run: >-
-          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          test-push build-docker-${{ matrix.PYTHON_MINORS }}
           test-docker-${{ matrix.PYTHON_MINORS }} test-clean
 
       # Upload build artifacts:

@@ -583,12 +583,10 @@ release: release-python release-docker
 release-python: ./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		~/.pypirc ./.env build-docker-volumes-$(PYTHON_ENV)
+# Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
-endif
-# Only release from the `master` or `develop` branches:
-ifeq ($(RELEASE_PUBLISH),true)
 # Only release if required by conventional commits and the version bump is committed:
 	if $(MAKE) -e release-bump
 	then

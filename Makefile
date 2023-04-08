@@ -587,7 +587,7 @@ release-python: ./var/log/tox/build/build.log \
 # Only release if required by conventional commits:
 	exit_code=0
 	./.tox/build/bin/python ./bin/cz-check-bump || exit_code=$$?
-	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No commits require a release:
 	    exit

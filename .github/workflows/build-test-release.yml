@@ -146,6 +146,7 @@ jobs:
               ) && 'true'
             ) || 'false'
           }}
+        DOCKER_BUILD_PULL: "true"
     permissions:
       packages: "write"
     steps:

@@ -9,6 +9,10 @@ Known bugs and desirable features for which contributions are most welcome.
 Required
 ********
 
+#. Document template usage.
+
+#. Document ``devel-upgrade-branch`` scheduled pipeline, including variables.
+
 
 *************
 High Priority

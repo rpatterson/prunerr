@@ -330,7 +330,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log build-docker-volumes-$(PYTHON_ENV)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
-	mkdir -pv "./dist/"
+	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
@@ -592,19 +592,19 @@ ifeq ($(RELEASE_PUBLISH),true)
 	then
 	    $(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	    ./.tox/build/bin/twine check \
-	        "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	    $(MAKE) -e "test-clean"
+	    ./.tox/build/bin/twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
+	    $(MAKE) -e "test-clean"
 	    git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	    ./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	        "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
+	        ./dist/python?project?structure-*
 	    export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
-	    ./.tox/build/bin/twine upload -s -r "gitlab" ./dist/python?project?structure-*
+	    ./.tox/build/bin/twine upload -s -r "gitlab" \
+	        ./dist/python?project?structure-*
 	    release_cli_args="--description ./NEWS-release.rst"
 	    release_cli_args+=" --tag-name v$${VERSION}"
 	    release_cli_args+=" --assets-link {\

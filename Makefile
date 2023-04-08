@@ -198,7 +198,7 @@ DOCKER_VOLUMES=\
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
-DOCKER_BUILD_PULL=false
+export DOCKER_BUILD_PULL=false
 
 # Values derived from or overridden by CI environments:
 GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
@@ -327,8 +327,7 @@ build: ./.git/hooks/pre-commit \
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		 ./var/docker/$(PYTHON_ENV)/log/build-devel.log \
-		build-docker-volumes-$(PYTHON_ENV)
+		build-docker-$(PYTHON_MINOR) build-docker-volumes-$(PYTHON_ENV)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
 	mkdir -pv "./dist/"
@@ -352,7 +351,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 ### Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
 	    ./requirements/$(@:build-requirements-%=%)/build.txt \
@@ -390,7 +389,7 @@ $(PYTHON_MINORS:%=build-docker-%):
 .PHONY: build-docker-tags
 ### Print the list of image tags for the current registry and variant.
 build-docker-tags:
-	$(MAKE) $(DOCKER_REGISTRIES:%=build-docker-tags-%)
+	$(MAKE) -e $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
@@ -429,7 +428,7 @@ endif
 $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
-	$(MAKE) build-docker-volumes-$${PYTHON_ENV}
+	$(MAKE) -e build-docker-volumes-$${PYTHON_ENV} build-docker-$(PYTHON_MINOR)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	    python-project-structure-devel make -e \
 	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
@@ -441,7 +440,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 # If created by `# dockerd`, they end up owned by `root`.
 $(PYTHON_ENVS:%=build-docker-volumes-%): \
 		./src/python_project_structure.egg-info/ ./.tox/
-	$(MAKE) \
+	$(MAKE) -e \
 	    $(@:build-docker-volumes-%=./var/docker/%/) \
 	    $(@:build-docker-volumes-%=./var/docker/%/python_project_structure.egg-info/) \
 	    $(@:build-docker-volumes-%=./var/docker/%/.tox/)
@@ -589,13 +588,13 @@ endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Only release if required by conventional commits and the version bump is committed:
-	if $(MAKE) release-bump
+	if $(MAKE) -e release-bump
 	then
-	    $(MAKE) DOCKER_BUILD_PULL="true" build-pkgs
+	    $(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	    ./.tox/build/bin/twine check \
 	        "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	    $(MAKE) "test-clean"
+	    $(MAKE) -e "test-clean"
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
@@ -653,7 +652,7 @@ endif
 ### Publish all container images to one container registry.
 $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 # https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	$(MAKE) "./var/log/docker-login-$(@:release-docker-registry-%=%).log"
+	$(MAKE) -e "./var/log/docker-login-$(@:release-docker-registry-%=%).log"
 	for user_tag in $$(
 	    $(MAKE) -e --no-print-directory \
 	        build-docker-tags-$(@:release-docker-registry-%=%)
@@ -673,7 +672,7 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log ./var/log/tox/build/build.log \
-		./.env build-docker-volumes-$(PYTHON_ENV)
+		./.env build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR)
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -738,14 +737,9 @@ devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
+devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MINOR)
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
-ifeq ($(CI),true)
-# Pull separately to reduce noisy interactive TTY output where it shouldn't be:
-	$(MAKE) DOCKER_BUILD_PULL="true" \
-	    "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
-endif
 # Ensure the network is create first to avoid race conditions
 	docker compose create python-project-structure-devel
 	$(MAKE) -e PIP_COMPILE_ARGS="--upgrade" -j \
@@ -772,8 +766,8 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
-	$(MAKE) DOCKER_BUILD_PULL="true" TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
-	if $(MAKE) "test-clean"
+	$(MAKE) -e devel-upgrade
+	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit successfully but push nothing
 	    exit
@@ -788,7 +782,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	git commit --all --signoff -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
-	$(MAKE) "test-clean"
+	$(MAKE) -e "test-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
@@ -827,7 +821,7 @@ clean:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --extra "devel" \
 	    --output-file "$(@)" "$(<)"
@@ -835,14 +829,14 @@ $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
@@ -861,7 +855,7 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
 
@@ -871,7 +865,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
@@ -879,7 +873,7 @@ $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
@@ -894,12 +888,12 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./docker-compose.override.yml ./.env \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
 	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
-	$(MAKE) $(HOME)/.local/var/log/python-project-structure-host-install.log
+	$(MAKE) -e $(HOME)/.local/var/log/python-project-structure-host-install.log
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate as if it had been built here.
@@ -985,7 +979,7 @@ endif
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
 	    "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
@@ -1136,13 +1130,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	) |& tee -a "$(@)"
 
 ./.git/hooks/pre-commit:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
@@ -1301,7 +1295,7 @@ endif
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	set +x
 	if [ -e "$(target)" ]
 	then
@@ -1348,9 +1342,9 @@ bootstrap-project: \
 		./var/log/docker-login-GITHUB.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 # GitLab CI/CD:
-	$(MAKE) -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
+	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
 # GitHub Actions:
-	$(MAKE) -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release
+	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release
 
 
 ## Makefile Development:

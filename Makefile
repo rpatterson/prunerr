@@ -396,11 +396,11 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 ### Check the style and content of the `./Dockerfile*` files
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
 	docker compose pull hadolint
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
 	    hadolint "./Dockerfile"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
 	    hadolint "./Dockerfile.devel"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
 	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test-push

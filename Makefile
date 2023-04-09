@@ -416,7 +416,7 @@ test-push: $(VCS_FETCH_TARGETS) \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
 		build-docker-volumes-$(PYTHON_ENV) ./.env
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	if ! git fetch "$${vcs_compare_rev}"
+	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
 # Compare with the pre-release branch if this branch hasn't been pushed yet:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"

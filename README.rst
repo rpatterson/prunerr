@@ -102,6 +102,11 @@ figure it out and submit a PR with corrections to this section.
 
      The above plus Docker containers for both development and end-users/deployments.
 
+   - ``ci``:
+
+     The above plus GitLab CI/CD pipelines that run tests and linters as CI and
+     publish releases from ``develop`` and ``master`` as CD.
+
    - etc.
 
    Do not use the ``develop`` or ``master`` branches in your project as those branches
@@ -113,7 +118,7 @@ figure it out and submit a PR with corrections to this section.
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "docker" \
+     $ git clone --origin "template" --branch "ci" \
      "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git config remote.template.tagOpt --no-tags
@@ -126,7 +131,7 @@ figure it out and submit a PR with corrections to this section.
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/python-project-structure.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git merge --allow-unrelated-histories "template/docker"
+     $ git merge --allow-unrelated-histories "template/ci"
 
 #. Rename file and directory paths derived from the project name::
 

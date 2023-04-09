@@ -1,8 +1,8 @@
-###############################################
+########################################################################################
 python-project-structure
-###############################################
+########################################################################################
 Python project structure foundation or template
-***********************************************
+****************************************************************************************
 
 .. list-table::
    :class: borderless align-right
@@ -37,8 +37,9 @@ that structure common to different variations can be merged back into the branch
 those specific variations.
 
 
+****************************************************************************************
 Template Usage
-==============
+****************************************************************************************
 
 This is a rough guide to applying this project template to your project.  This is not
 thoroughly tested as such tests would be so meta as to be extremely wasteful of
@@ -95,18 +96,18 @@ upstream template, you can merge them into your project and repeat steps 3-5 abo
 needed.
 
 
-************
+****************************************************************************************
 Installation
-************
+****************************************************************************************
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
   $ sudo pip3 install python-project-structure
 
 
-************
+****************************************************************************************
 CONTRIBUTING
-************
+****************************************************************************************
 
 NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
 GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
@@ -116,9 +117,9 @@ See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
 development.
 
 
-**********
+****************************************************************************************
 Motivation
-**********
+****************************************************************************************
 
 There are many other Python project templates so why make another? I've been doing
 Python development since 1998, so I've had plenty of time to develop plenty of opinions

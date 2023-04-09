@@ -113,9 +113,10 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
 Optional shell tab completion is available via `argcomplete`_.
 
-*****
+
+****************************************************************************************
 Usage
-*****
+****************************************************************************************
 
 See the command-line help for details on options and arguments::
 

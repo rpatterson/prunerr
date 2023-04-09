@@ -75,30 +75,42 @@ PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 
 # Values derived from VCS/git:
-VCS_BRANCH:=$(shell git branch --show-current)
-# Make best guess at the right remote to use for comparison to determine release data:
-VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).pushRemote")
+VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
+# Reproduce what we need of git's branch and remote configuration and logic:
+VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")
+ifeq ($(VCS_CLONE_REMOTE),)
+VCS_CLONE_REMOTE=origin
 endif
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git config "remote.pushDefault")
+VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).pushRemote")
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
 endif
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git config "checkout.defaultRemote")
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE=$(VCS_CLONE_REMOTE)
 endif
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE=origin
+VCS_UPSTREAM_REMOTE:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).remote")
+ifeq ($(VCS_UPSTREAM_REMOTE),)
+VCS_UPSTREAM_REMOTE:=$(shell git config "checkout.defaultRemote")
 endif
-# Support using a different remote and branch for comparison to determine release data:
+VCS_UPSTREAM_REF:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).merge")
+VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
+# Determine the best remote and branch for versioning data, e.g. `v*` tags:
+VCS_REMOTE=$(VCS_PUSH_REMOTE)
+VCS_BRANCH=$(VCS_LOCAL_BRANCH)
+# Determine the best remote and branch for release data, e.g. conventional commits:
+VCS_COMPARE_REMOTE=$(VCS_UPSTREAM_REMOTE)
+ifeq ($(VCS_COMPARE_REMOTE),)
+VCS_COMPARE_REMOTE=$(VCS_PUSH_REMOTE)
+endif
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+ifeq ($(VCS_COMPARE_BRANCH),)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
-ifeq ($(VCS_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
-else ifeq ($(VCS_BRANCH),master)
-# Compare with the previous merge to `master`:
-VCS_COMPARE_BRANCH=master^
 endif
-VCS_COMPARE_REMOTE=$(VCS_REMOTE)
+# If pushing to upstream release branches, get release data compared to the previous
+# release:
+ifeq ($(VCS_COMPARE_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+endif
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -216,12 +228,17 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
+ifeq ($(VCS_COMPARE_BRANCH),master)
+# On `master`, compare with the previous commit on `master`
+	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
+else
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
 # Compare with the pre-release branch if this branch hasn't been pushed yet:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
+endif
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD"
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
@@ -492,10 +509,15 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
+	branch_path="$(@:var/git/refs/remotes/%=%)"
 	mkdir -pv "$(dir $(@))"
-	(git fetch $${git_fetch_args} \
-	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))" || true) |&
+	if ! git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" |
 	    tee -a "$(@)"
+	then
+# If the local branch doesn't exist, fall back to the pre-release branch:
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" | tee -a "$(@)"
+	fi
+
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

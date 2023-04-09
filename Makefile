@@ -492,10 +492,12 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
+	branch_path="$(@:var/git/refs/remotes/%=%)"
 	mkdir -pv "$(dir $(@))"
-	(git fetch $${git_fetch_args} \
-	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))" || true) |&
-	    tee -a "$(@)"
+	(
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" ||
+	    true
+	) |& tee -a "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \

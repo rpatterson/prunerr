@@ -92,6 +92,12 @@ VCS_REMOTE=origin
 endif
 # Support using a different remote and branch for comparison to determine release data:
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifeq ($(VCS_BRANCH),master)
+# Compare with the previous merge to `master`:
+VCS_COMPARE_BRANCH=master^
+endif
 VCS_COMPARE_REMOTE=$(VCS_REMOTE)
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
@@ -142,7 +148,7 @@ export TEST_PYPI_PASSWORD
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
 # Return the most recently built package:
-current_pkg = $(shell ls -t ./.tox/.pkg/dist/*$(1) | head -n 1)
+current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)
 
 
 ## Top-level targets:
@@ -167,7 +173,7 @@ build: \
 ### Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	$(MAKE) "$(@:build-requirements-%=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
 	    ./requirements/$(@:build-requirements-%=%)/build.txt \
@@ -183,9 +189,13 @@ $(PYTHON_ENVS:%=build-requirements-%):
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 # Defined as a .PHONY recipe so that multiple targets can depend on this as a
 # pre-requisite and it will only be run once per invocation.
+	rm -vf ./dist/*
 	tox run -e "$(PYTHON_ENV)" --pkg-only
+# Copy the wheel to a location not managed by tox:
+	cp -lfv "$$(ls -t ./.tox/.pkg/dist/*.whl | head -n 1)" "./dist/"
 # Also build the source distribution:
 	tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
+	cp -lfv "$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)" "./dist/"
 
 
 ## Test Targets:
@@ -206,16 +216,18 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
-	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD" || exit_code=$$?
-	if ! (( $$exit_code == 3 || $$exit_code == 21 ))
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
+	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+	    exit
+	elif (( $$exit_code != 0 ))
 	then
 	    exit $$exit_code
-	fi
-	if $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	then
+	else
 	    $(TOX_EXEC_ARGS) towncrier check --compare-with \
 		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	fi
@@ -237,20 +249,41 @@ test-clean:
 # end-users.
 
 .PHONY: release
-### Publish installable Python packages to PyPI.
+### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) build-pkgs ~/.pypirc
-# https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check \
-	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
-	$(MAKE) "test-clean"
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
+ifeq ($(VCS_BRANCH),master)
+	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
+	    $(TOX_EXEC_BUILD_ARGS) cz version --project
+	)
+	then
+# There's no pre-release for which to publish a final release:
+	    exit
+	fi
+else
+# Only release if required by conventional commits:
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+# No commits require a release:
+	    exit
+	elif (( $$exit_code != 0 ))
+	then
+	    exit $$exit_code
+	fi
+endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
+	$(MAKE) -e release-bump build-pkgs
+# https://twine.readthedocs.io/en/latest/#using-twine
+	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
+	$(MAKE) -e test-clean
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    "$(call current_pkg,.whl)" "$(call current_pkg,.tar.gz)"
+	    ./dist/python?project?structure-*
 endif
 
 .PHONY: release-bump
@@ -262,19 +295,6 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    set +x
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
-	fi
-# Check if the conventional commits since the last release require new release and thus
-# a version bump:
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
-	if (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-# No release necessary for the commits since the last release, don't publish a release
-	    exit
-	elif (( $$exit_code != 0 ))
-	then
-# Commitizen returned an unexpected exit status code, fail
-	    exit $$exit_code
 	fi
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
@@ -331,8 +351,8 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
 	fi
 	now=$$(date -u)
-	$(MAKE) TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
-	if $(MAKE) "test-clean"
+	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
+	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit successfully but push nothing
 	    exit
@@ -347,7 +367,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	git commit --all --signoff -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
-	$(MAKE) "test-clean"
+	$(MAKE) -e "test-clean"
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
@@ -384,18 +404,18 @@ clean:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --extra "devel" \
 	    --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 # Only update the installed tox version for the latest/host/main/default Python version
@@ -412,7 +432,7 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 	fi
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
 	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
 	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
 
@@ -422,7 +442,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
 	    tee -a "$(@)"
@@ -430,7 +450,7 @@ $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" | tee -a "$(@)"
@@ -473,13 +493,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    "$(notdir $(patsubst %/,%,$(dir $(@))))" "$(notdir $(@))" || true) |&
 	    tee -a "$(@)"
 ./.git/hooks/pre-commit:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
@@ -504,7 +524,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template:
-	$(MAKE) "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
 	set +x
 	if [ -e "$(target)" ]
 	then

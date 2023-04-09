@@ -576,6 +576,13 @@ release: release-python release-docker
 release-python: ./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		~/.pypirc ./.env build-docker-volumes-$(PYTHON_ENV)
+ifeq ($(VCS_BRANCH),master)
+	if ! ./.tox/build/bin/python ./bin/get-base-version
+	then
+# There's no pre-release for which to publish a final release:
+	    exit
+	fi
+else
 # Only release if required by conventional commits:
 	exit_code=0
 	./.tox/build/bin/python ./bin/cz-check-bump || exit_code=$$?
@@ -587,6 +594,7 @@ release-python: ./var/log/tox/build/build.log \
 	then
 	    exit $$exit_code
 	fi
+endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets

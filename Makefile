@@ -545,7 +545,7 @@ ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 endif
 endif
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
-	if ! git fetch "$${vcs_compare_rev}"
+	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
 # Compare with the pre-release branch if this branch hasn't been pushed yet:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"

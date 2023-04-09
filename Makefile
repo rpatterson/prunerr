@@ -252,6 +252,13 @@ test-clean:
 ### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
+ifeq ($(VCS_BRANCH),master)
+	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version
+	then
+# There's no pre-release for which to publish a final release:
+	    exit
+	fi
+else
 # Only release if required by conventional commits:
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
@@ -263,6 +270,7 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 	then
 	    exit $$exit_code
 	fi
+endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e release-bump build-pkgs

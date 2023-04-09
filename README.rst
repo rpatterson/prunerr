@@ -69,13 +69,17 @@ figure it out and submit a PR with corrections to this section.
      Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
+   - ``docker``:
+
+     The above plus Docker containers for both development and end-users/deployments.
+
    - etc.
 
 #. Reconcile VCS history:
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "dist" \
+     $ git clone --origin "template" --branch "docker" \
      "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
@@ -85,7 +89,7 @@ figure it out and submit a PR with corrections to this section.
 
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/python-project-structure.git"
-     $ git merge --allow-unrelated-histories "template/dist"
+     $ git merge --allow-unrelated-histories "template/docker"
 
 #. Rename file and directory paths derived from the project name::
 

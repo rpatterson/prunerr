@@ -127,6 +127,15 @@ else ifeq ($(VCS_BRANCH),master)
 VCS_COMPARE_BRANCH=master^
 endif
 VCS_COMPARE_REMOTE=$(VCS_REMOTE)
+CI=false
+ifeq ($(CI),true)
+# Under CI, check commits and release notes against the branch to be merged into:
+ifeq ($(VCS_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
+else ifneq ($(VCS_BRANCH),master)
+VCS_COMPARE_BRANCH=develop
+endif
+endif
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -160,7 +169,6 @@ TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images and run containers:
-CI=false
 GITLAB_CI=false
 GITHUB_ACTIONS=false
 CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
@@ -536,11 +544,16 @@ ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	exit
 endif
 endif
-	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)..HEAD"
+	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	if ! git fetch "$${vcs_compare_rev}"
+	then
+# Compare with the pre-release branch if this branch hasn't been pushed yet:
+	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
+	fi
+	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD"
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	    "$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)" || exit_code=$$?
+	    "$${vcs_compare_rev}" || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 	    exit
@@ -550,8 +563,7 @@ endif
 	else
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
 	        python-project-structure-devel $(TOX_EXEC_ARGS) \
-	        towncrier check --compare-with \
-		"$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
+	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
 .PHONY: test-clean

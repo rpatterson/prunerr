@@ -12,6 +12,7 @@ export TEMPLATE_IGNORE_EXISTING=false
 PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 # Project-specific variables
 export DOCKER_USER=merpatterson
+# TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 CI_UPSTREAM_NAMESPACE=rpatterson
 CI_PROJECT_NAME=python-project-structure

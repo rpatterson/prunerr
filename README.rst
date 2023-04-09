@@ -78,13 +78,6 @@ Django, etc.), libraries and such, branches will be used for each such variation
 that structure common to different variations can be merged back into the branches for
 those specific variations.
 
-Do not use the ``develop`` or ``master`` branches in your project as those branches are
-used to test the CI/CD automatic releases process and as such contain bumped versions,
-release notes, and other release artifacts that shouldn't be merged into real projects.
-On that same note, when adding this template as a remote be sure to configure it with
-``$ git config remote.template.tagOpt --no-tags`` to avoid clashing VCS versions in your
-project.
-
 
 ****************************************************************************************
 Template Usage
@@ -111,6 +104,11 @@ figure it out and submit a PR with corrections to this section.
 
    - etc.
 
+   Do not use the ``develop`` or ``master`` branches in your project as those branches
+   are used to test the CI/CD automatic releases process and as such contain bumped
+   versions, release notes, and other release artifacts that shouldn't be merged into
+   real projects.
+
 #. Reconcile VCS history:
 
    If starting a fresh project::
@@ -118,6 +116,7 @@ figure it out and submit a PR with corrections to this section.
      $ git clone --origin "template" --branch "docker" \
      "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
      $ cd "./foo-project"
+     $ git config remote.template.tagOpt --no-tags
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git checkout -B "master" --track "origin/master"
 
@@ -125,6 +124,7 @@ figure it out and submit a PR with corrections to this section.
 
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/python-project-structure.git"
+     $ git config remote.template.tagOpt --no-tags
      $ git merge --allow-unrelated-histories "template/docker"
 
 #. Rename file and directory paths derived from the project name::

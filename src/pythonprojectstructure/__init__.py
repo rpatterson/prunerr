@@ -44,6 +44,7 @@ subparsers = parser.add_subparsers(
 )
 
 
+# TEMPLATE: Replace with the sub-commands and arguments your project provides.
 def foobar(quiet=False):
     """
     Run the foobar sub-command from the command line.

@@ -95,46 +95,57 @@ PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 export PYTHON_WHEEL=
 
 # Values derived from VCS/git:
-VCS_BRANCH:=$(shell git branch --show-current)
+VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
 CI_COMMIT_REF_NAME=
 GITHUB_REF_NAME=
 ifneq ($(CI_COMMIT_REF_NAME),)
-VCS_BRANCH=$(CI_COMMIT_REF_NAME)
+VCS_LOCAL_BRANCH=$(CI_COMMIT_REF_NAME)
 else ifneq ($(GITHUB_REF_NAME),)
-VCS_BRANCH=$(GITHUB_REF_NAME)
+VCS_LOCAL_BRANCH=$(GITHUB_REF_NAME)
 endif
+# Reproduce what we need of git's branch and remote configuration and logic:
+VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")
+ifeq ($(VCS_CLONE_REMOTE),)
+VCS_CLONE_REMOTE=origin
+endif
+VCS_PUSH_REMOTE:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).pushRemote")
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE:=$(shell git config "remote.pushDefault")
+endif
+ifeq ($(VCS_PUSH_REMOTE),)
+VCS_PUSH_REMOTE=$(VCS_CLONE_REMOTE)
+endif
+VCS_UPSTREAM_REMOTE:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).remote")
+ifeq ($(VCS_UPSTREAM_REMOTE),)
+VCS_UPSTREAM_REMOTE:=$(shell git config "checkout.defaultRemote")
+endif
+VCS_UPSTREAM_REF:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).merge")
+VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
+# Determine the best remote and branch for versioning data, e.g. `v*` tags:
+VCS_REMOTE=$(VCS_PUSH_REMOTE)
+VCS_BRANCH=$(VCS_LOCAL_BRANCH)
 export VCS_BRANCH
-# Make best guess at the right remote to use for comparison to determine release data:
-VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).remote")
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git config "branch.$(VCS_BRANCH).pushRemote")
+# Determine the best remote and branch for release data, e.g. conventional commits:
+VCS_COMPARE_REMOTE=$(VCS_UPSTREAM_REMOTE)
+ifeq ($(VCS_COMPARE_REMOTE),)
+VCS_COMPARE_REMOTE=$(VCS_PUSH_REMOTE)
 endif
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git config "remote.pushDefault")
-endif
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE:=$(shell git config "checkout.defaultRemote")
-endif
-ifeq ($(VCS_REMOTE),)
-VCS_REMOTE=origin
-endif
-# Support using a different remote and branch for comparison to determine release data:
+VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
+ifeq ($(VCS_COMPARE_BRANCH),)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
-ifeq ($(VCS_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
-else ifeq ($(VCS_BRANCH),master)
-# Compare with the previous merge to `master`:
-VCS_COMPARE_BRANCH=master^
 endif
-VCS_COMPARE_REMOTE=$(VCS_REMOTE)
+# Under CI, check commits and release notes against the branch to be merged into:
 CI=false
 ifeq ($(CI),true)
-# Under CI, check commits and release notes against the branch to be merged into:
-ifeq ($(VCS_BRANCH),develop)
+ifeq ($(VCS_COMPARE_BRANCH),develop)
 VCS_COMPARE_BRANCH=master
 else ifneq ($(VCS_BRANCH),master)
 VCS_COMPARE_BRANCH=develop
 endif
+# If pushing to upstream release branches, get release data compared to the previous
+# release:
+else ifeq ($(VCS_COMPARE_BRANCH),develop)
+VCS_COMPARE_BRANCH=master
 endif
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
@@ -542,12 +553,17 @@ ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	exit
 endif
 endif
+ifeq ($(VCS_COMPARE_BRANCH),master)
+# On `master`, compare with the previous commit on `master`
+	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
+else
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
 # Compare with the pre-release branch if this branch hasn't been pushed yet:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
+endif
 	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD"
 	exit_code=0
 	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
@@ -1144,10 +1160,12 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 	branch_path="$(@:var/git/refs/remotes/%=%)"
 	mkdir -pv "$(dir $(@))"
-	(
-	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" ||
-	    true
-	) |& tee -a "$(@)"
+	if ! git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" |
+	    tee -a "$(@)"
+	then
+# If the local branch doesn't exist, fall back to the pre-release branch:
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" | tee -a "$(@)"
+	fi
 
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"

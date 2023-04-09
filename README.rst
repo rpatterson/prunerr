@@ -178,9 +178,10 @@ Optional shell tab completion is available via `argcomplete`_.
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
 details.
 
-*****
+
+****************************************************************************************
 Usage
-*****
+****************************************************************************************
 
 See the command-line help for details on options and arguments::
 

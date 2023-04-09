@@ -66,12 +66,14 @@ figure it out and submit a PR with corrections to this section.
      "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
+     $ git config remote.template.tagOpt --no-tags
      $ git checkout -B "master" --track "origin/master"
 
    If merging into an existing project::
 
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/python-project-structure.git"
+     $ git config remote.template.tagOpt --no-tags
      $ git merge --allow-unrelated-histories "template/dist"
 
 #. Rename file and directory paths derived from the project name::

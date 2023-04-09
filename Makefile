@@ -253,7 +253,9 @@ test-clean:
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
 ifeq ($(VCS_BRANCH),master)
-	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version
+	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
+	    $(TOX_EXEC_BUILD_ARGS) cz version --project
+	)
 	then
 # There's no pre-release for which to publish a final release:
 	    exit

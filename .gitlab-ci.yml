@@ -53,11 +53,9 @@ build-test:
   stage: "build-test"
   rules:
     - if: >-
-        $CI_COMMIT_TAG ||
-        $CI_COMMIT_MESSAGE =~ "(?ims).*\[ci skip\].*"
-      when: "never"
-    - if: >-
-        $CI_PIPELINE_SOURCE != "schedule"
+        ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
+        && $CI_PIPELINE_SOURCE != "schedule"
+        && $CI_COMMIT_MESSAGE !~ "(?ims).*\[ci skip\].*"
   interruptible: true
   parallel:
     matrix:
@@ -103,14 +101,12 @@ release:
     DOCKER_BUILD_PULL: "true"
   rules:
     - if: >-
-        $CI_COMMIT_TAG ||
-        $CI_COMMIT_MESSAGE =~ "(?ims).*\[ci skip\].*"
-      when: "never"
-    - if: >-
-        $CI_PROJECT_NAMESPACE == "rpatterson"
+        ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
+        && $CI_PROJECT_NAMESPACE == "rpatterson"
         && $CI_COMMIT_BRANCH != null
         && $CI_COMMIT_BRANCH =~ "^(develop|master)$"
         && $CI_PIPELINE_SOURCE != "schedule"
+        && $CI_COMMIT_MESSAGE !~ "(?ims).*\[ci skip\].*"
   script:
     - >-
       entrypoint make -e release-python test-clean

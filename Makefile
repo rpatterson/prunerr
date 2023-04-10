@@ -152,6 +152,14 @@ VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
+ifeq ($(VCS_BRANCH),master)
+# Also fetch develop for merging back in the final release:
+ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
+ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
+endif
+endif
+endif
 # Determine the sequence of branches to find closes existing build artifacts, such as
 # docker images:
 VCS_BRANCHES=$(VCS_BRANCH)
@@ -642,6 +650,13 @@ ifeq ($(RELEASE_PUBLISH),true)
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
+ifeq ($(VCS_BRANCH),master)
+# Merge the bumped version back into `develop`:
+	git checkout "develop"
+	git merge --ff-only "master"
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
+	git checkout "master"
+endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
 # Ensure the tag is available for creating the GitHub release below but push *before* to

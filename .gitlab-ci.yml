@@ -11,7 +11,9 @@
 #   See the comments towards the bottom of the `./Makefile`
 # - `PROJECT_GITHUB_PAT`:
 #   A GitHub "Classic" Personal Access Token with scopes: `repo`, `workflow`,
-#   `packages`, and `project`
+#   `packages`, and `project`. If using both GitLab CI/CD for releases and GitHub
+#   Actions as duplicate CI for tests, then configure repository mirroring in your
+#   GitLab project -> Settings -> Repository using the same token.
 # - `PYPI_PASSWORD`:
 #   A PyPI API token
 # - `TEST_PYPI_PASSWORD`:

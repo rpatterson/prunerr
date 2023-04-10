@@ -639,6 +639,13 @@ ifeq ($(RELEASE_PUBLISH),true)
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
+ifneq ($(GITHUB_ACTIONS),true)
+ifneq ($(PROJECT_GITHUB_PAT),)
+# Ensure the tag is available for creating the GitHub release below but push *before* to
+# GitLab to avoid a race with repository mirrorying:
+	git push --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
+endif
+endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
@@ -1194,10 +1201,6 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
-# mirror.
-	git remote set-url --push --add "origin" \
-	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
 # Also add a fetch remote for the `$ gh ...` CLI tool to detect:
 	git remote add "github" \
 	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"

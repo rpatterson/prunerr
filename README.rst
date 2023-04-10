@@ -38,15 +38,15 @@ Python project structure foundation or template
 	  :target: https://github.com/rpatterson/python-project-structure/releases
        .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/ci-cd.yml/badge.svg
           :alt: GitHub Actions status
-          :target: https://github.com/rpatterson/python-project-structure/
-       .. figure:: https://codecov.io/github/rpatterson/python-project-structure/branch/master/graph/badge.svg?token=GNKVQ8VYOU 
+          :target: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml
+       .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml/badge.svg
           :alt: Codecov test coverage
 	  :target: https://codecov.io/github/rpatterson/python-project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/python-project-structure/
 
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure?sort=semver&logo=docker
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure/master?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)
           :target: https://hub.docker.com/r/merpatterson/python-project-structure
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/python-project-structure?logo=docker

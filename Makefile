@@ -1190,10 +1190,6 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
-# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
-# variable value should be prefixed with the token name as a HTTP `user:password`
-# authentication string:
-# https://stackoverflow.com/a/73426417/624787
 	git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)"
 endif
 ifneq ($(GITHUB_ACTIONS),true)

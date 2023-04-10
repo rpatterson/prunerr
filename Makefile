@@ -463,7 +463,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 ### Ensure access permissions to build artifacts in Python version container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 $(PYTHON_ENVS:%=build-docker-volumes-%): \
-		./src/prunerr.egg-info/ ./.tox/
+		./src/prunerr.egg-info/ ./.tox/ ./media/Library/
 	$(MAKE) -e \
 	    $(@:build-docker-volumes-%=./var/docker/%/) \
 	    $(@:build-docker-volumes-%=./var/docker/%/prunerr.egg-info/) \

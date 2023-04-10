@@ -9,11 +9,15 @@ ARG PYTHON_ENV=py311
 ENV PYTHON_ENV="${PYTHON_ENV}"
 ARG VERSION=
 
-# Put the `ENTRYPOINT` on the `$PATH`
 RUN \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+    >"/etc/apt/apt.conf.d/keep-cache"
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install --no-install-recommends -y gosu=1.12-1+b6 && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install --no-install-recommends -y gosu=1.12-1+b6
+# Put the `ENTRYPOINT` on the `$PATH`
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
 WORKDIR "/usr/local/src/prunerr/"
@@ -21,10 +25,13 @@ WORKDIR "/usr/local/src/prunerr/"
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
 # package and all the development tools into the image.
 COPY [ "./build-host/requirements-${PYTHON_ENV}.txt", "./build-host/" ]
-RUN pip install --no-cache-dir -r "./build-host/requirements-${PYTHON_ENV}.txt"
+# hadolint ignore=DL3042
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    pip install -r "./build-host/requirements-${PYTHON_ENV}.txt"
 COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
 COPY [ "./tox.ini", "./" ]
-RUN tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    tox --skip-pkg-install --notest -e "${PYTHON_ENV}"
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/prunerr/.tox/${PYTHON_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"

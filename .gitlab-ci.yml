@@ -1,22 +1,20 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 
-workflow:
-  rules:
-    # Run only for branches, not tags:
-    # https://stackoverflow.com/a/68130421/624787
-    - if: "$CI_COMMIT_TAG"
-      when: "never"
-    - when: "always"
-
 default:
   image:
-    name: "${CI_REGISTRY_IMAGE}:build-host"
+    name: "$CI_REGISTRY_IMAGE:build-host"
     entrypoint:
       - "docker-entrypoint.sh"
   services:
     - "docker:dind"
   before_script:
-    - "chown -R ${PUID}:${PGID} ./"
+    - "chown -R $PUID:$PGID ./"
+  cache:
+    # Increment `v#` in keys to clear those caches:
+    - key: "tox-$CI_COMMIT_REF_SLUG-v1"
+      paths:
+        - "./.tox"
+        - "./var/docker/*/.tox"
 
 variables:
   # Secrets from the GitLab CI/CD Variables UI:
@@ -28,75 +26,32 @@ variables:
   TEST_PYPI_PASSWORD: "$TEST_PYPI_PASSWORD"
   PROJECT_GITHUB_PAT: "$PROJECT_GITHUB_PAT"
 
-  # Change pip's cache directory to be inside the project directory since we can only
-  # cache local items:
-  # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Python.gitlab-ci.yml
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-  # Variables controlling behavior
+  # Variables controlling behavior:
   PUID: "1001"
   PGID: "1001"
-  DOCKER_IMAGE: "${CI_REGISTRY_IMAGE}"
+  DOCKER_IMAGE: "$CI_REGISTRY_IMAGE"
 
-  # Uncomment to get more debugging output
+  # Uncomment to get more debugging output:
   # DEBUG: "true"
 
-# Pip's cache doesn't store the python packages
-# https://pip.pypa.io/en/stable/topics/caching/
-#
-# If you want to also cache the installed packages, you have to install
-# them in a virtualenv and cache it as well.
-cache:
-  # Increment to clear the cache
-  key: "v5"
-  paths:
-    - "./.cache/pip"
-    - "./dist/.current.whl"
-
-# Delegate to the `./Makefile` as much as possible to keep as much portable between CI
-# platforms
-
 stages:
-  - "build-host"
-  - "bump"
   - "build-test"
+  - "bump"
   - "release"
   - "scheduled"
 
-# Ensure the image used for the rest of this run is up to date
-build-host:
-  stage: "build-host"
-  script:
-    - "entrypoint make -e ./var/log/docker-login-GITLAB.log"
-    - "entrypoint make -C ./build-host/ -e release"
-
-bump:
-  stage: "bump"
-  needs: ["build-host"]
-  rules:
-    - if: >-
-        $CI_PIPELINE_SOURCE != "schedule"
-  script:
-    # Hand off the rest to `$ make` as the unprivileged user
-    - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false build-bump build-wheel check-clean
-  artifacts:
-    # Upload build artifacts:
-    # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
-    paths:
-      # TODO: GitLab CI/CD issues a warning when not on `develop` or `master` because it
-      # isn't actually used, IOW this is an expected condition on feature branches:
-      #     WARNING: ./NEWS-release.rst: no matching files. Ensure that the artifact path is relative to the working directory
-      # Is there a way to make paths conditional?
-      - "./NEWS-release.rst"
-      - "./dist/prunerr-*"
-
 build-test:
   stage: "build-test"
-  needs: ["build-host", "bump"]
   rules:
     - if: >-
-        $CI_PIPELINE_SOURCE != "schedule"
+        $CI_COMMIT_TAG
+      when: "never"
+    - if: >-
+        (
+          $CI_COMMIT_REF_PROTECTED != "true" || $CI_COMMIT_TITLE !~
+          /^build\(release\): Version [0-9]\.[0-9]\.[0-9][a-z0-9-.]* → [0-9]\.[0-9]\.[0-9][a-z0-9-.]*$/
+        )
+        && $CI_PIPELINE_SOURCE != "schedule"
   parallel:
     matrix:
       - PYTHON_MINORS:
@@ -106,11 +61,14 @@ build-test:
           - "3.8"
           - "3.7"
   script:
+    # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
-      entrypoint make -e build-docker-${PYTHON_MINORS} test-docker-${PYTHON_MINORS}
-      release-docker-${PYTHON_MINORS} check-clean
+      entrypoint make -e build-docker-$PYTHON_MINORS test-docker-$PYTHON_MINORS
+      release-docker-$PYTHON_MINORS check-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
+    # Upload build artifacts:
+    # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
       - "./build/py*/pytest*"
       - "./build/py*/.coverage*"
@@ -127,12 +85,37 @@ build-test:
         coverage_format: "cobertura"
         path: "./build/py*/coverage.xml"
 
-release:
-  stage: "release"
-  needs: ["build-host", "build-test"]
+bump:
+  stage: "bump"
+  needs: ["build-test"]
   rules:
     - if: >-
-        $CI_PIPELINE_SOURCE != "schedule"
+        $CI_COMMIT_TAG
+      when: "never"
+    - if: >-
+        (
+          $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_TITLE !~
+          /^build(release): Version [0-9].[0-9].[0-9][a-z0-9-.]* → [0-9].[0-9].[0-9][a-z0-9-.]*$/
+        )
+        && $CI_PIPELINE_SOURCE != "schedule"
+  script:
+    - >-
+      entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
+  artifacts:
+    paths:
+      # TODO: GitLab CI/CD issues a warning when not on `develop` or `master` because it
+      # isn't actually used, IOW this is an expected condition on feature branches:
+      #     WARNING: ./NEWS-release.rst: no matching files. Ensure that the artifact path is relative to the working directory
+      # Is there a way to make paths conditional?
+      - "./NEWS-release.rst"
+      - "./dist/prunerr-*"
+
+release:
+  stage: "release"
+  rules:
+    - if: >-
+        $CI_COMMIT_REF_PROTECTED == "true" &&
+        $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9][a-z0-9-.]*/
   script:
     - >-
       entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
@@ -142,10 +125,9 @@ release:
 
 scheduled:
   stage: "scheduled"
-  needs: ["build-host"]
   rules:
     - if: >-
         $CI_PIPELINE_SOURCE == "schedule"
   script:
     - >-
-      entrypoint make -e ${SCHEDULED_TARGETS}
+      entrypoint make -e $SCHEDULED_TARGETS

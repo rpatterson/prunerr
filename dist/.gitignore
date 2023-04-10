@@ -1,0 +1,6 @@
+# Include packages in Docker but not in VCS:
+/*
+!/.git*
+
+# Restore backup file ignores reversed by the wildcards above
+*~

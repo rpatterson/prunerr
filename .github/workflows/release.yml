@@ -1,0 +1,62 @@
+name: "Release"
+
+on:
+  # Only run for version tags:
+  push:
+    branches:
+      - "!**"
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+
+jobs:
+
+  release:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        PYPI_PASSWORD: "${{ secrets.PYPI_PASSWORD }}"
+        TEST_PYPI_PASSWORD: "${{ secrets.TEST_PYPI_PASSWORD }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+    needs: ["build-test"]
+    if: >-
+      ${{ github.ref_protected }}
+    permissions:
+      packages: "write"
+    steps:
+
+      # Shared/common set up:
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        with:
+          path: |
+            ./.tox
+            ./var/docker/*/.tox
+          key: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+          restore-keys: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
+
+      # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
+      - name: "Publish release artifacts"
+        run: >-
+          entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
+      - name: "Archive built packages"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "built-packages"
+          path: |
+            ./dist/prunerr-*

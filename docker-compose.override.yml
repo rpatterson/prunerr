@@ -116,7 +116,7 @@ services:
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR}"
     command: >-
-      make -e build-docker test-docker release
+      make -e build-docker test-docker build-bump release
 
   gitlab-release-cli:
     image: "registry.gitlab.com/gitlab-org/release-cli:latest"

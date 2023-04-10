@@ -1,0 +1,150 @@
+name: "Build and Test"
+
+on:
+  # Only run on branches, not tags:
+  # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
+  push:
+    branches:
+      - "**"
+    tags:
+      - "!**"
+
+jobs:
+
+  build-test:
+    runs-on: "ubuntu-latest"
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        # Requires the secrets to be added to GitHub either through the web UI or the
+        # GitHub CLI tool:
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        # Enable the GitHub CLI
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+    permissions:
+      packages: "write"
+      checks: "write"
+    strategy:
+      matrix:
+        PYTHON_MINORS:
+          - "3.11"
+          - "3.10"
+          - "3.9"
+          - "3.8"
+          - "3.7"
+    name: "build-test (python${{ matrix.PYTHON_MINORS }})"
+    steps:
+
+      # Shared/common set up:
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        with:
+          path: |
+            ./.tox
+            ./var/docker/*/.tox
+          key: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+          restore-keys: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+      - name: "Change checkout owner"
+        # https://stackoverflow.com/a/58474340/624787
+        run: >-
+          chown -R ${PUID}:${PGID} ./ &&
+          git config --global --add safe.directory
+          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+
+      # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
+      - name: "Build the container image in which to run the tests"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          build-docker-${{ matrix.PYTHON_MINORS }}
+      - name: "Run the tests and code checks inside the built container"
+        run: >-
+          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          test-docker-${{ matrix.PYTHON_MINORS }} check-clean
+
+      # Upload build artifacts:
+      # https://github.com/actions/upload-artifact#usage
+      - name: "Archive test suite reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "test-suite-reports"
+          path: |
+            ./build/*/pytest*
+      # https://github.com/marketplace/actions/test-reporter#example
+      - name: "Publish test suite report"
+        uses: "dorny/test-reporter@main"
+        if: "success() || failure()"    # run this step even if previous step failed
+        with:
+          name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
+          path: >-
+            ./build/*/pytest-junit.xml,
+            ./build/*/prospector-xunit.xml
+          reporter: "java-junit"
+      - name: "Archive code coverage reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "code-coverage-reports"
+          path: |
+            ./build/*/.coverage*
+            ./build/*/coverage*
+            ./build/*/htmlcov*
+      - name: "Archive linter reports"
+        uses: "actions/upload-artifact@master"
+        with:
+          name: "linter-reports"
+          path: |
+            ./build/*/prospector*
+            ./build/*/pylint*
+
+  bump:
+    runs-on: "ubuntu-latest"
+    needs: ["build-test"]
+    if: >-
+      ${{ github.ref_protected }}
+    container:
+      image: "ghcr.io/${{ github.repository }}:build-host"
+      env:
+        PUID: "1001"
+        PGID: "123"
+        CHECKOUT_DIR: "${{ github.workspace }}"
+        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+        XDG_CACHE_HOME: "${{ github.workspace }}/.cache"
+    permissions:
+      packages: "write"
+    steps:
+
+      # Shared/common set up:
+      - name: "Checkout source from VCS"
+        uses: "actions/checkout@master"
+      - name: "Cache tox virtual environments"
+        if: "github.ref != 'refs/heads/master'"
+        uses: "actions/cache@master"
+        with:
+          path: |
+            ./.tox
+            ./var/docker/*/.tox
+          key: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+          restore-keys: >-
+            tox-${{ runner.os }}-${{ matrix.PYTHON_MINORS }}-${{ github.ref }}-v1
+      - name: "Change checkout owner"
+        run: >-
+          chown -R ${PUID}:${PGID} ./
+
+      # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
+      - name: "Bump the version if publishing a release"
+        run: >-
+          entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean

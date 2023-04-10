@@ -1,3 +1,12 @@
+prunerr 1.1.0b23 (2023-04-10)
+=============================
+
+Bugfixes
+--------
+
+- Upgrade all requirements to the latest versions as of Sun Apr  9 11:19:15 PM UTC 2023. (upgrade-requirements)
+
+
 Prunerr 1.1.0b22 (2023-03-01)
 =============================
 

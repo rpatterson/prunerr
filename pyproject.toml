@@ -19,7 +19,7 @@ name = "cz_conventional_commits"
 # TEMPLATE: Update these versions to the latest version for your project and ensure the
 # tag exists both locally and on the project's remote:
 changelog_start_rev = "v0.0.0"
-version = "1.1.0b22"
+version = "1.1.0b23"
 tag_format = "v$version"
 annotated_tag = true
 bump_message = """\

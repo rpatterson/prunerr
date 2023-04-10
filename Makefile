@@ -17,7 +17,7 @@ GPG_SIGNING_KEYID=2EFF7CCE6828E359
 CI_UPSTREAM_NAMESPACE=rpatterson
 CI_PROJECT_NAME=prunerr
 # Project-specific options:
-export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/media/Library/
+export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var/media/Library/
 PRUNERR_CMD=exec
 PRUNERR_ARGS=$(PRUNERR_CMD)
 
@@ -223,7 +223,7 @@ DOCKER_VOLUMES=\
 ./src/prunerr.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/prunerr.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/ \
-./media/Library/
+./var/media/Library/
 export DOCKER_BUILD_PULL=false
 
 # Values derived from or overridden by CI environments:
@@ -463,7 +463,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 ### Ensure access permissions to build artifacts in Python version container volumes.
 # If created by `# dockerd`, they end up owned by `root`.
 $(PYTHON_ENVS:%=build-docker-volumes-%): \
-		./src/prunerr.egg-info/ ./.tox/ ./media/Library/
+		./src/prunerr.egg-info/ ./.tox/ ./var/media/Library/
 	$(MAKE) -e \
 	    $(@:build-docker-volumes-%=./var/docker/%/) \
 	    $(@:build-docker-volumes-%=./var/docker/%/prunerr.egg-info/) \
@@ -1081,7 +1081,7 @@ endif
 ./src/prunerr.egg-info/ \
 $(PYTHON_ENVS:%=./var/docker/%/prunerr.egg-info/) \
 ./.tox/ $(PYTHON_ENVS:%=./var/docker/%/.tox/) \
-./media/Library/:
+./var/media/Library/:
 	mkdir -pv "$(@)"
 
 # Marker file used to trigger the rebuild of the image for just one Python version.

@@ -116,8 +116,10 @@ VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
-ifeq ($(VCS_BRANCH),master)
 # Also fetch develop for merging back in the final release:
+VCS_RELEASE_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),master)
+VCS_RELEASE_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
@@ -280,7 +282,7 @@ test-clean:
 .PHONY: release
 ### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
+		$(VCS_RELEASE_FETCH_TARGETS) ~/.pypirc
 ifeq ($(VCS_BRANCH),master)
 	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
 	    $(TOX_EXEC_BUILD_ARGS) cz version --project
@@ -312,10 +314,10 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e test-clean
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
-	git checkout "develop"
+	git checkout "develop" --
 	git merge --ff-only "master"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
-	git checkout "master"
+	git checkout "master" --
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \

@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
 
-  ## Configuration specific to this checkout
+  # Configuration specific to development:
   python-project-structure:
     image: "merpatterson/python-project-structure:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "python-project-structure-checkout"
@@ -19,7 +19,9 @@ services:
       # Preserve caches caches between container runs
       - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
 
-  ## Container for use by developers
+  ## Contianers used for development and release:
+
+  # Container for use by developers:
   python-project-structure-devel:
     image: "merpatterson/python-project-structure:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "python-project-structure-devel"
@@ -49,8 +51,6 @@ services:
       - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/:/usr/local/src/python-project-structure/var/"
       - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/:/usr/local/src/python-project-structure/.tox/"
       - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
-
-  ## Contianers during development and release
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -86,7 +86,16 @@ services:
       --file "/data/README.md" --short "Python project structure foundation or template"
       --debug "merpatterson/python-project-structure"
 
-  ## Container for use by end users
+  gitlab-release-cli:
+    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    environment:
+      CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
+    volumes:
+      - "./:/usr/local/src/python-project-structure/"
+    working_dir: "/usr/local/src/python-project-structure/"
+
+  ## Containers for simulating CI/CD:
+
   build-host:
     image: "merpatterson/python-project-structure:build-host"
     build: "${CHECKOUT_DIR}/build-host/"

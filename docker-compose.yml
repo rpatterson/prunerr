@@ -4,7 +4,7 @@ version: "3.8"
 
 services:
 
-  ## Container for use by end users
+  ## Container for use by end users:
   python-project-structure:
     image: "merpatterson/python-project-structure"
     container_name: "python-project-structure"

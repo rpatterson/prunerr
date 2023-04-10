@@ -12,7 +12,7 @@ colorama==0.4.6
     # via tox
 distlib==0.3.6
     # via virtualenv
-filelock==3.10.7
+filelock==3.11.0
     # via
     #   tox
     #   virtualenv
@@ -28,7 +28,7 @@ pluggy==1.0.0
     # via tox
 pyproject-api==1.5.1
     # via tox
-tox==4.4.8
+tox==4.4.11
     # via -r build-host/requirements.txt.in
 virtualenv==20.21.0
     # via tox

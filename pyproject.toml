@@ -16,6 +16,8 @@ write_to = "src/prunerr/version.py"
 # provides VCS hooks to enforce that commit messages comply with conventional commits:
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
+# TEMPLATE: Update these versions to the latest version for your project and ensure the
+# tag exists both locally and on the project's remote:
 changelog_start_rev = "v0.0.0"
 version = "1.1.0b22"
 tag_format = "v$version"

@@ -68,7 +68,7 @@ def main(args=None):  # pylint: disable=missing-function-docstring
         )
 
     # Only check if commits require a bump:
-    commits = git.get_commits(parsed_args.compare_ref)
+    commits = git.get_commits(compare_ref)
     increment = bump_cmd.find_increment(commits)
 
     if increment is not None:

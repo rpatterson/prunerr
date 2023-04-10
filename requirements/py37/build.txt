@@ -30,7 +30,7 @@ distlib==0.3.6
     # via virtualenv
 docutils==0.19
     # via readme-renderer
-filelock==3.10.7
+filelock==3.11.0
     # via virtualenv
 identify==2.5.22
     # via pre-commit

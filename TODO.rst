@@ -1,19 +1,22 @@
-###########################################################################
+########################################################################################
 Seeking Contributions
-###########################################################################
+########################################################################################
 
 The following are known issues with Prunerr or features that are particularly desirable
 to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
 
+TEMPLATE: Remove any of the following TODOs from the template that your project doesn't
+care about and add your own.
 
-********
+
+****************************************************************************************
 Required
-********
+****************************************************************************************
 
 
-*************
+****************************************************************************************
 High Priority
-*************
+****************************************************************************************
 
 #. Operations reference, perhaps done dynamically from the CLI help using operation
    method docstrings.
@@ -34,9 +37,9 @@ High Priority
 
    Perhaps we can use the Servarr "Connect" API?
 
-************
+****************************************************************************************
 Nice to Have
-************
+****************************************************************************************
 
 #. Improve configure-ability, particularly the various download client paths:
 

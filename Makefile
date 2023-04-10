@@ -190,6 +190,9 @@ DOCKER_COMPOSE_RUN_ARGS=--rm
 ifneq ($(CI),true)
 DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
 endif
+ifeq ($(shell tty),not a tty)
+DOCKER_COMPOSE_RUN_ARGS+= -T
+endif
 DOCKER_BUILD_ARGS=
 DOCKER_REGISTRIES=DOCKER GITLAB GITHUB
 export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
@@ -351,15 +354,14 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
-	    python-project-structure-devel tox run -e "$(PYTHON_ENV)" --pkg-only
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    tox run -e "$(PYTHON_ENV)" --pkg-only
 # Copy the wheel to a location accessible to all containers:
 	cp -lfv "$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
 	)" "./dist/"
 # Also build the source distribution:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
-	    python-project-structure-devel \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
 	cp -lfv "$$(
 	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
@@ -448,9 +450,8 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
 	$(MAKE) -e build-docker-volumes-$${PYTHON_ENV} \
 	    "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
-	    python-project-structure-devel make -e \
-	    PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
@@ -534,11 +535,11 @@ endif
 ### Check the style and content of the `./Dockerfile*` files.
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
 	docker compose pull hadolint
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile.devel"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T hadolint \
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test-push
@@ -944,7 +945,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	then
 	    touch "$(@)" "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
 # Ensure the virtualenv in the volume is also current:
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
 	        python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
 	        "./var/log/tox/$(PYTHON_ENV)/build.log"
 	    exit
@@ -1005,9 +1006,8 @@ endif
 	date >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
-	    python-project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
-	    build-requirements-$(PYTHON_ENV)
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 ifeq ($(CI),true)
 # On CI, any changes from compiling requirements is a failure so no need to waste time
 # rebuilding images:

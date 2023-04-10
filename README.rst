@@ -36,10 +36,10 @@ Python project structure foundation or template
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub release (latest SemVer)
 	  :target: https://github.com/rpatterson/python-project-structure/releases
-       .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/ci-cd.yml/badge.svg
+       .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml
-       .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml/badge.svg
+       .. figure:: https://codecov.io/github/rpatterson/python-project-structure/branch/master/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
 	  :target: https://codecov.io/github/rpatterson/python-project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github

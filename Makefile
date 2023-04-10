@@ -156,6 +156,14 @@ VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
+ifeq ($(VCS_BRANCH),master)
+# Also fetch develop for merging back in the final release:
+ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
+ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
+endif
+endif
+endif
 # Determine the sequence of branches to find closes existing build artifacts, such as
 # docker images:
 VCS_BRANCHES=$(VCS_BRANCH)
@@ -457,6 +465,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    "./var/docker/$(PYTHON_ENV)/log/build-devel.log"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
 	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 .PHONY: $(PYTHON_ENVS:%=build-docker-volumes-%)
@@ -648,6 +657,20 @@ ifeq ($(RELEASE_PUBLISH),true)
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
+ifeq ($(VCS_BRANCH),master)
+# Merge the bumped version back into `develop`:
+	git checkout "develop"
+	git merge --ff-only "master"
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
+	git checkout "master"
+endif
+ifneq ($(GITHUB_ACTIONS),true)
+ifneq ($(PROJECT_GITHUB_PAT),)
+# Ensure the tag is available for creating the GitHub release below but push *before* to
+# GitLab to avoid a race with repository mirrorying:
+	git push --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
+endif
+endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/prunerr-*
@@ -1200,18 +1223,10 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
-# Requires a Personal or Project Access Token in the GitLab CI/CD Variables.  That
-# variable value should be prefixed with the token name as a HTTP `user:password`
-# authentication string:
-# https://stackoverflow.com/a/73426417/624787
 	git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Also push to the mirror with the `ci.skip` option to avoid redundant runs on the
-# mirror.
-	git remote set-url --push --add "origin" \
-	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
 # Also add a fetch remote for the `$ gh ...` CLI tool to detect:
 	git remote add "github" \
 	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
@@ -1223,7 +1238,7 @@ endif
 endif
 	set -x
 # Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "origin"
+	git push --no-verify --tags "origin"
 endif
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.

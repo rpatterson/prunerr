@@ -36,17 +36,17 @@ Perma-seed Servarr media libraries
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/prunerr?logo=github
 	  :alt: GitHub release (latest SemVer)
 	  :target: https://github.com/rpatterson/prunerr/releases
-       .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/ci-cd.yml/badge.svg
+       .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
-          :target: https://github.com/rpatterson/prunerr/
-       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/master/graph/badge.svg?token=GNKVQ8VYOU 
+          :target: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml
+       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/master/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
 	  :target: https://codecov.io/github/rpatterson/prunerr
        .. figure:: https://img.shields.io/github/stars/rpatterson/prunerr?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/prunerr/
 
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr?sort=semver&logo=docker
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr/master?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)
           :target: https://hub.docker.com/r/merpatterson/prunerr
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/prunerr?logo=docker

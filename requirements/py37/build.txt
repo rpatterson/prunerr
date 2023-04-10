@@ -77,7 +77,7 @@ prompt-toolkit==3.0.38
     # via questionary
 pycparser==2.21
     # via cffi
-pygments==2.14.0
+pygments==2.15.0
     # via
     #   readme-renderer
     #   rich

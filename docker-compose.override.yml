@@ -16,10 +16,10 @@ services:
   radarr:
     container_name: "prunerr-devel-radarr"
 
-  ## Configuration specific to this checkout
+  # Configuration specific to development:
   prunerr-daemon:
-    container_name: "prunerr-daemon-checkout"
     image: "merpatterson/prunerr:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "prunerr-daemon-checkout"
     build:
       context: "${CHECKOUT_DIR}/"
       args:
@@ -30,7 +30,9 @@ services:
       # Preserve caches caches between container runs
       - "${CHECKOUT_DIR}/home/:/home/prunerr/"
 
-  ## Container for use by developers
+  ## Contianers used for development and release:
+
+  # Container for use by developers:
   prunerr-devel:
     image: "merpatterson/prunerr:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-devel"
@@ -60,8 +62,6 @@ services:
       - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/:/usr/local/src/prunerr/var/"
       - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/:/usr/local/src/prunerr/.tox/"
       - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/prunerr.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
-
-  ## Contianers during development and release
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -97,7 +97,16 @@ services:
       --file "/data/README.md" --short "prunerr foundation or template"
       --debug "merpatterson/prunerr"
 
-  ## Container for use by end users
+  gitlab-release-cli:
+    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    environment:
+      CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
+    volumes:
+      - "./:/usr/local/src/prunerr/"
+    working_dir: "/usr/local/src/prunerr/"
+
+  ## Containers for simulating CI/CD:
+
   build-host:
     image: "merpatterson/prunerr:build-host"
     build: "${CHECKOUT_DIR}/build-host/"
@@ -117,11 +126,3 @@ services:
     working_dir: "${CHECKOUT_DIR}"
     command: >-
       make -e build-docker test-docker release
-
-  gitlab-release-cli:
-    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
-    environment:
-      CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
-    volumes:
-      - "./:/usr/local/src/prunerr/"
-    working_dir: "/usr/local/src/prunerr/"

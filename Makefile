@@ -407,16 +407,6 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"
-# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
-# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
-# multiple `pushUrl`:
-	git_push_args="--no-verify"
-	if [ "$${remote_branch_exists=true}" == "true" ]
-	then
-	    git_push_args+=" --force-with-lease=\
-	$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
-	fi
-	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 
 ## Clean Targets:

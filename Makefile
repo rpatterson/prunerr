@@ -449,7 +449,7 @@ endif
 	then
 	    exit $$exit_code
 	else
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) -T \
 	        python-project-structure-devel $(TOX_EXEC_ARGS) \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi

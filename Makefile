@@ -1229,7 +1229,7 @@ endif
 endif
 	set -x
 # Fail fast if there's still no push access
-	git push -o ci.skip --no-verify --tags "origin"
+	git push --no-verify --tags "origin"
 endif
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.

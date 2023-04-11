@@ -529,8 +529,7 @@ ifeq ($(VCS_BRANCH),master)
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python?project?structure-*.whl \
-	    ./dist/python?project?structure-*.tar.gz
+	    ./dist/python?project?structure-*
 endif
 
 .PHONY: release-docker

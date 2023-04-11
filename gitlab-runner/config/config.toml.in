@@ -22,10 +22,11 @@ shutdown_timeout = 0
     MaxUploadedArchiveSize = 0
   [runners.docker]
     tls_verify = false
+    # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#docker-in-docker-with-tls-enabled-in-the-docker-executor
     image = "docker"
-    privileged = false
+    privileged = true
     disable_entrypoint_overwrite = false
     oom_kill_disable = false
     disable_cache = false
-    volumes = ["/cache"]
+    volumes = ["/certs/client", "/cache"]
     shm_size = 0

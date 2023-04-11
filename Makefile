@@ -314,10 +314,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e test-clean
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
+	bump_rev="$$(git rev-parse HEAD)"
 	git checkout "develop" --
-	git merge --ff-only --gpg-sign "master"
+	git merge --ff --gpg-sign \
+	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
-	git checkout "master" --
+	git checkout "$${bump_rev}" --
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \

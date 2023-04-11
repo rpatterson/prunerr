@@ -56,7 +56,7 @@ services:
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
-    image: "hadolint/hadolint"
+    image: "ghcr.io/hadolint/hadolint"
     profiles:
       - "test"
     environment:
@@ -106,8 +106,9 @@ services:
       - "./:/usr/local/src/python-project-structure/"
     working_dir: "/usr/local/src/python-project-structure/"
 
-  ## Containers for simulating CI/CD:
+  ## Containers related to CI/CD:
 
+  # The container in which CI/CD is run:
   build-host:
     image: "merpatterson/python-project-structure:build-host"
     profiles:
@@ -129,3 +130,16 @@ services:
     working_dir: "${CHECKOUT_DIR}"
     command: >-
       make -e build-docker test-docker release
+
+  # Conserve shared runner minutes, run GitLab CI/CD jobs locally:
+  gitlab-runner:
+    image: "gitlab/gitlab-runner"
+    profiles:
+      - "ci"
+    volumes:
+      - "./gitlab-runner/config:/etc/gitlab-runner"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./gitlab-runner/cache:/cache"
+      - "./gitlab-runner/certs:/certs"
+    ports:
+      - "8093:8093"

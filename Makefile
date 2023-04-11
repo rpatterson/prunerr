@@ -1224,13 +1224,20 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
-	git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)"
+	if ! git remote get-url --push --all "origin" |
+	    grep -q -F "$(VCS_REMOTE_PUSH_URL)"
+	then
+	    git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)"
+	fi
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
 # Also add a fetch remote for the `$ gh ...` CLI tool to detect:
-	git remote add "github" \
-	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+	if ! git remote get-url "github" >"/dev/null"
+	then
+	    git remote add "github" \
+	        "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+	fi
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"

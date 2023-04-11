@@ -116,8 +116,10 @@ VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
-ifeq ($(VCS_BRANCH),master)
 # Also fetch develop for merging back in the final release:
+VCS_RELEASE_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),master)
+VCS_RELEASE_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
@@ -280,7 +282,7 @@ test-clean:
 .PHONY: release
 ### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc
+		$(VCS_RELEASE_FETCH_TARGETS) ~/.pypirc
 ifeq ($(VCS_BRANCH),master)
 	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
 	    $(TOX_EXEC_BUILD_ARGS) cz version --project
@@ -312,14 +314,17 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e test-clean
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
-	git checkout "develop"
-	git merge --ff-only "master"
+	bump_rev="$$(git rev-parse HEAD)"
+	git checkout "develop" --
+	git merge --ff --gpg-sign \
+	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
-	git checkout "master"
+	git checkout "$${bump_rev}" --
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python?project?structure-*
+	    ./dist/python?project?structure-*.whl \
+	    ./dist/python?project?structure-*.tar.gz
 endif
 
 .PHONY: release-bump
@@ -400,20 +405,10 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "./.pre-commit-config.yaml"
 	git add \
 	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
-	git commit --all --signoff -m \
+	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"
-# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
-# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
-# multiple `pushUrl`:
-	git_push_args="--no-verify"
-	if [ "$${remote_branch_exists=true}" == "true" ]
-	then
-	    git_push_args+=" --force-with-lease=\
-	$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
-	fi
-	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
 
 
 ## Clean Targets:

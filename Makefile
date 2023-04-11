@@ -1360,6 +1360,14 @@ endif
 	date | tee -a "$(@)"
 endif
 
+# TEMPLATE: Optionally, use the following command to generate a GitLab CI/CD runner
+# configuration, register it with your project, compare it with the template
+# prerequisite, apply the appropriate changes and then  run using `$ docker compose up
+# gitlab-runner`.  Particularly useful to conserve shared runner minutes:
+./gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
+	docker compose run --rm gitlab-runner register \
+	    --url "https://gitlab.com/" --docker-image "docker" --executor "docker"
+
 
 ## Utility Targets:
 #

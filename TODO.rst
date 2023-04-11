@@ -5,9 +5,6 @@ Seeking Contributions
 The following are known issues with Prunerr or features that are particularly desirable
 to implement in Prunerr.  IOW, contributions are particularly welcome for the following:
 
-TEMPLATE: Remove any of the following TODOs from the template that your project doesn't
-care about and add your own.
-
 
 ****************************************************************************************
 Required

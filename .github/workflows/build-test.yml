@@ -1,22 +1,5 @@
 name: "Build and Test"
 
-# TEMPLATE: If using GitHub Actions, then add the following secrets to the project:
-# - `CODECOV_TOKEN`:
-#   Add your project to https://app.codecov.io/gl and use the generated token
-# - `DOCKER_PASS`:
-#   A Docker Hub Personal Access Token
-# - `GPG_PASSPHRASE`:
-#   See the comments towards the bottom of the `./Makefile`
-# - `GPG_SIGNING_PRIVATE_KEY`:
-#   See the comments towards the bottom of the `./Makefile`
-# - `PROJECT_GITHUB_PAT`:
-#   A GitHub "Classic" Personal Access Token with scopes: `repo`, `workflow`,
-#   `packages`, and `project`
-# - `PYPI_PASSWORD`:
-#   A PyPI API token
-# - `TEST_PYPI_PASSWORD`:
-#   A PyPI API token
-
 on:
   # Only run on branches, not tags:
   # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691

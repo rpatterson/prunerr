@@ -423,7 +423,8 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
+test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV) \
+		./var/log/docker-login-DOCKER.log
 	docker compose pull hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -543,6 +544,7 @@ $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-logi
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
+	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull pandoc docker-pushrm
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
@@ -761,7 +763,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
-	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
+	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log" \
+	    "./var/log/docker-login-DOCKER.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -793,7 +796,7 @@ endif
 	do
 	    docker_build_devel_tags+="--tag $${devel_tag} "
 	done
-	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    --file "./Dockerfile.devel" "./"
 	date >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
@@ -830,7 +833,7 @@ endif
 	do
 	    docker_build_user_tags+="--tag $${user_tag} "
 	done
-	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_user_tags} \
 	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" "./"
 	date >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes

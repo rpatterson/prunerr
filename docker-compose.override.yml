@@ -56,7 +56,7 @@ services:
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
-    image: "hadolint/hadolint"
+    image: "ghcr.io/hadolint/hadolint"
     profiles:
       - "test"
     environment:

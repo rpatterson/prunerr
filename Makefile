@@ -315,7 +315,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
 	git checkout "develop" --
-	git merge --ff-only "master"
+	git merge --ff-only --gpg-sign "master"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
 	git checkout "master" --
 endif
@@ -403,7 +403,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "./.pre-commit-config.yaml"
 	git add \
 	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
-	git commit --all --signoff -m \
+	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"

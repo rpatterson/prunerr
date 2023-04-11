@@ -545,7 +545,8 @@ endif
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files.
-test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
+test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV) \
+		./var/log/docker-login-DOCKER.log
 	docker compose pull hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -711,6 +712,7 @@ $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-logi
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
+	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull pandoc docker-pushrm
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
@@ -959,7 +961,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
-	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
+	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log" \
+	    "./var/log/docker-login-DOCKER.log"
 	mkdir -pv "$(dir $(@))"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
@@ -1016,7 +1019,7 @@ ifneq ($(VCS_BRANCH),master)
 	fi
 endif
 endif
-	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
@@ -1087,7 +1090,7 @@ ifneq ($(VCS_BRANCH),master)
 	fi
 endif
 endif
-	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_user_tags} \
 	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)

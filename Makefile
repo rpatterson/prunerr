@@ -155,8 +155,10 @@ VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
-ifeq ($(VCS_BRANCH),master)
 # Also fetch develop for merging back in the final release:
+VCS_RELEASE_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+ifeq ($(VCS_BRANCH),master)
+VCS_RELEASE_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
@@ -619,8 +621,7 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.
-release-python: ./var/log/tox/build/build.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+release-python: ./var/log/tox/build/build.log $(VCS_RELEASE_FETCH_TARGETS) \
 		~/.pypirc ./.env build-docker-volumes-$(PYTHON_ENV)
 ifeq ($(VCS_BRANCH),master)
 	if ! ./.tox/build/bin/python ./bin/get-base-version $$(
@@ -658,10 +659,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e test-clean
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
-	git checkout "develop"
-	git merge --ff-only "master"
+	bump_rev="$$(git rev-parse HEAD)"
+	git checkout "develop" --
+	git merge --ff --gpg-sign \
+	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
-	git checkout "master"
+	git checkout "$${bump_rev}" --
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
@@ -672,11 +675,13 @@ endif
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/prunerr-*
+	    ./dist/prunerr-*.whl \
+	    ./dist/prunerr-*.tar.gz
 	export VERSION=$$(./.tox/build/bin/cz version --project)
-# Create a GitLab release
+# Create a GitLab release:
 	./.tox/build/bin/twine upload -s -r "gitlab" \
-	    ./dist/prunerr-*
+	    ./dist/prunerr-*.whl \
+	    ./dist/prunerr-*.tar.gz
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\
@@ -846,10 +851,16 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "./.pre-commit-config.yaml"
 	git add \
 	    "./src/prunerr/newsfragments/upgrade-requirements.bugfix.rst"
-	git commit --all --signoff -m \
+	git_commit_args="--all --gpg-sign"
+ifeq ($(CI),true)
+# Don't duplicate the CI run from the push below:
+	git_push_args+=" --no-verify"
+endif
+	git commit $${git_commit_args} -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"
+ifeq ($(CI),true)
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
 # for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
 # multiple `pushUrl`:
@@ -860,6 +871,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
 	fi
 	git push $${git_push_args} "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)-upgrade"
+endif
 
 
 ## Clean Targets:

@@ -30,3 +30,5 @@ shutdown_timeout = 0
     disable_cache = false
     volumes = ["/certs/client", "/cache"]
     shm_size = 0
+    # Workaround `services: ["docker:dind"]` health warning:
+    wait_for_services_timeout = -1

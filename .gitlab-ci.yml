@@ -55,10 +55,7 @@ build-test:
     - if: >-
         ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
         && $CI_PIPELINE_SOURCE != "schedule"
-        && (
-          $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
-          || $CI_COMMIT_BRANCH == "master"
-        )
+        && $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
   interruptible: true
   parallel:
     matrix:
@@ -109,10 +106,7 @@ release:
         && $CI_COMMIT_BRANCH != null
         && $CI_COMMIT_BRANCH =~ "^(develop|master)$"
         && $CI_PIPELINE_SOURCE != "schedule"
-        && (
-          $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
-          || $CI_COMMIT_BRANCH == "master"
-        )
+        && $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
   script:
     - >-
       entrypoint make -e release-python test-clean

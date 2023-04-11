@@ -60,6 +60,8 @@ services:
     volumes:
       - "${CHECKOUT_DIR}/:/usr/local/src/python-project-structure/"
     working_dir: "/usr/local/src/python-project-structure/"
+    command: >-
+      hadolint "./Dockerfile"
 
   pandoc:
     image: "pandoc/core"

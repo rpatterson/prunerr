@@ -520,10 +520,12 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e test-clean
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
+	bump_rev="$$(git rev-parse HEAD)"
 	git checkout "develop" --
-	git merge --ff-only "master"
+	git merge --ff --gpg-sign \
+	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
-	git checkout "master" --
+	git checkout "$${bump_rev}" --
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
@@ -661,7 +663,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "./.pre-commit-config.yaml"
 	git add \
 	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
-	git commit --all --signoff -m \
+	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"

@@ -669,13 +669,11 @@ endif
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python?project?structure-*.whl \
-	    ./dist/python?project?structure-*.tar.gz
+	    ./dist/python?project?structure-*
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" \
-	    ./dist/python?project?structure-*.whl \
-	    ./dist/python?project?structure-*.tar.gz
+	    ./dist/python?project?structure-*
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\

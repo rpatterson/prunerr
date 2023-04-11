@@ -36,6 +36,8 @@ services:
   prunerr-devel:
     image: "merpatterson/prunerr:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-devel"
+    profiles:
+      - "test"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
@@ -65,15 +67,21 @@ services:
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
-    image: "hadolint/hadolint"
+    image: "ghcr.io/hadolint/hadolint"
+    profiles:
+      - "test"
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr/"
+    command: >-
+      hadolint "./Dockerfile"
 
   pandoc:
     image: "pandoc/core"
+    profiles:
+      - "release"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
@@ -87,6 +95,8 @@ services:
     depends_on:
       pandoc:
         condition: "service_completed_successfully"
+    profiles:
+      - "release"
     environment:
       TZ: "${TZ:-Etc/UTC}"
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
@@ -99,16 +109,21 @@ services:
 
   gitlab-release-cli:
     image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    profiles:
+      - "release"
     environment:
       CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
     volumes:
       - "./:/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr/"
 
-  ## Containers for simulating CI/CD:
+  ## Containers related to CI/CD:
 
+  # The container in which CI/CD is run:
   build-host:
     image: "merpatterson/prunerr:build-host"
+    profiles:
+      - "ci"
     build: "${CHECKOUT_DIR}/build-host/"
     privileged: true
     volumes:
@@ -126,3 +141,16 @@ services:
     working_dir: "${CHECKOUT_DIR}"
     command: >-
       make -e build-docker test-docker release
+
+  # Conserve shared runner minutes, run GitLab CI/CD jobs locally:
+  gitlab-runner:
+    image: "gitlab/gitlab-runner"
+    profiles:
+      - "ci"
+    volumes:
+      - "./gitlab-runner/config:/etc/gitlab-runner"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./gitlab-runner/cache:/cache"
+      - "./gitlab-runner/certs:/certs"
+    ports:
+      - "8093:8093"

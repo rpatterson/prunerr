@@ -551,10 +551,10 @@ endif
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files.
-test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV)
+test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV) \
+		./var/log/docker-login-DOCKER.log
 	docker compose pull hadolint
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
-	    hadolint "./Dockerfile"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile.devel"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -660,7 +660,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
-	git checkout "develop" --
+	git checkout --track "$(VCS_UPSTREAM_REMOTE)/develop" --
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
@@ -675,13 +675,11 @@ endif
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/prunerr-*.whl \
-	    ./dist/prunerr-*.tar.gz
+	    ./dist/prunerr-*
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # Create a GitLab release:
 	./.tox/build/bin/twine upload -s -r "gitlab" \
-	    ./dist/prunerr-*.whl \
-	    ./dist/prunerr-*.tar.gz
+	    ./dist/prunerr-*
 	release_cli_args="--description ./NEWS-release.rst"
 	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\
@@ -720,6 +718,7 @@ $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-logi
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
+	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull pandoc docker-pushrm
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 endif
@@ -968,7 +967,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
-	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log"
+	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log" \
+	    "./var/log/docker-login-DOCKER.log"
 	mkdir -pv "$(dir $(@))"
 # Workaround issues with local images and the development image depending on the end
 # user image.  It seems that `depends_on` isn't sufficient.
@@ -1025,7 +1025,7 @@ ifneq ($(VCS_BRANCH),master)
 	fi
 endif
 endif
-	docker buildx build --pull $${docker_build_args} $${docker_build_devel_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
 	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
@@ -1096,7 +1096,7 @@ ifneq ($(VCS_BRANCH),master)
 	fi
 endif
 endif
-	docker buildx build --pull $${docker_build_args} $${docker_build_user_tags} \
+	docker buildx build $${docker_build_args} $${docker_build_user_tags} \
 	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" $${docker_build_caches} "./"
 # Ensure any subsequent builds have optimal caches
 ifeq ($(GITLAB_CI),true)
@@ -1234,13 +1234,22 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ifeq ($(RELEASE_PUBLISH),true)
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
-	git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)"
+	if ! git remote get-url --push --all "origin" |
+	    grep -q -F "$(VCS_REMOTE_PUSH_URL)"
+	then
+	    git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)" |
+	        tee -a "$(@)"
+	fi
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
 # Also add a fetch remote for the `$ gh ...` CLI tool to detect:
-	git remote add "github" \
-	    "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git"
+	if ! git remote get-url "github" >"/dev/null"
+	then
+	    git remote add "github" \
+	        "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git" |
+	        tee -a "$(@)"
+	fi
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
@@ -1249,7 +1258,9 @@ endif
 endif
 	set -x
 # Fail fast if there's still no push access
-	git push --no-verify --tags "origin"
+	git push --no-verify --tags "origin" | tee -a "$(@)"
+else
+	date | tee -a "$(@)"
 endif
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.
@@ -1359,6 +1370,10 @@ ifneq ($(CI_IS_FORK),true)
 endif
 	date | tee -a "$(@)"
 endif
+
+./gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
+	docker compose run --rm gitlab-runner register \
+	    --url "https://gitlab.com/" --docker-image "docker" --executor "docker"
 
 
 ## Utility Targets:

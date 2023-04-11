@@ -1,0 +1,36 @@
+# Set to 2 times the number of parallel matrix jobs as a default.
+# Alternatively, set to the number of CPUs/cores or some multiple:
+concurrent = 10
+# Pick up jobs as soon as possible:
+check_interval = 1
+shutdown_timeout = 0
+
+[session_server]
+  session_timeout = 1800
+
+[[runners]]
+  name = "${GITLAB_RUNNER_NAME}"
+  url = "https://gitlab.com/"
+  id = ${GITLAB_RUNNER_ID}
+  token = "${GITLAB_RUNNER_TOKEN}"
+  token_obtained_at = 2023-04-11T11:59:34Z
+  token_expires_at = 0001-01-01T00:00:00Z
+  executor = "docker"
+  # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#use-the-overlayfs-driver
+  environment = ["DOCKER_DRIVER=overlay2"]
+  # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/29022#workaround-options
+  pre_get_sources_script = "git config --global --add safe.directory $CI_PROJECT_DIR"
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+  [runners.docker]
+    tls_verify = false
+    # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#docker-in-docker-with-tls-enabled-in-the-docker-executor
+    image = "docker"
+    privileged = true
+    disable_entrypoint_overwrite = false
+    oom_kill_disable = false
+    disable_cache = false
+    volumes = ["/certs/client", "/cache"]
+    shm_size = 0
+    # Workaround `services: ["docker:dind"]` health warning:
+    wait_for_services_timeout = -1

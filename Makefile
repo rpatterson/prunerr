@@ -521,10 +521,10 @@ ifeq ($(RELEASE_PUBLISH),true)
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
-	git checkout --track "$(VCS_UPSTREAM_REMOTE)/develop" --
+	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:develop"
+	git push --no-verify --tags "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
 	git checkout "$${bump_rev}" --
 endif
 	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"

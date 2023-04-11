@@ -1,5 +1,8 @@
-concurrent = 1
-check_interval = 0
+# Set to 2 times the number of parallel matrix jobs as a default.
+# Alternatively, set to the number of CPUs/cores or some multiple:
+concurrent = 10
+# Pick up jobs as soon as possible:
+check_interval = 1
 shutdown_timeout = 0
 
 [session_server]
@@ -13,6 +16,8 @@ shutdown_timeout = 0
   token_obtained_at = 2023-04-11T11:59:34Z
   token_expires_at = 0001-01-01T00:00:00Z
   executor = "docker"
+  # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#use-the-overlayfs-driver
+  environment = ["DOCKER_DRIVER=overlay2"]
   [runners.cache]
     MaxUploadedArchiveSize = 0
   [runners.docker]

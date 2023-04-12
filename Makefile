@@ -512,22 +512,12 @@ else
 endif
 # Only release from the `master` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
-	$(MAKE) -e release-bump build-pkgs
+	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
-ifeq ($(VCS_BRANCH),master)
-# Merge the bumped version back into `develop`:
-	bump_rev="$$(git rev-parse HEAD)"
-	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
-	git merge --ff --gpg-sign \
-	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git push --no-verify --tags "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
-	git checkout "$${bump_rev}" --
-endif
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
 endif
@@ -605,6 +595,14 @@ ifneq ($(CI),true)
 # If running under CI/CD then the image will be updated in the next pipeline stage.
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
+endif
+ifeq ($(VCS_BRANCH),master)
+# Merge the bumped version back into `develop`:
+	bump_rev="$$(git rev-parse HEAD)"
+	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
+	git merge --ff --gpg-sign \
+	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
+	git checkout "$(VCS_BRANCH)" --
 endif
 
 

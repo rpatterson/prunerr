@@ -65,7 +65,7 @@ more-itertools==9.1.0
     # via jaraco-classes
 nodeenv==1.7.0
     # via pre-commit
-packaging==23.0
+packaging==23.1
     # via commitizen
 pkginfo==1.9.6
     # via twine
@@ -97,7 +97,7 @@ requests-toolbelt==0.10.1
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.3.3
+rich==13.3.4
     # via twine
 secretstorage==3.3.3
     # via keyring

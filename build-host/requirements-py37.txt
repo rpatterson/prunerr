@@ -21,7 +21,7 @@ importlib-metadata==6.3.0
     #   pluggy
     #   tox
     #   virtualenv
-packaging==23.0
+packaging==23.1
     # via
     #   pyproject-api
     #   tox

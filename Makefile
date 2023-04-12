@@ -427,20 +427,20 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
+ifeq ($(VCS_BRANCH),master)
+# Only update tags end users may depend on to be stable from the `master` branch
 	VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
-ifeq ($(VCS_BRANCH),master)
-# Only update tags end users may depend on to be stable from the `master` branch
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${major_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
 endif
 # This variant is the default used for tags such as `latest`
-ifeq ($(PYTHON_ENV),$(PYTHON_LATEST_ENV))
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),master)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
@@ -643,7 +643,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 # Bump the version and build the final release packages:
-	$(MAKE) -e release-bump build-pkgs
+	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	./.tox/build/bin/twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
@@ -651,23 +651,6 @@ ifeq ($(RELEASE_PUBLISH),true)
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
-ifeq ($(VCS_BRANCH),master)
-# Merge the bumped version back into `develop`:
-	bump_rev="$$(git rev-parse HEAD)"
-	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
-	git merge --ff --gpg-sign \
-	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git push --no-verify --tags "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
-	git checkout "$${bump_rev}" --
-endif
-ifneq ($(GITHUB_ACTIONS),true)
-ifneq ($(PROJECT_GITHUB_PAT),)
-# Ensure the tag is available for creating the GitHub release below but push *before* to
-# GitLab to avoid a race with repository mirrorying:
-	git push --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
-endif
-endif
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
 	export VERSION=$$(./.tox/build/bin/cz version --project)
@@ -711,7 +694,7 @@ release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
 $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j $(DOCKER_REGISTRIES:%=release-docker-registry-%)
-ifeq ($${PYTHON_ENV},$(PYTHON_LATEST_ENV))
+ifeq ($${PYTHON_ENV},$(PYTHON_HOST_ENV))
 	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull pandoc docker-pushrm
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
@@ -784,6 +767,27 @@ ifneq ($(CI),true)
 # If running under CI/CD then the image will be updated in the next pipeline stage.
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
+endif
+ifeq ($(VCS_BRANCH),master)
+# Merge the bumped version back into `develop`:
+	bump_rev="$$(git rev-parse HEAD)"
+	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
+	git merge --ff --gpg-sign \
+	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
+ifeq ($(CI),true)
+	git push --no-verify --tags "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
+endif
+	git checkout "$(VCS_BRANCH)" --
+endif
+ifneq ($(GITHUB_ACTIONS),true)
+ifneq ($(PROJECT_GITHUB_PAT),)
+# Ensure the tag is available for creating the GitHub release below but push *before* to
+# GitLab to avoid a race with repository mirrorying:
+	git push --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
+endif
+endif
+ifeq ($(CI),true)
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 

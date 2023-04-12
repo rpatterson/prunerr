@@ -337,6 +337,10 @@ endif
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
+	tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" -qq -- \
+	    towncrier build --version "$${next_version}" --draft --yes \
+	    >"./NEWS-VERSION.rst"
+	git add -- "./NEWS-VERSION.rst"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),master)

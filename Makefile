@@ -583,6 +583,10 @@ endif
 	) || true
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
+	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --draft --yes \
+	    >"./NEWS-VERSION.rst"
+	git add -- "./NEWS-VERSION.rst"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 # Ensure the container image reflects the version bump but we don't need to update the

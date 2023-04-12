@@ -47,16 +47,17 @@ variables:
 stages:
   - "build-test"
   - "release"
-  - "release-tag"
+  - "release-bump"
   - "scheduled"
 
 build-test:
   stage: "build-test"
   rules:
     - if: >-
-        ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
-        && $CI_PIPELINE_SOURCE != "schedule"
-        && $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
+        (
+          ($CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v*\.*\.*$/)
+          || ($CI_COMMIT_BRANCH !~ /^(develop|master)$/)
+        ) && $CI_PIPELINE_SOURCE != "schedule"
   interruptible: true
   parallel:
     matrix:
@@ -95,19 +96,14 @@ build-test:
 release:
   stage: "release"
   needs: ["build-test"]
-  # Avoid unnecessary artifact downloads:
-  # https://docs.gitlab.com/ee/ci/yaml/#dependencies
   dependencies: []
   variables:
     DOCKER_BUILD_PULL: "true"
   rules:
     - if: >-
-        ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
+        $CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v*\.*\.*$/
         && $CI_PROJECT_NAMESPACE == "rpatterson"
-        && $CI_COMMIT_BRANCH != null
-        && $CI_COMMIT_BRANCH =~ /^(develop|master)$/
         && $CI_PIPELINE_SOURCE != "schedule"
-        && $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
   script:
     - >-
       entrypoint make -e release-python test-clean
@@ -116,21 +112,24 @@ release:
       - "./NEWS-release.rst"
       - "./dist/python?project?structure-*"
 
-
-release-tag:
-  stage: "release-tag"
+release-bump:
+  stage: "release-bump"
   needs: []
+  # Avoid unnecessary artifact downloads:
+  # https://docs.gitlab.com/ee/ci/yaml/#dependencies
   dependencies: []
+  variables:
+    DOCKER_BUILD_PULL: "true"
   rules:
     - if: >-
-        $CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v*\.*\.*$/
-  inherit:
-    default: false
-  # Version tags are only created and pushed if the pipeline that generated the
-  # release succeeded:
+        ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
+        && ($CI_COMMIT_BRANCH =~ /^(develop|master)$/)
   script:
     - >-
-      true
+      entrypoint make -e release-bump
+  artifacts:
+    paths:
+      - "./NEWS-release.rst"
 
 # TEMPLATE: Optionally add a scheduled pipeline with the following variables to
 # periodically upgrade all requirements and run CI:

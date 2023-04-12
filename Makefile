@@ -1228,6 +1228,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ./var/log/git-remotes.log:
 ifeq ($(RELEASE_PUBLISH),true)
+	mkdir -pv "$(dir $(@))"
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
 	if ! git remote get-url --push --all "origin" |

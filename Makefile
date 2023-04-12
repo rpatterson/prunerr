@@ -636,7 +636,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" \
 	    ./dist/python?project?structure-*
-	release_cli_args="--description ./NEWS-release.rst"
+	release_cli_args="--description ./NEWS-VERSION.rst"
 	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\
 	\"name\":\"PyPI\",\
@@ -659,7 +659,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    create $${release_cli_args}
 # Create a GitHub release
 	gh release create "v$${VERSION}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-release.rst" ./dist/python?project?structure-*
+	    --notes-file "./NEWS-VERSION.rst" ./dist/python?project?structure-*
 endif
 
 .PHONY: release-docker
@@ -749,9 +749,6 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
-	docker compose run --rm python-project-structure-devel $(TOX_EXEC_ARGS) \
-	    towncrier build --version "$${next_version}" --draft --yes \
-	        >"./NEWS-release.rst"
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes

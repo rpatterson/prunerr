@@ -117,7 +117,6 @@ ENV/
 
 # Project-specific build artifacts
 /README.md
-/NEWS-release.rst
 
 # Explicit ignores for the Docker build context.
 .local

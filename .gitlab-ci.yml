@@ -116,7 +116,6 @@ release:
       entrypoint make -e release-python test-clean
   artifacts:
     paths:
-      - "./NEWS-release.rst"
       - "./dist/python?project?structure-*"
 
 release-bump:
@@ -133,9 +132,6 @@ release-bump:
   script:
     - >-
       entrypoint make -e release-bump
-  artifacts:
-    paths:
-      - "./NEWS-release.rst"
 
 # TEMPLATE: Optionally add a scheduled pipeline with the following variables to
 # periodically upgrade all requirements and run CI:

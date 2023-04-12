@@ -336,10 +336,10 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
-	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
+	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),master)

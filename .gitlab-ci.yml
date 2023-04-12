@@ -55,7 +55,7 @@ build-test:
   rules:
     - if: >-
         (
-          ($CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v*\.*\.*$/)
+          ($CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/)
           || ($CI_COMMIT_BRANCH !~ /^(develop|master)$/)
         ) && $CI_PIPELINE_SOURCE != "schedule"
   interruptible: true
@@ -96,12 +96,14 @@ build-test:
 release:
   stage: "release"
   needs: ["build-test"]
+  # Avoid unnecessary artifact downloads:
+  # https://docs.gitlab.com/ee/ci/yaml/#dependencies
   dependencies: []
   variables:
     DOCKER_BUILD_PULL: "true"
   rules:
     - if: >-
-        $CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v*\.*\.*$/
+        $CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/
         && $CI_PROJECT_NAMESPACE == "rpatterson"
         && $CI_PIPELINE_SOURCE != "schedule"
   script:
@@ -115,8 +117,6 @@ release:
 release-bump:
   stage: "release-bump"
   needs: []
-  # Avoid unnecessary artifact downloads:
-  # https://docs.gitlab.com/ee/ci/yaml/#dependencies
   dependencies: []
   variables:
     DOCKER_BUILD_PULL: "true"
@@ -124,6 +124,7 @@ release-bump:
     - if: >-
         ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
         && ($CI_COMMIT_BRANCH =~ /^(develop|master)$/)
+        && $CI_COMMIT_MESSAGE !~ /(?ims).*\[actions skip\].*/
   script:
     - >-
       entrypoint make -e release-bump

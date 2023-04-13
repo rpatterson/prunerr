@@ -107,6 +107,14 @@ VCS_LOCAL_BRANCH=$(GITHUB_REF_NAME)
 endif
 endif
 VCS_TAG=
+CI_COMMIT_TAG=
+ifeq ($(VCS_TAG),)
+ifneq ($(CI_COMMIT_TAG),)
+VCS_TAG=$(CI_COMMIT_TAG)
+else ifeq ($(GITHUB_REF_TYPE),tag)
+VCS_TAG=$(GITHUB_REF_NAME)
+endif
+endif
 ifeq ($(VCS_LOCAL_BRANCH),)
 # Guess branch name from tag:
 ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'),)

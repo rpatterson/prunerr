@@ -84,7 +84,7 @@ figure it out and submit a PR with corrections to this section.
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git checkout -B "master" --track "origin/master"
+     $ git switch -C "master" --track "origin/master"
 
    If merging into an existing project::
 

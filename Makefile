@@ -615,15 +615,10 @@ endif
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
-	if git show-ref -q --heads "develop"
-	then
-	  git checkout "develop" --
-	else
-	  git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
-	fi
+	git switch -C "develop" --track "$(VCS_COMPARE_REMOTE)/develop" --
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git checkout "$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
 endif
 
 
@@ -659,15 +654,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	then
 	    remote_branch_exists=true
 	fi
-	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
-	then
-# Reset an existing local branch to the latest upstream before upgrading
-	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "$(VCS_BRANCH)" --
-	else
-# Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
-	fi
+	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"

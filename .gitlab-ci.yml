@@ -55,10 +55,9 @@ build-test:
   rules:
     - if: >-
         (
-          $CI_COMMIT_BRANCH !~ /^(develop|master)$/
-          || $CI_COMMIT_MESSAGE =~ /(?ims).*\[ci release\].*/
+          ($CI_COMMIT_BRANCH != null && $CI_COMMIT_BRANCH !~ /^(develop|master)$/)
+          || ($CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/)
         )
-        && ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
         && $CI_PIPELINE_SOURCE != "schedule"
   interruptible: true
   parallel:
@@ -106,8 +105,8 @@ release:
   rules:
     - if: >-
         (
-          $CI_COMMIT_BRANCH =~ /^(develop|master)$/
-          && $CI_COMMIT_MESSAGE =~ /(?ims).*\[ci release\].*/
+          $CI_COMMIT_TAG != null
+          && $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/
         )
         && $CI_PROJECT_NAMESPACE == "rpatterson"
         && $CI_PIPELINE_SOURCE != "schedule"
@@ -126,7 +125,7 @@ release-bump:
     DOCKER_BUILD_PULL: "true"
   rules:
     - if: >-
-        $CI_COMMIT_MESSAGE !~ /(?ims).*\[ci release\].*/
+        $CI_COMMIT_BRANCH != null
         && $CI_COMMIT_BRANCH =~ /^(develop|master)$/
         && $CI_PIPELINE_SOURCE != "schedule"
   script:

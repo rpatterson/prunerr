@@ -56,15 +56,17 @@ build-test:
   rules:
     - if: >-
         $CI_COMMIT_BRANCH != null
-        && $CI_COMMIT_BRANCH !~ /^(develop|master)$/
-        || (
-          $CI_COMMIT_BRANCH == "develop"
-          && $CI_COMMIT_TITLE =~
+        && (
+          $CI_COMMIT_BRANCH !~ /^(develop|master)$/
+          || (
+            $CI_COMMIT_BRANCH == "develop"
+            && $CI_COMMIT_TITLE =~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+.+$/
-        ) || (
-          $CI_COMMIT_BRANCH == "master"
-          && $CI_COMMIT_TITLE =~
+          ) || (
+            $CI_COMMIT_BRANCH == "master"
+            && $CI_COMMIT_TITLE =~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
+          )
         )
   interruptible: true
   parallel:

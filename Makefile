@@ -364,7 +364,7 @@ ifeq ($(VCS_BRANCH),master)
 	fi
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git checkout "$(VCS_BRANCH)" --
+	git checkout -B "$(VCS_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
 endif
 
 

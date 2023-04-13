@@ -561,6 +561,8 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
+# Ensure the local branch is updated to the forthcoming version bump commit:
+	git switch -C "$(VCS_BRANCH)" --track "$$(git rev-parse HEAD)" --
 ifeq ($(VCS_BRANCH),master)
 	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
 	    $(TOX_EXEC_BUILD_ARGS) cz version --project
@@ -618,7 +620,7 @@ ifeq ($(VCS_BRANCH),master)
 	git switch -C "develop" --track "$(VCS_COMPARE_REMOTE)/develop" --
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git switch -C "$(VCS_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)" --track "$${bump_rev}" --
 endif
 
 
@@ -649,11 +651,6 @@ devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV)
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-	remote_branch_exists=false
-	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
-	then
-	    remote_branch_exists=true
-	fi
 	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e devel-upgrade

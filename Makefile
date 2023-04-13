@@ -388,11 +388,6 @@ devel-upgrade:
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-	remote_branch_exists=false
-	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
-	then
-	    remote_branch_exists=true
-	fi
 	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade

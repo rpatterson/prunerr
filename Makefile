@@ -96,12 +96,15 @@ export PYTHON_WHEEL=
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
-CI_COMMIT_REF_NAME=
+CI_COMMIT_BRANCH=
+GITHUB_REF_TYPE=
 GITHUB_REF_NAME=
-ifneq ($(CI_COMMIT_REF_NAME),)
-VCS_LOCAL_BRANCH=$(CI_COMMIT_REF_NAME)
-else ifneq ($(GITHUB_REF_NAME),)
+ifeq ($(VCS_LOCAL_BRANCH),)
+ifneq ($(CI_COMMIT_BRANCH),)
+VCS_LOCAL_BRANCH=$(CI_COMMIT_BRANCH)
+else ifeq ($(GITHUB_REF_TYPE),branch)
 VCS_LOCAL_BRANCH=$(GITHUB_REF_NAME)
+endif
 endif
 # Reproduce what we need of git's branch and remote configuration and logic:
 VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")

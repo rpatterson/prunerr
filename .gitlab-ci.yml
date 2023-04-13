@@ -48,6 +48,7 @@ stages:
   - "build-test"
   - "release"
   - "release-bump"
+  - "release-branch"
   - "scheduled"
 
 build-test:
@@ -140,6 +141,31 @@ release-bump:
   script:
     - >-
       entrypoint make -e release-bump
+
+# Workaround GitLab's handling of pipeline status when pushing both a branch and a tag:
+release-branch:
+  stage: "release-branch"
+  needs: []
+  dependencies: []
+  rules:
+    - if: >-
+        $CI_COMMIT_BRANCH == null || (
+          (
+            $CI_COMMIT_BRANCH == "develop"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+.+$/
+          ) || (
+            $CI_COMMIT_BRANCH == "master"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
+          )
+        )
+        && $CI_PIPELINE_SOURCE != "schedule"
+  inherit:
+    default: false
+  script:
+    - >-
+      true
 
 # TEMPLATE: Optionally add a scheduled pipeline with the following variables to
 # periodically upgrade all requirements and run CI:

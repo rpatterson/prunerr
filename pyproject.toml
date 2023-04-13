@@ -20,10 +20,12 @@ changelog_start_rev = "v0.0.0"
 version = "1.1.0b24"
 tag_format = "v$version"
 annotated_tag = true
+gpg_sign = true
 bump_message = """\
 build(release): Version $current_version → $new_version
 
 [actions skip]
+[ci release]
 """
 [tool.towncrier]
 # https://towncrier.readthedocs.io/en/stable/#quick-start

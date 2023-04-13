@@ -106,6 +106,17 @@ else ifeq ($(GITHUB_REF_TYPE),branch)
 VCS_LOCAL_BRANCH=$(GITHUB_REF_NAME)
 endif
 endif
+VCS_TAG=
+ifeq ($(VCS_LOCAL_BRANCH),)
+# Guess branch name from tag:
+ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'),)
+# Final release, should be from master:
+VCS_LOCAL_BRANCH=master
+else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$'),)
+# Pre-release, should be from develop:
+VCS_LOCAL_BRANCH=develop
+endif
+endif
 # Reproduce what we need of git's branch and remote configuration and logic:
 VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")
 ifeq ($(VCS_CLONE_REMOTE),)

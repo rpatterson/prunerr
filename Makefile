@@ -94,10 +94,10 @@ VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
 VCS_TAG=
 ifeq ($(VCS_LOCAL_BRANCH),)
 # Guess branch name from tag:
-ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$'),)
+ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$'),)
 # Final release, should be from master:
 VCS_LOCAL_BRANCH=master
-else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$'),)
+else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$$'),)
 # Pre-release, should be from develop:
 VCS_LOCAL_BRANCH=develop
 endif

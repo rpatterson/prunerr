@@ -300,10 +300,10 @@ class PrunerrRunner:
             start = time.time()
 
             try:
-                # Resume any corrupt download items that have finished verifying
-                self.resume_verified_items()
                 # Refresh the list of download items
                 self.update()
+                # Resume any corrupt download items that have finished verifying
+                self.resume_verified_items()
                 # Run the `exec` sub-command as the inner loop
                 self.exec_()
             except (

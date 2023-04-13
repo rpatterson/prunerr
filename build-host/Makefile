@@ -49,6 +49,7 @@ debug-github-checkout:
 	cd "$(CHECKOUT_DIR)"
 	git remote add origin \
 	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure"
+	rev_hash="$$(git ls-remote -q "origin" "$(VCS_BRANCH)" | cut -f 1)"
 	git -c protocol.version=2 fetch --no-tags --prune --progress \
-	    --no-recurse-submodules --depth=1 "origin" "$(VCS_BRANCH)"
-	git checkout --progress --detach "origin/$(VCS_BRANCH)"
+	    --no-recurse-submodules --depth=1 "origin" "$${rev_hash}"
+	git checkout --progress --detach "$${rev_hash}"

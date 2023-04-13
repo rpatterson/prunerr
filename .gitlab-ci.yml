@@ -48,16 +48,22 @@ stages:
   - "build-test"
   - "release"
   - "release-bump"
-  - "release-branch"
+  - "release-tag"
   - "scheduled"
 
 build-test:
   stage: "build-test"
   rules:
     - if: >-
-        (
-          ($CI_COMMIT_BRANCH != null && $CI_COMMIT_BRANCH !~ /^(develop|master)$/)
-          || ($CI_COMMIT_TAG != null && $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/)
+        $CI_COMMIT_BRANCH !~ /^(develop|master)$/
+        || (
+          $CI_COMMIT_BRANCH == "develop"
+          && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+.+$/
+        ) || (
+          $CI_COMMIT_BRANCH == "master"
+          && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
         )
   interruptible: true
   parallel:
@@ -105,8 +111,15 @@ release:
   rules:
     - if: >-
         (
-          $CI_COMMIT_TAG != null
-          && $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/
+          (
+            $CI_COMMIT_BRANCH == "develop"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+.+$/
+          ) || (
+            $CI_COMMIT_BRANCH == "master"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
+          )
         )
         && $CI_PROJECT_NAMESPACE == "rpatterson"
   script:
@@ -140,27 +153,13 @@ release-bump:
       entrypoint make -e release-bump
 
 # Workaround GitLab's handling of pipeline status when pushing both a branch and a tag:
-release-branch:
-  stage: "release-branch"
+release-tag:
+  stage: "release-tag"
   needs: []
   dependencies: []
   rules:
     - if: >-
-        ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
-        && (
-          $CI_COMMIT_BRANCH == null || (
-            (
-              $CI_COMMIT_BRANCH == "develop"
-              && $CI_COMMIT_TITLE =~
-        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+.+$/
-            ) || (
-              $CI_COMMIT_BRANCH == "master"
-              && $CI_COMMIT_TITLE =~
-        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
-            )
-          )
-        )
-        && $CI_PIPELINE_SOURCE != "schedule"
+        $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/
   inherit:
     default: false
   script:

@@ -795,7 +795,12 @@ endif
 ifeq ($(VCS_BRANCH),master)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
-	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
+	if git show-ref -q --heads "develop"
+	then
+	  git checkout "develop" --
+	else
+	  git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
+	fi
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
 ifeq ($(CI),true)

@@ -734,7 +734,7 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    false
 	fi
 # Ensure the local branch is updated to the forthcoming version bump commit:
-	git switch -C "$(VCS_BRANCH)" --track "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
 ifeq ($(VCS_BRANCH),master)
 	if ! ./.tox/build/bin/python ./bin/get-base-version $$(
 	    ./.tox/build/bin/cz version --project
@@ -803,7 +803,7 @@ ifeq ($(VCS_BRANCH),master)
 ifeq ($(CI),true)
 	git push --no-verify --tags "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
 endif
-	git switch -C "$(VCS_BRANCH)" --track "$${bump_rev}" --
+	git switch -C "$(VCS_BRANCH)" "$${bump_rev}" --
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)

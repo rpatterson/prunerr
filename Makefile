@@ -170,7 +170,7 @@ else ifeq ($(VCS_COMPARE_BRANCH),develop)
 VCS_COMPARE_BRANCH=main
 endif
 VCS_BRANCH_SUFFIX=upgrade
-VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX))
+VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX)=%)
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -185,6 +185,9 @@ ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 endif
 endif
+endif
+ifneq ($(VCS_MERGE_BRANCH),)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
 # Determine the sequence of branches to find closes existing build artifacts, such as
 # docker images:
@@ -838,7 +841,9 @@ devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/build.log
+devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV) \
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
+		./var/log/tox/build/build.log
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions
@@ -1239,11 +1244,12 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 	branch_path="$(@:var/git/refs/remotes/%=%)"
 	mkdir -pv "$(dir $(@))"
-	if ! git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" |
+	if ! git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" |&
 	    tee -a "$(@)"
 	then
 # If the local branch doesn't exist, fall back to the pre-release branch:
-	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" | tee -a "$(@)"
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
+	        tee -a "$(@)"
 	fi
 
 ./.git/hooks/pre-commit:

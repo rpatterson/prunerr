@@ -61,6 +61,7 @@ stages:
   - "release-bump"
   - "release-version"
   - "scheduled"
+  - "merge-upgrade"
 
 build-test:
   stage: "build-test"
@@ -143,6 +144,16 @@ release:
     paths:
       - "./dist/python?project?structure-*"
 
+merge-upgrade:
+  stage: "merge-upgrade"
+  needs: ["build-test"]
+  rules:
+    - if: >-
+        $CI_COMMIT_BRANCH =~ /^.+-upgrade$/
+  script:
+    - >-
+      entrypoint make -e VCS_BRANCH_SUFFIX="upgrade" devel-merge
+
 release-bump:
   stage: "release-bump"
   needs: []
@@ -182,9 +193,17 @@ release-version:
 
 # TEMPLATE: Optionally add a scheduled pipeline with the following variables to
 # periodically upgrade all requirements and run CI:
+#
 # - `DOCKER_BUILD_PULL=true`
 # - `SCHEDULED_TARGETS=devel-upgrade-branch`
 # - `TEMPLATE_IGNORE_EXISTING=true`
+#
+# The `merge-upgrade` job will automatically merge `*-upgrade` branches when
+# `build-test` is successful, so add a protected branch rule for the `*-upgrade`
+# wildcard that allows force pushing.  The target branch for the scheduled pipeline thus
+# determines whether upgrade branches that pass CI will publish releases, pre-releases
+# for `develop` and final releases for `main`.
+#
 # WARNING: Running this even just daily can easily exhaust the gitlab.org free quotas.
 
 scheduled:

@@ -898,12 +898,16 @@ endif
 
 .PHONY: devel-merge
 ### Merge this branch with a suffix back into it's un-suffixed upstream.
-devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+devel-merge: ~/.gitconfig ./var/log/git-remotes.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
 	git merge --ff --gpg-sign -m \
 	    $$'Merge branch \'$(VCS_BRANCH)\' into $(VCS_MERGE_BRANCH)\n\n[ci merge]' \
 	    "$${merge_rev}"
+ifeq ($(CI),true)
+	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_MERGE_BRANCH)"
+endif
 
 
 ## Clean Targets:
@@ -1262,7 +1266,6 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 ./var/log/git-remotes.log:
-ifeq ($(RELEASE_PUBLISH),true)
 	mkdir -pv "$(dir $(@))"
 	set +x
 ifneq ($(VCS_REMOTE_PUSH_URL),)
@@ -1291,9 +1294,6 @@ endif
 	set -x
 # Fail fast if there's still no push access
 	git push --no-verify --tags "origin" | tee -a "$(@)"
-else
-	date | tee -a "$(@)"
-endif
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.
 ~/.pypirc: ./home/.pypirc.in

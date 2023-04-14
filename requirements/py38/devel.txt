@@ -164,7 +164,7 @@ pyproject-hooks==1.0.0
     # via build
 pyroma==4.2
     # via prospector
-pytest==7.3.0
+pytest==7.3.1
     # via python-project-structure (pyproject.toml)
 pyyaml==6.0
     # via

@@ -20,7 +20,7 @@ branch/fork off of the ``develop`` branch::
 
 This project uses `towncrier`_ to manage it's release notes, AKA changelog and thus
 requires at least one `news fragment`_ before merging back into ``develop``.  The VCS
-hooks enforce this when pushing to ``develop`` or ``master``::
+hooks enforce this when pushing to ``develop`` or ``main``::
 
   $ towncrier create 123.feature
 
@@ -46,7 +46,7 @@ packages, and publish them to PyPI::
 
 Contributors should then test the pre-release, preferably with as many users and use
 cases as possible.  If everything looks good, then maintainers can merge ``develop``
-into ``master`` and use the same release process to publish final releases::
+into ``main`` and use the same release process to publish final releases::
 
   $ make release
 

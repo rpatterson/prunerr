@@ -122,6 +122,8 @@ endif
 ifeq ($(VCS_COMPARE_BRANCH),develop)
 VCS_COMPARE_BRANCH=main
 endif
+VCS_BRANCH_SUFFIX=upgrade
+VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX))
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -409,6 +411,15 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"
+
+.PHONY: devel-merge
+### Merge this branch with a suffix back into it's un-suffixed upstream.
+devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+	merge_rev="$$(git rev-parse HEAD)"
+	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
+	git merge --ff --gpg-sign -m \
+	    $$'Merge branch \'$(VCS_BRANCH)\' into $(VCS_MERGE_BRANCH)\n\n[ci merge]' \
+	    "$${merge_rev}"
 
 
 ## Clean Targets:

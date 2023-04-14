@@ -49,7 +49,7 @@ that this means other versions may be updated as the published versions for depe
 are updated on remote indexes/registries.  Maintainers can also update all dependencies
 to the latest versions::
 
-  $ make upgrade
+  $ make devel-upgrade
 
 See also `the ./TODO.rst file`_ which lists known bugs and desirable features for which
 contributions are most welcome.

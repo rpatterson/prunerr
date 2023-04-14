@@ -1272,6 +1272,7 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 	if ! git remote get-url --push --all "origin" |
 	    grep -q -F "$(VCS_REMOTE_PUSH_URL)"
 	then
+	    echo "INFO:Adding push url for remote 'origin'"
 	    git remote set-url --push --add "origin" "$(VCS_REMOTE_PUSH_URL)" |
 	        tee -a "$(@)"
 	fi
@@ -1281,6 +1282,7 @@ ifneq ($(PROJECT_GITHUB_PAT),)
 # Also add a fetch remote for the `$ gh ...` CLI tool to detect:
 	if ! git remote get-url "github" >"/dev/null"
 	then
+	    echo "INFO:Adding remote 'github'"
 	    git remote add "github" \
 	        "https://$(PROJECT_GITHUB_PAT)@github.com/$(CI_PROJECT_PATH).git" |
 	        tee -a "$(@)"

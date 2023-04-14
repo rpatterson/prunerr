@@ -16,11 +16,11 @@ If there's not already `an issue/ticket`_ for the changes you'll be making, crea
 Regardless, take note of the issue/ticket number, e.g. ``#123``.  Then create a
 branch/fork off of the ``develop`` branch::
 
-  $ git checkout -b feat-123-foo-bar origin/develop
+  $ git switch -c feat-123-foo-bar origin/develop
 
 This project uses `towncrier`_ to manage it's release notes, AKA changelog and thus
 requires at least one `news fragment`_ before merging back into ``develop``.  The VCS
-hooks enforce this when pushing to ``develop`` or ``master``::
+hooks enforce this when pushing to ``develop`` or ``main``::
 
   $ towncrier create 123.feature
 
@@ -36,9 +36,17 @@ You can also inspect test failures and errors in `Python's post-mortem debugger`
 The ``$ make test`` target also runs the ``$ make format`` target to format code
 according to this project's guidelines and rules.
 
-Once work is finished and all the tests are passing, project maintainers can merge your
-work and run all checks and tests as above to confirm your work.  Then they can, bump
-the version, build release packages, and publish them to PyPI::
+Contributions should be pushed to feature branches or forks off of the upstream
+``develop`` branch.  Once work is finished and all the tests are passing, project
+maintainers can merge your work back into ``develop`` and run all checks and tests as
+above to confirm your work.  Then they can, bump the version, build pre-release
+packages, and publish them to PyPI::
+
+  $ make release
+
+Contributors should then test the pre-release, preferably with as many users and use
+cases as possible.  If everything looks good, then maintainers can merge ``develop``
+into ``main`` and use the same release process to publish final releases::
 
   $ make release
 
@@ -49,7 +57,7 @@ that this means other versions may be updated as the published versions for depe
 are updated on remote indexes/registries.  Maintainers can also update all dependencies
 to the latest versions::
 
-  $ make upgrade
+  $ make devel-upgrade
 
 See also `the ./TODO.rst file`_ which lists known bugs and desirable features for which
 contributions are most welcome.

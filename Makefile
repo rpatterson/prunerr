@@ -76,6 +76,17 @@ PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
+VCS_TAG=
+ifeq ($(VCS_LOCAL_BRANCH),)
+# Guess branch name from tag:
+ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$'),)
+# Final release, should be from main:
+VCS_LOCAL_BRANCH=main
+else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$$'),)
+# Pre-release, should be from develop:
+VCS_LOCAL_BRANCH=develop
+endif
+endif
 # Reproduce what we need of git's branch and remote configuration and logic:
 VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")
 ifeq ($(VCS_CLONE_REMOTE),)
@@ -109,8 +120,10 @@ endif
 # If pushing to upstream release branches, get release data compared to the previous
 # release:
 ifeq ($(VCS_COMPARE_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
+VCS_COMPARE_BRANCH=main
 endif
+VCS_BRANCH_SUFFIX=upgrade
+VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX)=%)
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -118,13 +131,16 @@ VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BR
 endif
 # Also fetch develop for merging back in the final release:
 VCS_RELEASE_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 VCS_RELEASE_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 endif
 endif
+endif
+ifneq ($(VCS_MERGE_BRANCH),)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
 
 # Values used to run Tox:
@@ -144,8 +160,8 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 # hosts/indexes/registries:
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
-# Only publish releases from the `master` or `develop` branches:
-ifeq ($(VCS_BRANCH),master)
+# Only publish releases from the `main` or `develop` branches:
+ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
@@ -238,8 +254,8 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log
-ifeq ($(VCS_COMPARE_BRANCH),master)
-# On `master`, compare with the previous commit on `master`
+ifeq ($(VCS_COMPARE_BRANCH),main)
+# On `main`, compare with the previous commit on `main`
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
 else
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
@@ -283,28 +299,7 @@ test-clean:
 ### Publish installable Python packages if conventional commits require a release.
 release: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		$(VCS_RELEASE_FETCH_TARGETS) ~/.pypirc
-ifeq ($(VCS_BRANCH),master)
-	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
-	    $(TOX_EXEC_BUILD_ARGS) cz version --project
-	)
-	then
-# There's no pre-release for which to publish a final release:
-	    exit
-	fi
-else
-# Only release if required by conventional commits:
-	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
-	if (( $$exit_code == 3 || $$exit_code == 21 ))
-	then
-# No commits require a release:
-	    exit
-	elif (( $$exit_code != 0 ))
-	then
-	    exit $$exit_code
-	fi
-endif
-# Only release from the `master` or `develop` branches:
+# Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
@@ -326,9 +321,32 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
+# Ensure the local branch is updated to the forthcoming version bump commit:
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+ifeq ($(VCS_BRANCH),main)
+	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
+	    $(TOX_EXEC_BUILD_ARGS) cz version --project
+	)
+	then
+# There's no pre-release for which to publish a final release:
+	    exit
+	fi
+else
+# Only release if required by conventional commits:
+	exit_code=0
+	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	if (( $$exit_code == 3 || $$exit_code == 21 ))
+	then
+# No commits require a release:
+	    exit
+	elif (( $$exit_code != 0 ))
+	then
+	    exit $$exit_code
+	fi
+endif
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
-ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_BRANCH),main)
 	cz_bump_args+=" --prerelease beta"
 endif
 # Build and stage the release notes to be commited by `$ cz bump`
@@ -336,16 +354,19 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
 	) || true
+	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --draft --yes \
+	    >"./NEWS-VERSION.rst"
+	git add -- "./NEWS-VERSION.rst"
 	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
-	git checkout --track "$(VCS_COMPARE_REMOTE)/develop" --
+	git switch -C "develop" --track "$(VCS_COMPARE_REMOTE)/develop" --
 	git merge --ff --gpg-sign \
-	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
-	git checkout "$(VCS_BRANCH)" --
+	    -m "Merge branch 'main' release back into develop" "$${bump_rev}"
+	git switch -C "$(VCS_BRANCH)" "$${bump_rev}" --
 endif
 
 
@@ -374,20 +395,7 @@ devel-upgrade:
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-	remote_branch_exists=false
-	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
-	then
-	    remote_branch_exists=true
-	fi
-	if git show-ref -q --heads "$(VCS_BRANCH)-upgrade"
-	then
-# Reset an existing local branch to the latest upstream before upgrading
-	    git checkout "$(VCS_BRANCH)-upgrade"
-	    git reset --hard "$(VCS_BRANCH)" --
-	else
-# Create a new local branch from the latest upstream before upgrading
-	    git checkout -b "$(VCS_BRANCH)-upgrade" "$(VCS_BRANCH)"
-	fi
+	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -406,6 +414,15 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"
+
+.PHONY: devel-merge
+### Merge this branch with a suffix back into it's un-suffixed upstream.
+devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+	merge_rev="$$(git rev-parse HEAD)"
+	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
+	git merge --ff --gpg-sign -m \
+	    $$'Merge branch \'$(VCS_BRANCH)\' into $(VCS_MERGE_BRANCH)\n\n[ci merge]' \
+	    "$${merge_rev}"
 
 
 ## Clean Targets:
@@ -518,11 +535,12 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 	branch_path="$(@:var/git/refs/remotes/%=%)"
 	mkdir -pv "$(dir $(@))"
-	if ! git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" |
+	if ! git fetch $${git_fetch_args} "$${branch_path%%/*}" "$${branch_path#*/}" |&
 	    tee -a "$(@)"
 	then
 # If the local branch doesn't exist, fall back to the pre-release branch:
-	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" | tee -a "$(@)"
+	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
+	        tee -a "$(@)"
 	fi
 
 ./.git/hooks/pre-commit:

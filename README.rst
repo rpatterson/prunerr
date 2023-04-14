@@ -72,7 +72,7 @@ figure it out and submit a PR with corrections to this section.
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git checkout -B "master" --track "origin/master"
+     $ git switch -C "main" --track "origin/main"
 
    If merging into an existing project::
 
@@ -101,6 +101,22 @@ Finally, remove this section from this ``./README.rst`` and update the rest of i
 content as appropriate for your project.  As fixes and features are added to the
 upstream template, you can merge them into your project and repeat steps 3-5 above as
 needed.
+
+This template publishes pre-releases on all pushes to the ``develop`` branch and final
+releases on all pushes to the ``main`` branch.  Project owners may decide which types
+of changes should go through pre-release before final release and which types of changes
+should go straight to final release.  For example they may decide that:
+
+- Contributions from those who are not maintainers or owners should be merged into
+  ``develop``.  See `the ./CONTRIBUTING.rst file`_ for such an example public
+  contributions policy and workflow.
+
+- Fixes for bugs in final releases may be committed to a branch off of ``main`` and,
+  after passing all tests and checks, merged back into ``main`` to publish final
+  releases immediately.
+
+- Routine version upgrades for security updates may also be merged to ``main`` as
+  above for bug fixes.
 
 
 ****************************************************************************************

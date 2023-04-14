@@ -23,7 +23,11 @@ version = "0.0.0"
 tag_format = "v$version"
 annotated_tag = true
 gpg_sign = true
-bump_message = "build(release): $current_version → $new_version"
+bump_message = """\
+build(release): Version $current_version → $new_version
+
+[ci release]
+"""
 [tool.towncrier]
 # https://towncrier.readthedocs.io/en/stable/#quick-start
 package = "pythonprojectstructure"

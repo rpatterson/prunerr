@@ -160,8 +160,8 @@ endif
 CI=false
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
-else ifneq ($(VCS_BRANCH),master)
+VCS_COMPARE_BRANCH=main
+else ifneq ($(VCS_BRANCH),main)
 VCS_COMPARE_BRANCH=develop
 endif
 # If pushing to upstream release branches, get release data compared to the previous
@@ -189,11 +189,11 @@ endif
 # Determine the sequence of branches to find closes existing build artifacts, such as
 # docker images:
 VCS_BRANCHES=$(VCS_BRANCH)
-ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_BRANCH),main)
 ifneq ($(VCS_BRANCH),develop)
 VCS_BRANCHES+=develop
 endif
-VCS_BRANCHES+=master
+VCS_BRANCHES+=main
 endif
 
 # Values used to run Tox:
@@ -452,8 +452,8 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
 		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
-ifeq ($(VCS_BRANCH),master)
-# Only update tags end users may depend on to be stable from the `master` branch
+ifeq ($(VCS_BRANCH),main)
+# Only update tags end users may depend on to be stable from the `main` branch
 	VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -466,7 +466,7 @@ endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${major_version}
 ifeq ($(DOCKER_VARIANT),)

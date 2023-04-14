@@ -95,8 +95,8 @@ VCS_TAG=
 ifeq ($(VCS_LOCAL_BRANCH),)
 # Guess branch name from tag:
 ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$'),)
-# Final release, should be from master:
-VCS_LOCAL_BRANCH=master
+# Final release, should be from main:
+VCS_LOCAL_BRANCH=main
 else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$$'),)
 # Pre-release, should be from develop:
 VCS_LOCAL_BRANCH=develop
@@ -135,8 +135,10 @@ endif
 # If pushing to upstream release branches, get release data compared to the previous
 # release:
 ifeq ($(VCS_COMPARE_BRANCH),develop)
-VCS_COMPARE_BRANCH=master
+VCS_COMPARE_BRANCH=main
 endif
+VCS_BRANCH_SUFFIX=upgrade
+VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX))
 # Assemble the targets used to avoid redundant fetches during release tasks:
 VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
@@ -144,7 +146,7 @@ VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BR
 endif
 # Also fetch develop for merging back in the final release:
 VCS_RELEASE_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 VCS_RELEASE_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
 ifneq ($(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH),$(VCS_COMPARE_REMOTE)/develop)
@@ -203,8 +205,8 @@ BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 CI=false
-# Only publish releases from the `master` or `develop` branches:
-ifeq ($(VCS_BRANCH),master)
+# Only publish releases from the `main` or `develop` branches:
+ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
@@ -449,8 +451,8 @@ test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
 		build-docker-volumes-$(PYTHON_ENV) ./.env
-ifeq ($(VCS_COMPARE_BRANCH),master)
-# On `master`, compare with the previous commit on `master`
+ifeq ($(VCS_COMPARE_BRANCH),main)
+# On `main`, compare with the previous commit on `main`
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
 else
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
@@ -500,7 +502,7 @@ release: release-python release-docker
 ### Publish installable Python packages to PyPI.
 release-python: $(HOME)/.local/var/log/python-project-structure-host-install.log \
 		$(VCS_RELEASE_FETCH_TARGETS) ~/.pypirc
-# Only release from the `master` or `develop` branches:
+# Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
@@ -563,7 +565,7 @@ release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	fi
 # Ensure the local branch is updated to the forthcoming version bump commit:
 	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
 	    $(TOX_EXEC_BUILD_ARGS) cz version --project
 	)
@@ -586,7 +588,7 @@ else
 endif
 # Collect the versions involved in this release according to conventional commits:
 	cz_bump_args="--check-consistency --no-verify"
-ifneq ($(VCS_BRANCH),master)
+ifneq ($(VCS_BRANCH),main)
 	cz_bump_args+=" --prerelease beta"
 endif
 # Build and stage the release notes to be commited by `$ cz bump`
@@ -614,12 +616,12 @@ ifneq ($(CI),true)
 # For testing locally, however, ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
 endif
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
 	git switch -C "develop" --track "$(VCS_COMPARE_REMOTE)/develop" --
 	git merge --ff --gpg-sign \
-	    -m "Merge branch 'master' release back into develop" "$${bump_rev}"
+	    -m "Merge branch 'main' release back into develop" "$${bump_rev}"
 	git switch -C "$(VCS_BRANCH)" "$${bump_rev}" --
 endif
 
@@ -670,6 +672,15 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
 	$(MAKE) -e "test-clean"
+
+.PHONY: devel-merge
+### Merge this branch with a suffix back into it's un-suffixed upstream.
+devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+	merge_rev="$$(git rev-parse HEAD)"
+	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
+	git merge --ff --gpg-sign -m \
+	    $$'Merge branch \'$(VCS_BRANCH)\' into $(VCS_MERGE_BRANCH)\n\n[ci merge]' \
+	    "$${merge_rev}"
 
 
 ## Clean Targets:

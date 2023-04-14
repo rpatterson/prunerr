@@ -35,6 +35,9 @@ Nice to Have
 
 #. Container image variants: e.g. slim/alpine
 
+#. Better release notes content for final releases with no changes since the last
+   pre-release.
+
 #. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
 
 #. `Docker image build-time LABEL's

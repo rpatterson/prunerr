@@ -19,12 +19,10 @@ charset-normalizer==2.1.1
     #   commitizen
     #   requests
 colorama==0.4.6
-    # via
-    #   commitizen
-    #   twine
+    # via commitizen
 commitizen==2.42.1
     # via -r requirements/build.txt.in
-cryptography==40.0.1
+cryptography==40.0.2
     # via secretstorage
 decli==0.5.2
     # via commitizen
@@ -38,19 +36,33 @@ identify==2.5.22
     # via pre-commit
 idna==3.4
     # via requests
+importlib-metadata==6.3.0
+    # via
+    #   keyring
+    #   twine
+importlib-resources==5.12.0
+    # via keyring
+jaraco-classes==3.2.3
+    # via keyring
 jeepney==0.8.0
     # via
     #   keyring
     #   secretstorage
 jinja2==3.1.2
     # via commitizen
-keyring==22.3.0
+keyring==23.13.1
     # via twine
+markdown-it-py==2.2.0
+    # via rich
 markupsafe==2.1.2
     # via jinja2
+mdurl==0.1.2
+    # via markdown-it-py
+more-itertools==9.1.0
+    # via jaraco-classes
 nodeenv==1.7.0
     # via pre-commit
-packaging==23.0
+packaging==23.1
     # via commitizen
 pkginfo==1.9.6
     # via twine
@@ -62,8 +74,10 @@ prompt-toolkit==3.0.38
     # via questionary
 pycparser==2.21
     # via cffi
-pygments==2.14.0
-    # via readme-renderer
+pygments==2.15.0
+    # via
+    #   readme-renderer
+    #   rich
 pyyaml==6.0
     # via
     #   commitizen
@@ -80,6 +94,8 @@ requests-toolbelt==0.10.1
     # via twine
 rfc3986==2.0.0
     # via twine
+rich==13.3.4
+    # via twine
 secretstorage==3.3.3
     # via keyring
 six==1.16.0
@@ -88,12 +104,12 @@ termcolor==2.2.0
     # via commitizen
 tomlkit==0.11.7
     # via commitizen
-tqdm==4.65.0
-    # via twine
-twine==3.3.0
+twine==4.0.2
     # via -r requirements/build.txt.in
 typing-extensions==4.5.0
-    # via commitizen
+    # via
+    #   commitizen
+    #   rich
 urllib3==1.26.15
     # via
     #   requests
@@ -104,6 +120,10 @@ wcwidth==0.2.6
     # via prompt-toolkit
 webencodings==0.5.1
     # via bleach
+zipp==3.15.0
+    # via
+    #   importlib-metadata
+    #   importlib-resources
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

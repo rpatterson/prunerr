@@ -27,6 +27,7 @@ stages:
   - "release-bump"
   - "release-version"
   - "scheduled"
+  - "merge-upgrade"
 
 build-test:
   stage: "build-test"
@@ -34,17 +35,18 @@ build-test:
     - if: >-
         $CI_COMMIT_BRANCH != null
         && (
-          $CI_COMMIT_BRANCH !~ /^(develop|master)$/
+          $CI_COMMIT_BRANCH !~ /^(develop|main)$/
           || (
             $CI_COMMIT_BRANCH == "develop"
             && $CI_COMMIT_TITLE =~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+[^0-9].+$/
           ) || (
-            $CI_COMMIT_BRANCH == "master"
+            $CI_COMMIT_BRANCH == "main"
             && $CI_COMMIT_TITLE =~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
           )
         )
+        && $CI_PIPELINE_SOURCE != "schedule"
   interruptible: true
   parallel:
     matrix:
@@ -96,7 +98,7 @@ release:
             && $CI_COMMIT_TITLE =~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+[^0-9].+$/
           ) || (
-            $CI_COMMIT_BRANCH == "master"
+            $CI_COMMIT_BRANCH == "main"
             && $CI_COMMIT_TITLE =~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
           )
@@ -109,6 +111,16 @@ release:
     paths:
       - "./dist/prunerr-*"
 
+merge-upgrade:
+  stage: "merge-upgrade"
+  needs: ["build-test"]
+  rules:
+    - if: >-
+        $CI_COMMIT_BRANCH =~ /^.+-upgrade$/
+  script:
+    - >-
+      entrypoint make -e VCS_BRANCH_SUFFIX="upgrade" devel-merge
+
 release-bump:
   stage: "release-bump"
   needs: []
@@ -119,7 +131,7 @@ release-bump:
     - if: >-
         (
           (
-            $CI_COMMIT_BRANCH == "master"
+            $CI_COMMIT_BRANCH == "main"
             && $CI_COMMIT_TITLE !~
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
           ) || (
@@ -128,6 +140,7 @@ release-bump:
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9].*$/
           )
         )
+        && $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-
       entrypoint make -e release-bump

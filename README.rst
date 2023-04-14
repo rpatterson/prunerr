@@ -23,12 +23,12 @@ Perma-seed Servarr media libraries
      - .. figure:: https://gitlab.com/rpatterson/prunerr/-/badges/release.svg
 	  :alt: GitLab latest release
 	  :target: https://gitlab.com/rpatterson/prunerr/-/releases
-       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/master/pipeline.svg
+       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/main/pipeline.svg
           :alt: GitLab CI/CD pipeline status
-          :target: https://gitlab.com/rpatterson/prunerr/-/commits/master
-       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/master/coverage.svg
+          :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
+       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/main/coverage.svg
           :alt: GitLab coverage report
-	  :target: https://gitlab.com/rpatterson/prunerr/-/commits/master
+	  :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
        .. figure:: https://img.shields.io/gitlab/stars/rpatterson/prunerr?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
 	  :alt: GitLab repo stars
 	  :target: https://gitlab.com/rpatterson/prunerr
@@ -39,14 +39,14 @@ Perma-seed Servarr media libraries
        .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml
-       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/master/graph/badge.svg?token=GNKVQ8VYOU
+       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
 	  :target: https://codecov.io/github/rpatterson/prunerr
        .. figure:: https://img.shields.io/github/stars/rpatterson/prunerr?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/prunerr/
 
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr/master?sort=semver&logo=docker
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr/main?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)
           :target: https://hub.docker.com/r/merpatterson/prunerr
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/prunerr?logo=docker

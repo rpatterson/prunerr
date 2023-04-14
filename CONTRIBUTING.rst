@@ -36,9 +36,17 @@ You can also inspect test failures and errors in `Python's post-mortem debugger`
 The ``$ make test`` target also runs the ``$ make format`` target to format code
 according to this project's guidelines and rules.
 
-Once work is finished and all the tests are passing, project maintainers can merge your
-work and run all checks and tests as above to confirm your work.  Then they can, bump
-the version, build release packages, and publish them to PyPI::
+Contributions should be pushed to feature branches or forks off of the upstream
+``develop`` branch.  Once work is finished and all the tests are passing, project
+maintainers can merge your work back into ``develop`` and run all checks and tests as
+above to confirm your work.  Then they can, bump the version, build pre-release
+packages, and publish them to PyPI::
+
+  $ make release
+
+Contributors should then test the pre-release, preferably with as many users and use
+cases as possible.  If everything looks good, then maintainers can merge ``develop``
+into ``master`` and use the same release process to publish final releases::
 
   $ make release
 

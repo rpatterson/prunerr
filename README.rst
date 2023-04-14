@@ -97,6 +97,22 @@ content as appropriate for your project.  As fixes and features are added to the
 upstream template, you can merge them into your project and repeat steps 3-5 above as
 needed.
 
+This template publishes pre-releases on all pushes to the ``develop`` branch and final
+releases on all pushes to the ``master`` branch.  Project owners may decide which types
+of changes should go through pre-release before final release and which types of changes
+should go straight to final release.  For example they may decide that:
+
+- Contributions from those who are not maintainers or owners should be merged into
+  ``develop``.  See `the ./CONTRIBUTING.rst file`_ for such an example public
+  contributions policy and workflow.
+
+- Fixes for bugs in final releases may be committed to a branch off of ``master`` and,
+  after passing all tests and checks, merged back into ``master`` to publish final
+  releases immediately.
+
+- Routine version upgrades for security updates may also be merged to ``master`` as
+  above for bug fixes.
+
 
 ****************************************************************************************
 Installation

@@ -851,7 +851,8 @@ devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV) ./var/log/tox/build/bui
 
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
-devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"

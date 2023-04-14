@@ -23,12 +23,12 @@ Python project structure foundation or template
      - .. figure:: https://gitlab.com/rpatterson/python-project-structure/-/badges/release.svg
 	  :alt: GitLab latest release
 	  :target: https://gitlab.com/rpatterson/python-project-structure/-/releases
-       .. figure:: https://gitlab.com/rpatterson/python-project-structure/badges/master/pipeline.svg
+       .. figure:: https://gitlab.com/rpatterson/python-project-structure/badges/main/pipeline.svg
           :alt: GitLab CI/CD pipeline status
-          :target: https://gitlab.com/rpatterson/python-project-structure/-/commits/master
-       .. figure:: https://gitlab.com/rpatterson/python-project-structure/badges/master/coverage.svg
+          :target: https://gitlab.com/rpatterson/python-project-structure/-/commits/main
+       .. figure:: https://gitlab.com/rpatterson/python-project-structure/badges/main/coverage.svg
           :alt: GitLab coverage report
-	  :target: https://gitlab.com/rpatterson/python-project-structure/-/commits/master
+	  :target: https://gitlab.com/rpatterson/python-project-structure/-/commits/main
        .. figure:: https://img.shields.io/gitlab/stars/rpatterson/python-project-structure?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
 	  :alt: GitLab repo stars
 	  :target: https://gitlab.com/rpatterson/python-project-structure
@@ -39,14 +39,14 @@ Python project structure foundation or template
        .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml
-       .. figure:: https://codecov.io/github/rpatterson/python-project-structure/branch/master/graph/badge.svg?token=GNKVQ8VYOU
+       .. figure:: https://codecov.io/github/rpatterson/python-project-structure/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
 	  :target: https://codecov.io/github/rpatterson/python-project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/python-project-structure/
 
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure/master?sort=semver&logo=docker
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/python-project-structure/main?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)
           :target: https://hub.docker.com/r/merpatterson/python-project-structure
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/python-project-structure?logo=docker
@@ -111,7 +111,7 @@ figure it out and submit a PR with corrections to this section.
    - ``ci``:
 
      The above plus GitLab CI/CD pipelines that run tests and linters as CI and
-     publish releases from ``develop`` and ``master`` as CD.
+     publish releases from ``develop`` and ``main`` as CD.
 
    - ``ci-cli``:
 
@@ -119,7 +119,7 @@ figure it out and submit a PR with corrections to this section.
 
    - etc.
 
-   Do not use the ``develop`` or ``master`` branches in your project as those branches
+   Do not use the ``develop`` or ``main`` branches in your project as those branches
    are used to test the CI/CD automatic releases process and as such contain bumped
    versions, release notes, and other release artifacts that shouldn't be merged into
    real projects.
@@ -134,7 +134,7 @@ figure it out and submit a PR with corrections to this section.
      $ git config remote.template.tagOpt --no-tags
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git switch -C "master" --track "origin/master"
+     $ git switch -C "main" --track "origin/main"
 
    If merging into an existing project::
 
@@ -163,6 +163,22 @@ Finally, remove this section from this ``./README.rst`` and update the rest of i
 content as appropriate for your project.  As fixes and features are added to the
 upstream template, you can merge them into your project and repeat steps 3-5 above as
 needed.
+
+This template publishes pre-releases on all pushes to the ``develop`` branch and final
+releases on all pushes to the ``main`` branch.  Project owners may decide which types
+of changes should go through pre-release before final release and which types of changes
+should go straight to final release.  For example they may decide that:
+
+- Contributions from those who are not maintainers or owners should be merged into
+  ``develop``.  See `the ./CONTRIBUTING.rst file`_ for such an example public
+  contributions policy and workflow.
+
+- Fixes for bugs in final releases may be committed to a branch off of ``main`` and,
+  after passing all tests and checks, merged back into ``main`` to publish final
+  releases immediately.
+
+- Routine version upgrades for security updates may also be merged to ``main`` as
+  above for bug fixes.
 
 
 ****************************************************************************************
@@ -247,8 +263,8 @@ template.
 .. _`GitHub Actions`: https://docs.github.com/en/actions
 
 .. _Makefile:
-   https://gitlab.com/rpatterson/python-project-structure/blob/master/Makefile
+   https://gitlab.com/rpatterson/python-project-structure/blob/main/Makefile
 .. _`the example ./docker-compose.yml file`:
-   https://gitlab.com/rpatterson/python-project-structure/blob/master/docker-compose.yml
+   https://gitlab.com/rpatterson/python-project-structure/blob/main/docker-compose.yml
 .. _`the ./CONTRIBUTING.rst file`:
-   https://gitlab.com/rpatterson/python-project-structure/blob/master/CONTRIBUTING.rst
+   https://gitlab.com/rpatterson/python-project-structure/blob/main/CONTRIBUTING.rst

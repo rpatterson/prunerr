@@ -33,6 +33,9 @@ Nice to Have
 
 #. New branches for different frameworks, e.g.: Flask, Pyramid, Django
 
+#. Better release notes content for final releases with no changes since the last
+   pre-release.
+
 #. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
 
 #. Container image variants: e.g. slim/alpine

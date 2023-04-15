@@ -154,7 +154,7 @@ VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/develop
 endif
 endif
 endif
-ifneq ($(VCS_MERGE_BRANCH),)
+ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
 
@@ -506,7 +506,7 @@ release: release-python release-docker
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.
 release-python: $(HOME)/.local/var/log/python-project-structure-host-install.log \
-		$(VCS_RELEASE_FETCH_TARGETS) ~/.pypirc
+		~/.pypirc
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -560,7 +560,7 @@ $(DOCKER_REGISTRIES:%=release-docker-registry-%):
 
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
-release-bump: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log ./var/log/tox/build/build.log \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
 		./.env build-docker-volumes-$(PYTHON_ENV)

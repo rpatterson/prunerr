@@ -16,7 +16,7 @@ filelock==3.11.0
     # via
     #   tox
     #   virtualenv
-importlib-metadata==6.3.0
+importlib-metadata==6.4.1
     # via
     #   pluggy
     #   tox

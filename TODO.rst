@@ -53,13 +53,11 @@ Nice to Have
 
 #. Support other download client software, not just `Transmission`_:
 
-   This would almost certainly require discussion before implementing, because how this
-   is done would be important for maintainability.  So open an issue and start the
-   discussion before you start implementing lest your work go to waste.  Currently,
-   Prunerr is way to tightly coupled with Transmission and the `Python RPC client
-   library`_ used to interface with it.  I suspect the best way to abstract it will be
-   to use that client library as a de facto abstract interface and then wrap other
-   client libraries to fulfill that interface, but that's one of the things to discuss.
+   Should be implemented external to Prunerr.  That could be a Python library that
+   provides a single API that can talk to the APIs of different Transmission clients.
+   It could also be an external service that Prunerr can talk to that know how manage
+   different Transmission clients.  For example, if Sonarr/Radarr added a more complete
+   API to download clients, then Prunerr could switch to that.
 
    It's also worth noting that the reason Transmission is the first supported download
    client is because `it seems to be the best`_ at `managing large numbers of torrents

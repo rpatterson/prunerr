@@ -644,7 +644,7 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI.
-release-python: ./var/log/tox/build/build.log \
+release-python: ./var/log/tox/build/build.log ./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		~/.pypirc ./.env build-docker-volumes-$(PYTHON_ENV)
 # Only release from the `main` or `develop` branches:

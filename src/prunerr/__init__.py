@@ -56,7 +56,7 @@ parser.add_argument(
     default=str(pathlib.Path.home() / ".config" / "prunerr.yml"),
     help="""\
 The path to the Prunerr configuration file. Example:
-https://gitlab.com/rpatterson/prunerr/-/blob/master/src/prunerr/home/.config/prunerr.yml\
+https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml\
 """,
 )
 # Define CLI sub-commands

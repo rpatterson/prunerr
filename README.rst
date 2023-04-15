@@ -257,10 +257,10 @@ automated but aren't by anything I could find.  So I added them to Prunerr as we
 .. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
-.. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/master/docker-compose.yml
+.. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/main/docker-compose.yml
 
 .. _`the example configuration`:
-   https://gitlab.com/rpatterson/prunerr/blob/master/src/prunerr/home/.config/prunerr.yml
+   https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/prunerr
@@ -268,4 +268,4 @@ automated but aren't by anything I could find.  So I added them to Prunerr as we
    https://github.com/rpatterson/prunerr
 
 .. _`the ./CONTRIBUTING.rst file`:
-   https://gitlab.com/rpatterson/prunerr/blob/master/CONTRIBUTING.rst
+   https://gitlab.com/rpatterson/prunerr/blob/main/CONTRIBUTING.rst

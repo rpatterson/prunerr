@@ -2,10 +2,10 @@
 
 # Stay as close to the end user image as possible for build cache efficiency.
 # Then add everything that might contribute to efficient development
-ARG PYTHON_MINOR=3.11
+ARG PYTHON_MINOR=3.10
 FROM python:${PYTHON_MINOR}
 
-ARG PYTHON_ENV=py311
+ARG PYTHON_ENV=py310
 ENV PYTHON_ENV="${PYTHON_ENV}"
 ARG VERSION=
 

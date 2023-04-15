@@ -16,30 +16,34 @@ services:
   radarr:
     container_name: "prunerr-devel-radarr"
 
-  ## Configuration specific to this checkout
+  # Configuration specific to development:
   prunerr-daemon:
+    image: "merpatterson/prunerr:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-daemon-checkout"
-    image: "merpatterson/prunerr:${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
     build:
       context: "${CHECKOUT_DIR}/"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
-        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
+        PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
       - "${CHECKOUT_DIR}/home/:/home/prunerr/"
 
-  ## Container for use by developers
+  ## Contianers used for development and release:
+
+  # Container for use by developers:
   prunerr-devel:
-    image: "merpatterson/prunerr:devel-${PYTHON_ENV:-py311}-${VCS_BRANCH:-develop}"
+    image: "merpatterson/prunerr:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-devel"
+    profiles:
+      - "test"
     build:
       context: "${CHECKOUT_DIR}/"
       dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
-        PYTHON_ENV: "${PYTHON_ENV:-py311}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
+        PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
@@ -57,23 +61,27 @@ services:
       - "${CHECKOUT_DIR}/home/:/home/prunerr/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/:/usr/local/src/prunerr/var/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/.tox/:/usr/local/src/prunerr/.tox/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py311}/prunerr.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
-
-  ## Contianers during development and release
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/:/usr/local/src/prunerr/var/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/:/usr/local/src/prunerr/.tox/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/prunerr.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
-    image: "hadolint/hadolint"
+    image: "ghcr.io/hadolint/hadolint"
+    profiles:
+      - "test"
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr/"
+    command: >-
+      hadolint "./Dockerfile"
 
   pandoc:
     image: "pandoc/core"
+    profiles:
+      - "release"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
@@ -87,6 +95,8 @@ services:
     depends_on:
       pandoc:
         condition: "service_completed_successfully"
+    profiles:
+      - "release"
     environment:
       TZ: "${TZ:-Etc/UTC}"
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
@@ -97,9 +107,23 @@ services:
       --file "/data/README.md" --short "prunerr foundation or template"
       --debug "merpatterson/prunerr"
 
-  ## Container for use by end users
+  gitlab-release-cli:
+    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    profiles:
+      - "release"
+    environment:
+      CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
+    volumes:
+      - "./:/usr/local/src/prunerr/"
+    working_dir: "/usr/local/src/prunerr/"
+
+  ## Containers related to CI/CD:
+
+  # The container in which CI/CD is run:
   build-host:
     image: "merpatterson/prunerr:build-host"
+    profiles:
+      - "ci"
     build: "${CHECKOUT_DIR}/build-host/"
     privileged: true
     volumes:
@@ -116,12 +140,17 @@ services:
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR}"
     command: >-
-      make -e build-docker test-docker build-bump release
+      make -e build-docker test-docker release
 
-  gitlab-release-cli:
-    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
-    environment:
-      CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
+  # Conserve shared runner minutes, run GitLab CI/CD jobs locally:
+  gitlab-runner:
+    image: "gitlab/gitlab-runner"
+    profiles:
+      - "ci"
     volumes:
-      - "./:/usr/local/src/prunerr/"
-    working_dir: "/usr/local/src/prunerr/"
+      - "./gitlab-runner/config:/etc/gitlab-runner"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./gitlab-runner/cache:/cache"
+      - "./gitlab-runner/certs:/certs"
+    ports:
+      - "8093:8093"

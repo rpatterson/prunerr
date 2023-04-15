@@ -2,56 +2,52 @@
 
 default:
   image:
-    name: "$CI_REGISTRY_IMAGE:build-host"
+    name: "$CI_TEMPLATE_REGISTRY_HOST/rpatterson/$CI_PROJECT_NAME:build-host"
     entrypoint:
       - "docker-entrypoint.sh"
   services:
     - "docker:dind"
   before_script:
     - "chown -R $PUID:$PGID ./"
-  cache:
-    # Increment `v#` in keys to clear those caches:
-    - key: "tox-$CI_COMMIT_REF_SLUG-v1"
-      paths:
-        - "./.tox"
-        - "./var/docker/*/.tox"
+  # TODO: Debug stale venv issues and restore cache once fixed
 
 variables:
-  # Secrets from the GitLab CI/CD Variables UI:
-  CODECOV_TOKEN: "$CODECOV_TOKEN"
-  DOCKER_PASS: "$DOCKER_PASS"
-  GPG_PASSPHRASE: "$GPG_PASSPHRASE"
-  GPG_SIGNING_PRIVATE_KEY: "$GPG_SIGNING_PRIVATE_KEY"
-  PYPI_PASSWORD: "$PYPI_PASSWORD"
-  TEST_PYPI_PASSWORD: "$TEST_PYPI_PASSWORD"
-  PROJECT_GITHUB_PAT: "$PROJECT_GITHUB_PAT"
-
   # Variables controlling behavior:
   PUID: "1001"
   PGID: "1001"
   DOCKER_IMAGE: "$CI_REGISTRY_IMAGE"
-
+  # Different variable name needed by the GitHub CLI:
+  GH_TOKEN: "$PROJECT_GITHUB_PAT"
   # Uncomment to get more debugging output:
   # DEBUG: "true"
 
 stages:
   - "build-test"
-  - "bump"
   - "release"
+  - "release-bump"
+  - "release-version"
   - "scheduled"
+  - "merge-upgrade"
 
 build-test:
   stage: "build-test"
   rules:
     - if: >-
-        $CI_COMMIT_TAG
-      when: "never"
-    - if: >-
-        (
-          $CI_COMMIT_REF_PROTECTED != "true" || $CI_COMMIT_TITLE !~
-          /^build\(release\): Version [0-9]\.[0-9]\.[0-9][a-z0-9-.]* → [0-9]\.[0-9]\.[0-9][a-z0-9-.]*$/
+        $CI_COMMIT_BRANCH != null
+        && (
+          $CI_COMMIT_BRANCH !~ /^(develop|main)$/
+          || (
+            $CI_COMMIT_BRANCH == "develop"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+[^0-9].+$/
+          ) || (
+            $CI_COMMIT_BRANCH == "main"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
+          )
         )
         && $CI_PIPELINE_SOURCE != "schedule"
+  interruptible: true
   parallel:
     matrix:
       - PYTHON_MINORS:
@@ -63,8 +59,10 @@ build-test:
   script:
     # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
-      entrypoint make -e build-docker-$PYTHON_MINORS test-docker-$PYTHON_MINORS
-      release-docker-$PYTHON_MINORS check-clean
+      entrypoint make -e test-push
+      build-docker-$PYTHON_MINORS
+      test-docker-$PYTHON_MINORS
+      release-docker-$PYTHON_MINORS test-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:
@@ -76,7 +74,6 @@ build-test:
       - "./build/py*/htmlcov"
       - "./build/py*/prospector*"
       - "./build/py*/pylint*"
-      - "./dist/prunerr-*"
     reports:
       junit:
         - "./build/py*/pytest-junit.xml"
@@ -85,43 +82,82 @@ build-test:
         coverage_format: "cobertura"
         path: "./build/py*/coverage.xml"
 
-bump:
-  stage: "bump"
+release:
+  stage: "release"
+  needs: ["build-test"]
+  # Avoid unnecessary artifact downloads:
+  # https://docs.gitlab.com/ee/ci/yaml/#dependencies
+  dependencies: []
+  variables:
+    DOCKER_BUILD_PULL: "true"
+  rules:
+    - if: >-
+        (
+          (
+            $CI_COMMIT_BRANCH == "develop"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+[^0-9].+$/
+          ) || (
+            $CI_COMMIT_BRANCH == "main"
+            && $CI_COMMIT_TITLE =~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
+          )
+        )
+        && $CI_PROJECT_NAMESPACE == "rpatterson"
+  script:
+    - >-
+      entrypoint make -e release-python test-clean
+  artifacts:
+    paths:
+      - "./dist/prunerr-*"
+
+merge-upgrade:
+  stage: "merge-upgrade"
   needs: ["build-test"]
   rules:
     - if: >-
-        $CI_COMMIT_TAG
-      when: "never"
+        $CI_COMMIT_BRANCH =~ /^.+-upgrade$/
+  script:
+    - >-
+      entrypoint make -e VCS_BRANCH_SUFFIX="upgrade" devel-merge
+
+release-bump:
+  stage: "release-bump"
+  needs: []
+  dependencies: []
+  variables:
+    DOCKER_BUILD_PULL: "true"
+  rules:
     - if: >-
         (
-          $CI_COMMIT_REF_PROTECTED == "true" && $CI_COMMIT_TITLE !~
-          /^build(release): Version [0-9].[0-9].[0-9][a-z0-9-.]* → [0-9].[0-9].[0-9][a-z0-9-.]*$/
+          (
+            $CI_COMMIT_BRANCH == "main"
+            && $CI_COMMIT_TITLE !~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
+          ) || (
+            $CI_COMMIT_BRANCH == "develop"
+            && $CI_COMMIT_TITLE !~
+        /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9].*$/
+          )
         )
         && $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false build-bump check-clean
-  artifacts:
-    paths:
-      # TODO: GitLab CI/CD issues a warning when not on `develop` or `master` because it
-      # isn't actually used, IOW this is an expected condition on feature branches:
-      #     WARNING: ./NEWS-release.rst: no matching files. Ensure that the artifact path is relative to the working directory
-      # Is there a way to make paths conditional?
-      - "./NEWS-release.rst"
-      - "./dist/prunerr-*"
+      entrypoint make -e release-bump
 
-release:
-  stage: "release"
+# Workaround GitLab's handling of pipeline status when pushing both a branch and a tag:
+release-version:
+  stage: "release-version"
+  needs: []
+  dependencies: []
   rules:
     - if: >-
-        $CI_COMMIT_REF_PROTECTED == "true" &&
-        $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9][a-z0-9-.]*/
+        $CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+.*$/
+  inherit:
+    default: false
   script:
     - >-
-      entrypoint make -e BUILD_REQUIREMENTS=false release-python check-clean
-  artifacts:
-    paths:
-      - "./dist/prunerr-*"
+      true
 
 scheduled:
   stage: "scheduled"

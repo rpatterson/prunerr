@@ -4,13 +4,13 @@
 #
 #    pip-compile --output-file=requirements/py38/user.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==2.0.0
+argcomplete==3.0.5
     # via prunerr (pyproject.toml)
 arrapi==1.4.2
     # via prunerr (pyproject.toml)
 certifi==2022.12.7
     # via requests
-charset-normalizer==3.0.1
+charset-normalizer==3.1.0
     # via requests
 cli-exit-tools==1.2.3.2
     # via
@@ -41,9 +41,9 @@ six==1.16.0
     # via main-wrapper
 tenacity==8.2.2
     # via prunerr (pyproject.toml)
-transmission-rpc==3.4.1
+transmission-rpc==3.4.2
     # via prunerr (pyproject.toml)
 typing-extensions==4.5.0
     # via transmission-rpc
-urllib3==1.26.14
+urllib3==1.26.15
     # via requests

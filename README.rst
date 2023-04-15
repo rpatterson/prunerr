@@ -1,8 +1,8 @@
-##################################
+########################################################################################
 Prunerr
-##################################
+########################################################################################
 Perma-seed Servarr media libraries
-**********************************
+****************************************************************************************
 
 .. list-table::
    :class: borderless align-right
@@ -23,12 +23,12 @@ Perma-seed Servarr media libraries
      - .. figure:: https://gitlab.com/rpatterson/prunerr/-/badges/release.svg
 	  :alt: GitLab latest release
 	  :target: https://gitlab.com/rpatterson/prunerr/-/releases
-       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/master/pipeline.svg
+       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/main/pipeline.svg
           :alt: GitLab CI/CD pipeline status
-          :target: https://gitlab.com/rpatterson/prunerr/-/commits/master
-       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/master/coverage.svg
+          :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
+       .. figure:: https://gitlab.com/rpatterson/prunerr/badges/main/coverage.svg
           :alt: GitLab coverage report
-	  :target: https://gitlab.com/rpatterson/prunerr/-/commits/master
+	  :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
        .. figure:: https://img.shields.io/gitlab/stars/rpatterson/prunerr?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
 	  :alt: GitLab repo stars
 	  :target: https://gitlab.com/rpatterson/prunerr
@@ -36,17 +36,17 @@ Perma-seed Servarr media libraries
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/prunerr?logo=github
 	  :alt: GitHub release (latest SemVer)
 	  :target: https://github.com/rpatterson/prunerr/releases
-       .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/ci-cd.yml/badge.svg
+       .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
-          :target: https://github.com/rpatterson/prunerr/
-       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/master/graph/badge.svg?token=GNKVQ8VYOU 
+          :target: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml
+       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
 	  :target: https://codecov.io/github/rpatterson/prunerr
        .. figure:: https://img.shields.io/github/stars/rpatterson/prunerr?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/prunerr/
 
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr?sort=semver&logo=docker
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr/main?sort=semver&logo=docker
           :alt: Docker Hub image version (latest semver)
           :target: https://hub.docker.com/r/merpatterson/prunerr
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/prunerr?logo=docker
@@ -104,31 +104,24 @@ other means, e.g. `FlexGet`_.
 
 See the `Usage`_ section below for full details.
 
-Do not use the ``develop`` or ``master`` branches in your project as those branches are
-used to test the CI/CD automatic releases process and as such contain bumped versions,
-release notes, and other release artifacts that shouldn't be merged into real projects.
-On that same note, when adding this template as a remote be sure to configure it with
-``$ git config remote.template.tagOpt --no-tags`` to avoid clashing VCS versions in your
-project.
 
-
-************
+****************************************************************************************
 Installation
-************
+****************************************************************************************
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
   $ sudo pip3 install prunerr
 
+Optional shell tab completion is available via `argcomplete`_.
+
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
 details.
 
-Optional shell tab completion is available via `argcomplete`_.
 
-
-*****
+****************************************************************************************
 Usage
-*****
+****************************************************************************************
 
 Start by writing your ``~/.config/prunerr.yml`` configuration file.  See the comments in
 `the example configuration`_ for details.
@@ -221,9 +214,9 @@ sub-command performs the following operations.
    item's indexer.
 
 
-************
+****************************************************************************************
 CONTRIBUTING
-************
+****************************************************************************************
 
 NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
 GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
@@ -233,9 +226,9 @@ See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
 development.
 
 
-**********
+****************************************************************************************
 Motivation
-**********
+****************************************************************************************
 
 I didn't like the available options I could find at the time for maximizing seeding from
 a lovingly managed media library.  Deleting by a ratio threshold doesn't make sense to

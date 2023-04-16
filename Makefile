@@ -877,7 +877,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	then
 	    remote_branch_exists=true
 	fi
-	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -887,11 +887,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
-	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
+	    >"./src/pythonprojectstructure/newsfragments/\
+	+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add \
-	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
+	    "./src/pythonprojectstructure/newsfragments/\
+	+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)
 # Don't duplicate the CI run from the push below:

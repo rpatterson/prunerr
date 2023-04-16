@@ -394,7 +394,7 @@ devel-upgrade:
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -404,11 +404,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
-	    >"./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
+	    >"./src/pythonprojectstructure/newsfragments/\
+	+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add \
-	    "./src/pythonprojectstructure/newsfragments/upgrade-requirements.bugfix.rst"
+	    "./src/pythonprojectstructure/newsfragments/\
+	+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS

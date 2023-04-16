@@ -72,6 +72,25 @@ Nice to Have
 
 #. Fix items with character mapping (Samba) treated as orphans.
 
+#. Use real item data from the actual tracker:
+
+   Currently, we use ``seconds_downloading`` to estimate seeding time and in turn
+   approximate tracker "hit 'n run" (HnR) rules.  It turns out Transmission provides no
+   reliable way to calculate seeding time and even if it did, that's still not the same
+   quantity as seen by the tracker.  This also turns out to be consequential in real
+   world usage.  Not often, but regularly, I observe Prunerr deleting items that then
+   show up as an HnR in the tracker even though my ``seconds_downloading`` includes a
+   full day's worth of margin.
+
+   To this end, and likely others, it would be nice to have a way to access real tracker
+   data in the Prunerr operations configurations.  This should be implemented in an
+   external library or service and used in Prunerr, like multiple download client
+   support above.  For widely used tracker software, e.g. Gazelle, it may be acceptable
+   to have less configurable pre-sets, but it should definitely include a highly
+   configurable approach as well given the prevalence of patched forks, customized UI,
+   etc..  It should include generalized support for configuring how to scrape data from
+   HTML, probably using XPaths.
+
 
 .. _`Transmission`: https://transmissionbt.com/
 .. _`it seems to be the best`: https://www.reddit.com/r/DataHoarder/comments/3ve1oz/torrent_client_that_can_handle_lots_of_torrents/

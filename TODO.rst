@@ -74,6 +74,5 @@ Nice to Have
 
 
 .. _`Transmission`: https://transmissionbt.com/
-.. _`Python RPC client library`: https://transmission-rpc.readthedocs.io/en/v3.2.6/
 .. _`it seems to be the best`: https://www.reddit.com/r/DataHoarder/comments/3ve1oz/torrent_client_that_can_handle_lots_of_torrents/
 .. _`managing large numbers of torrents efficiently`: https://www.reddit.com/r/trackers/comments/3hiey5/does_anyone_here_seed_large_amounts_10000_of/

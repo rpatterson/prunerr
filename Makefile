@@ -269,6 +269,11 @@ GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
 CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
 USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
+ifneq ($(VCS_BRANCH),develop)
+ifneq ($(VCS_BRANCH),main)
+DOCKER_REGISTRIES=GITLAB
+endif
+endif
 ifneq ($(CI_PROJECT_NAMESPACE),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_REGISTRIES=GITLAB
@@ -276,6 +281,11 @@ DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJEC
 endif
 else ifeq ($(GITHUB_ACTIONS),true)
 USER_EMAIL=$(USER_NAME)@actions.github.com
+ifneq ($(VCS_BRANCH),develop)
+ifneq ($(VCS_BRANCH),main)
+DOCKER_REGISTRIES=GITHUB
+endif
+endif
 ifneq ($(GITHUB_REPOSITORY_OWNER),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_REGISTRIES=GITHUB
@@ -711,10 +721,12 @@ $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-logi
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(DOCKER_REGISTRIES:%=release-docker-registry-%)
+ifeq ($(VCS_BRANCH),main)
 ifeq ($${PYTHON_ENV},$(PYTHON_HOST_ENV))
 	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull pandoc docker-pushrm
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+endif
 endif
 
 .PHONY: $(DOCKER_REGISTRIES:%=release-docker-registry-%)
@@ -871,7 +883,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	then
 	    remote_branch_exists=true
 	fi
-	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_REMOTE)/$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
 	now=$$(date -u)
 	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -881,11 +893,10 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
-	    >"./src/prunerr/newsfragments/upgrade-requirements.bugfix.rst"
+	    >"./src/prunerr/newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
-	git add \
-	    "./src/prunerr/newsfragments/upgrade-requirements.bugfix.rst"
+	git add "./src/prunerr/newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)
 # Don't duplicate the CI run from the push below:
@@ -1420,7 +1431,7 @@ endif
 	date | tee -a "$(@)"
 endif
 
-./gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
+./var/gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
 	docker compose run --rm gitlab-runner register \
 	    --url "https://gitlab.com/" --docker-image "docker" --executor "docker"
 

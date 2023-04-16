@@ -10,7 +10,7 @@ prunerr 1.1.0b27 (2023-04-15)
 Bugfixes
 --------
 
-- Upgrade all requirements to the latest versions as of Sat Apr 15 06:11:17 PM UTC 2023. (upgrade-requirements)
+- Upgrade all requirements to the latest versions as of Sat Apr 15 06:11:17 PM UTC 2023.
 
 
 prunerr 1.1.0b26 (2023-04-14)
@@ -31,7 +31,7 @@ prunerr 1.1.0b24 (2023-04-11)
 Bugfixes
 --------
 
-- Upgrade all requirements to the latest versions as of Tue Apr 11 08:15:25 PM UTC 2023. (upgrade-requirements)
+- Upgrade all requirements to the latest versions as of Tue Apr 11 08:15:25 PM UTC 2023.
 
 
 prunerr 1.1.0b23 (2023-04-10)
@@ -40,7 +40,7 @@ prunerr 1.1.0b23 (2023-04-10)
 Bugfixes
 --------
 
-- Upgrade all requirements to the latest versions as of Sun Apr  9 11:19:15 PM UTC 2023. (upgrade-requirements)
+- Upgrade all requirements to the latest versions as of Sun Apr  9 11:19:15 PM UTC 2023.
 
 
 Prunerr 1.1.0b22 (2023-03-01)
@@ -49,14 +49,14 @@ Prunerr 1.1.0b22 (2023-03-01)
 Features
 --------
 
-- Reduce memory consumption by clearing cached download client and Servarr data. (daemon-loop-memory)
+- Reduce memory consumption by clearing cached download client and Servarr data.
 
 
 Bugfixes
 --------
 
-- Workaround incorrect timestamps causing ``ZeroDivisionError`` while reviewing items. (incorrect-timestamps)
-- Also verify running items with the correct error, not just paused/stopped items. (verify-running)
+- Workaround incorrect timestamps causing ``ZeroDivisionError`` while reviewing items.
+- Also verify running items with the correct error, not just paused/stopped items.
 
 
 Misc
@@ -140,7 +140,7 @@ Prunerr 1.1.0b11 (2023-02-21)
 Features
 --------
 
-- Support all currently maintained versions of Python. (python-versions)
+- Support all currently maintained versions of Python.
 
 
 Prunerr 1.1.0b10 (2023-01-27)
@@ -179,7 +179,7 @@ Prunerr 1.1.0b5 (2022-12-20)
 Bugfixes
 --------
 
-- Expand which error strings are used to identify unregistered download items. (unregistered-unrecognized-error)
+- Expand which error strings are used to identify unregistered download items.
 
 
 Prunerr 1.1.0b4 (2022-12-19)
@@ -194,7 +194,7 @@ Prunerr 1.1.0b3 (2022-12-18)
 Features
 --------
 
-- Return CLI results as JSON. (json-results)
+- Return CLI results as JSON.
 
 
 Prunerr 1.1.0b2 (2022-12-18)
@@ -215,13 +215,13 @@ Prunerr 1.1.0b0 (2022-12-16)
 Features
 --------
 
-- Add ``--log-level`` CLI option to give the user more control over output verbosity. (cli-log-level)
+- Add ``--log-level`` CLI option to give the user more control over output verbosity.
 
 
 Bugfixes
 --------
 
-- Don't report ``review`` results from the ``exec`` sub-command when there are none. (review-empty-results)
+- Don't report ``review`` results from the ``exec`` sub-command when there are none.
 
 
 Prunerr 1.0.0 (2022-12-13)
@@ -248,4 +248,4 @@ Prunerr 1.0.0b2 (2022-12-12)
 Features
 --------
 
-- First official release that may be suitable for end users. (first-release)
+- First official release that may be suitable for end users.

@@ -236,10 +236,10 @@ me because that can delete items when there's plenty of disk space.  Also the ra
 threshold is a reverse indicator for items from private indexers vs items from public
 indexers.  Items from private indexers with high ratios should be kept around as long as
 possible to build user total ratio whereas items from public indexers with low ratios
-should be kept around as long as possibility to preserve access in the
-community/ecosystem.  Finally, deleting any item still imported in the Servarr just
-because it hit the ratio threshold is the biggest waste since it doesn't free any space.
-So I wrote Prunerr to prune download items in the correct order.
+should be kept around as long as possible to preserve access in the community/ecosystem.
+Finally, deleting any item still imported in the Servarr just because it hit the ratio
+threshold is the biggest waste since it doesn't free any space.  So I wrote Prunerr to
+prune download items in the correct order.
 
 Finally, there is a laundry list of other download client management tasks that can be
 automated but aren't by anything I could find.  So I added them to Prunerr as well.

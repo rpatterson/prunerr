@@ -804,7 +804,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	        "./var/log/tox/$(PYTHON_ENV)/build.log"
 	    exit
 	fi
-else
+endif
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -831,7 +831,6 @@ ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
-endif
 endif
 
 # Build the end-user image:

@@ -151,12 +151,31 @@ should go straight to final release.  For example they may decide that:
 Installation
 ****************************************************************************************
 
+Install and use either via a local, native installation or a Docker container image:
+
+Local/Native Installation
+========================================================================================
+
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
   $ pip3 install --user python-project-structure
 
-Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
-details.
+Docker Container Image Installation
+========================================================================================
+
+The recommended way to use the Docker container image is via `Docker Compose`_.  See
+`the example ./docker-compose.yml file`_ for an example configuration.  Once you have
+your configuration, you can create and run the container::
+
+  $ docker compose up
+
+Alternatively, you make use the image directly.  Pull `the Docker image`_::
+
+  $ docker pull "docker.io/merpatterson/python-project-structure"
+
+And then use the image to create and run a container::
+
+  $ docker run --rm -it "docker.io/merpatterson/python-project-structure" ...
 
 
 ****************************************************************************************
@@ -205,6 +224,7 @@ template.
 .. _`a mirror on GitHub`:
    https://github.com/rpatterson/python-project-structure
 .. _`Docker`: https://docs.docker.com/
+.. _`Docker Compose`: https://docs.docker.com/compose/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
 
 .. _Makefile: ./Makefile

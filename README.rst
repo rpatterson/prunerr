@@ -33,6 +33,20 @@ Python project structure foundation or template
 	  :alt: Docker Hub image size (latest semver)
           :target: https://hub.docker.com/r/merpatterson/python-project-structure
 
+     - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
+          :alt: KeyBase PGP key ID
+          :target: https://keybase.io/rpatterson
+       .. figure:: https://img.shields.io/github/followers/rpatterson?style=social
+          :alt: GitHub followers count
+          :target: https://github.com/rpatterson
+       .. figure:: https://img.shields.io/liberapay/receives/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay donated per week
+          :target: https://liberapay.com/rpatterson/donate
+       .. figure:: https://img.shields.io/liberapay/patrons/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay patrons count
+          :target: https://liberapay.com/rpatterson/donate
+
+
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
 software projects.  It includes:
 
@@ -48,6 +62,8 @@ projects (e.g. CLI scripts, web development, etc.), frameworks (e.g. Flask, Pyra
 Django, etc.), libraries and such, branches will be used for each such variation such
 that structure common to different variations can be merged back into the branches for
 those specific variations.
+
+.. contents:: Table of Contents
 
 
 ****************************************************************************************
@@ -137,14 +153,14 @@ Installation
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
-  $ sudo pip3 install python-project-structure
+  $ pip3 install --user python-project-structure
 
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
 details.
 
 
 ****************************************************************************************
-CONTRIBUTING
+Contributing
 ****************************************************************************************
 
 NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use

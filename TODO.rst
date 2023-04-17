@@ -38,8 +38,6 @@ Nice to Have
 #. Better release notes content for final releases with no changes since the last
    pre-release.
 
-#. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
-
 #. `Docker image build-time LABEL's
    <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::
 

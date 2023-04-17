@@ -120,7 +120,7 @@ Installation
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
-  $ sudo pip3 install python-project-structure
+  $ pip3 install --user python-project-structure
 
 
 ****************************************************************************************

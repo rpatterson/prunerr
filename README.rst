@@ -49,6 +49,8 @@ Django, etc.), libraries and such, branches will be used for each such variation
 that structure common to different variations can be merged back into the branches for
 those specific variations.
 
+.. contents:: Table of Contents
+
 
 ****************************************************************************************
 Template Usage

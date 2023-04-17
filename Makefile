@@ -561,9 +561,7 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 	fi
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --no-deps $${docker_run_args} python-project-structure \
-	    python -m pythonprojectstructure --help
-	docker compose run --no-deps $${docker_run_args} python-project-structure \
-	    python-project-structure --help
+	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \

@@ -4,8 +4,6 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py37/devel.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==3.0.5
-    # via python-project-structure (pyproject.toml)
 astroid==2.15.2
     # via
     #   pylint
@@ -74,7 +72,6 @@ idna==3.4
     # via requests
 importlib-metadata==4.13.0
     # via
-    #   argcomplete
     #   build
     #   click
     #   pluggy

@@ -63,7 +63,6 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- Command-line console script with sub-command boilerplate
 - A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development
 - Targets/recipes in the `Makefile`_ to automate releases
@@ -99,23 +98,14 @@ figure it out and submit a PR with corrections to this section.
      Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
-   - ``cli``:
-
-     The above plus support for project's that provide an executable CLI.
-
    - ``docker``:
 
-     The ``dist`` branch plus Docker containers for both development and
-     end-users/deployments.
+     The above plus Docker containers for both development and end-users/deployments.
 
    - ``ci``:
 
      The above plus GitLab CI/CD pipelines that run tests and linters as CI and
      publish releases from ``develop`` and ``main`` as CD.
-
-   - ``ci-cli``:
-
-     The above plus the ``cli`` branch.
 
    - etc.
 
@@ -128,7 +118,7 @@ figure it out and submit a PR with corrections to this section.
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "ci-cli" \
+     $ git clone --origin "template" --branch "ci" \
      "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git config remote.template.tagOpt --no-tags
@@ -141,7 +131,7 @@ figure it out and submit a PR with corrections to this section.
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/python-project-structure.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git merge --allow-unrelated-histories "template/ci-cli"
+     $ git merge --allow-unrelated-histories "template/ci"
 
 #. Rename file and directory paths derived from the project name::
 
@@ -189,24 +179,8 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
   $ sudo pip3 install python-project-structure
 
-Optional shell tab completion is available via `argcomplete`_.
-
 Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
 details.
-
-
-****************************************************************************************
-Usage
-****************************************************************************************
-
-See the command-line help for details on options and arguments::
-
-  $ usage: python-project-structure [-h]
-
-  Python project structure foundation or template, top-level package.
-
-  optional arguments:
-    -h, --help  show this help message and exit
 
 
 ****************************************************************************************
@@ -249,7 +223,6 @@ template.
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installation/
-.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/python-project-structure

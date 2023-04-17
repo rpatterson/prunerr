@@ -151,7 +151,8 @@ Usage
 
 See the command-line help for details on options and arguments::
 
-  $ usage: python-project-structure [-h]
+  $ python-project-structure --help
+  usage: python-project-structure [-h]
 
   Python project structure foundation or template, top-level package.
 

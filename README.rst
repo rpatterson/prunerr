@@ -137,7 +137,7 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
 
 ****************************************************************************************
-CONTRIBUTING
+Contributing
 ****************************************************************************************
 
 NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use

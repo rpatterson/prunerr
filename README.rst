@@ -241,6 +241,10 @@ Finally, deleting any item still imported in the Servarr just because it hit the
 threshold is the biggest waste since it doesn't free any space.  So I wrote Prunerr to
 prune download items in the correct order.
 
+The use case for Prunerr is not tracker ratio racing.  It's goal it to seed as long as
+possible and to seed as much of your library as possible.  This should have some
+secondary benefits to ratio, but that's not the main goal.
+
 Finally, there is a laundry list of other download client management tasks that can be
 automated but aren't by anything I could find.  So I added them to Prunerr as well.
 

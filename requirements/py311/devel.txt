@@ -6,7 +6,7 @@
 #
 argcomplete==3.0.5
     # via python-project-structure (pyproject.toml)
-astroid==2.15.2
+astroid==2.15.3
     # via
     #   pylint
     #   pylint-celery

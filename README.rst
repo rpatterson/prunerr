@@ -20,6 +20,19 @@ Python project structure foundation or template
           :alt: Python code style
           :target: https://github.com/psf/black
 
+     - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
+          :alt: KeyBase PGP key ID
+          :target: https://keybase.io/rpatterson
+       .. figure:: https://img.shields.io/github/followers/rpatterson?style=social
+          :alt: GitHub followers count
+          :target: https://github.com/rpatterson
+       .. figure:: https://img.shields.io/liberapay/receives/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay donated per week
+          :target: https://liberapay.com/rpatterson/donate
+       .. figure:: https://img.shields.io/liberapay/patrons/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay patrons count
+          :target: https://liberapay.com/rpatterson/donate
+
 
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
 software projects.  It includes:

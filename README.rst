@@ -250,6 +250,17 @@ See the command-line help for details on options and arguments::
   optional arguments:
     -h, --help  show this help message and exit
 
+If using the Docker container image, the container can be run from the command-line as
+well::
+
+  $ docker compose run "python-project-structure" python-project-structure --help
+  usage: python-project-structure [-h]
+
+  Python project structure foundation or template, top-level package.
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
 
 ****************************************************************************************
 Contributing

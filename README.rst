@@ -183,6 +183,9 @@ The Docker images support the following platforms or architectures:
 - ``linux/arm64``
 - ``linux/arm/v7``
 
+Images are tagged with the branch name so images tagged with ``main`` are final releases
+and images tagged with ``develop`` are pre-releases.
+
 
 ****************************************************************************************
 Contributing

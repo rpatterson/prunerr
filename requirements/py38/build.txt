@@ -30,13 +30,13 @@ distlib==0.3.6
     # via virtualenv
 docutils==0.19
     # via readme-renderer
-filelock==3.11.0
+filelock==3.12.0
     # via virtualenv
 identify==2.5.22
     # via pre-commit
 idna==3.4
     # via requests
-importlib-metadata==6.4.1
+importlib-metadata==6.5.0
     # via
     #   keyring
     #   twine
@@ -74,7 +74,7 @@ prompt-toolkit==3.0.38
     # via questionary
 pycparser==2.21
     # via cffi
-pygments==2.15.0
+pygments==2.15.1
     # via
     #   readme-renderer
     #   rich

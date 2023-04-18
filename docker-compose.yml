@@ -68,7 +68,7 @@ services:
 
   ## Container for use by end users:
   prunerr-daemon:
-    image: "merpatterson/prunerr"
+    image: "registry.gitlab.com/rpatterson/prunerr"
     container_name: "prunerr-daemon"
     depends_on:
       - "transmission"

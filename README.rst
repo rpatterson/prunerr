@@ -59,6 +59,20 @@ Perma-seed Servarr media libraries
 	  :alt: Docker Hub image size (latest semver)
           :target: https://hub.docker.com/r/merpatterson/prunerr
 
+     - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
+          :alt: KeyBase PGP key ID
+          :target: https://keybase.io/rpatterson
+       .. figure:: https://img.shields.io/github/followers/rpatterson?style=social
+          :alt: GitHub followers count
+          :target: https://github.com/rpatterson
+       .. figure:: https://img.shields.io/liberapay/receives/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay donated per week
+          :target: https://liberapay.com/rpatterson/donate
+       .. figure:: https://img.shields.io/liberapay/patrons/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay patrons count
+          :target: https://liberapay.com/rpatterson/donate
+
+
 TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 
 - Delete torrents/items only as disk space gets low.
@@ -67,6 +81,8 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 - Delete public items first
 - Delete private items in an order to maximize tracker ratio and/or bonuses.
 - And more...
+
+.. contents:: Table of Contents
 
 *******
 Summary
@@ -109,14 +125,42 @@ See the `Usage`_ section below for full details.
 Installation
 ****************************************************************************************
 
+Install and use either via a local, native installation or a Docker container image:
+
+Local/Native Installation
+========================================================================================
+
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
-  $ sudo pip3 install prunerr
+  $ pip3 install --user prunerr
 
 Optional shell tab completion is available via `argcomplete`_.
 
-Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
-details.
+Docker Container Image Installation
+========================================================================================
+
+The recommended way to use the Docker container image is via `Docker Compose`_.  See
+`the example ./docker-compose.yml file`_ for an example configuration.  Once you have
+your configuration, you can create and run the container::
+
+  $ docker compose up
+
+Alternatively, you make use the image directly.  Pull `the Docker image`_::
+
+  $ docker pull "docker.io/merpatterson/prunerr"
+
+And then use the image to create and run a container::
+
+  $ docker run --rm -it "docker.io/merpatterson/prunerr" ...
+
+The Docker images support the following platforms or architectures:
+
+- ``linux/amd64``
+- ``linux/arm64``
+- ``linux/arm/v7``
+
+Images are tagged with the branch name so images tagged with ``main`` are final releases
+and images tagged with ``develop`` are pre-releases.
 
 
 ****************************************************************************************
@@ -135,10 +179,10 @@ sub-commands and to get help on the individual sub-commands::
   $ prunerr --help
   $ prunerr exec --help
 
-Set the ``DEBUG`` environment variable to ``true`` to get verbose details and help
-understand what Prunerr is doing::
+If using the Docker container image, the container can be run from the command-line as
+well::
 
-  $ DEBUG=true prunerr exec
+  $ docker compose run "prunerr" prunerr --help
 
 
 *******************
@@ -215,7 +259,7 @@ sub-command performs the following operations.
 
 
 ****************************************************************************************
-CONTRIBUTING
+Contributing
 ****************************************************************************************
 
 NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
@@ -261,6 +305,7 @@ automated but aren't by anything I could find.  So I added them to Prunerr as we
 .. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
+.. _`Docker Compose`: https://docs.docker.com/compose/
 .. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/main/docker-compose.yml
 
 .. _`the example configuration`:

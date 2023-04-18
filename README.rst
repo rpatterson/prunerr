@@ -177,6 +177,12 @@ And then use the image to create and run a container::
 
   $ docker run --rm -it "docker.io/merpatterson/python-project-structure" ...
 
+The Docker images support the following platforms or architectures:
+
+- ``linux/amd64``
+- ``linux/arm64``
+- ``linux/arm/v7``
+
 
 ****************************************************************************************
 Contributing

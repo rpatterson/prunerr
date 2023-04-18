@@ -1225,11 +1225,8 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	mkdir -pv "$(dir $(@))"
-	docker buildx create --name "python-project-structure-builder" \
-	    --driver "docker-container" --bootstrap "default" |& tee -a "$(@)"
-	docker buildx use "python-project-structure-builder" |& tee -a "$(@)"
-	docker run --privileged --rm "tonistiigi/binfmt" --install "all" |&
-	    tee -a "$(@)"
+	docker context create "multi-platform" |& tee -a "$(@)"
+	docker buildx create --use "multi-platform" |& tee -a "$(@)"
 
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"

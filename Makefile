@@ -175,7 +175,30 @@ TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
-# Values used to build Docker images and run containers:
+# Values used to build Docker images:
+# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
+# image.  These default platforms should cover most common end-user platforms, including
+# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
+DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
+DOCKER_BUILD_ARGS=
+export DOCKER_BUILD_PULL=false
+# Values used to tag built images:
+export DOCKER_VARIANT=
+DOCKER_VARIANT_PREFIX=
+ifneq ($(DOCKER_VARIANT),)
+DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
+endif
+export DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
+DOCKER_REGISTRIES=DOCKER
+export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
+DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/python-project-structure
+DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
+# Values used to run built images in containers:
+DOCKER_VOLUMES=\
+./var/docker/$(PYTHON_ENV)/ \
+./src/python_project_structure.egg-info/ \
+./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
+./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
 DOCKER_COMPOSE_RUN_ARGS=
 DOCKER_COMPOSE_RUN_ARGS+= --rm
 ifneq ($(CI),true)
@@ -184,27 +207,6 @@ endif
 ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
 endif
-DOCKER_BUILD_ARGS=
-DOCKER_REGISTRIES=DOCKER
-export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
-DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/python-project-structure
-DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
-export DOCKER_VARIANT=
-DOCKER_VARIANT_PREFIX=
-ifneq ($(DOCKER_VARIANT),)
-DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
-endif
-export DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
-# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
-# image.  These default platforms should cover most common end-user platforms, including
-# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
-DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
-DOCKER_VOLUMES=\
-./var/docker/$(PYTHON_ENV)/ \
-./src/python_project_structure.egg-info/ \
-./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
-./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
-export DOCKER_BUILD_PULL=false
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official

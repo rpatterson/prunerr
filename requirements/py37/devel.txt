@@ -151,7 +151,7 @@ pyflakes==2.5.0
     #   autoflake
     #   flake8
     #   prospector
-pygments==2.15.0
+pygments==2.15.1
     # via
     #   pyroma
     #   rich
@@ -236,7 +236,7 @@ tomlkit==0.11.7
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
-trove-classifiers==2023.3.9
+trove-classifiers==2023.4.18
     # via pyroma
 typed-ast==1.5.4
     # via

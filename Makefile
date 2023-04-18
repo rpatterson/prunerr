@@ -630,7 +630,9 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR) ./var/log/codecov-install.log
 	fi
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --no-deps $${docker_run_args} project-structure \
-	    python -c 'import projectstructure; print(projectstructure)'
+	    python -m projectstructure --help
+	docker compose run --no-deps $${docker_run_args} project-structure \
+	    project-structure --help
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \

@@ -18,7 +18,7 @@ import unittest
 import projectstructure
 
 
-class ProjectstructureCLITests(unittest.TestCase):
+class ProjectStructureCLITests(unittest.TestCase):
     """
     Test the project-structure Command-Line Interface.
     """

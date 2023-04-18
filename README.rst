@@ -81,6 +81,7 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
+- Command-line console script with sub-command boilerplate
 - A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development in which tests are run
 - A `Makefile`_ target to format all Python code, including using `Black`_ for style
@@ -127,14 +128,23 @@ figure it out and submit a PR with corrections to this section.
      Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
+   - ``cli``:
+
+     The above plus support for project's that provide an executable CLI.
+
    - ``docker``:
 
-     The above plus Docker containers for both development and end-users/deployments.
+     The ``dist`` branch plus Docker containers for both development and
+     end-users/deployments.
 
    - ``ci``:
 
      The above plus GitLab CI/CD pipelines that run tests and linters as CI and
      publish releases from ``develop`` and ``main`` as CD.
+
+   - ``ci-cli``:
+
+     The above plus the ``cli`` branch.
 
    - etc.
 
@@ -210,6 +220,8 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
   $ pip3 install --user project-structure
 
+Optional shell tab completion is available via `argcomplete`_.
+
 Docker Container Image Installation
 ========================================================================================
 
@@ -244,6 +256,21 @@ platforms or architectures in the Python 3.10 ``py310`` variant:
 - ``linux/amd64``
 - ``linux/arm64``
 - ``linux/arm/v7``
+
+
+****************************************************************************************
+Usage
+****************************************************************************************
+
+See the command-line help for details on options and arguments::
+
+  $ project-structure --help
+  usage: project-structure [-h]
+
+  Project structure foundation or template, top-level package.
+
+  optional arguments:
+    -h, --help  show this help message and exit
 
 
 ****************************************************************************************
@@ -290,6 +317,7 @@ template.
 .. _`Prospector`: https://prospector.landscape.io
 .. _`Tox`: https://tox.wiki
 .. _`Towncrier`: https://towncrier.readthedocs.io
+.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`conventional commits`: https://www.conventionalcommits.org
 

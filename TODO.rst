@@ -33,10 +33,11 @@ Nice to Have
 
 #. New branches for different frameworks, e.g.: Flask, Pyramid, Django
 
+#. Avoid Docker Hub pull limits using `GitLab's Dependency Proxy
+   <https://docs.gitlab.com/ee/user/packages/dependency_proxy/#use-the-dependency-proxy-for-docker-images>`_.
+
 #. Better release notes content for final releases with no changes since the last
    pre-release.
-
-#. `Accept project donations <https://itsfoss.com/open-source-funding-platforms/>`_.
 
 #. Container image variants: e.g. slim/alpine
 

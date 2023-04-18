@@ -60,9 +60,6 @@ max-line-length = "88"
 # Workaround Prospector bug with PyLint:
 # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
 disable = ["relative-beyond-top-level"]
-[[tool.mypy.overrides]]
-module = ["argcomplete"]
-ignore_missing_imports = true
 
 [tool.vulture]
 # https://github.com/jendrikseipp/vulture#ignoring-files

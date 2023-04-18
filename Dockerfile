@@ -38,7 +38,7 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
 ENV HOME="/home/python-project-structure"
 WORKDIR "/home/python-project-structure/"
 ENTRYPOINT [ "entrypoint" ]
-CMD [ "python-project-structure" ]
+CMD [ "python" ]
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/python-project-structure"

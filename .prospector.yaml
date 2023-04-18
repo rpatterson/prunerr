@@ -49,8 +49,6 @@ pep257:
     # along with it until I discovered that `$ pydocstyle` will issue this warning even
     # when the one-line version exceeds the `max-line-length`.
     - "D200"
-    # Redundant with `pylint - missing-function-docstring`
-    - "D103"
 
 # Defensively avoid scanning large artifacts:
 # https://prospector.landscape.io/en/master/profiles.html#ignoring-paths-and-patterns

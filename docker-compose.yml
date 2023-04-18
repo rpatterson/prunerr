@@ -6,7 +6,7 @@ services:
 
   ## Container for use by end users:
   python-project-structure:
-    image: "merpatterson/python-project-structure"
+    image: "registry.gitlab.com/rpatterson/python-project-structure"
     container_name: "python-project-structure"
     environment:
       TZ: "${TZ:-Etc/UTC}"

@@ -252,6 +252,10 @@ ifneq ($(DOCKER_VARIANT),)
 DOCKER_VARIANT_PREFIX=$(DOCKER_VARIANT)-
 endif
 export DOCKER_BRANCH_TAG=$(subst /,-,$(VCS_BRANCH))
+# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
+# image.  These default platforms should cover most common end-user platforms, including
+# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
+DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
 DOCKER_VOLUMES=\
 ./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
@@ -561,9 +565,7 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 	fi
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --no-deps $${docker_run_args} python-project-structure \
-	    python -m pythonprojectstructure --help
-	docker compose run --no-deps $${docker_run_args} python-project-structure \
-	    python-project-structure --help
+	    python -c 'import pythonprojectstructure; print(pythonprojectstructure)'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} python-project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
@@ -1023,7 +1025,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./docker-compose.override.yml ./.env \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	$(MAKE) -e "$(HOME)/.local/var/log/docker-multi-platform-host-install.log" \
+	    "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
 	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log" \
 	    "./var/log/docker-login-DOCKER.log"
 	mkdir -pv "$(dir $(@))"
@@ -1045,6 +1048,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
+	    --platform $(DOCKER_PLATFORMS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
@@ -1113,12 +1117,14 @@ endif
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
+	$(MAKE) -e "$(HOME)/.local/var/log/docker-multi-platform-host-install.log" \
+	    "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
 	    "./var/log/tox/build/build.log"
 	mkdir -pv "$(dir $(@))"
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
+	    --platform $(DOCKER_PLATFORMS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
@@ -1215,6 +1221,15 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	        pip install -r "./build-host/requirements.txt.in"
 	    fi
 	) | tee -a "$(@)"
+
+# https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
+$(HOME)/.local/var/log/docker-multi-platform-host-install.log:
+	mkdir -pv "$(dir $(@))"
+	docker buildx create --name "python-project-structure-builder" \
+	    --driver "docker-container" --bootstrap "default" |& tee -a "$(@)"
+	docker buildx use "python-project-structure-builder" |& tee -a "$(@)"
+	docker run --privileged --rm "tonistiigi/binfmt" --install "all" |&
+	    tee -a "$(@)"
 
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"

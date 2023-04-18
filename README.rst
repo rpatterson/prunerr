@@ -59,11 +59,24 @@ Python project structure foundation or template
 	  :alt: Docker Hub image size (latest semver)
           :target: https://hub.docker.com/r/merpatterson/python-project-structure
 
+     - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
+          :alt: KeyBase PGP key ID
+          :target: https://keybase.io/rpatterson
+       .. figure:: https://img.shields.io/github/followers/rpatterson?style=social
+          :alt: GitHub followers count
+          :target: https://github.com/rpatterson
+       .. figure:: https://img.shields.io/liberapay/receives/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay donated per week
+          :target: https://liberapay.com/rpatterson/donate
+       .. figure:: https://img.shields.io/liberapay/patrons/rpatterson.svg?logo=liberapay
+          :alt: LiberaPay patrons count
+          :target: https://liberapay.com/rpatterson/donate
+
+
 This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- Command-line console script with sub-command boilerplate
 - A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development
 - Targets/recipes in the `Makefile`_ to automate releases
@@ -78,6 +91,8 @@ projects (e.g. CLI scripts, web development, etc.), frameworks (e.g. Flask, Pyra
 Django, etc.), libraries and such, branches will be used for each such variation such
 that structure common to different variations can be merged back into the branches for
 those specific variations.
+
+.. contents:: Table of Contents
 
 
 ****************************************************************************************
@@ -99,23 +114,14 @@ figure it out and submit a PR with corrections to this section.
      Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
-   - ``cli``:
-
-     The above plus support for project's that provide an executable CLI.
-
    - ``docker``:
 
-     The ``dist`` branch plus Docker containers for both development and
-     end-users/deployments.
+     The above plus Docker containers for both development and end-users/deployments.
 
    - ``ci``:
 
      The above plus GitLab CI/CD pipelines that run tests and linters as CI and
      publish releases from ``develop`` and ``main`` as CD.
-
-   - ``ci-cli``:
-
-     The above plus the ``cli`` branch.
 
    - etc.
 
@@ -128,7 +134,7 @@ figure it out and submit a PR with corrections to this section.
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "ci-cli" \
+     $ git clone --origin "template" --branch "ci" \
      "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git config remote.template.tagOpt --no-tags
@@ -141,7 +147,7 @@ figure it out and submit a PR with corrections to this section.
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/python-project-structure.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git merge --allow-unrelated-histories "template/ci-cli"
+     $ git merge --allow-unrelated-histories "template/ci"
 
 #. Rename file and directory paths derived from the project name::
 
@@ -185,32 +191,41 @@ should go straight to final release.  For example they may decide that:
 Installation
 ****************************************************************************************
 
+Install and use either via a local, native installation or a Docker container image:
+
+Local/Native Installation
+========================================================================================
+
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
-  $ sudo pip3 install python-project-structure
+  $ pip3 install --user python-project-structure
 
-Optional shell tab completion is available via `argcomplete`_.
+Docker Container Image Installation
+========================================================================================
 
-Or use `the Docker image`_.  See `the example ./docker-compose.yml file`_ for usage
-details.
+The recommended way to use the Docker container image is via `Docker Compose`_.  See
+`the example ./docker-compose.yml file`_ for an example configuration.  Once you have
+your configuration, you can create and run the container::
+
+  $ docker compose up
+
+Alternatively, you make use the image directly.  Pull `the Docker image`_::
+
+  $ docker pull "docker.io/merpatterson/python-project-structure"
+
+And then use the image to create and run a container::
+
+  $ docker run --rm -it "docker.io/merpatterson/python-project-structure" ...
+
+The Docker images support the following platforms or architectures:
+
+- ``linux/amd64``
+- ``linux/arm64``
+- ``linux/arm/v7``
 
 
 ****************************************************************************************
-Usage
-****************************************************************************************
-
-See the command-line help for details on options and arguments::
-
-  $ usage: python-project-structure [-h]
-
-  Python project structure foundation or template, top-level package.
-
-  optional arguments:
-    -h, --help  show this help message and exit
-
-
-****************************************************************************************
-CONTRIBUTING
+Contributing
 ****************************************************************************************
 
 NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
@@ -249,13 +264,13 @@ template.
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installation/
-.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/python-project-structure
 .. _`a mirror on GitHub`:
    https://github.com/rpatterson/python-project-structure
 .. _`Docker`: https://docs.docker.com/
+.. _`Docker Compose`: https://docs.docker.com/compose/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/python-project-structure
 
 .. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/

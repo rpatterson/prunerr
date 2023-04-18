@@ -1,5 +1,5 @@
 ########################################################################################
-CONTRIBUTING
+Contributing
 ########################################################################################
 
 Development requires fairly standard development tools, but ``git`` and ``make`` to

@@ -176,11 +176,8 @@ TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
-# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
-# image.  These default platforms should cover most common end-user platforms, including
-# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
-DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
-DOCKER_BUILD_ARGS=--platform $(DOCKER_PLATFORMS)
+DOCKER_PLATFORMS=
+DOCKER_BUILD_ARGS=
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -219,16 +216,24 @@ CI=false
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
+# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
+# image.  These default platforms should cover most common end-user platforms, including
+# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
+DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
+DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
 endif
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD
 TEST_PYPI_PASSWORD=
 export TEST_PYPI_PASSWORD
+ifneq ($(DOCKER_PLATFORMS),)
+DOCKER_BUILD_ARGS+=--platform $(DOCKER_PLATFORMS)
+endif
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x

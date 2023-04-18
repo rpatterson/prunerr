@@ -180,7 +180,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 # image.  These default platforms should cover most common end-user platforms, including
 # modern Apple M1 CPUs, Raspberry Pi devices, etc.:
 DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
-DOCKER_BUILD_ARGS=
+DOCKER_BUILD_ARGS=--platform $(DOCKER_PLATFORMS)
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -814,7 +814,6 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
-	    --platform $(DOCKER_PLATFORMS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
@@ -853,7 +852,6 @@ endif
 	export VERSION=$$(./.tox/build/bin/cz version --project)
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker_build_args="$(DOCKER_BUILD_ARGS) \
-	    --platform $(DOCKER_PLATFORMS) \
 	    --build-arg BUILDKIT_INLINE_CACHE=1 \
 	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
 	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \

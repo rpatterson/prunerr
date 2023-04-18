@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py37/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.15.2
+astroid==2.15.3
     # via
     #   pylint
     #   pylint-celery

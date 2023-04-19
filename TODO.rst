@@ -33,8 +33,6 @@ Nice to Have
 
 #. New branches for different frameworks, e.g.: Flask, Pyramid, Django
 
-#. Container image variants: e.g. slim/alpine
-
 #. Better release notes content for final releases with no changes since the last
    pre-release.
 
@@ -49,3 +47,8 @@ Nice to Have
      This SHOULD be the immediate image sharing zero-indexed layers with the image, such as from a Dockerfile FROM statement.
      This SHOULD NOT reference any other images used to generate the contents of the image (e.g., multi-stage Dockerfile builds).
      If the image.base.name annotation is specified, the image.base.digest annotation SHOULD be the digest of the manifest referenced by the image.ref.name annotation.
+
+#. Container image variants, e.g. slim/alpine:
+
+   I'm increasingly unconvinced this is worth it, so this likely won't happen until I
+   hear of a convincing use case.

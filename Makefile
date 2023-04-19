@@ -582,12 +582,14 @@ endif
 	$(MAKE) -e DOCKER_BUILD_ARGS="$${DOCKER_BUILD_ARGS}\
 	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
 # Update Docker Hub `README.md` from the official/canonical Python version:
+ifeq ($(VCS_BRANCH),main)
 	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	    docker compose pull pandoc docker-pushrm
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 	fi
+endif
 
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.

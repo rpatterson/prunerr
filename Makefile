@@ -545,11 +545,12 @@ $(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-logi
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(DOCKER_REGISTRIES:%=release-docker-registry-%)
-ifeq ($${PYTHON_ENV},$(PYTHON_HOST_ENV))
-	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
-	docker compose pull pandoc docker-pushrm
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
-endif
+	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
+	then
+	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
+	    docker compose pull pandoc docker-pushrm
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+	fi
 
 .PHONY: $(DOCKER_REGISTRIES:%=release-docker-registry-%)
 ### Publish all container images to one container registry.

@@ -52,3 +52,11 @@ Nice to Have
 
    I'm increasingly unconvinced this is worth it, so this likely won't happen until I
    hear of a convincing use case.
+
+#. CI/CD for other image platforms:
+
+   The issues with this is CI resources.  We already exhaust GitLab free CI/CD minutes
+   too quickly testing against multiple Python versions.  Actually running the tests in
+   ARM images would either consume even more free CI/CD minutes to run on the cloud ARM
+   runners or would take forever using emulation in the dedicated project runners, so
+   this is unlikely to happen until I start seeing significant platform-specific bugs.

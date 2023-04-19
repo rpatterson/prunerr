@@ -48,8 +48,6 @@ Nice to Have
      This SHOULD NOT reference any other images used to generate the contents of the image (e.g., multi-stage Dockerfile builds).
      If the image.base.name annotation is specified, the image.base.digest annotation SHOULD be the digest of the manifest referenced by the image.ref.name annotation.
 
-#. Automate submitting merge/pull requests from the ``devel-upgrade-branch`` target.
-
 #. Container image variants, e.g. slim/alpine:
 
    I'm increasingly unconvinced this is worth it, so this likely won't happen until I

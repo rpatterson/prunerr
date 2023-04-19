@@ -178,7 +178,6 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 # Values used to build Docker images:
 DOCKER_PLATFORMS=
 DOCKER_BUILD_ARGS=
-DOCKER_BUILD_ARGS+= --output "type=docker"
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -234,6 +233,8 @@ TEST_PYPI_PASSWORD=
 export TEST_PYPI_PASSWORD
 ifneq ($(DOCKER_PLATFORMS),)
 DOCKER_BUILD_ARGS+= --platform $(DOCKER_PLATFORMS)
+else
+DOCKER_BUILD_ARGS+= --output "type=docker"
 endif
 
 # Done with `$(shell ...)`, echo recipe commands going forward

@@ -217,8 +217,9 @@ TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
+DOCKER_FILE=./Dockerfile
 DOCKER_PLATFORMS=
-DOCKER_BUILD_ARGS=
+DOCKER_BUILD_ARGS=--output "type=docker"
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -346,11 +347,6 @@ PYPI_PASSWORD=
 export PYPI_PASSWORD
 TEST_PYPI_PASSWORD=
 export TEST_PYPI_PASSWORD
-ifneq ($(DOCKER_PLATFORMS),)
-DOCKER_BUILD_ARGS+= --platform $(DOCKER_PLATFORMS)
-else
-DOCKER_BUILD_ARGS+= --output "type=docker"
-endif
 VCS_REMOTE_PUSH_URL=
 CODECOV_TOKEN=
 DOCKER_PASS=
@@ -501,6 +497,65 @@ ifeq ($(DOCKER_VARIANT),)
 else
 	echo $${docker_image}:$(DOCKER_VARIANT)
 endif
+endif
+endif
+
+.PHONY: build-docker-build
+### Run the actual commands used to build the Docker container image.
+build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.log \
+		./var/log/tox/build/build.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/docker-login-DOCKER.log
+# https://github.com/moby/moby/issues/39003#issuecomment-879441675
+ifeq ($(CI),true)
+# Workaround broken interactive session detection
+	docker pull "python:$(PYTHON_MINOR)"
+endif
+	docker_build_caches=""
+ifeq ($(GITLAB_CI),true)
+# Don't cache when building final releases on `main`
+	$(MAKE) -e "./var/log/docker-login-GITLAB.log" || true
+ifneq ($(VCS_BRANCH),main)
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" --cache-from $(DOCKER_IMAGE_GITLAB):\
+	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
+endif
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+	$(MAKE) -e "./var/log/docker-login-GITHUB.log" || true
+ifneq ($(VCS_BRANCH),main)
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" --cache-from $(DOCKER_IMAGE_GITHUB):\
+	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
+endif
+endif
+	docker_image_tags=""
+	for image_tag in $$(
+	    $(MAKE) -e --no-print-directory build-docker-tags
+	)
+	do
+	    docker_image_tags+="--tag $${image_tag} "
+	done
+# https://github.com/moby/moby/issues/39003#issuecomment-879441675
+	docker buildx build $(DOCKER_BUILD_ARGS) \
+	    --build-arg BUILDKIT_INLINE_CACHE="1" \
+	    --build-arg PYTHON_MINOR="$(PYTHON_MINOR)" \
+	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
+	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
+	    $${docker_image_tags} $${docker_build_caches} --file "$(DOCKER_FILE)" "./"
+# Ensure any subsequent builds have optimal caches
+ifeq ($(GITLAB_CI),true)
+	docker push "$(DOCKER_IMAGE_GITLAB):\
+	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+ifneq ($(CI_IS_FORK),true)
+	docker push "$(DOCKER_IMAGE_GITHUB):\
+	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
 endif
 endif
 
@@ -723,38 +778,34 @@ release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
 	    $(PYTHON_MINORS:%=release-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=release-docker-%)
-### Publish the container images for one Python version to all container registry.
-$(PYTHON_MINORS:%=release-docker-%): $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
+### Publish the container images for one Python version to all container registries.
+$(PYTHON_MINORS:%=release-docker-%): \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
-	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
-	    $(DOCKER_REGISTRIES:%=release-docker-registry-%)
+# Build other platforms in emulation and rely on the layer cache for bundling the
+# previously built native images into the manifests.
+	DOCKER_BUILD_ARGS="--push"
+ifneq ($(DOCKER_PLATFORMS),)
+	DOCKER_BUILD_ARGS+=" --platform $(DOCKER_PLATFORMS)"
+endif
+	export DOCKER_BUILD_ARGS
+# Push the development manifest and images:
+	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
+	    build-docker-build
+# Push the end-user manifest and images:
+	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$${DOCKER_BUILD_ARGS}\
+	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
+# Update Docker Hub `README.md` from the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
-ifeq ($${PYTHON_ENV},$(PYTHON_HOST_ENV))
-	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
-	docker compose pull pandoc docker-pushrm
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
+	then
+	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
+	    docker compose pull pandoc docker-pushrm
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+	fi
 endif
-endif
-
-.PHONY: $(DOCKER_REGISTRIES:%=release-docker-registry-%)
-### Publish all container images to one container registry.
-$(DOCKER_REGISTRIES:%=release-docker-registry-%):
-# https://docs.docker.com/docker-hub/#step-5-build-and-push-a-container-image-to-docker-hub-from-your-computer
-	$(MAKE) -e "./var/log/docker-login-$(@:release-docker-registry-%=%).log"
-	for user_tag in $$(
-	    $(MAKE) -e --no-print-directory \
-	        build-docker-tags-$(@:release-docker-registry-%=%)
-	)
-	do
-	    docker push "$${user_tag}"
-	done
-	for devel_tag in $$(
-	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory \
-	        build-docker-tags-$(@:release-docker-registry-%=%)
-	)
-	do
-	    docker push "$${devel_tag}"
-	done
 
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
@@ -1036,15 +1087,8 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 		./docker-compose.override.yml ./.env \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(HOME)/.local/var/log/docker-multi-platform-host-install.log" \
-	    "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
-	    build-docker-volumes-$(PYTHON_ENV) "./var/log/tox/build/build.log" \
-	    "./var/log/docker-login-DOCKER.log"
+	$(MAKE) -e build-docker-volumes-$(PYTHON_ENV)
 	mkdir -pv "$(dir $(@))"
-# Workaround issues with local images and the development image depending on the end
-# user image.  It seems that `depends_on` isn't sufficient.
-	$(MAKE) -e $(HOME)/.local/var/log/python-project-structure-host-install.log
-	export VERSION=$$(./.tox/build/bin/cz version --project)
 ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate as if it had been built here.
 	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
@@ -1057,59 +1101,8 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	    exit
 	fi
 endif
-# https://github.com/moby/moby/issues/39003#issuecomment-879441675
-	docker_build_args="$(DOCKER_BUILD_ARGS) \
-	    --build-arg BUILDKIT_INLINE_CACHE=1 \
-	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
-	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
-	    --build-arg VERSION=$${VERSION}"
-	docker_build_devel_tags=""
-	for devel_tag in $$(
-	    $(MAKE) -e DOCKER_VARIANT="devel" --no-print-directory build-docker-tags
-	)
-	do
-	    docker_build_devel_tags+="--tag $${devel_tag} "
-	done
-	docker_build_caches=""
-ifeq ($(GITLAB_CI),true)
-# Don't cache when building final releases on `main`
-	$(MAKE) -e "./var/log/docker-login-GITLAB.log" || true
-ifneq ($(VCS_BRANCH),main)
-	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
-	then
-	    docker_build_caches+=" --cache-from \
-	$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-	fi
-endif
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-	$(MAKE) -e "./var/log/docker-login-GITHUB.log" || true
-ifneq ($(VCS_BRANCH),main)
-	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
-	then
-	    docker_build_caches+=" --cache-from \
-	$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-	fi
-endif
-endif
-ifeq ($(CI),true)
-# Workaround broken interactive session detection
-	docker pull "python:${PYTHON_MINOR}"
-endif
-	docker buildx build $${docker_build_args} $${docker_build_devel_tags} \
-	    $${docker_build_caches} --file "./Dockerfile.devel" "./"
-# Ensure any subsequent builds have optimal caches
-ifeq ($(GITLAB_CI),true)
-	docker push \
-	    "$(DOCKER_IMAGE_GITLAB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-ifneq ($(CI_IS_FORK),true)
-	docker push \
-	    "$(DOCKER_IMAGE_GITHUB):devel-$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-endif
-	date >>"$(@)"
+	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
+	    build-docker-build >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
@@ -1127,60 +1120,16 @@ endif
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
 		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(HOME)/.local/var/log/docker-multi-platform-host-install.log" \
-	    "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)" \
-	    "./var/log/tox/build/build.log"
-	mkdir -pv "$(dir $(@))"
-	export VERSION=$$(./.tox/build/bin/cz version --project)
-# https://github.com/moby/moby/issues/39003#issuecomment-879441675
-	docker_build_args="$(DOCKER_BUILD_ARGS) \
-	    --build-arg BUILDKIT_INLINE_CACHE=1 \
-	    --build-arg PYTHON_MINOR=$(PYTHON_MINOR) \
-	    --build-arg PYTHON_ENV=$(PYTHON_ENV) \
-	    --build-arg VERSION=$${VERSION}"
-# Build the end-user image now that all required artifacts are built"
 ifeq ($(PYTHON_WHEEL),)
 	$(MAKE) -e "build-pkgs"
 	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
 endif
-	docker_build_user_tags=""
-	for user_tag in $$($(MAKE) -e --no-print-directory build-docker-tags)
-	do
-	    docker_build_user_tags+="--tag $${user_tag} "
-	done
-	docker_build_caches=""
-ifeq ($(GITLAB_CI),true)
-ifneq ($(VCS_BRANCH),main)
-	if $(MAKE) -e pull-docker
-	then
-	    docker_build_caches+=" \
-	--cache-from $(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-	fi
-endif
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-ifneq ($(VCS_BRANCH),main)
-	if $(MAKE) -e pull-docker
-	then
-	    docker_build_caches+=" \
-	--cache-from $(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-	fi
-endif
-endif
-	docker buildx build $${docker_build_args} $${docker_build_user_tags} \
-	    --build-arg PYTHON_WHEEL="$${PYTHON_WHEEL}" $${docker_build_caches} "./"
-# Ensure any subsequent builds have optimal caches
-ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-ifneq ($(CI_IS_FORK),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-endif
-	date >>"$(@)"
-# The images install the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build.log=%/host-install.log)"
+# Build the end-user image now that all required artifacts are built"
+	mkdir -pv "$(dir $(@))"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS)\
+	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
+# The image installs the host requirements, reflect that in the bind mount volumes
+	date >>"$(@:%/build-user.log=%/host-install.log)"
 
 ./var/ $(PYTHON_ENVS:%=./var/docker/%/) \
 ./src/python_project_structure.egg-info/ \

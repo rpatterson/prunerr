@@ -30,5 +30,5 @@ pyproject-api==1.5.1
     # via tox
 tox==4.4.12
     # via -r build-host/requirements.txt.in
-virtualenv==20.21.0
+virtualenv==20.21.1
     # via tox

@@ -33,13 +33,8 @@ Nice to Have
 
 #. New branches for different frameworks, e.g.: Flask, Pyramid, Django
 
-#. Avoid Docker Hub pull limits using `GitLab's Dependency Proxy
-   <https://docs.gitlab.com/ee/user/packages/dependency_proxy/#use-the-dependency-proxy-for-docker-images>`_.
-
 #. Better release notes content for final releases with no changes since the last
    pre-release.
-
-#. Container image variants: e.g. slim/alpine
 
 #. `Docker image build-time LABEL's
    <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::
@@ -53,4 +48,15 @@ Nice to Have
      This SHOULD NOT reference any other images used to generate the contents of the image (e.g., multi-stage Dockerfile builds).
      If the image.base.name annotation is specified, the image.base.digest annotation SHOULD be the digest of the manifest referenced by the image.ref.name annotation.
 
-#. Automate submitting merge/pull requests from the ``devel-upgrade-branch`` target.
+#. Container image variants, e.g. slim/alpine:
+
+   I'm increasingly unconvinced this is worth it, so this likely won't happen until I
+   hear of a convincing use case.
+
+#. CI/CD for other image platforms:
+
+   The issues with this is CI resources.  We already exhaust GitLab free CI/CD minutes
+   too quickly testing against multiple Python versions.  Actually running the tests in
+   ARM images would either consume even more free CI/CD minutes to run on the cloud ARM
+   runners or would take forever using emulation in the dedicated project runners, so
+   this is unlikely to happen until I start seeing significant platform-specific bugs.

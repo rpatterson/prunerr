@@ -906,12 +906,15 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	mkdir -pv "$(dir $(@))"
-	(
-	    docker context inspect "multi-platform" ||
-	        docker context create "multi-platform"
-	    (docker buildx inspect | grep -q '^ *Endpoint: *multi-platform *') ||
-	        docker buildx create --use "multi-platform"
-	) |& tee -a "$(@)"
+	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
+	then
+	    docker context create "multi-platform" |& tee -a "$(@)"
+	fi
+	if ! docker buildx inspect |& tee -a "$(@)" |
+	    grep -q '^ *Endpoint: *multi-platform *'
+	then
+	    docker buildx create --use "multi-platform" |& tee -a "$(@)"
+	fi
 
 # Retrieve VCS data needed for versioning (tags) and release (release notes).
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD

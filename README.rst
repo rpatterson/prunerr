@@ -223,11 +223,11 @@ your configuration, you can create and run the container::
 
 Alternatively, you make use the image directly.  Pull `the Docker image`_::
 
-  $ docker pull "docker.io/merpatterson/python-project-structure"
+  $ docker pull "registry.gitlab.org/rpatterson/python-project-structure"
 
 And then use the image to create and run a container::
 
-  $ docker run --rm -it "docker.io/merpatterson/python-project-structure" ...
+  $ docker run --rm -it "registry.gitlab.org/rpatterson/python-project-structure" ...
 
 The Docker images support the following platforms or architectures:
 

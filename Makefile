@@ -341,7 +341,6 @@ DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
-CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD

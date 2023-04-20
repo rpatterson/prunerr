@@ -80,8 +80,13 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
+    entrypoint: "ash"
+    # Strip reStructuredText directives unsupported in Markdown:
     command: >-
-      "./README.rst" -f "rst" -t "markdown" -o "./README.md"
+      -xeu -c '
+        grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
+        pandoc -f "rst" -t "markdown" -o "./var/README.md"
+      '
 
   docker-pushrm:
     image: "chko/docker-pushrm"
@@ -97,7 +102,8 @@ services:
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
     command: >-
-      --file "/data/README.md" --short "Python project structure foundation or template"
+      --file "/data/var/README.md"
+      --short "Python project structure foundation or template"
       --debug "merpatterson/python-project-structure"
 
   gitlab-release-cli:

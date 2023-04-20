@@ -191,6 +191,8 @@ export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
 DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/python-project-structure
 DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
 # Values used to run built images in containers:
+DOCKER_NATIVE_PLATFORM=$(shell TODO)
+DOCKER_IMAGE_DIGEST=
 DOCKER_VOLUMES=\
 ./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
@@ -814,6 +816,19 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	$(MAKE) -e build-docker-volumes-$(PYTHON_ENV)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
+# TODO: Add make vars to top
+ifneq ($(DOCKER_PLATFORM),$(DOCKER_NATIVE_PLATFORM))
+	export DOCKER_IMAGE_DIGEST=$$(
+	    docker buildx imagetools inspect --format '\
+	{{with .Manifest}}\
+	{{range .Manifests}}\
+	{{with .Platform}}{{.OS}}/{{.Architecture}}{{end}} {{.Digest}}
+	{{end}}\
+	{{end}}' "$(DOCKER_IMAGE)\
+	:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)" |
+	    sed -nE 's|^$(DOCKER_PLATFORM)\t(.+)|@\1|p;q'
+	)
+endif
 # Pull the development image and simulate as if it had been built here.
 	if docker compose pull --quiet python-project-structure-devel
 	then

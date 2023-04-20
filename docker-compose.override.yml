@@ -8,7 +8,7 @@ services:
   # Configuration specific to development:
   python-project-structure:
     image: "merpatterson/python-project-structure\
-      :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}${DOCKER_IMAGE_DIGEST:-}"
     container_name: "python-project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR}/"
@@ -25,7 +25,7 @@ services:
   # Container for use by developers:
   python-project-structure-devel:
     image: "merpatterson/python-project-structure\
-      :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}${DOCKER_IMAGE_DIGEST:-}"
     container_name: "python-project-structure-devel"
     profiles:
       - "test"

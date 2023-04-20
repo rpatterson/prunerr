@@ -8,7 +8,7 @@ services:
   # Configuration specific to development:
   python-project-structure:
     image: "\
-      registry.gitlab.com/rpatterson/python-project-structure\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/python-project-structure\
       :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "python-project-structure-checkout"
     build:
@@ -26,7 +26,7 @@ services:
   # Container for use by developers:
   python-project-structure-devel:
     image: "\
-      registry.gitlab.com/rpatterson/python-project-structure\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/python-project-structure\
       :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "python-project-structure-devel"
     profiles:
@@ -107,7 +107,7 @@ services:
       --debug "merpatterson/python-project-structure"
 
   gitlab-release-cli:
-    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    image: "${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/gitlab-org/release-cli:latest"
     profiles:
       - "release"
     environment:
@@ -120,7 +120,9 @@ services:
 
   # The container in which CI/CD is run:
   build-host:
-    image: "registry.gitlab.com/rpatterson/python-project-structure:build-host"
+    image: "\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/python-project-structure\
+      :build-host"
     profiles:
       - "ci"
     build: "${CHECKOUT_DIR}/build-host/"

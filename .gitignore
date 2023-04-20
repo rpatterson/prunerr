@@ -44,12 +44,9 @@ htmlcov/
 .tox/
 .coverage
 .coverage.*
-coverage.*
 .cache
 nosetests.xml
-pytest-junit.xml
 *,cover
-pylint.*
 .hypothesis/
 
 # Translations

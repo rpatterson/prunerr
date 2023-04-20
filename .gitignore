@@ -54,14 +54,11 @@ htmlcov/
 **/.tox
 .coverage
 .coverage.*
-coverage.*
 .cache
 **/.cache
 nosetests.xml
-pytest-junit.xml
 *,cover
 **/,cover
-pylint.*
 .hypothesis/
 .mypy_cache
 **/.mypy_cache

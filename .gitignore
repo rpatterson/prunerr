@@ -112,9 +112,6 @@ ENV/
 # Emacs editor settings
 /.dir-locals.el
 
-# Project-specific build artifacts
-/README.md
-
 # Explicit ignores for the Docker build context.
 .local
 **/.local

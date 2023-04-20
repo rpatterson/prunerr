@@ -81,7 +81,7 @@ services:
     command: >-
       -xeu -c '
         grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
-        pandoc -f "rst" -t "markdown" -o "./README.md"
+        pandoc -f "rst" -t "markdown" -o "./var/README.md"
       '
 
   docker-pushrm:
@@ -98,7 +98,8 @@ services:
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
     command: >-
-      --file "/data/README.md" --short "Python project structure foundation or template"
+      --file "/data/var/README.md"
+      --short "Python project structure foundation or template"
       --debug "merpatterson/python-project-structure"
 
   gitlab-release-cli:

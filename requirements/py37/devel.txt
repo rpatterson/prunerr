@@ -134,8 +134,6 @@ platformdirs==3.2.0
     #   pylint
 pluggy==1.0.0
     # via pytest
-poetry-semver==0.1.0
-    # via requirements-detector
 prospector[with_everything]==1.9.0
     # via python-project-structure (pyproject.toml)
 pycodestyle==2.10.0
@@ -191,7 +189,7 @@ requests==2.28.2
     # via
     #   pyroma
     #   xenon
-requirements-detector==1.1.0
+requirements-detector==1.2.1
     # via prospector
 rich==12.6.0
     # via
@@ -201,6 +199,8 @@ rstcheck==6.1.2
     # via python-project-structure (pyproject.toml)
 rstcheck-core==1.0.3
     # via rstcheck
+semver==3.0.0
+    # via requirements-detector
 setoptconf-tmp==0.3.1
     # via prospector
 setuptools-scm==7.1.0
@@ -236,7 +236,7 @@ tomlkit==0.11.7
     # via pylint
 towncrier==22.12.0
     # via python-project-structure (pyproject.toml)
-trove-classifiers==2023.4.18
+trove-classifiers==2023.4.20
     # via pyroma
 typed-ast==1.5.4
     # via

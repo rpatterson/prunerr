@@ -232,6 +232,12 @@ GITLAB_CI=false
 GITHUB_ACTIONS=false
 CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
 CI_TEMPLATE_REGISTRY_HOST=registry.gitlab.com
+ifeq ($(GITHUB_ACTIONS),true)
+DOCKER_REGISTRY_HOST=ghcr.io
+else
+DOCKER_REGISTRY_HOST=$(CI_TEMPLATE_REGISTRY_HOST)
+endif
+export DOCKER_REGISTRY_HOST
 CI_REGISTRY=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_PROJECT_NAMESPACE)
 CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 DOCKER_REGISTRIES=DOCKER GITLAB GITHUB
@@ -277,7 +283,7 @@ endif
 ifneq ($(CI_PROJECT_NAMESPACE),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_REGISTRIES=GITLAB
-DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
+DOCKER_IMAGES+=$(DOCKER_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
 endif
 else ifeq ($(GITHUB_ACTIONS),true)
 USER_EMAIL=$(USER_NAME)@actions.github.com
@@ -341,7 +347,6 @@ DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
-CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD
@@ -1183,8 +1188,15 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	mkdir -pv "$(dir $(@))"
-	docker context create "multi-platform" |& tee -a "$(@)"
-	docker buildx create --use "multi-platform" |& tee -a "$(@)"
+	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
+	then
+	    docker context create "multi-platform" |& tee -a "$(@)"
+	fi
+	if ! docker buildx inspect |& tee -a "$(@)" |
+	    grep -q '^ *Endpoint: *multi-platform *'
+	then
+	    docker buildx create --use "multi-platform" |& tee -a "$(@)"
+	fi
 
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"

@@ -8,7 +8,7 @@ services:
   # Configuration specific to development:
   python-project-structure:
     image: "\
-      registry.gitlab.com/rpatterson/python-project-structure\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/python-project-structure\
       :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "python-project-structure-checkout"
     build:
@@ -26,7 +26,7 @@ services:
   # Container for use by developers:
   python-project-structure-devel:
     image: "\
-      registry.gitlab.com/rpatterson/python-project-structure\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/python-project-structure\
       :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "python-project-structure-devel"
     profiles:
@@ -80,8 +80,13 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
+    entrypoint: "ash"
+    # Strip reStructuredText directives unsupported in Markdown:
     command: >-
-      "./README.rst" -f "rst" -t "markdown" -o "./README.md"
+      -xeu -c '
+        grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
+        pandoc -f "rst" -t "markdown" -o "./var/README.md"
+      '
 
   docker-pushrm:
     image: "chko/docker-pushrm"
@@ -97,11 +102,12 @@ services:
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
     command: >-
-      --file "/data/README.md" --short "Python project structure foundation or template"
+      --file "/data/var/README.md"
+      --short "Python project structure foundation or template"
       --debug "merpatterson/python-project-structure"
 
   gitlab-release-cli:
-    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    image: "${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/gitlab-org/release-cli:latest"
     profiles:
       - "release"
     environment:
@@ -114,7 +120,9 @@ services:
 
   # The container in which CI/CD is run:
   build-host:
-    image: "registry.gitlab.com/rpatterson/python-project-structure:build-host"
+    image: "\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/python-project-structure\
+      :build-host"
     profiles:
       - "ci"
     build: "${CHECKOUT_DIR}/build-host/"

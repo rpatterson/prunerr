@@ -199,6 +199,7 @@ DOCKER_VOLUMES=\
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
 DOCKER_COMPOSE_RUN_ARGS=
 DOCKER_COMPOSE_RUN_ARGS+= --rm
+CI=false
 ifneq ($(CI),true)
 DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
 endif
@@ -212,7 +213,6 @@ endif
 BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
-CI=false
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true

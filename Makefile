@@ -177,7 +177,6 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
-DOCKER_PLATFORMS=
 DOCKER_BUILD_ARGS=--output "type=docker"
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
@@ -213,6 +212,7 @@ endif
 BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
+DOCKER_BUILD_ARGS=
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
@@ -220,12 +220,12 @@ PYPI_REPO=pypi
 # TEMPLATE: Choose the platforms on which your end-users need to be able to run the
 # image.  These default platforms should cover most common end-user platforms, including
 # modern Apple M1 CPUs, Raspberry Pi devices, etc.:
-DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
+DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 PYPI_REPO=pypi
-DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
+DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
@@ -571,7 +571,7 @@ $(PYTHON_MINORS:%=release-docker-%): \
 # previously built native images into the manifests.
 	DOCKER_BUILD_ARGS="--push"
 ifneq ($(DOCKER_PLATFORMS),)
-	DOCKER_BUILD_ARGS+=" --platform $(DOCKER_PLATFORMS)"
+	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
 endif
 	export DOCKER_BUILD_ARGS
 # Push the development manifest and images:

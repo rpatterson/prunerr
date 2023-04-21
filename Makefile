@@ -198,10 +198,6 @@ DOCKER_VOLUMES=\
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
 DOCKER_COMPOSE_RUN_ARGS=
 DOCKER_COMPOSE_RUN_ARGS+= --rm
-CI=false
-ifneq ($(CI),true)
-DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
-endif
 ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
 endif
@@ -380,11 +376,8 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 		./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
-# https://github.com/moby/moby/issues/39003#issuecomment-879441675
-ifeq ($(CI),true)
-# Workaround broken interactive session detection
+# Workaround broken interactive session detection:
 	docker pull "python:$(PYTHON_MINOR)"
-endif
 	docker_image_tags=""
 	for image_tag in $$(
 	    $(MAKE) -e --no-print-directory build-docker-tags
@@ -651,11 +644,8 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
-ifneq ($(CI),true)
-# If running under CI/CD then the image will be updated in the next pipeline stage.
-# For testing locally, however, ensure the image is up-to-date for subsequent recipes.
+# Ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
-endif
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"

@@ -55,14 +55,6 @@ TZ=$(shell \
 )
 endif
 export TZ
-# Massage various `$ uname ...` values:
-# https://en.wikipedia.org/wiki/Uname#Examples
-# into more commonly used values:
-# https://go.dev/doc/install/source#environment
-HOST_ARCH:=$(shell uname -m | tr '[:upper:]' '[:lower:]' | \
-    sed -E 's|x86_(.+)|amd\1|;s|.*86|386|;s|armv[0-7][^0-9]*|arm|;s|armv.*|arm64|;q')
-HOST_OS:=$(shell uname -o | sed -nE 's#(.+/|)(.+)#\2#p;q' | tr '[:upper:]' '[:lower:]')
-HOST_PLATFORM=$(HOST_OS)/$(HOST_ARCH)
 export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
 # Values concerning supported Python versions:
@@ -185,6 +177,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
+DOCKER_BUILD_ARGS=--output "type=docker"
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -198,18 +191,15 @@ export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
 DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/python-project-structure
 DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
 # Values used to run built images in containers:
-export DOCKER_PLATFORM=$(HOST_PLATFORM)
 DOCKER_VOLUMES=\
 ./var/docker/$(PYTHON_ENV)/ \
 ./src/python_project_structure.egg-info/ \
 ./var/docker/$(PYTHON_ENV)/python_project_structure.egg-info/ \
 ./.tox/ ./var/docker/$(PYTHON_ENV)/.tox/
-DOCKER_COMPOSE_PULL_ARGS=
 DOCKER_COMPOSE_RUN_ARGS=
 DOCKER_COMPOSE_RUN_ARGS+= --rm
 ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
-DOCKER_COMPOSE_PULL_ARGS+= --quiet
 endif
 
 # Values used for publishing releases:
@@ -233,13 +223,6 @@ RELEASE_PUBLISH=true
 PYPI_REPO=pypi
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
-DOCKER_BUILD_ARGS=--push
-ifneq ($(DOCKER_PLATFORMS),)
-# Build other platforms in emulation and rely on the layer cache for bundling the
-# previously built native images into the manifests.
-DOCKER_BUILD_ARGS+= --platform "$(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
-endif
-export DOCKER_BUILD_ARGS
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD
@@ -338,7 +321,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ### Set up for development in Docker containers.
 build-docker: build-pkgs ./var/log/tox/build/build.log
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
-	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
+	    DOCKER_BUILD_ARGS="--progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -409,24 +392,6 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
 	    $${docker_image_tags} --file "$(DOCKER_FILE)" "./"
-# Workaround that Docker doesn't provide any way to access multi-platform images
-# locally, only via pushing to the registry and then pulling back:
-ifeq ($(DOCKER_PLATFORMS),)
-	$(MAKE) -j build-docker-pull-devel-$(DOCKER_PLATFORM) \
-	    build-docker-pull-$(DOCKER_PLATFORM)
-else
-	$(MAKE) -j $(DOCKER_PLATFORMS:%=build-docker-pull-devel-%) \
-	    $(DOCKER_PLATFORMS:%=build-docker-pull-%)
-endif
-
-.PHONY: $(DOCKER_PLATFORMS:%=build-docker-pull-devel-%)
-$(DOCKER_PLATFORMS:%=build-docker-pull-devel-%): ./.env
-	export DOCKER_PLATFORM="$(@:build-docker-pull-devel-%=%)"
-	docker compose pull $(DOCKER_COMPOSE_PULL_ARGS) python-project-structure-devel
-.PHONY: $(DOCKER_PLATFORMS:%=build-docker-pull-%)
-$(DOCKER_PLATFORMS:%=build-docker-pull-%): ./.env
-	export DOCKER_PLATFORM="$(@:build-docker-pull-%=%)"
-	docker compose pull $(DOCKER_COMPOSE_PULL_ARGS) python-project-structure
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary.
@@ -472,22 +437,17 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Run the full suite of tests, coverage checks, and code linters in containers.
 test-docker: build-pkgs ./var/log/tox/build/build.log
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
-	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
+	    DOCKER_BUILD_ARGS="--progress plain" \
 	    DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
 ### Run the full suite of tests inside a docker container for one Python version.
 $(PYTHON_MINORS:%=test-docker-%):
-	$(MAKE) -e -j \
+	$(MAKE) -e \
 	    PYTHON_MINORS="$(@:test-docker-%=%)" \
 	    PYTHON_MINOR="$(@:test-docker-%=%)" \
 	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" \
-	    $(DOCKER_PLATFORMS:%=test-docker-%)
-
-.PHONY: $(DOCKER_PLATFORMS:%=test-docker-%)
-$(DOCKER_PLATFORMS:%=test-docker-%):
-	$(MAKE) -e DOCKER_PLATFORM="$(@:build-docker-pull-devel-%=%)" \
 	    test-docker-pyminor
 
 .PHONY: test-docker-pyminor
@@ -599,9 +559,23 @@ release-docker: build-docker-volumes-$(PYTHON_ENV) build-docker \
 $(PYTHON_MINORS:%=release-docker-%): \
 		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
-ifeq ($(VCS_BRANCH),main)
-# Update Docker Hub `README.md` from the official/canonical Python version:
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
+# Build other platforms in emulation and rely on the layer cache for bundling the
+# previously built native images into the manifests.
+	DOCKER_BUILD_ARGS="--push"
+ifneq ($(DOCKER_PLATFORMS),)
+	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
+endif
+	export DOCKER_BUILD_ARGS
+# Push the development manifest and images:
+	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
+	    build-docker-build
+# Push the end-user manifest and images:
+	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$${DOCKER_BUILD_ARGS}\
+	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
+# Update Docker Hub `README.md` from the official/canonical Python version:
+ifeq ($(VCS_BRANCH),main)
 	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
@@ -841,7 +815,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate as if it had been built here.
-	if $(MAKE) build-docker-pull-devel-$(DOCKER_PLATFORM)
+	if docker compose pull --quiet python-project-structure-devel
 	then
 	    touch "$(@)" "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
 # Ensure the virtualenv in the volume is also current:

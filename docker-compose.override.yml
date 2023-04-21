@@ -9,7 +9,6 @@ services:
   python-project-structure:
     image: "merpatterson/python-project-structure\
       :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
-    platform: "${DOCKER_PLATFORM:-linux/amd64}"
     container_name: "python-project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR}/"
@@ -27,7 +26,6 @@ services:
   python-project-structure-devel:
     image: "merpatterson/python-project-structure\
       :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
-    platform: "${DOCKER_PLATFORM:-linux/amd64}"
     container_name: "python-project-structure-devel"
     profiles:
       - "test"

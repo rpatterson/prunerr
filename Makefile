@@ -42,7 +42,7 @@ USER_FULL_NAME:=$(shell \
 ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
-USER_EMAIL:=$(USER_NAME)@$(shell hostname --fqdn)
+USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 
 # Values concerning supported Python versions:
 # Use the same Python version tox would as a default.

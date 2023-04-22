@@ -1,6 +1,9 @@
 # Build, release and development tools that can operate totally independently and are
 # used outside the Docker container in the developer's localhost environment.
 
+# Get the Python dist/package version from VCS `v#.#.#` tags dynamically.
+setuptools_scm
+
 # VCS hooks to enforce passint tests, test coverage, style and linting
 pre-commit
 

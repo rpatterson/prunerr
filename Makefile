@@ -218,7 +218,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
-DOCKER_BUILD_ARGS=
+export DOCKER_BUILD_ARGS=
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -346,10 +346,6 @@ endif
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
-ifeq ($(DOCKER_PLATFORMS),)
-DOCKER_BUILD_ARGS+= --output "type=docker"
-endif
-export DOCKER_BUILD_ARGS
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD
@@ -459,7 +455,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ### Set up for development in Docker containers.
 build-docker: build-pkgs ./var/log/tox/build/build.log
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
-	    DOCKER_BUILD_ARGS="--progress plain" \
+	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -552,19 +548,6 @@ endif
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
 	    $${docker_image_tags} $${docker_build_caches} --file "$(DOCKER_FILE)" "./"
-# Ensure local builds have optimal caches for any subsequent runners:
-ifeq ($(DOCKER_PLATFORMS),)
-ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):\
-	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-ifneq ($(CI_IS_FORK),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):\
-	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-endif
-endif
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary.
@@ -611,7 +594,7 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 ### Run the full suite of tests, coverage checks, and code linters in containers.
 test-docker: build-pkgs ./var/log/tox/build/build.log ./var/log/codecov-install.log
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
-	    DOCKER_BUILD_ARGS="--progress plain" \
+	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
 	    DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 
@@ -794,9 +777,10 @@ $(PYTHON_MINORS:%=release-docker-%): \
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # previously built native images into the manifests.
-	DOCKER_BUILD_ARGS="--push"
+	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
 ifneq ($(DOCKER_PLATFORMS),)
-	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
+	DOCKER_BUILD_ARGS+="--platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
+else
 endif
 	export DOCKER_BUILD_ARGS
 # Push the development manifest and images:
@@ -1108,7 +1092,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	fi
 endif
 	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
-	    build-docker-build >>"$(@)"
+	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
@@ -1132,8 +1116,8 @@ ifeq ($(PYTHON_WHEEL),)
 endif
 # Build the end-user image now that all required artifacts are built"
 	mkdir -pv "$(dir $(@))"
-	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS)\
-	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
+	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build-user.log=%/host-install.log)"
 
@@ -1192,6 +1176,12 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
 	    docker context create "multi-platform" |& tee -a "$(@)"
+	    timeout 10 $(SHELL) $(.SHELLFLAGS) '\
+	        until docker context inspect "multi-platform" >"/dev/null"
+	        do
+	            sleep 0.1
+	        done
+	    '
 	fi
 	if ! docker buildx inspect |& tee -a "$(@)" |
 	    grep -q '^ *Endpoint: *multi-platform *'

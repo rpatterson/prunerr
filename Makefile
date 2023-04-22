@@ -473,7 +473,7 @@ test-docker-pyminor: build-docker-volumes-$(PYTHON_ENV) build-docker-$(PYTHON_MI
 ### Check the style and content of the `./Dockerfile*` files
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV) \
 		./var/log/docker-login-DOCKER.log
-	docker compose pull hadolint
+	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile.devel"
@@ -584,7 +584,7 @@ ifeq ($(VCS_BRANCH),main)
 	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
-	    docker compose pull pandoc docker-pushrm
+	    docker compose pull --quiet pandoc docker-pushrm
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 	fi
 endif

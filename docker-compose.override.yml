@@ -19,7 +19,7 @@ services:
   # Configuration specific to development:
   prunerr-daemon:
     image: "\
-      registry.gitlab.com/rpatterson/prunerr\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/prunerr\
       :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-daemon-checkout"
     build:
@@ -37,7 +37,7 @@ services:
   # Container for use by developers:
   prunerr-devel:
     image: "\
-      registry.gitlab.com/rpatterson/prunerr\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/prunerr\
       :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-devel"
     profiles:
@@ -65,9 +65,13 @@ services:
       - "${CHECKOUT_DIR}/home/:/home/prunerr/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/:/usr/local/src/prunerr/var/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/:/usr/local/src/prunerr/.tox/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/prunerr.egg-info/:/usr/local/src/prunerr/src/prunerr.egg-info/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/\
+        :/usr/local/src/prunerr/var/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/\
+        :/usr/local/src/prunerr/.tox/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}\
+        /prunerr.egg-info/\
+        :/usr/local/src/prunerr/src/prunerr.egg-info/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -91,8 +95,13 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
+    entrypoint: "ash"
+    # Strip reStructuredText directives unsupported in Markdown:
     command: >-
-      "./README.rst" -f "rst" -t "markdown" -o "./README.md"
+      -xeu -c '
+        grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
+        pandoc -f "rst" -t "markdown" -o "./var/README.md"
+      '
 
   docker-pushrm:
     image: "chko/docker-pushrm"
@@ -113,7 +122,7 @@ services:
       --debug "merpatterson/prunerr"
 
   gitlab-release-cli:
-    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
+    image: "${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/gitlab-org/release-cli:latest"
     profiles:
       - "release"
     environment:
@@ -126,7 +135,9 @@ services:
 
   # The container in which CI/CD is run:
   build-host:
-    image: "registry.gitlab.com/rpatterson/prunerr:build-host"
+    image: "\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/prunerr\
+      :build-host"
     profiles:
       - "ci"
     build: "${CHECKOUT_DIR}/build-host/"

@@ -15,9 +15,6 @@ variables:
   # Variables controlling behavior:
   PUID: "1001"
   PGID: "1001"
-  DOCKER_IMAGE: "$CI_REGISTRY_IMAGE"
-  # Different variable name needed by the GitHub CLI:
-  GH_TOKEN: "$PROJECT_GITHUB_PAT"
   # Uncomment to get more debugging output:
   # DEBUG: "true"
 

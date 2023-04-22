@@ -4,10 +4,6 @@
 ARG PYTHON_MINOR=3.10
 FROM python:${PYTHON_MINOR}
 
-ARG PYTHON_ENV=py310
-ARG VERSION=
-ARG PYTHON_WHEEL
-
 RUN \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
@@ -22,12 +18,14 @@ COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 WORKDIR "/usr/local/src/prunerr/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
 # because this step takes the most time and changes the least frequently.
+ARG PYTHON_ENV=py310
 COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip install -r "./requirements/${PYTHON_ENV}/user.txt"
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
+ARG PYTHON_WHEEL
 COPY [ "${PYTHON_WHEEL}", "${PYTHON_WHEEL}" ]
 # hadolint ignore=DL3013,DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
@@ -51,4 +49,5 @@ LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 # Build-time `LABEL`s
+ARG VERSION=
 LABEL org.opencontainers.image.version=${VERSION}

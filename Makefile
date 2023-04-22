@@ -69,7 +69,7 @@ export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 # Use the same Python version tox would as a default.
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell \
-    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p')
+    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
@@ -221,8 +221,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
-DOCKER_PLATFORMS=
-DOCKER_BUILD_ARGS=--output "type=docker"
+export DOCKER_BUILD_ARGS=
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -235,6 +234,12 @@ GITLAB_CI=false
 GITHUB_ACTIONS=false
 CI_PROJECT_NAMESPACE=$(CI_UPSTREAM_NAMESPACE)
 CI_TEMPLATE_REGISTRY_HOST=registry.gitlab.com
+ifeq ($(GITHUB_ACTIONS),true)
+DOCKER_REGISTRY_HOST=ghcr.io
+else
+DOCKER_REGISTRY_HOST=$(CI_TEMPLATE_REGISTRY_HOST)
+endif
+export DOCKER_REGISTRY_HOST
 CI_REGISTRY=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_PROJECT_NAMESPACE)
 CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 DOCKER_REGISTRIES=DOCKER GITLAB GITHUB
@@ -260,9 +265,6 @@ DOCKER_VOLUMES=\
 ./var/media/Library/
 DOCKER_COMPOSE_RUN_ARGS=
 DOCKER_COMPOSE_RUN_ARGS+= --rm
-ifneq ($(CI),true)
-DOCKER_COMPOSE_RUN_ARGS+= --quiet-pull
-endif
 ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
 endif
@@ -281,7 +283,7 @@ endif
 ifneq ($(CI_PROJECT_NAMESPACE),$(CI_UPSTREAM_NAMESPACE))
 CI_IS_FORK=true
 DOCKER_REGISTRIES=GITLAB
-DOCKER_IMAGES+=$(CI_TEMPLATE_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
+DOCKER_IMAGES+=$(DOCKER_REGISTRY_HOST)/$(CI_UPSTREAM_NAMESPACE)/$(CI_PROJECT_NAME)
 endif
 else ifeq ($(GITHUB_ACTIONS),true)
 USER_EMAIL=$(USER_NAME)@actions.github.com
@@ -330,19 +332,21 @@ GITHUB_RELEASE_ARGS=--prerelease
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
-PYPI_REPO=pypi
-PYPI_HOSTNAME=pypi.org
 GITHUB_RELEASE_ARGS=
-DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+endif
+ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
-DOCKER_PLATFORMS=linux/amd64,linux/arm64,linux/arm/v7
+PYPI_HOSTNAME=pypi.org
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+# Only build and publish multi-platform images for the canonical Python version:
+DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
+endif
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
-CI_REGISTRY_IMAGE=$(CI_REGISTRY)/$(CI_PROJECT_NAME)
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD
@@ -452,7 +456,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ### Set up for development in Docker containers.
 build-docker: build-pkgs ./var/log/tox/build/build.log
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
-	    DOCKER_BUILD_ARGS="--progress plain" \
+	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
@@ -483,16 +487,16 @@ ifeq ($(VCS_BRANCH),main)
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${major_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${major_version}
 ifeq ($(DOCKER_VARIANT),)
 	echo $${docker_image}:latest
 else
@@ -507,11 +511,8 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 		./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
-# https://github.com/moby/moby/issues/39003#issuecomment-879441675
-ifeq ($(CI),true)
-# Workaround broken interactive session detection
+# Workaround broken interactive session detection:
 	docker pull "python:$(PYTHON_MINOR)"
-endif
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `main`
@@ -548,17 +549,6 @@ endif
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
 	    $${docker_image_tags} $${docker_build_caches} --file "$(DOCKER_FILE)" "./"
-# Ensure any subsequent builds have optimal caches
-ifeq ($(GITLAB_CI),true)
-	docker push "$(DOCKER_IMAGE_GITLAB):\
-	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-ifeq ($(GITHUB_ACTIONS),true)
-ifneq ($(CI_IS_FORK),true)
-	docker push "$(DOCKER_IMAGE_GITHUB):\
-	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
-endif
-endif
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary.
@@ -607,7 +597,7 @@ test-docker: build-pkgs ./var/log/tox/build/build.log ./var/log/codecov-install.
 # Avoid race condition starting service dependencies:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-daemon true
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
-	    DOCKER_BUILD_ARGS="--progress plain" \
+	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
 	    DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=test-docker-%)
 
@@ -657,7 +647,7 @@ endif
 ### Check the style and content of the `./Dockerfile*` files.
 test-docker-lint: ./.env build-docker-volumes-$(PYTHON_ENV) \
 		./var/log/docker-login-DOCKER.log
-	docker compose pull hadolint
+	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./Dockerfile.devel"
@@ -687,10 +677,12 @@ else
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
 endif
-	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD"
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	    "$${vcs_compare_rev}" || exit_code=$$?
+	(
+	    $(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
+	    $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
+	        "$${vcs_compare_rev}"
+	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 	    exit
@@ -788,9 +780,10 @@ $(PYTHON_MINORS:%=release-docker-%): \
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # previously built native images into the manifests.
-	DOCKER_BUILD_ARGS="--push"
+	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
 ifneq ($(DOCKER_PLATFORMS),)
-	DOCKER_BUILD_ARGS+=" --platform $(DOCKER_PLATFORMS)"
+	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
+else
 endif
 	export DOCKER_BUILD_ARGS
 # Push the development manifest and images:
@@ -805,7 +798,7 @@ ifeq ($(VCS_BRANCH),main)
 	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
-	    docker compose pull pandoc docker-pushrm
+	    docker compose pull --quiet pandoc docker-pushrm
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
 	fi
 endif
@@ -860,7 +853,7 @@ endif
 # because after that the `newsfragments` will have been deleted.
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
-	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p'
+	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
@@ -878,11 +871,8 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
-ifneq ($(CI),true)
-# If running under CI/CD then the image will be updated in the next pipeline stage.
-# For testing locally, however, ensure the image is up-to-date for subsequent recipes.
+# Ensure the image is up-to-date for subsequent recipes.
 	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
-endif
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
@@ -1066,7 +1056,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/prunerr-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |
+	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |&
 	    tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite when using Tox-managed virtual environments directly and changes to code
@@ -1075,7 +1065,7 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/prunerr-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
-	    pip install -e "./" | tee -a "$(@)"
+	    pip install -e "./" |& tee -a "$(@)"
 
 ## Docker real targets:
 
@@ -1102,7 +1092,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	fi
 endif
 	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
-	    build-docker-build >>"$(@)"
+	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) prunerr-devel \
@@ -1126,8 +1116,8 @@ ifeq ($(PYTHON_WHEEL),)
 endif
 # Build the end-user image now that all required artifacts are built"
 	mkdir -pv "$(dir $(@))"
-	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS)\
-	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
+	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build-user.log=%/host-install.log)"
 
@@ -1180,13 +1170,26 @@ $(HOME)/.local/var/log/prunerr-host-install.log:
 	    else
 	        pip install -r "./build-host/requirements.txt.in"
 	    fi
-	) | tee -a "$(@)"
+	) |& tee -a "$(@)"
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	mkdir -pv "$(dir $(@))"
-	docker context create "multi-platform" |& tee -a "$(@)"
-	docker buildx create --use "multi-platform" |& tee -a "$(@)"
+	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
+	then
+	    docker context create "multi-platform" |& tee -a "$(@)"
+	    timeout 10 $(SHELL) $(.SHELLFLAGS) '\
+	        until docker context inspect "multi-platform" >"/dev/null"
+	        do
+	            sleep 0.1
+	        done
+	    '
+	fi
+	if ! docker buildx inspect |& tee -a "$(@)" |
+	    grep -q '^ *Endpoint: *multi-platform *'
+	then
+	    docker buildx create --use "multi-platform" |& tee -a "$(@)"
+	fi
 
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"

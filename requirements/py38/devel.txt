@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py38/devel.txt --resolver=backtracking pyproject.toml
 #
-argcomplete==3.0.5
+argcomplete==3.0.6
     # via prunerr (pyproject.toml)
 arrapi==1.4.2
     # via prunerr (pyproject.toml)
@@ -118,7 +118,6 @@ packaging==23.1
     #   pyroma
     #   pytest
     #   requirements-detector
-    #   setuptools-scm
 pathlib3x==2.0.2.1 ; python_version < "3.10"
     # via prunerr (pyproject.toml)
 pathspec==0.11.1
@@ -137,8 +136,6 @@ platformdirs==3.2.0
     #   pylint
 pluggy==1.0.0
     # via pytest
-poetry-semver==0.1.0
-    # via requirements-detector
 prospector[with_everything]==1.9.0
     # via prunerr (pyproject.toml)
 pycodestyle==2.10.0
@@ -200,7 +197,7 @@ requests==2.28.2
     #   xenon
 requests-mock==1.10.0
     # via prunerr (pyproject.toml)
-requirements-detector==1.1.0
+requirements-detector==1.2.1
     # via prospector
 rich==12.6.0
     # via
@@ -210,12 +207,12 @@ rstcheck==6.1.2
     # via prunerr (pyproject.toml)
 rstcheck-core==1.0.3
     # via rstcheck
+semver==3.0.0
+    # via requirements-detector
 service-logging==0.1.1
     # via prunerr (pyproject.toml)
 setoptconf-tmp==0.3.1
     # via prospector
-setuptools-scm==7.1.0
-    # via prunerr (pyproject.toml)
 shellingham==1.5.0.post1
     # via typer
 six==1.16.0
@@ -246,7 +243,6 @@ tomli==2.0.1
     #   pylint
     #   pyproject-hooks
     #   pytest
-    #   setuptools-scm
     #   towncrier
 tomlkit==0.11.7
     # via pylint
@@ -254,7 +250,7 @@ towncrier==22.12.0
     # via prunerr (pyproject.toml)
 transmission-rpc==3.4.2
     # via prunerr (pyproject.toml)
-trove-classifiers==2023.4.18
+trove-classifiers==2023.4.22
     # via pyroma
 typer[all]==0.7.0
     # via rstcheck
@@ -270,7 +266,6 @@ typing-extensions==4.5.0
     #   pydantic
     #   pylint
     #   rich
-    #   setuptools-scm
     #   transmission-rpc
 urllib3==1.26.15
     # via requests

@@ -348,8 +348,8 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
 		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
-ifeq ($(VCS_BRANCH),master)
-# Only update tags end users may depend on to be stable from the `master` branch
+ifeq ($(VCS_BRANCH),main)
+# Only update tags end users may depend on to be stable from the `main` branch
 	VERSION=$$(./.tox/build/bin/cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -362,7 +362,7 @@ endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
-ifeq ($(VCS_BRANCH),master)
+ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${major_version}
 ifeq ($(DOCKER_VARIANT),)

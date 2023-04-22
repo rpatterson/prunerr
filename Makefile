@@ -177,7 +177,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
-DOCKER_BUILD_ARGS=--output "type=docker"
+export DOCKER_BUILD_ARGS=--output "type=docker"
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=

@@ -212,15 +212,15 @@ DOCKER_BUILD_ARGS=
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
+else ifeq ($(VCS_BRANCH),develop)
+# Publish pre-releases from the `develop` branch:
+RELEASE_PUBLISH=true
+endif
+ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
 # TEMPLATE: Choose the platforms on which your end-users need to be able to run the
 # image.  These default platforms should cover most common end-user platforms, including
 # modern Apple M1 CPUs, Raspberry Pi devices, etc.:
-DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
-else ifeq ($(VCS_BRANCH),develop)
-# Publish pre-releases from the `develop` branch:
-RELEASE_PUBLISH=true
-PYPI_REPO=pypi
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 # Address undefined variables warnings when running under local development

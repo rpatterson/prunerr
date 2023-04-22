@@ -568,7 +568,7 @@ $(PYTHON_MINORS:%=release-docker-%): \
 # previously built native images into the manifests.
 	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
 ifneq ($(DOCKER_PLATFORMS),)
-	DOCKER_BUILD_ARGS+="--platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
+	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
 else
 endif
 	export DOCKER_BUILD_ARGS

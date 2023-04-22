@@ -108,7 +108,8 @@ services:
     volumes:
       - "${CHECKOUT_DIR}/:/data/"
     command: >-
-      --file "/data/README.md" --short "prunerr foundation or template"
+      --file "/data/var/README.md"
+      --short "Perma-seed Servarr media libraries"
       --debug "merpatterson/prunerr"
 
   gitlab-release-cli:

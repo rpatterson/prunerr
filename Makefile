@@ -163,10 +163,11 @@ PYPI_REPO=testpypi
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
-PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+endif
+ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
 endif
 # Address undefined variables warnings when running under local development

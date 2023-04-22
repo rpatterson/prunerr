@@ -163,10 +163,11 @@ PYPI_REPO=testpypi
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
-PYPI_REPO=pypi
 else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
+endif
+ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
 endif
 # Address undefined variables warnings when running under local development
@@ -265,10 +266,12 @@ else
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
 endif
-	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD"
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	    "$${vcs_compare_rev}" || exit_code=$$?
+	(
+	    $(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
+	    $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
+	        "$${vcs_compare_rev}"
+	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 	    exit

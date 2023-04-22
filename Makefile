@@ -218,10 +218,13 @@ RELEASE_PUBLISH=true
 endif
 ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+# Only build and publish multi-platform images for the canonical Python version:
 # TEMPLATE: Choose the platforms on which your end-users need to be able to run the
 # image.  These default platforms should cover most common end-user platforms, including
 # modern Apple M1 CPUs, Raspberry Pi devices, etc.:
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
+endif
 endif
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=

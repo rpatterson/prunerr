@@ -1174,17 +1174,14 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
 	    docker context create "multi-platform" |& tee -a "$(@)"
-	    timeout 10 $(SHELL) $(.SHELLFLAGS) '\
-	        until docker context inspect "multi-platform" >"/dev/null"
-	        do
-	            sleep 0.1
-	        done
-	    '
 	fi
 	if ! docker buildx inspect |& tee -a "$(@)" |
 	    grep -q '^ *Endpoint: *multi-platform *'
 	then
-	    docker buildx create --use "multi-platform" |& tee -a "$(@)"
+	    (
+	        docker buildx create --use "multi-platform" ||
+	        docker buildx create --use "multi-platform"
+	    ) |& tee -a "$(@)"
 	fi
 
 ./var/log/codecov-install.log:

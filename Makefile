@@ -177,7 +177,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
-export DOCKER_BUILD_ARGS=--output "type=docker"
+DOCKER_BUILD_ARGS=
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -208,7 +208,6 @@ endif
 BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
-DOCKER_BUILD_ARGS=
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
@@ -226,6 +225,10 @@ ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 endif
+ifeq ($(DOCKER_PLATFORMS),)
+DOCKER_BUILD_ARGS+= --output "type=docker"
+endif
+export DOCKER_BUILD_ARGS
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD

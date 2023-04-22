@@ -218,7 +218,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
-export DOCKER_BUILD_ARGS=--output "type=docker"
+DOCKER_BUILD_ARGS=
 export DOCKER_BUILD_PULL=false
 # Values used to tag built images:
 export DOCKER_VARIANT=
@@ -314,7 +314,6 @@ PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
-DOCKER_BUILD_ARGS=
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(CI),true)
 # Compile requirements on CI/CD as a check to make sure all changes to dependencies have
@@ -347,6 +346,10 @@ endif
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
+ifeq ($(DOCKER_PLATFORMS),)
+DOCKER_BUILD_ARGS+= --output "type=docker"
+endif
+export DOCKER_BUILD_ARGS
 # Address undefined variables warnings when running under local development
 PYPI_PASSWORD=
 export PYPI_PASSWORD

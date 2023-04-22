@@ -689,10 +689,12 @@ else
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
 endif
-	$(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD"
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	    "$${vcs_compare_rev}" || exit_code=$$?
+	(
+	    $(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
+	    $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
+	        "$${vcs_compare_rev}"
+	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 	    exit

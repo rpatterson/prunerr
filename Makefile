@@ -355,16 +355,16 @@ ifeq ($(VCS_BRANCH),master)
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${minor_version}
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${major_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
 endif
 # This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),master)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${minor_version}
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${major_version}
 ifeq ($(DOCKER_VARIANT),)
 	echo $${docker_image}:latest
 else

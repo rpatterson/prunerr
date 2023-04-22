@@ -54,9 +54,13 @@ services:
       - "${CHECKOUT_DIR}/home/:/home/python-project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/:/usr/local/src/python-project-structure/var/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/:/usr/local/src/python-project-structure/.tox/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/python_project_structure.egg-info/:/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/\
+        :/usr/local/src/python-project-structure/var/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/\
+        :/usr/local/src/python-project-structure/.tox/"
+      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}\
+        /python_project_structure.egg-info/\
+        :/usr/local/src/python-project-structure/src/python_project_structure.egg-info/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:

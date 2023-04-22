@@ -82,7 +82,6 @@ importlib-metadata==4.13.0
     #   pytest
     #   rstcheck
     #   rstcheck-core
-    #   setuptools-scm
     #   stevedore
 incremental==22.10.0
     # via towncrier
@@ -117,7 +116,6 @@ packaging==23.1
     #   pyroma
     #   pytest
     #   requirements-detector
-    #   setuptools-scm
 pathspec==0.11.1
     # via black
 pbr==5.11.1
@@ -203,8 +201,6 @@ semver==3.0.0
     # via requirements-detector
 setoptconf-tmp==0.3.1
     # via prospector
-setuptools-scm==7.1.0
-    # via python-project-structure (pyproject.toml)
 shellingham==1.5.0.post1
     # via typer
 six==1.16.0
@@ -230,7 +226,6 @@ tomli==2.0.1
     #   pylint
     #   pyproject-hooks
     #   pytest
-    #   setuptools-scm
     #   towncrier
 tomlkit==0.11.7
     # via pylint
@@ -260,7 +255,6 @@ typing-extensions==4.5.0
     #   rich
     #   rstcheck
     #   rstcheck-core
-    #   setuptools-scm
 urllib3==1.26.15
     # via requests
 vulture==2.7

@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=requirements/py37/build.txt --resolver=backtracking requirements/build.txt.in
 #
-argcomplete==2.0.6
+argcomplete==2.1.2
     # via commitizen
 bleach==6.0.0
     # via readme-renderer
@@ -14,13 +14,13 @@ cffi==1.15.1
     # via cryptography
 cfgv==3.3.1
     # via pre-commit
-charset-normalizer==2.1.1
+charset-normalizer==3.1.0
     # via
     #   commitizen
     #   requests
 colorama==0.4.6
     # via commitizen
-commitizen==2.42.1
+commitizen==3.0.1
     # via -r requirements/build.txt.in
 cryptography==40.0.2
     # via secretstorage
@@ -36,9 +36,10 @@ identify==2.5.22
     # via pre-commit
 idna==3.4
     # via requests
-importlib-metadata==5.2.0
+importlib-metadata==4.13.0
     # via
     #   argcomplete
+    #   commitizen
     #   keyring
     #   pre-commit
     #   setuptools-scm
@@ -108,7 +109,7 @@ setuptools-scm==7.1.0
     # via -r requirements/build.txt.in
 six==1.16.0
     # via bleach
-termcolor==2.2.0
+termcolor==2.3.0
     # via commitizen
 tomli==2.0.1
     # via setuptools-scm

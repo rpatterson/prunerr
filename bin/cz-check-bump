@@ -52,8 +52,7 @@ def main(args=None):  # pylint: disable=missing-function-docstring
             "no_verify",
             "check_consistency",
             "retry",
-            "pre_bump_hooks",
-            "post_bump_hooks",
+            "version_type",
         )
     )
     bump_cmd = commands.Bump(config=conf, arguments=arguments)

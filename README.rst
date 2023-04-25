@@ -88,6 +88,9 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
   <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L188-209>`_.
 - Delete `stalled items
   <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L188-209>`_
+  , and `items containing archives such as *.rar
+  releases
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L78-97>`_
   and `blacklist them
   <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L77>`_,
   AKA mark them as failed, in Servarr.

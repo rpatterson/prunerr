@@ -39,9 +39,9 @@ Python project structure foundation or template
        .. figure:: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/python-project-structure/actions/workflows/build-test.yml
-       .. figure:: https://codecov.io/github/rpatterson/python-project-structure/branch/main/graph/badge.svg?token=GNKVQ8VYOU
+       .. figure:: https://app.codecov.io/github/rpatterson/python-project-structure/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
-	  :target: https://codecov.io/github/rpatterson/python-project-structure
+	  :target: https://app.codecov.io/github/rpatterson/python-project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/python-project-structure?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/python-project-structure/

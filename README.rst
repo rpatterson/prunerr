@@ -80,6 +80,7 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 - Don't delete private items that haven't met seeding requirements.
 - Delete public items first
 - Delete private items in an order to maximize tracker ratio and/or bonuses.
+- Delete stalled items and blacklist them, AKA mark them as failed, in Servarr.
 - And more...
 
 .. contents:: Table of Contents

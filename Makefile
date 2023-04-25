@@ -152,8 +152,8 @@ endif
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
 # by tox
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
-TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
-TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
+TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
@@ -249,7 +249,7 @@ test: build
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.
 test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
-	$(TOX_EXEC_ARGS) pytest --pdb
+	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-push
 ### Perform any checks that should only be run before pushing.
@@ -268,9 +268,10 @@ else
 endif
 	exit_code=0
 	(
-	    $(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
-	    $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	        "$${vcs_compare_rev}"
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        python ./bin/cz-check-bump --compare-ref "$${vcs_compare_rev}"
 	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -279,7 +280,7 @@ endif
 	then
 	    exit $$exit_code
 	else
-	    $(TOX_EXEC_ARGS) towncrier check --compare-with "$${vcs_compare_rev}"
+	    $(TOX_EXEC_ARGS) -- towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
 .PHONY: test-clean
@@ -305,11 +306,11 @@ release: $(HOME)/.local/var/log/python-project-structure-host-install.log ~/.pyp
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) twine check ./dist/python?project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/python?project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
-	$(TOX_EXEC_BUILD_ARGS) twine upload -s -r "$(PYPI_REPO)" \
+	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/python?project?structure-*
 endif
 
@@ -326,8 +327,8 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 # Ensure the local branch is updated to the forthcoming version bump commit:
 	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
 ifeq ($(VCS_BRANCH),main)
-	if ! $(TOX_EXEC_BUILD_ARGS) python ./bin/get-base-version $$(
-	    $(TOX_EXEC_BUILD_ARGS) cz version --project
+	if ! $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version $$(
+	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	)
 	then
 # There's no pre-release for which to publish a final release:
@@ -336,7 +337,7 @@ ifeq ($(VCS_BRANCH),main)
 else
 # Only release if required by conventional commits:
 	exit_code=0
-	$(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump || exit_code=$$?
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/cz-check-bump || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
 # No commits require a release:
@@ -353,15 +354,16 @@ ifneq ($(VCS_BRANCH),main)
 endif
 # Build and stage the release notes to be commited by `$ cz bump`
 	next_version=$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
-	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --draft --yes \
+	$(TOX_EXEC_ARGS) -qq -- \
+	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-	$(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
+	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
@@ -379,11 +381,11 @@ endif
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
-	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
+	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) autopep8 -v -i -r "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) black "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) -- black "./src/pythonprojectstructure/"
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
@@ -392,7 +394,7 @@ devel-upgrade:
 	    "./build-host/requirements.txt.in"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
-	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
@@ -436,10 +438,10 @@ devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANC
 .PHONY: clean
 ### Restore the checkout to a state as close to an initial clone as possible.
 clean:
-	$(TOX_EXEC_BUILD_ARGS) pre-commit uninstall \
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
-	$(TOX_EXEC_BUILD_ARGS) pre-commit clean || true
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
 	git clean -dfx -e "var/"
 	rm -rfv "./var/log/"
 
@@ -549,13 +551,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
-	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
-	$(TOX_EXEC_BUILD_ARGS) cz init
+	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el: ./.dir-locals.el.in

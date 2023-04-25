@@ -39,9 +39,9 @@ Perma-seed Servarr media libraries
        .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml
-       .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/main/graph/badge.svg?token=GNKVQ8VYOU
+       .. figure:: https://app.codecov.io/github/rpatterson/prunerr/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
-	  :target: https://codecov.io/github/rpatterson/prunerr
+	  :target: https://app.codecov.io/github/rpatterson/prunerr
        .. figure:: https://img.shields.io/github/stars/rpatterson/prunerr?logo=github
 	  :alt: GitHub repo stars
 	  :target: https://github.com/rpatterson/prunerr/

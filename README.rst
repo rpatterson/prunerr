@@ -75,12 +75,22 @@ Perma-seed Servarr media libraries
 
 TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 
-- Delete torrents/items only as disk space gets low.
-- Don't delete currently imported items.  IOW, only delete upgraded items.
-- Don't delete private items that haven't met seeding requirements.
-- Delete public items first
-- Delete private items in an order to maximize tracker ratio and/or bonuses.
-- Delete stalled items and blacklist them, AKA mark them as failed, in Servarr.
+- Delete torrents/items `only as disk space gets low
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L23-36>`_.
+- Don't delete `currently imported items
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L178>`_.
+  IOW, only delete upgraded items.
+- Don't delete `private items that haven't met seeding requirements
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L145-177>`_.
+- Delete `public items first
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L142-144>`_.
+- Delete private items in `an order to maximize tracker ratio and/or bonuses
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L188-209>`_.
+- Delete `stalled items
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L188-209>`_
+  and `blacklist them
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L77>`_,
+  AKA mark them as failed, in Servarr.
 - And more...
 
 .. contents:: Table of Contents

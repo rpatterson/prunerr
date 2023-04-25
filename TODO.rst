@@ -15,6 +15,8 @@ Required
 High Priority
 ****************************************************************************************
 
+#. Clearly documented configuration snippets demonstrating all important use cases.
+
 #. Operations reference, perhaps done dynamically from the CLI help using operation
    method docstrings.
 

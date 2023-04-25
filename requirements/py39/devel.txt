@@ -4,7 +4,7 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py39/devel.txt --resolver=backtracking pyproject.toml
 #
-astroid==2.15.3
+astroid==2.15.4
     # via
     #   pylint
     #   pylint-celery
@@ -138,7 +138,7 @@ pygments==2.15.1
     # via
     #   pyroma
     #   rich
-pylint==2.17.2
+pylint==2.17.3
     # via
     #   prospector
     #   pylint-celery

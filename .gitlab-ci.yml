@@ -1,6 +1,6 @@
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 
-# TEMPLATE: If using GitHub Actions, then add the following secrets to the project:
+# TEMPLATE: If using GitLab CI/CD, then add the following secrets to the project:
 #
 # - `CODECOV_TOKEN`:
 #   Add your project to https://app.codecov.io/gl and use the generated token

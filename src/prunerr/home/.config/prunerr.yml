@@ -35,8 +35,11 @@ download-clients:
   ## optimize real download throughput.
   # resume-set-download-bandwidth-limit: false
 indexers:
-  ## Used to match download items with no corresponding Servarr history from which
-  ## the indexer for the item can be found.
+  ## Determine the indexer/tracker for download items by matching the hostnames of
+  ## tracker announce and scrape URLs.  The matched indexer name,
+  ## `ExamplePrivateTracker` in this example, is then used to lookup the corresponding
+  ## `reviews` and `priorities` configurations by the corresponding `- name:
+  ## "ExamplePrivateTracker"` key:
   hostnames:
     ExamplePrivateTracker:
       - "tracker.private.example.com"

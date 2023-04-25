@@ -20,7 +20,7 @@ charset-normalizer==3.1.0
     #   requests
 colorama==0.4.6
     # via commitizen
-commitizen==3.0.1
+commitizen==3.1.0
     # via -r requirements/build.txt.in
 cryptography==40.0.2
     # via secretstorage
@@ -32,7 +32,7 @@ docutils==0.19
     # via readme-renderer
 filelock==3.12.0
     # via virtualenv
-identify==2.5.22
+identify==2.5.23
     # via pre-commit
 idna==3.4
     # via requests
@@ -69,7 +69,7 @@ packaging==23.1
     #   setuptools-scm
 pkginfo==1.9.6
     # via twine
-platformdirs==3.2.0
+platformdirs==3.3.0
     # via virtualenv
 pre-commit==3.2.2
     # via -r requirements/build.txt.in

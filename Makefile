@@ -213,8 +213,8 @@ export TOX_RUN_ARGS
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
 # by tox
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
-TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --
-TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build" --
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
+TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
@@ -588,7 +588,7 @@ test-local:
 .PHONY: test-debug
 ### Run tests in the host environment and invoke the debugger on errors/failures.
 test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
-	$(TOX_EXEC_ARGS) pytest --pdb
+	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
@@ -674,9 +674,10 @@ else
 endif
 	exit_code=0
 	(
-	    $(TOX_EXEC_BUILD_ARGS) cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
-	    $(TOX_EXEC_BUILD_ARGS) python ./bin/cz-check-bump --compare-ref \
-	        "$${vcs_compare_rev}"
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        python ./bin/cz-check-bump --compare-ref "$${vcs_compare_rev}"
 	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -686,7 +687,7 @@ endif
 	    exit $$exit_code
 	else
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        python-project-structure-devel $(TOX_EXEC_ARGS) \
+	        python-project-structure-devel $(TOX_EXEC_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
@@ -847,19 +848,19 @@ endif
 # Have to run before the real `$ towncrier build` run without the `--draft` option
 # because after that the `newsfragments` will have been deleted.
 	next_version=$$(
-	    $(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args} --yes --dry-run |
+	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
 # Build and stage the release notes to be commited by `$ cz bump`
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" -qq -- \
+	    $(TOX_EXEC_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) python-project-structure-devel \
-	    $(TOX_EXEC_ARGS) towncrier build --version "$${next_version}" --yes
+	    $(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
-	$(TOX_EXEC_BUILD_ARGS) cz bump $${cz_bump_args}
+	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 # Ensure the container image reflects the version bump but we don't need to update the
 # requirements again.
 	touch \
@@ -898,11 +899,11 @@ endif
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
-	$(TOX_EXEC_ARGS) autoflake -r -i --remove-all-unused-imports \
+	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) autopep8 -v -i -r "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) black "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) -- black "./src/pythonprojectstructure/"
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
@@ -917,7 +918,7 @@ devel-upgrade: ./.env build-docker-volumes-$(PYTHON_ENV) \
 	    DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=build-docker-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
-	$(TOX_EXEC_BUILD_ARGS) pre-commit autoupdate
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
@@ -990,10 +991,10 @@ endif
 ### Restore the checkout to a state as close to an initial clone as possible.
 clean:
 	docker compose down --remove-orphans --rmi "all" -v || true
-	$(TOX_EXEC_BUILD_ARGS) pre-commit uninstall \
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
-	$(TOX_EXEC_BUILD_ARGS) pre-commit clean || true
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
 	rm -rfv "./var/log/"
 	rm -rf "./var/docker/"
@@ -1235,13 +1236,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
-	$(TOX_EXEC_BUILD_ARGS) pre-commit install \
+	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
 	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
-	$(TOX_EXEC_BUILD_ARGS) cz init
+	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el: ./.dir-locals.el.in

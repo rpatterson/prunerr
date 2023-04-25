@@ -1,5 +1,8 @@
-prunerr  (2023-04-24)
+prunerr  (2023-04-25)
 =====================
 
-No significant changes.
+Improved Documentation
+----------------------
+
+- Link important use cases to their corresponding example configuration.
 

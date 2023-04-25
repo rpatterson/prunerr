@@ -158,15 +158,6 @@ services:
     command: >-
       make -e build-docker test-docker release
 
-  # Conserve shared runner minutes, run GitLab CI/CD jobs locally:
   gitlab-runner:
-    image: "gitlab/gitlab-runner"
     profiles:
       - "ci"
-    volumes:
-      - "./var/gitlab-runner/config:/etc/gitlab-runner"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./var/gitlab-runner/cache:/cache"
-      - "./var/gitlab-runner/certs:/certs"
-    ports:
-      - "8093:8093"

@@ -122,3 +122,7 @@ ENV/
 **/.local
 .gnupg
 **/.gnupg
+
+# GitLab dedicated project runner artifacts:
+/gitlab-runner/config/config.toml
+/gitlab-runner/config/.runner_system_id

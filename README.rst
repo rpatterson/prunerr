@@ -98,9 +98,9 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 
 .. contents:: Table of Contents
 
-*******
+****************************************************************************************
 Summary
-*******
+****************************************************************************************
 
 Seed Servarr download client torrents/items as long as possible only deleting them as
 necessary as disk space gets low, hence the name based on "to prune".  Which download
@@ -208,9 +208,9 @@ well::
   $ docker compose run "prunerr" prunerr --help
 
 
-*******************
+****************************************************************************************
 Order of Operations
-*******************
+****************************************************************************************
 
 Note that polling is required because there is no event we can subscribe to that
 reliably determines disk space margin *as* the download clients are downloading.  Every

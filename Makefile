@@ -651,8 +651,6 @@ endif
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
 	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
-# Ensure the image is up-to-date for subsequent recipes.
-	$(MAKE) -e "./var/docker/$(PYTHON_ENV)/log/build-user.log"
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"

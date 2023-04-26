@@ -67,7 +67,7 @@ packaging==23.1
     #   setuptools-scm
 pkginfo==1.9.6
     # via twine
-platformdirs==3.3.0
+platformdirs==3.4.0
     # via virtualenv
 pre-commit==3.2.2
     # via -r requirements/build.txt.in
@@ -87,7 +87,7 @@ questionary==1.10.0
     # via commitizen
 readme-renderer==37.3
     # via twine
-requests==2.28.2
+requests==2.29.0
     # via
     #   requests-toolbelt
     #   twine

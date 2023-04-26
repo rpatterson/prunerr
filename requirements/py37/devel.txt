@@ -123,7 +123,7 @@ pep8-naming==0.10.0
     # via prospector
 pip-tools==6.13.0
     # via python-project-structure (pyproject.toml)
-platformdirs==3.3.0
+platformdirs==3.4.0
     # via
     #   black
     #   pylint
@@ -180,7 +180,7 @@ pyyaml==6.0
     #   xenon
 radon==5.1.0
     # via xenon
-requests==2.28.2
+requests==2.29.0
     # via
     #   pyroma
     #   xenon

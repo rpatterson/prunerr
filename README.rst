@@ -79,7 +79,17 @@ software projects.  It includes:
 - Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development
-- Targets/recipes in the `Makefile`_ to automate releases
+- `Docker`_ container images for users and development in which tests are run
+- A `Makefile`_ target to format all Python code, including using `Black`_ for style
+- A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
+  Python code checks
+- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters in multiple Python
+  versions, including some checks not provided by Prospector.
+- `VCS hooks`_ to enforce `conventional commits`_ and successful build and test on
+  commit and push, and release notes on push
+- Targets/recipes in the `Makefile`_ to automate releases controlled by `conventional
+  commits`_ and end-user oriented release notes by `Towncrier`_
+- Targets/recipes in the `Makefile`_ to automate upgrading requirements and dependencies
 - `Makefile`_ recipes/targets used for both local development and on CI/CD platforms
 - A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes/targets
 - A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
@@ -277,6 +287,12 @@ template.
 .. _Python: https://docs.python.org/3/library/logging.html
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _pip: https://pip.pypa.io/en/stable/installation/
+.. _`Black`: https://github.com/psf/black
+.. _`Prospector`: https://prospector.landscape.io
+.. _`Tox`: https://tox.wiki
+.. _`Towncrier`: https://towncrier.readthedocs.io
+
+.. _`conventional commits`: https://www.conventionalcommits.org
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/python-project-structure
@@ -296,3 +312,9 @@ template.
    https://gitlab.com/rpatterson/python-project-structure/blob/main/docker-compose.yml
 .. _`the ./CONTRIBUTING.rst file`:
    https://gitlab.com/rpatterson/python-project-structure/blob/main/CONTRIBUTING.rst
+.. _`kitchen sink linter configuration`:
+   https://gitlab.com/rpatterson/python-project-structure/blob/main/.prospector.yaml
+.. _`tox.ini`:
+   https://gitlab.com/rpatterson/python-project-structure/blob/main/tox.ini
+.. _`VCS hooks`:
+   https://gitlab.com/rpatterson/python-project-structure/blob/main/.pre-commit-config.yaml

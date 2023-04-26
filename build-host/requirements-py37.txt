@@ -25,7 +25,7 @@ packaging==23.1
     # via
     #   pyproject-api
     #   tox
-platformdirs==3.3.0
+platformdirs==3.4.0
     # via
     #   tox
     #   virtualenv
@@ -37,7 +37,7 @@ tomli==2.0.1
     # via
     #   pyproject-api
     #   tox
-tox==4.5.0
+tox==4.5.1
     # via -r build-host/requirements.txt.in
 typing-extensions==4.5.0
     # via

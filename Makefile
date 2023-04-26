@@ -486,17 +486,12 @@ test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/python-project-structure-host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
 		build-docker-volumes-$(PYTHON_ENV) ./.env
-ifeq ($(VCS_COMPARE_BRANCH),main)
-# On `main`, compare with the previous commit on `main`
-	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
-else
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
 # Compare with the pre-release branch if this branch hasn't been pushed yet:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
-endif
 	exit_code=0
 	(
 	    $(TOX_EXEC_BUILD_ARGS) -- \

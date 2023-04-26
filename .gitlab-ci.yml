@@ -140,7 +140,7 @@ release-bump:
         && $CI_PIPELINE_SOURCE != "schedule"
   script:
     - >-
-      entrypoint make -e release-bump
+      entrypoint make -e test-push release-bump
 
 # Workaround GitLab's handling of pipeline status when pushing both a branch and a tag:
 release-version:

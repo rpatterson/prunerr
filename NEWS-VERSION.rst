@@ -1,5 +1,8 @@
-prunerr 1.1.6 (2023-04-26)
+prunerr 1.1.7 (2023-04-26)
 ==========================
 
-No significant changes.
+Bugfixes
+--------
+
+- Upgrade all requirements to the latest versions as of Wed Apr 26 05:24:13 PM UTC 2023.
 

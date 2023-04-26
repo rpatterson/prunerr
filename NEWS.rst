@@ -7,14 +7,14 @@ Bugfixes
 - Upgrade all requirements to the latest versions as of Tue Apr 25 11:00:28 PM UTC 2023.
 
 
-prunerr  (2023-04-25)
-=====================
+prunerr 1.1.4 (2023-04-25)
+==========================
 
 No significant changes.
 
 
-prunerr  (2023-04-25)
-=====================
+prunerr 1.1.4b0 (2023-04-25)
+============================
 
 Improved Documentation
 ----------------------
@@ -22,26 +22,26 @@ Improved Documentation
 - Link important use cases to their corresponding example configuration.
 
 
-prunerr  (2023-04-24)
-=====================
+prunerr 1.1.3 (2023-04-24)
+==========================
 
 No significant changes.
 
 
-prunerr  (2023-04-24)
-=====================
+prunerr 1.1.3b0 (2023-04-24)
+============================
 
 No significant changes.
 
 
-prunerr  (2023-04-22)
-=====================
+prunerr 1.1.2 (2023-04-22)
+==========================
 
 No significant changes.
 
 
-prunerr  (2023-04-22)
-=====================
+prunerr 1.1.2b2 (2023-04-22)
+============================
 
 No significant changes.
 

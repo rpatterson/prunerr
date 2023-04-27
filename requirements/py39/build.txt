@@ -67,7 +67,7 @@ packaging==23.1
     #   setuptools-scm
 pkginfo==1.9.6
     # via twine
-platformdirs==3.4.0
+platformdirs==3.5.0
     # via virtualenv
 pre-commit==3.2.2
     # via -r requirements/build.txt.in
@@ -95,7 +95,7 @@ requests-toolbelt==0.10.1
     # via twine
 rfc3986==2.0.0
     # via twine
-rich==13.3.4
+rich==13.3.5
     # via twine
 secretstorage==3.3.3
     # via keyring
@@ -107,7 +107,7 @@ termcolor==2.3.0
     # via commitizen
 tomli==2.0.1
     # via setuptools-scm
-tomlkit==0.11.7
+tomlkit==0.11.8
     # via commitizen
 twine==4.0.2
     # via -r requirements/build.txt.in

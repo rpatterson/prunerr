@@ -1,9 +1,4 @@
 ;;; Directory Local Variables
 ;;; For more information see (info \"(emacs) Directory Variables\")
 
-((python-mode
-  . ((flycheck-python-prospector-executable
-      . "${PWD}/.tox/${PYTHON_ENV}/bin/prospector")
-     (flycheck-python-flake8-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/python")
-     (flycheck-python-pylint-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/pylint")
-     (flycheck-python-mypy-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/mypy"))))
+()

@@ -208,7 +208,8 @@ test-push: $(VCS_FETCH_TARGETS) \
 	then
 	    exit $$exit_code
 	else
-	    $(TOX_EXEC_ARGS) -- towncrier check --compare-with "$${vcs_compare_rev}"
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
 .PHONY: test-clean
@@ -281,11 +282,11 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
-	$(TOX_EXEC_ARGS) -qq -- \
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-	$(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)

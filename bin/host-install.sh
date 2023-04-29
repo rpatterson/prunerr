@@ -39,6 +39,21 @@ main() {
         false
     fi
     pip3 install -r "./build-host/requirements.txt.in"
+# Manage JavaScript/TypeScript packages:
+# https://github.com/nvm-sh/nvm#install--update-script
+    if ! which nvm
+    then
+        wget -qO- \
+            "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" \
+            | bash
+        set +x
+        . ~/.nvm/nvm.sh || true
+    fi
+# The `./.nvmrc` is using latest stable version:
+# https://github.com/nodejs/release#release-schedule
+    set +x
+    nvm install
+    set -x
 }
 
 

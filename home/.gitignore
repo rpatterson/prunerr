@@ -1,0 +1,4 @@
+# Ignore everything but files managed by VCS:
+/*
+!/.git*
+!/*.in

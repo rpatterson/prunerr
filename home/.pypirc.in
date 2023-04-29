@@ -1,0 +1,12 @@
+[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+username = __token__
+password = ${PYPI_PASSWORD}
+
+[testpypi]
+username = __token__
+password = ${TEST_PYPI_PASSWORD}

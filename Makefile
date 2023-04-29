@@ -384,7 +384,11 @@ $(HOME)/.local/var/log/project-structure-host-install.log:
 	        if which apk
 	        then
 	            apk update
-	            apk add "gettext" "py3-pip"
+	            apk add \
+# We need `$ envsubst` in the `expand-template:` target recipe:
+	                "gettext" \
+# We need `$ pip3` to install the project's Python tools:
+	                "py3-pip"
 	        else
 	            sudo apt-get update
 	            sudo apt-get install -y "gettext-base" "python3-pip"

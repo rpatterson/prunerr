@@ -11,5 +11,8 @@ pre-commit
 # hooks to enforce that commit messages comply with conventional commits:
 commitizen
 
+# Generate release notes/changelogs:
+towncrier
+
 # Check reStructuredText documentation:
 rstcheck

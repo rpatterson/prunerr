@@ -3,7 +3,7 @@ fail_fast: true
 repos:
 # Check commit message format and style before pushing to a remote
   - repo: "https://github.com/commitizen-tools/commitizen"
-    rev: "3.1.0"
+    rev: "3.1.1"
     hooks:
       - id: "commitizen"
 # Checks defined in the `./Makefile`

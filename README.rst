@@ -1,26 +1,13 @@
 ########################################################################################
-python-project-structure
+Project Structure
 ########################################################################################
-Python project structure foundation or template
+project-structure foundation or template
 ****************************************************************************************
 
 .. list-table::
    :class: borderless align-right
 
-   * - .. figure:: https://img.shields.io/pypi/v/python-project-structure.svg?logo=pypi&label=PyPI&logoColor=gold
-          :alt: PyPI latest release version
-          :target: https://pypi.org/project/python-project-structure/
-       .. figure:: https://img.shields.io/pypi/dm/python-project-structure.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold
-          :alt: PyPI downloads per month
-          :target: https://pypi.org/project/python-project-structure/
-       .. figure:: https://img.shields.io/pypi/pyversions/python-project-structure.svg?logo=python&label=Python&logoColor=gold
-          :alt: PyPI Python versions
-          :target: https://pypi.org/project/python-project-structure/
-       .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
-          :alt: Python code style
-          :target: https://github.com/psf/black
-
-     - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
+   * - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
           :alt: KeyBase PGP key ID
           :target: https://keybase.io/rpatterson
        .. figure:: https://img.shields.io/github/followers/rpatterson?style=social
@@ -34,16 +21,12 @@ Python project structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
-software projects.  It includes:
+This repository is meant to be used as a minimal, yet opinionated baseline for software
+projects.  It includes:
 
-- Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build, test and maintenance tasks
-- A `Makefile`_ target to format all Python code, including using `Black`_ for style
-- A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
-  Python code checks
-- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters in multiple Python
-  versions, including some checks not provided by Prospector.
+- A `Makefile`_ target to format all code, including using for style
+- A kitchen sink linter configuration that runs all available code checks
 - `VCS hooks`_ to enforce `conventional commits`_ and successful build and test on
   commit and push, and release notes on push
 - Targets/recipes in the `Makefile`_ to automate releases controlled by `conventional
@@ -51,12 +34,11 @@ software projects.  It includes:
 - Targets/recipes in the `Makefile`_ to automate upgrading requirements and dependencies
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
-developers can merge changes from this repository as we make changes related to Python
-project structure and tooling.  As we add structure specific to certain types of
-projects (e.g. CLI scripts, web development, etc.), frameworks (e.g. Flask, Pyramid,
-Django, etc.), libraries and such, branches will be used for each such variation such
-that structure common to different variations can be merged back into the branches for
-those specific variations.
+developers can merge changes from this repository as we make changes related to project
+structure and tooling.  As we add structure specific to certain types of projects
+(e.g. CLI scripts, web development, etc.), frameworks, libraries and such, branches will
+be used for each such variation such that structure common to different variations can
+be merged back into the branches for those specific variations.
 
 .. contents:: Table of Contents
 
@@ -72,12 +54,13 @@ figure it out and submit a PR with corrections to this section.
 
 #. Choose the right branch to use:
 
-   Is your project a CLI utility?  A web application?  Which project hosting provider
+   Is your project a CLI utility?  A web application?  For what programming language
+   will your project publish packages for?  Which project hosting provider
    and/or CI/CD platform will you use?  Choose the appropriate branch for your project:
 
-   - ``dist``:
+   - ``(py|js|ruby|etc.)``:
 
-     Basic Python distribution with build, tests, linters, code formatting and release
+     Basic package metadata with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
    - etc.
@@ -87,7 +70,7 @@ figure it out and submit a PR with corrections to this section.
    If starting a fresh project::
 
      $ git clone --origin "template" --branch "dist" \
-     "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
+     "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
@@ -96,18 +79,18 @@ figure it out and submit a PR with corrections to this section.
    If merging into an existing project::
 
      $ git remote add "template" \
-     "https://gitlab.com/rpatterson/python-project-structure.git"
+     "https://gitlab.com/rpatterson/project-structure.git"
      $ git config remote.template.tagOpt --no-tags
      $ git merge --allow-unrelated-histories "template/dist"
 
 #. Rename file and directory paths derived from the project name::
 
-     $ git ls-files | grep -iE 'python.?project.?structure'
+     $ git ls-files | grep -iE 'project.?structure'
 
 #. Rename strings derived from the project name and template author identity in project
    files::
 
-     $ git grep -iE 'python.?project.?structure|ross|Patterson'
+     $ git grep -iE 'project.?structure|ross|Patterson'
 
 #. Examine ``# TEMPLATE:`` comments and change as appropriate:
 
@@ -142,9 +125,9 @@ should go straight to final release.  For example they may decide that:
 Installation
 ****************************************************************************************
 
-Install using any tool for installing standard Python 3 distributions such as `pip`_::
+Install using any tool for installing standard packages for the project language::
 
-  $ pip3 install --user python-project-structure
+  $ true "TEMPLATE: Always specific to the type of project"
 
 
 ****************************************************************************************
@@ -163,20 +146,18 @@ development.
 Motivation
 ****************************************************************************************
 
-There are many other Python project templates so why make another? I've been doing
-Python development since 1998, so I've had plenty of time to develop plenty of opinions
-of my own.
-
-What I want in a template is complete tooling (e.g. test coverage, linting, formatting,
-CI/CD, etc.) but minimal dependencies, structure, and opinion beyond complete tooling
-(e.g. some non-Python build/task system, structure for frameworks/libraries not
+There are many other project templates so why make another? I've been doing full-stack
+web development since 1998, so I've had plenty of time to develop plenty of opinions of
+my own.  What I want in a template is complete tooling (e.g. test coverage, linting,
+formatting, CI/CD, etc.) but minimal dependencies, structure, and opinion beyond
+complete tooling (e.g. some build/task system, structure for frameworks/libraries not
 necessarily being used, etc.).  I couldn't find a template that manages that balance so
 here we are.
 
 I also find it hard to discern from other templates why they made what choices the did.
 As such, I also use this template as a way to try out various different options in the
-Python development world and evaluate them for myself.  You can learn about my findings
-and the reasons the choices I've made in the commit history.
+development world and evaluate them for myself.  You can learn about my findings and the
+reasons the choices I've made in the commit history.
 
 Most importantly, however, I've never found a satisfactory approach to keeping project
 structure up to date over time.  So the primary motivation is to use this repository as
@@ -184,23 +165,15 @@ a remote from which we can merge structure updates over the life of projects usi
 template.
 
 
-.. _Python: https://docs.python.org/3/library/logging.html
-.. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
-.. _pip: https://pip.pypa.io/en/stable/installation/
-.. _`Black`: https://github.com/psf/black
-.. _`Prospector`: https://prospector.landscape.io
-.. _`Tox`: https://tox.wiki
 .. _`Towncrier`: https://towncrier.readthedocs.io
 
 .. _`conventional commits`: https://www.conventionalcommits.org
 
 .. _`This project is hosted on GitLab`:
-   https://gitlab.com/rpatterson/python-project-structure
+   https://gitlab.com/rpatterson/project-structure
 .. _`a mirror on GitHub`:
-   https://github.com/rpatterson/python-project-structure
+   https://github.com/rpatterson/project-structure
 
 .. _Makefile: ./Makefile
 .. _`the ./CONTRIBUTING.rst file`: ./CONTRIBUTING.rst
-.. _`kitchen sink linter configuration`: ./.prospector.yaml
-.. _`tox.ini`: ./tox.ini
 .. _`VCS hooks`: ./.pre-commit-config.yaml

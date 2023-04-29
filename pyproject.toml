@@ -10,29 +10,6 @@ build-backend = "setuptools.build_meta"
 write_to = "src/pythonprojectstructure/version.py"
 # Uncomment to test uploading to PyPI locally
 # local_scheme = "no-local-version"
-[tool.commitizen]
-# Parse commit messages according to conventional commits to decide wether the next
-# versin tag should be a major, minor or patch bump and create the VCS tag.  Also
-# provides VCS hooks to enforce that commit messages comply with conventional commits:
-# https://commitizen-tools.github.io/commitizen/
-name = "cz_conventional_commits"
-# TEMPLATE: Update these versions to the latest version for your project and ensure the
-# tag exists both locally and on the project's remote:
-changelog_start_rev = "v0.0.0"
-version = "0.0.0"
-tag_format = "v$version"
-annotated_tag = true
-gpg_sign = true
-bump_message = """\
-build(release): Version $current_version → $new_version
-
-[ci release]
-"""
-[tool.towncrier]
-# https://towncrier.readthedocs.io/en/stable/#quick-start
-package = "pythonprojectstructure"
-package_dir = "src"
-name = "python-project-structure"
 
 [tool.pylint.MASTER]
 # Ensure `duplicate-code` and any other errors that depend on not runnining in parallel

@@ -275,7 +275,8 @@ test-push: $(VCS_FETCH_TARGETS) \
 	then
 	    exit $$exit_code
 	else
-	    $(TOX_EXEC_ARGS) -- towncrier check --compare-with "$${vcs_compare_rev}"
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
 .PHONY: test-clean
@@ -353,11 +354,11 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
-	$(TOX_EXEC_ARGS) -qq -- \
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-	$(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)
@@ -405,13 +406,10 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
-	    >"./src/pythonprojectstructure/newsfragments/\
-	+upgrade-requirements.bugfix.rst"
+	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
-	git add \
-	    "./src/pythonprojectstructure/newsfragments/\
-	+upgrade-requirements.bugfix.rst"
+	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS

@@ -10,7 +10,11 @@ pre-commit
 # Release libraries and tools.
 # Parse commit messages according to conventional commits to decide wether the next
 # version tag should be a major, minor or patch bump and create the VCS tag.  Also VCS
-# hooks to enforce that commit messages comply with conventional commits
+# hooks to enforce that commit messages comply with conventional commits:
 commitizen
+
 # Publish releas artifacts to remotes
 twine
+
+# Generate release notes/changelogs:
+towncrier

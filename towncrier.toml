@@ -1,0 +1,6 @@
+[tool.towncrier]
+# https://towncrier.readthedocs.io/en/stable/#quick-start
+package = "pythonprojectstructure"
+package_dir = "src"
+name = "python-project-structure"
+directory = "./newsfragments"

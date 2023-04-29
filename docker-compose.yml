@@ -1,0 +1,2 @@
+# Empty so as not to interfere with any end-user container usage:
+version: "3.8"

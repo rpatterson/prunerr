@@ -364,6 +364,8 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
+./README.md: README.rst
+	docker compose run --rm "pandoc"
 
 # Install all tools required by recipes that have to be installed externally on the
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
@@ -381,10 +383,13 @@ $(HOME)/.local/var/log/project-structure-host-install.log:
 # We need `$ envsubst` in the `expand-template:` target recipe:
 	                "gettext" \
 # We need `$ pip3` to install the project's Python tools:
-	                "py3-pip"
+	                "py3-pip" \
+# Needed for dependencies we can't get current versions for locally:
+	                "docker-cli-compose"
 	        else
 	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip"
+	            sudo apt-get install -y "gettext-base" "python3-pip" \
+	                "docker-compose-plugin"
 	        fi
 	    fi
 	    pip install -r "./build-host/requirements.txt.in"

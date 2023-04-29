@@ -1,12 +1,28 @@
 {
   "name": "@rpattersonnet/project-structure",
-  "version": "1.0.0",
-  "description": "Project Structure ######################################################################################## project-structure foundation or template ****************************************************************************************",
-  "main": "index.js",
+  "scope": "@rpattersonnet",
+  "version": "0.0.0",
+  "description": "Project structure foundation or template, package metadata",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "Ross Patterson <rpatterson@rpatterson.rpatterson.net>",
-  "license": "MIT"
+  "keywords": [
+    "template",
+    "structure"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Ross Patterson",
+    "email": "me@rpatterson.net",
+    "url": "https://www.rpatterson.net/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/rpatterson/project-structure.git"
+  },
+  "funding": {
+    "type": "liberapay",
+    "url": "https://liberapay.com/rpatterson/donate"
+  },
+  "devDependencies": {
+  }
 }

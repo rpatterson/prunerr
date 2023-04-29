@@ -305,11 +305,7 @@ endif
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
-	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
-		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/project-structure/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/project-structure/"
-	$(TOX_EXEC_ARGS) -- black "./src/project-structure/"
+	true "TEMPLATE: Always specific to the type of project"
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.

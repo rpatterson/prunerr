@@ -83,11 +83,13 @@ services:
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     entrypoint: "ash"
-    # Strip reStructuredText directives unsupported in Markdown:
+    # Strip reStructuredText directives unsupported in Markdown before converting and
+    # converted Markdown that isn't widely supported, e.g. table of contents and tables
+    # respectively:
     command: >-
       -xeu -c '
         grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
-        pandoc -f "rst" -t "markdown" -o "./var/README.md"
+        pandoc -f "rst" -t "gfm" | grep -Ev "^(\+-+\+|\|.*\|)$" >"./README.md"
       '
 
   docker-pushrm:

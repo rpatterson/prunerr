@@ -179,11 +179,14 @@ test: test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log test-lint-prose
-# Run non-code checks, e.g. documentation:
+test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/npm-install.log test-lint-prose
+# Run linters implemented in Python:
 	tox run -e "build"
 # Check copyright and licensing:
 	docker compose run --rm -T "reuse"
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint
 
 .PHONY: test-lint-prose
 ### Check prose text for spelling, grammar and style
@@ -324,10 +327,13 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the type of project"
 	docker compose run --rm "reuse" annotate -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
+# Run formatters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run format
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.

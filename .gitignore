@@ -23,5 +23,18 @@ docs/_build/
 # dotenv
 /.env
 
+# Linters
+# Ignore downloaded styles:
+/styles/Vale
+/styles/Microsoft
+/styles/Google
+/styles/RedHat
+/styles/proselint
+/styles/write-good
+/styles/alex
+/styles/Readability
+/styles/Joblint
+
+
 # Emacs editor settings
 /.dir-locals.el

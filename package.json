@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "description": "Project structure foundation or template, package metadata",
   "scripts": {
+    "lint": "prettier --check './'",
+    "format": "prettier --write './'"
   },
   "keywords": [
     "template",
@@ -24,5 +26,6 @@
     "url": "https://liberapay.com/rpatterson/donate"
   },
   "devDependencies": {
+    "prettier": "2.8.8"
   }
 }

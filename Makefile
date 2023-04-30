@@ -298,11 +298,15 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
+# Assemble the release notes for this next version:
 	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
 	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
+# Bump the version in the NPM package metadata:
+	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
+	git add -- "./package*.json"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 [build-system]
 # https://setuptools.pypa.io/en/latest/build_meta.html#how-to-use-it
 requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]

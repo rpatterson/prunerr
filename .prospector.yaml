@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # https://prospector.landscape.io/en/master/profiles.html#global-configuration-options
 strictness: "veryhigh"
 test-warnings: true

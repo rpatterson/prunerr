@@ -1,2 +1,6 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Empty so as not to interfere with any end-user container usage:
 version: "3.8"

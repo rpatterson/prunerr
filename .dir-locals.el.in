@@ -1,3 +1,7 @@
+; SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+;
+; SPDX-License-Identifier: MIT
+
 ;;; Directory Local Variables
 ;;; For more information see (info \"(emacs) Directory Variables\")
 

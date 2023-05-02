@@ -154,6 +154,7 @@ endif
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
+PIP_COMPILE_EXTRA=
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
@@ -222,6 +223,17 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
+
+.PHONY: build-requirements-compile
+### Compile the requirements for one Python version and one type/extra.
+build-requirements-compile:
+	$(MAKE) -e "./var/log/tox/$(PYTHON_ENV)/build.log"
+	pip_compile_opts="--resolver backtracking --upgrade"
+ifneq ($(PIP_COMPILE_EXTRA),)
+	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
+endif
+	./.tox/$(PYTHON_ENV)/bin/pip-compile $${pip_compile_opts} \
+	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -449,20 +461,17 @@ clean:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --extra "devel" \
-	    --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/devel.txt=%)" \
+	    PIP_COMPILE_EXTRA="devel" PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
+	    build-requirements-compile
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/user.txt=%)" PIP_COMPILE_SRC="$(<)" \
+	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:build-host/requirements-%.txt=%)" \
+	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" build-requirements-compile
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -477,9 +486,8 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 	fi
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
+	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
 # created and can be used directly to save time on Tox's overhead when we don't need

@@ -11,7 +11,11 @@ project-structure foundation or template
 .. list-table::
    :class: borderless align-right
 
-   * - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
+   * - .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
+          :alt: REUSE license status
+          :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
+
+     - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
           :alt: KeyBase PGP key ID
           :target: https://keybase.io/rpatterson
        .. figure:: https://img.shields.io/github/followers/rpatterson?style=social

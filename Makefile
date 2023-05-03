@@ -217,6 +217,7 @@ build: \
 ### Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
+	rm -vf "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	$(MAKE) -e "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    ./requirements/$(@:build-requirements-%=%)/devel.txt \

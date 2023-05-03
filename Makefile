@@ -429,6 +429,9 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
+	    "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"

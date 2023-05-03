@@ -3,9 +3,9 @@
 .. SPDX-License-Identifier: MIT
 
 ########################################################################################
-Python Project Structure
+Project Structure
 ########################################################################################
-Python project structure foundation or template
+Project structure foundation or template
 ****************************************************************************************
 
 .. list-table::

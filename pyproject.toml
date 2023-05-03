@@ -11,7 +11,7 @@ build-backend = "setuptools.build_meta"
 # Use VCS tags as the sole authority on versions.  Dynamically determine the current
 # version from VCS tags:
 # https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
-write_to = "src/pythonprojectstructure/version.py"
+write_to = "src/projectstructure/version.py"
 # Uncomment to test uploading to PyPI locally
 # local_scheme = "no-local-version"
 
@@ -43,7 +43,7 @@ disable = ["relative-beyond-top-level"]
 
 [tool.vulture]
 # https://github.com/jendrikseipp/vulture#ignoring-files
-exclude = ["src/pythonprojectstructure/version.py"]
+exclude = ["src/projectstructure/version.py"]
 
 [tool.isort]
 # Match Black's defaults

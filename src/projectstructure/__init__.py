@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 """
-Python project structure foundation or template, top-level package.
+Project structure foundation or template, top-level package.
 """
 
 # TEMPLATE: Projects using this template should remove the linter disable/ignore

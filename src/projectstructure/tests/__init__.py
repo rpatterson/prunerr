@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: MIT
 
 """
-Tests for this Python project structure foundation or template.
+Tests for this project structure foundation or template.
 """

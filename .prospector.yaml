@@ -57,7 +57,7 @@ pep257:
 # Defensively avoid scanning large artifacts:
 # https://prospector.landscape.io/en/master/profiles.html#ignoring-paths-and-patterns
 ignore-paths:
-  - "src/pythonprojectstructure/version.py"
+  - "src/projectstructure/version.py"
   - ".tox"
   - "var"
 

@@ -322,12 +322,12 @@ release: $(HOME)/.local/var/log/project-structure-host-install.log ~/.pypirc
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/python?project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python?project?structure-*
+	    ./dist/project?structure-*
 endif
 
 .PHONY: release-bump
@@ -400,9 +400,9 @@ endif
 devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) -- black "./src/pythonprojectstructure/"
+		--remove-unused-variables "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
 	$(TOX_EXEC_ARGS) -- reuse annotate -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 

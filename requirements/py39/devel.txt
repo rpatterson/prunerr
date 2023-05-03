@@ -244,7 +244,7 @@ trove-classifiers==2023.5.2
     # via pyroma
 typer[all]==0.7.0
     # via rstcheck
-types-docutils==0.19.1.8
+types-docutils==0.19.1.9
     # via rstcheck-core
 typing-extensions==4.5.0
     # via

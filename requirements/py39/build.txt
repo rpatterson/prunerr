@@ -42,7 +42,7 @@ docutils==0.19
     # via readme-renderer
 filelock==3.12.0
     # via virtualenv
-identify==2.5.23
+identify==2.5.24
     # via pre-commit
 idna==3.4
     # via requests

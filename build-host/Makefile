@@ -16,7 +16,7 @@ COMMA=,
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
-DOCKER_IMAGE=merpatterson/python-project-structure
+DOCKER_IMAGE=merpatterson/project-structure
 
 ## Top-level targets
 

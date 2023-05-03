@@ -6,5 +6,5 @@
 # https://towncrier.readthedocs.io/en/stable/#quick-start
 package = "pythonprojectstructure"
 package_dir = "src"
-name = "python-project-structure"
+name = "project-structure"
 directory = "./newsfragments"

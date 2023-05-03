@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 """
-python-project-structure unit and integration tests.
+project-structure unit and integration tests.
 """
 
 import sys
@@ -14,7 +14,7 @@ import unittest
 
 class PythonProjectStructureTests(unittest.TestCase):
     """
-    python-project-structure unit and integration tests.
+    project-structure unit and integration tests.
     """
 
     def test_importable(self):

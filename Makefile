@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 ## Development, build and maintenance tasks:
 #
 # To ease discovery for new contributors, variables that act as options affecting
@@ -395,6 +399,8 @@ devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
 		--remove-unused-variables "./src/pythonprojectstructure/"
 	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/pythonprojectstructure/"
 	$(TOX_EXEC_ARGS) -- black "./src/pythonprojectstructure/"
+	$(TOX_EXEC_ARGS) -- reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
@@ -508,6 +514,9 @@ $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" |& tee -a "$(@)"
 
+./README.md: README.rst
+	docker compose run --rm "pandoc"
+
 # Install all tools required by recipes that have to be installed externally on the
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
 # target specific to this project so that other projects can use the same approach but
@@ -524,10 +533,13 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 # We need `$ envsubst` in the `expand-template:` target recipe:
 	                "gettext" \
 # We need `$ pip3` to install the project's Python tools:
-	                "py3-pip"
+	                "py3-pip" \
+# Needed for dependencies we can't get current versions for locally:
+	                "docker-cli-compose"
 	        else
 	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip"
+	            sudo apt-get install -y "gettext-base" "python3-pip" \
+	                "docker-compose-plugin"
 	        fi
 	    fi
 	    if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]

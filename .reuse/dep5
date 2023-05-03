@@ -1,0 +1,10 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: project-structure
+Upstream-Contact: Ross Patterson <me@rpatterson.net>
+Source: https://gitlab.com/rpatterson/project-structure
+
+# Sample paragraph, commented out:
+#
+# Files: src/*
+# Copyright: $YEAR $NAME <$CONTACT>
+# License: ...

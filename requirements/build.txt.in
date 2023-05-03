@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Build, release and development tools that can operate totally independently and are
 # used outside the Docker container in the developer's localhost environment.
 

@@ -14,15 +14,15 @@ Python project structure foundation or template
    * - .. figure:: https://img.shields.io/pypi/v/project-structure.svg?logo=pypi&label=PyPI&logoColor=gold
           :alt: PyPI latest release version
           :target: https://pypi.org/project/project-structure/
-       .. figure:: https://img.shields.io/pypi/dm/project-structure.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold
-          :alt: PyPI downloads per month
-          :target: https://pypi.org/project/project-structure/
        .. figure:: https://img.shields.io/pypi/pyversions/project-structure.svg?logo=python&label=Python&logoColor=gold
           :alt: PyPI Python versions
           :target: https://pypi.org/project/project-structure/
        .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
           :alt: Python code style
           :target: https://github.com/psf/black
+     - .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
+          :alt: REUSE license status
+          :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
           :alt: KeyBase PGP key ID

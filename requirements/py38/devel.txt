@@ -190,7 +190,7 @@ pyyaml==6.0
     #   xenon
 radon==5.1.0
     # via xenon
-requests==2.29.0
+requests==2.30.0
     # via
     #   pyroma
     #   xenon
@@ -254,7 +254,7 @@ typing-extensions==4.5.0
     #   pydantic
     #   pylint
     #   rich
-urllib3==1.26.15
+urllib3==2.0.2
     # via requests
 vulture==2.7
     # via prospector

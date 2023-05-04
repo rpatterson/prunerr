@@ -415,9 +415,9 @@ ifneq ($(PIP_COMPILE_EXTRA),)
 endif
 	./.tox/$(PYTHON_ENV)/bin/pip-compile $${pip_compile_opts} \
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
-	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --style "python" \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
-	    --style "python" "$(PIP_COMPILE_OUT)"
+	    "$(PIP_COMPILE_OUT)"
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -571,16 +571,6 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
 	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
-	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
-
-.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
-### Pull container images and compile fixed/pinned dependency versions if necessary.
-$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
-	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
-	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
-	$(MAKE) -e "./var/docker/$${PYTHON_ENV}/log/build-devel.log"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
-	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 

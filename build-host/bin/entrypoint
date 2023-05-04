@@ -1,4 +1,9 @@
 #!/bin/ash
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 #
 # Shared set up for local testing of CI/CD
 

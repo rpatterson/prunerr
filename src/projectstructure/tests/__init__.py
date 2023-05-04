@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Ignore everything but files managed by VCS:
-/*
-!/.git*
-!/*.in
+"""
+Tests for this project structure foundation or template.
+"""

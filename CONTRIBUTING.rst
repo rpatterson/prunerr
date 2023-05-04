@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+..
+.. SPDX-License-Identifier: MIT
+
 ########################################################################################
 Contributing
 ########################################################################################
@@ -5,7 +9,7 @@ Contributing
 Development requires fairly standard development tools, but ``git`` and ``make`` to
 bootstrap the local development environment.  Once installed, clone the repository::
 
-  $ git clone "https://gitlab.com/rpatterson/python-project-structure"
+  $ git clone "https://gitlab.com/rpatterson/project-structure"
 
 Then hand the rest over to the `Makefile`_ to install the VCS hooks the rest of the set
 up and build required for local development::
@@ -75,7 +79,7 @@ the `Makefile`_ for guidance on making contributions there.
 .. _`towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
 .. _`news fragment`: https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
 
-.. _`an issue/ticket`: https://gitlab.com/rpatterson/python-project-structure/-/issues
+.. _`an issue/ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
 
 .. _Makefile: ./Makefile
 .. _`the ./TODO.rst file`: ./TODO.rst

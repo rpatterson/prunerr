@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 ## Development, build and maintenance tasks:
 #
 # To ease discovery for new contributors, variables that act as options affecting
@@ -154,6 +158,7 @@ endif
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
+PIP_COMPILE_EXTRA=
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
@@ -205,13 +210,14 @@ all: build
 ### Perform any currently necessary local set-up common to most operations.
 build: \
 	./.git/hooks/pre-commit \
-	$(HOME)/.local/var/log/python-project-structure-host-install.log
+	$(HOME)/.local/var/log/project-structure-host-install.log
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
+	rm -vf "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	$(MAKE) -e "$(@:build-requirements-%=./var/log/tox/%/build.log)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
@@ -222,6 +228,20 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets} ||
 	    $(MAKE) -e -j $${targets}
+
+.PHONY: build-requirements-compile
+### Compile the requirements for one Python version and one type/extra.
+build-requirements-compile:
+	$(MAKE) -e "./var/log/tox/$(PYTHON_ENV)/build.log"
+	pip_compile_opts="--resolver backtracking --upgrade"
+ifneq ($(PIP_COMPILE_EXTRA),)
+	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
+endif
+	./.tox/$(PYTHON_ENV)/bin/pip-compile $${pip_compile_opts} \
+	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
+	    --style "python" "$(PIP_COMPILE_OUT)"
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -254,7 +274,7 @@ test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
 .PHONY: test-push
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log
+		$(HOME)/.local/var/log/project-structure-host-install.log
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -275,7 +295,8 @@ test-push: $(VCS_FETCH_TARGETS) \
 	then
 	    exit $$exit_code
 	else
-	    $(TOX_EXEC_ARGS) -- towncrier check --compare-with "$${vcs_compare_rev}"
+	    $(TOX_EXEC_BUILD_ARGS) -- \
+	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
 .PHONY: test-clean
@@ -296,23 +317,23 @@ test-clean:
 
 .PHONY: release
 ### Publish installable Python packages if conventional commits require a release.
-release: $(HOME)/.local/var/log/python-project-structure-host-install.log ~/.pypirc
+release: $(HOME)/.local/var/log/project-structure-host-install.log ~/.pypirc
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/python?project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/project?structure-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/python?project?structure-*
+	    ./dist/project?structure-*
 endif
 
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/python-project-structure-host-install.log
+		$(HOME)/.local/var/log/project-structure-host-install.log
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -353,11 +374,11 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
-	$(TOX_EXEC_ARGS) -qq -- \
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-	$(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)
@@ -376,12 +397,14 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/python-project-structure-host-install.log
+devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/pythonprojectstructure/"
-	$(TOX_EXEC_ARGS) -- black "./src/pythonprojectstructure/"
+		--remove-unused-variables "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
@@ -405,13 +428,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
-	    >"./src/pythonprojectstructure/newsfragments/\
-	+upgrade-requirements.bugfix.rst"
+	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
+	    "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
-	git add \
-	    "./src/pythonprojectstructure/newsfragments/\
-	+upgrade-requirements.bugfix.rst"
+	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
@@ -451,20 +474,17 @@ clean:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --extra "devel" \
-	    --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/devel.txt=%)" \
+	    PIP_COMPILE_EXTRA="devel" PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
+	    build-requirements-compile
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/user.txt=%)" PIP_COMPILE_SRC="$(<)" \
+	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:build-host/requirements-%.txt=%)" \
+	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" build-requirements-compile
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -479,9 +499,8 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 	fi
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
+	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
 # created and can be used directly to save time on Tox's overhead when we don't need
@@ -489,7 +508,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
 $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
-	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |&
 	    tee -a "$(@)"
@@ -497,16 +516,19 @@ $(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
 $(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
-	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
 	    pip install -e "./" |& tee -a "$(@)"
+
+./README.md: README.rst
+	docker compose run --rm "pandoc"
 
 # Install all tools required by recipes that have to be installed externally on the
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
 # target specific to this project so that other projects can use the same approach but
 # with different requirements.
-$(HOME)/.local/var/log/python-project-structure-host-install.log:
+$(HOME)/.local/var/log/project-structure-host-install.log:
 	mkdir -pv "$(dir $(@))"
 	(
 	    if ! which pip
@@ -514,10 +536,17 @@ $(HOME)/.local/var/log/python-project-structure-host-install.log:
 	        if which apk
 	        then
 	            apk update
-	            apk add "gettext" "py3-pip"
+	            apk add \
+# We need `$ envsubst` in the `expand-template:` target recipe:
+	                "gettext" \
+# We need `$ pip3` to install the project's Python tools:
+	                "py3-pip" \
+# Needed for dependencies we can't get current versions for locally:
+	                "docker-cli-compose"
 	        else
 	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip"
+	            sudo apt-get install -y "gettext-base" "python3-pip" \
+	                "docker-compose-plugin"
 	        fi
 	    fi
 	    if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]
@@ -546,13 +575,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
@@ -577,7 +606,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 .PHONY: expand-template
 ## Create a file from a template replacing environment variables
 expand-template:
-	$(MAKE) -e "$(HOME)/.local/var/log/python-project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	set +x
 	if [ -e "$(target)" ]
 	then

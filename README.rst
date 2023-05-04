@@ -1,24 +1,28 @@
+.. SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+..
+.. SPDX-License-Identifier: MIT
+
 ########################################################################################
-python-project-structure
+Project Structure
 ########################################################################################
-Python project structure foundation or template
+Project structure foundation or template
 ****************************************************************************************
 
 .. list-table::
    :class: borderless align-right
 
-   * - .. figure:: https://img.shields.io/pypi/v/python-project-structure.svg?logo=pypi&label=PyPI&logoColor=gold
+   * - .. figure:: https://img.shields.io/pypi/v/project-structure.svg?logo=pypi&label=PyPI&logoColor=gold
           :alt: PyPI latest release version
-          :target: https://pypi.org/project/python-project-structure/
-       .. figure:: https://img.shields.io/pypi/dm/python-project-structure.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold
-          :alt: PyPI downloads per month
-          :target: https://pypi.org/project/python-project-structure/
-       .. figure:: https://img.shields.io/pypi/pyversions/python-project-structure.svg?logo=python&label=Python&logoColor=gold
+          :target: https://pypi.org/project/project-structure/
+       .. figure:: https://img.shields.io/pypi/pyversions/project-structure.svg?logo=python&label=Python&logoColor=gold
           :alt: PyPI Python versions
-          :target: https://pypi.org/project/python-project-structure/
+          :target: https://pypi.org/project/project-structure/
        .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
           :alt: Python code style
           :target: https://github.com/psf/black
+     - .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
+          :alt: REUSE license status
+          :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
           :alt: KeyBase PGP key ID
@@ -92,7 +96,7 @@ figure it out and submit a PR with corrections to this section.
    If starting a fresh project::
 
      $ git clone --origin "template" --branch "cli" \
-     "https://gitlab.com/rpatterson/python-project-structure.git" "./foo-project"
+     "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
@@ -101,7 +105,7 @@ figure it out and submit a PR with corrections to this section.
    If merging into an existing project::
 
      $ git remote add "template" \
-     "https://gitlab.com/rpatterson/python-project-structure.git"
+     "https://gitlab.com/rpatterson/project-structure.git"
      $ git config remote.template.tagOpt --no-tags
      $ git merge --allow-unrelated-histories "template/cli"
 
@@ -149,7 +153,7 @@ Installation
 
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
-  $ pip3 install --user python-project-structure
+  $ pip3 install --user project-structure
 
 Optional shell tab completion is available via `argcomplete`_.
 
@@ -160,10 +164,10 @@ Usage
 
 See the command-line help for details on options and arguments::
 
-  $ python-project-structure --help
-  usage: python-project-structure [-h]
+  $ project-structure --help
+  usage: project-structure [-h]
 
-  Python project structure foundation or template, top-level package.
+  project structure foundation or template, top-level package.
 
   optional arguments:
     -h, --help  show this help message and exit
@@ -218,9 +222,9 @@ template.
 .. _`conventional commits`: https://www.conventionalcommits.org
 
 .. _`This project is hosted on GitLab`:
-   https://gitlab.com/rpatterson/python-project-structure
+   https://gitlab.com/rpatterson/project-structure
 .. _`a mirror on GitHub`:
-   https://github.com/rpatterson/python-project-structure
+   https://github.com/rpatterson/project-structure
 
 .. _Makefile: ./Makefile
 .. _`the ./CONTRIBUTING.rst file`: ./CONTRIBUTING.rst

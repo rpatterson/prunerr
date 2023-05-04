@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Backup files
 *~
 *.rej
@@ -24,6 +28,7 @@ lib64/
 parts/
 sdist/
 var/
+/README.md
 *.egg-info/
 .installed.cfg
 *.egg

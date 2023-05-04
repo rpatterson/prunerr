@@ -1,6 +1,11 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # PYTHON_ARGCOMPLETE_OK
+
 """
-Python project structure foundation or template, top-level package.
+Project structure foundation or template, top-level package.
 """
 
 import sys

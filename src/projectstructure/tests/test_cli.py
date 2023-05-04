@@ -1,5 +1,5 @@
 """
-Test the python-project-structure Command-Line Interface.
+Test the project-structure Command-Line Interface.
 """
 
 import sys
@@ -11,12 +11,12 @@ import pathlib
 
 import unittest
 
-import pythonprojectstructure
+import projectstructure
 
 
-class PythonProjectStructureCLITests(unittest.TestCase):
+class ProjectstructureCLITests(unittest.TestCase):
     """
-    Test the python-project-structure Command-Line Interface.
+    Test the project-structure Command-Line Interface.
     """
 
     def test_importable(self):
@@ -24,7 +24,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The Python package is on `sys.path` and thus importable.
         """
         import_process = subprocess.run(  # nosec B603
-            [sys.executable, "-c", "import pythonprojectstructure"],
+            [sys.executable, "-c", "import projectstructure"],
             check=False,
         )
         self.assertEqual(
@@ -40,7 +40,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         stderr_file = io.StringIO()
         with self.assertRaises(SystemExit, msg="CLI didn't exit"):
             with contextlib.redirect_stderr(stderr_file):
-                pythonprojectstructure.main(args=args)
+                projectstructure.main(args=args)
         return stderr_file.getvalue()
 
     def test_cli_help(self):
@@ -50,10 +50,10 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         stdout_file = io.StringIO()
         with self.assertRaises(SystemExit, msg="CLI didn't exit"):
             with contextlib.redirect_stdout(stdout_file):
-                pythonprojectstructure.main(args=["--help"])
+                projectstructure.main(args=["--help"])
         stdout = stdout_file.getvalue()
         self.assertIn(
-            pythonprojectstructure.__doc__.strip(),
+            projectstructure.__doc__.strip(),
             stdout.replace("\n", " "),
             "The console script name missing from --help output",
         )
@@ -63,7 +63,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The command line supports sub-commands.
         """
         self.assertIsNone(
-            pythonprojectstructure.main(args=["foobar"]),
+            projectstructure.main(args=["foobar"]),
             "Wrong console script sub-command return value",
         )
 
@@ -72,7 +72,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The command line script accepts options controlling behavior.
         """
         self.assertIsNone(
-            pythonprojectstructure.main(args=["--log-level", "DEBUG", "foobar", "-q"]),
+            projectstructure.main(args=["--log-level", "DEBUG", "foobar", "-q"]),
             "Wrong console script options return value",
         )
 
@@ -92,7 +92,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The package supports execution via Python's `-m` CLI option.
         """
         module_main_process = subprocess.run(  # nosec B603
-            [sys.executable, "-m", "pythonprojectstructure", "foobar"],
+            [sys.executable, "-m", "projectstructure", "foobar"],
             check=False,
         )
         self.assertEqual(
@@ -106,7 +106,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
         The package supports execution via Python's `-m` option.
         """
         with self.assertRaises(SystemExit, msg="CLI didn't exit") as exc_context:
-            runpy.run_module("pythonprojectstructure")
+            runpy.run_module("projectstructure")
         self.assertEqual(
             exc_context.exception.code,
             2,
@@ -125,7 +125,7 @@ class PythonProjectStructureCLITests(unittest.TestCase):
                 raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(  # nosec B603
-            [prefix_path / "bin" / "python-project-structure", "foobar"],
+            [prefix_path / "bin" / "project-structure", "foobar"],
             check=False,
         )
         self.assertEqual(

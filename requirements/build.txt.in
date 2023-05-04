@@ -1,16 +1,27 @@
-# Build, release and development tools that can operate totally independently and are
-# used outside the Docker container in the developer's localhost environment.
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
 
-# Get the Python dist/package version from VCS `v#.#.#` tags dynamically.
-setuptools_scm
+# Build, release and development tools that can operate totally independently of the
+# project's code or package.
 
-# VCS hooks to enforce passint tests, test coverage, style and linting
+# VCS hooks to enforce passint tests, test coverage, style and linting:
 pre-commit
 
 # Release libraries and tools.
+#
 # Parse commit messages according to conventional commits to decide wether the next
 # version tag should be a major, minor or patch bump and create the VCS tag.  Also VCS
-# hooks to enforce that commit messages comply with conventional commits
+# hooks to enforce that commit messages comply with conventional commits:
 commitizen
-# Publish releas artifacts to remotes
-twine
+
+# Generate release notes/changelogs:
+towncrier
+
+# Check reStructuredText documentation:
+rstcheck
+
+# Check copyright and licensing:
+# Prevent upgrading to broken releases:
+# https://github.com/fsfe/reuse-tool/issues/738
+reuse @ git+https://github.com/fsfe/reuse-tool.git

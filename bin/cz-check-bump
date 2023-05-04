@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 """
 Check if the conventional commits since the last release require a new release.
 

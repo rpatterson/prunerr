@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+..
+.. SPDX-License-Identifier: MIT
+
 ########################################################################################
 Seeking Contributions
 ########################################################################################
@@ -31,8 +35,6 @@ Nice to Have
 
 #. Documentation via Sphinx with CI to publish to RTFD.
 
-#. New branches for different frameworks, e.g.: Flask, Pyramid, Django
-
 #. Better release notes content for final releases with no changes since the last
    pre-release.
 
@@ -51,9 +53,9 @@ Nice to Have
 #. CI/CD for other image platforms:
 
    One issue with this is CI resources.  We already exhaust GitLab free CI/CD minutes
-   too quickly testing against multiple Python versions.  Actually running the tests in
-   ARM images would either consume even more free CI/CD minutes to run on the cloud ARM
-   runners or would take forever using emulation in the dedicated project runners.
+   too quickly.  Actually running the tests in ARM images would either consume even more
+   free CI/CD minutes to run on the cloud ARM runners or would take forever using
+   emulation in the dedicated project runners.
 
    Another issue is lack of important support from Docker.  Docker provides both the
    capability to build images for non-native platforms *and* run images for non-native

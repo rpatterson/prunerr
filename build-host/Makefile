@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 ## Build and publish an image in which to build, test, and release the project
 
 ### Defensive settings for make:
@@ -16,7 +20,7 @@ COMMA=,
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
-DOCKER_IMAGE=merpatterson/python-project-structure
+DOCKER_IMAGE=merpatterson/project-structure
 
 ## Top-level targets
 
@@ -48,7 +52,7 @@ debug-github-checkout:
 	git init "$(CHECKOUT_DIR)"
 	cd "$(CHECKOUT_DIR)"
 	git remote add origin \
-	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/python-project-structure"
+	    "https://github.com/$(GITHUB_REPOSITORY_OWNER)/project-structure"
 	rev_hash="$$(git ls-remote -q "origin" "$(VCS_BRANCH)" | cut -f 1)"
 	git -c protocol.version=2 fetch --no-tags --prune --progress \
 	    --no-recurse-submodules --depth=1 "origin" "$${rev_hash}"

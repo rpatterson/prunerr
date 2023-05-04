@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 
 # TEMPLATE: If using GitLab CI/CD, then add the following secrets to the project:
@@ -20,16 +24,10 @@
 #   Actions as duplicate CI for tests, then configure repository mirroring in your
 #   GitLab project -> Settings -> Repository using the same token.
 #
-# - `PYPI_PASSWORD`:
-#   A PyPI API token
-#
-# - `TEST_PYPI_PASSWORD`:
-#   A PyPI API token
-#
 # - `VCS_REMOTE_PUSH_URL`:
 #   A GitLab Personal or Project Access Token formatted as an HTTP authentication prefix
 #   to the hostname, e.g.:
-#     https://token-name:token-value@gitlab.com/rpatterson/python-project-structure.git
+#     https://token-name:token-value@gitlab.com/rpatterson/project-structure.git
 #
 # All that can be masked should be.  All should be protected except `CODECOV_TOKEN` and
 # `DOCKER_PASS`.
@@ -79,39 +77,24 @@ build-test:
         )
         && $CI_PIPELINE_SOURCE != "schedule"
   interruptible: true
-  parallel:
-    matrix:
-      - PYTHON_MINORS:
-          - "3.11"
-          - "3.10"
-          - "3.9"
-          - "3.8"
-          - "3.7"
   script:
     # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
-      entrypoint make -e test-push
-      build-docker-$PYTHON_MINORS
-      test-docker-$PYTHON_MINORS
-      release-docker-$PYTHON_MINORS test-clean
+      entrypoint make -e test-push build-docker test-docker release-docker test-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "./build/py*/pytest*"
-      - "./build/py*/.coverage*"
-      - "./build/py*/coverage*"
-      - "./build/py*/htmlcov"
-      - "./build/py*/prospector*"
-      - "./build/py*/pylint*"
+      - "./build/*test*"
+      - "./build/coverage*"
+      - "./build/*lint*"
     reports:
       junit:
-        - "./build/py*/pytest-junit.xml"
-        - "./build/py*/prospector-xunit.xml"
+        - "./build/*test-junit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./build/py*/coverage.xml"
+        path: "./build/coverage.xml"
 
 release:
   stage: "release"
@@ -137,10 +120,10 @@ release:
         && $CI_PROJECT_NAMESPACE == "rpatterson"
   script:
     - >-
-      entrypoint make -e release-python test-clean
+      entrypoint make -e release-pkgs test-clean
   artifacts:
     paths:
-      - "./dist/python?project?structure-*"
+      - "./dist/project?structure-*"
 
 merge-upgrade:
   stage: "merge-upgrade"

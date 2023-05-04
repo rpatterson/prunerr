@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Set to 2 times the number of parallel matrix jobs as a default.
 # Alternatively, set to the number of CPUs/cores or some multiple:
 concurrent = 10

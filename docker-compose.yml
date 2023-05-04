@@ -1,13 +1,17 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Minimal `$ docker compose ...` configuration to demonstrate the requirements for
-# running python-project-structure in containers.
+# running project-structure in containers.
 version: "3.8"
 
 services:
 
   ## Container for use by end users:
-  python-project-structure:
-    image: "registry.gitlab.com/rpatterson/python-project-structure"
-    container_name: "python-project-structure"
+  project-structure:
+    image: "registry.gitlab.com/rpatterson/project-structure"
+    container_name: "project-structure"
     environment:
       TZ: "${TZ:-Etc/UTC}"
       # Make the run-time user configurable in `./.env` to match permissions inside and

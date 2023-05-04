@@ -1,4 +1,9 @@
 #!/bin/ash
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 #
 # Shared set up for local testing of CI/CD
 
@@ -19,7 +24,7 @@ main() {
     export HOME=/home/runner
     # Signal to `$ make` that host requirements are baked into the image and need not be
     # reinstalled:
-    touch "${HOME}/.local/var/log/python-project-structure-host-install.log"
+    touch "${HOME}/.local/var/log/project-structure-host-install.log"
 
     # Run as the user from the enironment, adding that user if necessary
     if [ -n "${PUID:-}" ]

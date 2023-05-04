@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Override `$ docker compose ...` configuration for development or testing here in this
 # repo checkout.  Everything that may be used outside this checkout should be in
 # `./docker-compose.yml`.

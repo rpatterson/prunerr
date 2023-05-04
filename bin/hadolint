@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 #
 # Wrappper for the Dockerfile linter in a container
 

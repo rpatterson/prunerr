@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+..
+.. SPDX-License-Identifier: MIT
+
 ########################################################################################
 Contributing
 ########################################################################################
@@ -5,7 +9,7 @@ Contributing
 Development requires fairly standard development tools, but ``git`` and ``make`` to
 bootstrap the local development environment.  Once installed, clone the repository::
 
-  $ git clone "https://gitlab.com/rpatterson/python-project-structure"
+  $ git clone "https://gitlab.com/rpatterson/project-structure"
 
 Then hand the rest over to the `Makefile`_ to install the VCS hooks the rest of the set
 up and build required for local development::
@@ -36,8 +40,7 @@ tests locally directly on your development host::
 
   $ make test-local
 
-You can also inspect test failures and errors in `Python's post-mortem debugger`_.  This
-also runs locally directly on your development host::
+You can also inspect test failures and errors in an interactive debugger::
 
   $ make test-debug
 
@@ -48,12 +51,13 @@ Contributions should be pushed to feature branches or forks off of the upstream
 ``develop`` branch.  Once work is finished and all the tests are passing locally, open a
 merge/pull request (MR) against the upstream ``develop`` branch.  Address any issues
 revealed by any failed CI/CD jobs for your MR.  Once all CI/CD checks are green, project
-maintainers can merge your work where CI/CD will publish a pre-release for your changes
-including container images and PyPI packages.  Contributors should then test the
-pre-release, preferably with as many users and use cases as possible.  Once everything
-looks good and the project maintainers think it's time to make a final release with all
-the outstanding work on ``develop``, they can merge ``develop`` into ``main`` and CI/CD
-will then publish a final release.
+maintainers can merge your work where CI/CD will build installable packages and
+container images for your changes and publish them as a pre-release to package
+registries/indexes.  Contributors should then test the pre-release, preferably with as
+many users and use cases as possible.  If everything looks good and the project
+maintainers think it's time to make a final release with all the outstanding work on
+``develop``, they can merge ``develop`` into ``main`` and CI/CD will then publish a
+final release.
 
 The versions for this project's dependencies and development tools are frozen/fixed for
 reproducibility in ``./requirements/**.txt``. The `Makefile`_ will update those versions
@@ -73,14 +77,10 @@ important enough to include in the documentation, then it's important enough to 
 in executable form in the `Makefile`_.  See the philosophy commentary at the bottom of
 the `Makefile`_ for guidance on making contributions there.
 
-
-.. _`Python's post-mortem debugger`:
-   https://docs.python.org/3/library/pdb.html#pdb.post_mortem
-
 .. _`towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
 .. _`news fragment`: https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
 
-.. _`an issue/ticket`: https://gitlab.com/rpatterson/python-project-structure/-/issues
+.. _`an issue/ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
 
 .. _Makefile: ./Makefile
 .. _`the ./TODO.rst file`: ./TODO.rst

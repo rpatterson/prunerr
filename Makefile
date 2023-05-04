@@ -13,7 +13,7 @@
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
+PYTHON_SUPPORTED_MINORS=3.10 3.11 3.9 3.8 3.7
 
 
 ## "Private" Variables:

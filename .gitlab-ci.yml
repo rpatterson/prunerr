@@ -203,7 +203,7 @@ release-version:
 # determines whether upgrade branches that pass CI will publish releases, pre-releases
 # for `develop` and final releases for `main`.
 #
-# WARNING: Running this even just daily can easily exhaust the gitlab.org free quotas.
+# WARNING: Running this even just daily can easily exhaust the gitlab.com free quotas.
 
 scheduled:
   stage: "scheduled"

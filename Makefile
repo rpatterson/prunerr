@@ -459,7 +459,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 test: test-docker-lint test-docker
 
 .PHONY: test-local
-### Run the full suite of tests on the local host.
+### Run the full suite of tests, coverage checks, and linters on the local host.
 test-local:
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 

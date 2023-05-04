@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 ## Container image in which to build, test, and release the project
 
 # I *want* something to break to let me know if something changes in the latest version

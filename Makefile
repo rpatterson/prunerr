@@ -298,7 +298,7 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters.
-test: test-docker-lint test-docker
+test: test-lint test-docker-lint test-docker
 
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters.

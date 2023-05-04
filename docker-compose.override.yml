@@ -11,11 +11,14 @@ services:
 
   # Configuration specific to development:
   project-structure:
-    image: "merpatterson/project-structure:${DOCKER_BRANCH_TAG:-develop}"
+    image: "merpatterson/project-structure\
+      :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       args:
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
+        PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
@@ -25,7 +28,8 @@ services:
 
   # Container for use by developers:
   project-structure-devel:
-    image: "merpatterson/project-structure:devel-${DOCKER_BRANCH_TAG:-develop}"
+    image: "merpatterson/project-structure\
+      :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-devel"
     profiles:
       - "test"
@@ -33,6 +37,8 @@ services:
       context: "${CHECKOUT_DIR:-.}/"
       dockerfile: "${CHECKOUT_DIR:-.}/Dockerfile.devel"
       args:
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
+        PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
@@ -50,7 +56,13 @@ services:
       - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var/docker/:/usr/local/src/project-structure/var/"
+      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/\
+        :/usr/local/src/project-structure/var/"
+      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/.tox/\
+        :/usr/local/src/project-structure/.tox/"
+      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}\
+        /project_structure.egg-info/\
+        :/usr/local/src/project-structure/src/project_structure.egg-info/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -98,8 +110,8 @@ services:
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
-      --file "/data/var/README.md"
-      --short "project structure foundation or template"
+      --file "/data/README.md"
+      --short "Project structure foundation or template"
       --debug "merpatterson/project-structure"
 
   gitlab-release-cli:

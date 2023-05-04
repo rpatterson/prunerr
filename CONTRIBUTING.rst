@@ -40,7 +40,8 @@ tests locally directly on your development host::
 
   $ make test-local
 
-You can also inspect test failures and errors in an interactive debugger::
+You can also inspect test failures and errors in `Python's post-mortem debugger`_.  This
+also runs locally directly on your development host::
 
   $ make test-debug
 
@@ -51,7 +52,7 @@ Contributions should be pushed to feature branches or forks off of the upstream
 ``develop`` branch.  Once work is finished and all the tests are passing, project
 maintainers can merge your work back into ``develop`` and run all checks and tests as
 above to confirm your work.  Then they can, bump the version, build pre-release
-packages, and publish to package registries/indexes::
+packages, and publish them to PyPI::
 
   $ make release
 
@@ -78,6 +79,10 @@ they should be captured in the `Makefile`_.  Similarly, if a development task is
 important enough to include in the documentation, then it's important enough to capture
 in executable form in the `Makefile`_.  See the philosophy commentary at the bottom of
 the `Makefile`_ for guidance on making contributions there.
+
+
+.. _`Python's post-mortem debugger`:
+   https://docs.python.org/3/library/pdb.html#pdb.post_mortem
 
 .. _`towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
 .. _`news fragment`: https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments

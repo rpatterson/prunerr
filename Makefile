@@ -12,6 +12,8 @@
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
+# https://devguide.python.org/versions/#supported-versions
+PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 
 
@@ -58,6 +60,38 @@ TZ=$(shell \
 endif
 export TZ
 export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
+
+# Values concerning supported Python versions:
+# Use the same Python version tox would as a default.
+# https://tox.wiki/en/latest/config.html#base_python
+PYTHON_HOST_MINOR:=$(shell \
+    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
+export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
+# Determine the latest installed Python version of the supported versions
+PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
+PYTHON_AVAIL_EXECS:=$(foreach \
+    PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
+PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
+PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
+PYTHON_MINOR=$(PYTHON_HOST_MINOR)
+ifeq ($(PYTHON_MINOR),)
+# Fallback to the latest installed supported Python version
+PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
+endif
+PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
+PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
+ifeq ($(PYTHON_MINOR),)
+export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
+export PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
+endif
+export PYTHON_MINOR
+export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
+PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
+PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
+PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
+export PYTHON_WHEEL=
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
@@ -128,8 +162,21 @@ ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
 
-# Run Python tools in isolated environments managed by Tox:
+# Values used to run Tox:
+TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
+ifeq ($(words $(PYTHON_MINORS)),1)
+TOX_RUN_ARGS=run
+else
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
+endif
+ifneq ($(PYTHON_WHEEL),)
+TOX_RUN_ARGS+= --installpkg "$(PYTHON_WHEEL)"
+endif
+export TOX_RUN_ARGS
+# The options that allow for rapid execution of arbitrary commands in the venvs managed
+# by tox
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
 # Values used to build Docker images:
@@ -159,6 +206,7 @@ endif
 # hosts/indexes/registries:
 BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
+PYPI_REPO=testpypi
 # Only publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
@@ -168,11 +216,20 @@ RELEASE_PUBLISH=true
 endif
 DOCKER_PLATFORMS=
 ifeq ($(RELEASE_PUBLISH),true)
+PYPI_REPO=pypi
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+# Only build and publish multi-platform images for the canonical Python version:
 # TEMPLATE: Choose the platforms on which your end-users need to be able to run the
 # image.  These default platforms should cover most common end-user platforms, including
 # modern Apple M1 CPUs, Raspberry Pi devices, etc.:
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
+endif
+# Address undefined variables warnings when running under local development
+PYPI_PASSWORD=
+export PYPI_PASSWORD
+TEST_PYPI_PASSWORD=
+export TEST_PYPI_PASSWORD
 
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
@@ -196,7 +253,7 @@ all: build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons.
-start: build-docker ./.env
+start: build-docker-$(PYTHON_MINOR) ./.env
 	docker compose down
 	docker compose up -d
 
@@ -218,10 +275,41 @@ build: ./.git/hooks/pre-commit \
 		build-docker
 
 .PHONY: build-pkgs
-### Ensure the built package is current.
+### Ensure the built package is current when used outside of tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/docker/log/build-devel.log
-	true "TEMPLATE: Always specific to the type of project"
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log
+# Defined as a .PHONY recipe so that multiple targets can depend on this as a
+# pre-requisite and it will only be run once per invocation.
+	rm -vf ./dist/*
+# Build Python packages/distributions from the development Docker container for
+# consistency/reproducibility.
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
+	    tox run -e "$(PYTHON_ENV)" --pkg-only
+# Copy the wheel to a location accessible to all containers:
+	cp -lfv "$$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
+	)" "./dist/"
+# Also build the source distribution:
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
+	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
+	cp -lfv "$$(
+	    ls -t ./var/docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
+	)" "./dist/"
+
+.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
+### Compile fixed/pinned dependency versions if necessary.
+$(PYTHON_ENVS:%=build-requirements-%):
+# Avoid parallel tox recreations stomping on each other
+	$(MAKE) -e "$(@:build-requirements-%=./var/log/tox/%/build.log)"
+	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
+	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    ./requirements/$(@:build-requirements-%=%)/build.txt \
+	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+# Workaround race conditions in pip's HTTP file cache:
+# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
+	$(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets}
 
 ## Docker Build Targets:
 #
@@ -233,7 +321,19 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: build-pkgs ./var/log/tox/build/build.log ./var/docker/log/build-user.log
+build-docker: build-pkgs ./var/log/tox/build/build.log
+	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
+	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
+	    $(PYTHON_MINORS:%=build-docker-%)
+
+.PHONY: $(PYTHON_MINORS:%=build-docker-%)
+### Set up for development in a Docker container for one Python version.
+$(PYTHON_MINORS:%=build-docker-%):
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:build-docker-%=%)" \
+	    PYTHON_MINOR="$(@:build-docker-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:build-docker-%=%))" \
+	    "./var/docker/py$(subst .,,$(@:build-docker-%=%))/log/build-user.log"
 
 .PHONY: build-docker-tags
 ### Print the list of image tags for the current registry and variant.
@@ -246,7 +346,7 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/tox/build/build.log
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
 # Only update tags end users may depend on to be stable from the `main` branch
 	VERSION=$$(./.tox/build/bin/cz version --project)
@@ -254,11 +354,12 @@ ifeq ($(VCS_BRANCH),main)
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
 	)
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${major_version}
-	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${minor_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${major_version}
+	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
 endif
 # This variant is the default used for tags such as `latest`
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
@@ -269,6 +370,7 @@ else
 	echo $${docker_image}:$(DOCKER_VARIANT)
 endif
 endif
+endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
@@ -277,7 +379,7 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
-	docker pull "buildpack-deps"
+	docker pull "python:$(PYTHON_MINOR)"
 	docker_image_tags=""
 	for image_tag in $$(
 	    $(MAKE) -e --no-print-directory build-docker-tags
@@ -288,8 +390,20 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker buildx build $(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE="1" \
+	    --build-arg PYTHON_MINOR="$(PYTHON_MINOR)" \
+	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
 	    $${docker_image_tags} --file "$(DOCKER_FILE)" "./"
+
+.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
+### Pull container images and compile fixed/pinned dependency versions if necessary.
+$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
+	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
+	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
+	$(MAKE) -e "./var/docker/$${PYTHON_ENV}/log/build-devel.log"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
+	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
 ## Test Targets:
@@ -301,35 +415,48 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 test: test-docker-lint test-docker
 
 .PHONY: test-local
-### Run the full suite of tests, coverage checks, and linters.
+### Run the full suite of tests on the local host.
 test-local:
-	true "TEMPLATE: Always specific to the type of project"
-
-.PHONY: test-lint
-### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/project-structure-host-install.log
-# Run non-code checks, e.g. documentation:
-	tox run -e "build"
+	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-debug
-### Run tests directly on the host and invoke the debugger on errors/failures.
-test-debug:
-	true "TEMPLATE: Always specific to the type of project"
+### Run tests in the host environment and invoke the debugger on errors/failures.
+test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
+	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs ./var/log/tox/build/build.log build-docker
+test-docker: build-pkgs ./var/log/tox/build/build.log
+	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
+	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
+	    DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
+	    $(PYTHON_MINORS:%=test-docker-%)
+
+.PHONY: $(PYTHON_MINORS:%=test-docker-%)
+### Run the full suite of tests inside a docker container for one Python version.
+$(PYTHON_MINORS:%=test-docker-%):
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:test-docker-%=%)" \
+	    PYTHON_MINOR="$(@:test-docker-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:test-docker-%=%))" \
+	    test-docker-pyminor
+
+.PHONY: test-docker-pyminor
+### Run the full suite of tests inside a docker container for this Python version.
+test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
 	fi
-# Ensure the end-user image runs successfully:
-	docker compose run --no-deps $${docker_run_args} project-structure true
-# Run from the development Docker container for consistency:
+# Ensure the dist/package has been correctly installed in the image
+	docker compose run --no-deps $${docker_run_args} project-structure \
+	    python -c 'import projectstructure; print(projectstructure)'
+# Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} project-structure-devel \
-	    make -e test-local
+	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
+	        test-local
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
@@ -345,7 +472,7 @@ test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/docker/log/build-devel.log ./.env
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./.env
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -367,7 +494,7 @@ test-push: $(VCS_FETCH_TARGETS) \
 	    exit $$exit_code
 	else
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        project-structure-devel $(TOX_EXEC_BUILD_ARGS) -- \
+	        project-structure-devel $(TOX_EXEC_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
@@ -388,23 +515,38 @@ test-clean:
 # end-users.
 
 .PHONY: release
-### Publish installable packages and container images as required by commits.
-release: release-pkgs release-docker
+### Publish installable Python packages and container images as required by commits.
+release: release-python release-docker
 
-.PHONY: release-pkgs
-### Publish installable packages if conventional commits require a release.
-release-pkgs: $(HOME)/.local/var/log/project-structure-host-install.log
+.PHONY: release-python
+### Publish installable Python packages to PyPI.
+release-python: $(HOME)/.local/var/log/project-structure-host-install.log \
+		~/.pypirc
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
-	true "TEMPLATE: Always specific to the type of project"
+# https://twine.readthedocs.io/en/latest/#using-twine
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/project?structure-*
+# The VCS remote should reflect the release before the release is published to ensure
+# that a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
+	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/project?structure-*
 endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+release-docker: build-docker \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
+	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
+	    $(PYTHON_MINORS:%=release-docker-%)
+
+.PHONY: $(PYTHON_MINORS:%=release-docker-%)
+### Publish the container images for one Python version to all container registries.
+$(PYTHON_MINORS:%=release-docker-%): \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
+	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # previously built native images into the manifests.
 	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
@@ -417,12 +559,17 @@ endif
 	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
 	    build-docker-build
 # Push the end-user manifest and images:
-	$(MAKE) -e build-docker-build
-# Update Docker Hub `README.md` using the `./README.rst` reStructuredText version:
+	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$${DOCKER_BUILD_ARGS}\
+	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
+# Update Docker Hub `README.md` from the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
-	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
-	docker compose pull --quiet pandoc docker-pushrm
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
+	then
+	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
+	    docker compose pull --quiet pandoc docker-pushrm
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+	fi
 endif
 
 .PHONY: release-bump
@@ -430,7 +577,7 @@ endif
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/docker/log/build-devel.log ./.env
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./.env
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -480,6 +627,12 @@ endif
 	    $(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
+# Ensure the container image reflects the version bump but we don't need to update the
+# requirements again.
+	touch \
+	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
+	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
+	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	bump_rev="$$(git rev-parse HEAD)"
@@ -497,13 +650,23 @@ endif
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
-	true "TEMPLATE: Always specific to the type of project"
-	$(TOX_EXEC_BUILD_ARGS) -- reuse annotate -r --skip-unrecognised \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
+	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
+		--remove-duplicate-keys --remove-unused-variables \
+		--remove-unused-variables "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
+	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade:
+devel-upgrade: ./.env \
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log \
+		./var/log/tox/build/build.log
+	touch "./setup.cfg" "./requirements/build.txt.in" \
+	    "./build-host/requirements.txt.in"
+# Ensure the network is create first to avoid race conditions
+	docker compose create project-structure-devel
+	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
+	    $(PYTHON_MINORS:%=build-docker-requirements-%)
 # Update VCS hooks from remotes to the latest tag.
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
@@ -520,9 +683,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	fi
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
-	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update "./.pre-commit-config.yaml"
-	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
+	    >"./src/projectstructure/newsfragments/\
+	+upgrade-requirements.bugfix.rst"
+	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
+	    "./.pre-commit-config.yaml"
+	git add \
+	    "./src/projectstructure/newsfragments/\
+	+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade requirements latest versions"
 # Fail if upgrading left untracked files in VCS
@@ -551,60 +718,129 @@ clean:
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
-	rm -rfv "./var/log/" "./var/docker/log/"
+	git clean -dfx "./var/docker/py*/.tox/" \
+	    "./var/docker/py*/project_structure.egg-info/"
+	rm -rfv "./var/log/" "./var/docker/py*/log/"
 
 
 ## Real Targets:
 #
 # Recipes that make actual changes and create and update files for the target.
 
+# Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
+# python version in the virtual environment for that Python version:
+# https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
+$(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
+	true DEBUG Updated prereqs: $(?)
+	$(MAKE) -e "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --extra "devel" \
+	    --output-file "$(@)" "$(<)"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
+$(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
+	true DEBUG Updated prereqs: $(?)
+	$(MAKE) -e "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
+$(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
+	true DEBUG Updated prereqs: $(?)
+	$(MAKE) -e "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+# Only update the installed tox version for the latest/host/main/default Python version
+	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
+	then
+# Don't install tox into one of it's own virtual environments
+	    if [ -n "$${VIRTUAL_ENV:-}" ]
+	    then
+	        pip_bin="$$(which -a pip | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
+	    else
+	        pip_bin="pip"
+	    fi
+	    "$${pip_bin}" install -r "$(@)"
+	fi
+	mkdir -pv "./var/log/"
+	touch "./var/log/rebuild.log"
+$(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
+	true DEBUG Updated prereqs: $(?)
+	$(MAKE) -e "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
+	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
+	    --resolver "backtracking" --upgrade --output-file "$(@)" "$(<)"
+
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
 # created and can be used directly to save time on Tox's overhead when we don't need
 # Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
-./var/log/tox/build/build.log:
+$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |&
 	    tee -a "$(@)"
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
+# prerequisite when using Tox-managed virtual environments directly and changes to code
+# need to take effect immediately.
+$(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	mkdir -pv "$(dir $(@))"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
+	    pip install -e "./" |& tee -a "$(@)"
 
 ## Docker real targets:
 
 # Build the development image:
-./var/docker/log/build-devel.log: \
+./var/docker/$(PYTHON_ENV)/log/build-devel.log: \
 		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
+		./pyproject.toml ./setup.cfg ./tox.ini \
 		./build-host/requirements.txt.in ./docker-compose.yml \
 		./docker-compose.override.yml ./.env \
-		./var/docker/log/rebuild.log
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate as if it had been built here.
 	if docker compose pull --quiet project-structure-devel
 	then
-	    touch "$(@)" "./var/docker/log/rebuild.log"
+	    touch "$(@)" "./var/docker/$(PYTHON_ENV)/log/rebuild.log"
+# Ensure the virtualenv in the volume is also current:
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
+	        project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
+	        "./var/log/tox/$(PYTHON_ENV)/build.log"
 	    exit
 	fi
 endif
 	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
 	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
+# Update the pinned/frozen versions, if needed, using the container.  If changed, then
+# we may need to re-build the container image again to ensure it's current and correct.
+ifeq ($(BUILD_REQUIREMENTS),true)
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
+	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
+	$(MAKE) -e "$(@)"
+endif
 
 # Build the end-user image:
-./var/docker/log/build-user.log: \
-		./var/docker/log/build-devel.log ./Dockerfile \
-		./var/docker/log/rebuild.log
+./var/docker/$(PYTHON_ENV)/log/build-user.log: \
+		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
+		./var/docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
+ifeq ($(PYTHON_WHEEL),)
+	$(MAKE) -e "build-pkgs"
+	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
+endif
 # Build the end-user image now that all required artifacts are built"
 	mkdir -pv "$(dir $(@))"
-	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load" \
-	    build-docker-build >>"$(@)"
+	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
+	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build-user.log=%/host-install.log)"
 
-# Marker file used to trigger the rebuild of the image.
+# Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround async timestamp issues when running jobs in parallel:
-./var/docker/log/rebuild.log:
+./var/docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 
@@ -637,7 +873,12 @@ $(HOME)/.local/var/log/project-structure-host-install.log:
 	                "docker-compose-plugin"
 	        fi
 	    fi
-	    pip install -r "./build-host/requirements.txt.in"
+	    if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]
+	    then
+	        pip install -r "./build-host/requirements-$(PYTHON_HOST_ENV).txt"
+	    else
+	        pip install -r "./build-host/requirements.txt.in"
+	    fi
 	) |& tee -a "$(@)"
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
@@ -677,6 +918,11 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
+# Capture any project initialization tasks for reference.  Not actually usable.
+./pyproject.toml:
+	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	$(TOX_EXEC_BUILD_ARGS) -- cz init
+
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el: ./.dir-locals.el.in
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
@@ -685,6 +931,10 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
+
+# Ensure release publishing authentication, mostly useful in automation such as CI.
+~/.pypirc: ./home/.pypirc.in
+	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 ./var/log/docker-login-DOCKER.log: ./.env
 	mkdir -pv "$(dir $(@))"

@@ -1,0 +1,3 @@
+# https://towncrier.readthedocs.io/en/stable/quickstart.html#configuration
+!.gitignore
+!/*~

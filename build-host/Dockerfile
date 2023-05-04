@@ -26,9 +26,9 @@ ENV HOME="/home/runner"
 # Add user installs to PATH
 ENV PATH="${HOME}/.local/bin:${PATH}"
 
-COPY [ "./requirements.txt.in", "${HOME}/.local/lib/" ]
+COPY [ "./requirements-py310.txt", "${HOME}/.local/lib/" ]
 RUN mkdir -pv "${HOME}/.local/var/log/" && \
-    pip install --no-cache-dir --user -r "${HOME}/.local/lib/requirements.txt.in" \
+    pip install --no-cache-dir --user -r "${HOME}/.local/lib/requirements-py310.txt" \
     >"${HOME}/.local/var/log/project-structure-host-install.log"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

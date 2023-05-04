@@ -35,6 +35,8 @@ Nice to Have
 
 #. Documentation via Sphinx with CI to publish to RTFD.
 
+#. New branches for different frameworks, e.g.: Flask, Pyramid, Django
+
 #. Better release notes content for final releases with no changes since the last
    pre-release.
 

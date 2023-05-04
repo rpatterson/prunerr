@@ -148,7 +148,6 @@ export DOCKER_REGISTRY=$(firstword $(DOCKER_REGISTRIES))
 DOCKER_IMAGE_DOCKER=$(DOCKER_USER)/project-structure
 DOCKER_IMAGE=$(DOCKER_IMAGE_$(DOCKER_REGISTRY))
 # Values used to run built images in containers:
-DOCKER_VOLUMES=./var/docker/
 DOCKER_COMPOSE_RUN_ARGS=
 DOCKER_COMPOSE_RUN_ARGS+= --rm
 ifeq ($(shell tty),not a tty)
@@ -197,13 +196,13 @@ all: build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons.
-start: build-docker-volumes build-docker ./.env
+start: build-docker ./.env
 	docker compose down
 	docker compose up -d
 
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging.
-run: build-docker-volumes build-docker ./.env
+run: build-docker ./.env
 	docker compose down
 	docker compose up
 
@@ -221,7 +220,7 @@ build: ./.git/hooks/pre-commit \
 .PHONY: build-pkgs
 ### Ensure the built package is current.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/docker/log/build-devel.log build-docker-volumes
+		./var/docker/log/build-devel.log
 	true "TEMPLATE: Always specific to the type of project"
 
 ## Docker Build Targets:
@@ -292,11 +291,6 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
 	    $${docker_image_tags} --file "$(DOCKER_FILE)" "./"
 
-.PHONY: build-docker-volumes
-### Ensure access permissions to build artifacts in container volumes.
-# If created by `# dockerd`, they end up owned by `root`.
-build-docker-volumes: $(DOCKER_VOLUMES)
-
 
 ## Test Targets:
 #
@@ -324,7 +318,7 @@ test-debug:
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs ./var/log/tox/build/build.log build-docker-volumes build-docker
+test-docker: build-pkgs ./var/log/tox/build/build.log build-docker
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -339,7 +333,7 @@ test-docker: build-pkgs ./var/log/tox/build/build.log build-docker-volumes build
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env build-docker-volumes ./var/log/docker-login-DOCKER.log
+test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -351,7 +345,7 @@ test-docker-lint: ./.env build-docker-volumes ./var/log/docker-login-DOCKER.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/docker/log/build-devel.log build-docker-volumes ./.env
+		./var/docker/log/build-devel.log ./.env
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -409,8 +403,7 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: build-docker-volumes build-docker \
-		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # previously built native images into the manifests.
@@ -437,7 +430,7 @@ endif
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/docker/log/build-devel.log ./.env build-docker-volumes
+		./var/docker/log/build-devel.log ./.env
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -558,8 +551,7 @@ clean:
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
-	rm -rfv "./var/log/"
-	rm -rf $(DOCKER_VOLUMES)
+	rm -rfv "./var/log/" "./var/docker/log/"
 
 
 ## Real Targets:
@@ -586,7 +578,6 @@ clean:
 		./docker-compose.override.yml ./.env \
 		./var/docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e build-docker-volumes
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate as if it had been built here.
@@ -610,9 +601,6 @@ endif
 	    build-docker-build >>"$(@)"
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build-user.log=%/host-install.log)"
-
-$(DOCKER_VOLUMES):
-	mkdir -pv "$(@)"
 
 # Marker file used to trigger the rebuild of the image.
 # Useful to workaround async timestamp issues when running jobs in parallel:

@@ -314,9 +314,9 @@ ifneq ($(PIP_COMPILE_EXTRA),)
 endif
 	./.tox/$(PYTHON_ENV)/bin/pip-compile $${pip_compile_opts} \
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
-	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --style "python" \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
-	    --style "python" "$(PIP_COMPILE_OUT)"
+	    "$(PIP_COMPILE_OUT)"
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.

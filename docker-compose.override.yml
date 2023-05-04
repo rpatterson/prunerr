@@ -23,14 +23,14 @@ services:
       :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-daemon-checkout"
     build:
-      context: "${CHECKOUT_DIR}/"
+      context: "${CHECKOUT_DIR:-.}/"
       args:
         PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
         PYTHON_ENV: "${PYTHON_ENV:-py310}"
         VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR}/home/:/home/prunerr/"
+      - "${CHECKOUT_DIR:-.}/home/:/home/prunerr/"
 
   ## Contianers used for development and release:
 
@@ -43,8 +43,8 @@ services:
     profiles:
       - "test"
     build:
-      context: "${CHECKOUT_DIR}/"
-      dockerfile: "${CHECKOUT_DIR}/Dockerfile.devel"
+      context: "${CHECKOUT_DIR:-.}/"
+      dockerfile: "${CHECKOUT_DIR:-.}/Dockerfile.devel"
       args:
         PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
         PYTHON_ENV: "${PYTHON_ENV:-py310}"
@@ -59,17 +59,17 @@ services:
       # DEBUG: "true"
     volumes:
       # Ensure local changes are reflected inside the container.
-      - "${CHECKOUT_DIR}/bin/entrypoint:/usr/local/bin/entrypoint"
-      - "${CHECKOUT_DIR}/:/usr/local/src/prunerr/"
+      - "${CHECKOUT_DIR:-.}/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr/"
       # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR}/home/:/home/prunerr/"
+      - "${CHECKOUT_DIR:-.}/home/:/home/prunerr/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/\
+      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/\
         :/usr/local/src/prunerr/var/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}/.tox/\
+      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/.tox/\
         :/usr/local/src/prunerr/.tox/"
-      - "${CHECKOUT_DIR}/var/docker/${PYTHON_ENV:-py310}\
+      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}\
         /prunerr.egg-info/\
         :/usr/local/src/prunerr/src/prunerr.egg-info/"
 
@@ -81,7 +81,7 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR}/:/usr/local/src/prunerr/"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr/"
     command: >-
       hadolint "./Dockerfile"
@@ -94,13 +94,15 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR}/:/data/"
+      - "${CHECKOUT_DIR:-.}/:/data/"
     entrypoint: "ash"
-    # Strip reStructuredText directives unsupported in Markdown:
+    # Strip reStructuredText directives unsupported in Markdown before converting and
+    # converted Markdown that isn't widely supported, e.g. table of contents and tables
+    # respectively:
     command: >-
       -xeu -c '
         grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
-        pandoc -f "rst" -t "markdown" -o "./var/README.md"
+        pandoc -f "rst" -t "gfm" | grep -Ev "^(\+-+\+|\|.*\|)$" >"./README.md"
       '
 
   docker-pushrm:
@@ -115,7 +117,7 @@ services:
       DOCKER_USER: "${DOCKER_USER:-merpatterson}"
       DOCKER_PASS: "${DOCKER_PASS}"
     volumes:
-      - "${CHECKOUT_DIR}/:/data/"
+      - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
       --file "/data/var/README.md"
       --short "Perma-seed Servarr media libraries"
@@ -140,12 +142,12 @@ services:
       :build-host"
     profiles:
       - "ci"
-    build: "${CHECKOUT_DIR}/build-host/"
+    build: "${CHECKOUT_DIR:-.}/build-host/"
     privileged: true
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "${CHECKOUT_DIR}/:${CHECKOUT_DIR}"
-      - "${CHECKOUT_DIR}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR:-.}/:${CHECKOUT_DIR:-.}"
+      - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
       # Share local SSH authentication to repository remotes
       - "~/.ssh/:/home/runner/.ssh/"
     env_file: "./.env"
@@ -154,7 +156,7 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${DOCKER_GID:-${PGID:-${PUID:-1000}}}"
       # DEBUG: "true"
-    working_dir: "${CHECKOUT_DIR}"
+    working_dir: "${CHECKOUT_DIR:-.}"
     command: >-
       make -e build-docker test-docker release
 

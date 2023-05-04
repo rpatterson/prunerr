@@ -94,7 +94,7 @@ questionary==1.10.0
     # via commitizen
 readme-renderer==37.3
     # via twine
-requests==2.29.0
+requests==2.30.0
     # via
     #   requests-toolbelt
     #   twine
@@ -121,7 +121,7 @@ typing-extensions==4.5.0
     #   markdown-it-py
     #   platformdirs
     #   rich
-urllib3==1.26.15
+urllib3==2.0.2
     # via
     #   requests
     #   twine

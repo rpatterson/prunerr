@@ -20,22 +20,9 @@ Project structure foundation or template
        .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
           :alt: Python code style
           :target: https://github.com/psf/black
-       .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
+     - .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
           :alt: REUSE license status
           :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
-
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/project-structure?sort=semver&logo=docker
-          :alt: Docker Hub image version (latest semver)
-          :target: https://hub.docker.com/r/merpatterson/project-structure
-       .. figure:: https://img.shields.io/docker/pulls/merpatterson/project-structure?logo=docker
-          :alt: Docker Hub image pulls count
-          :target: https://hub.docker.com/r/merpatterson/project-structure
-       .. figure:: https://img.shields.io/docker/stars/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub stars
-          :target: https://hub.docker.com/r/merpatterson/project-structure
-       .. figure:: https://img.shields.io/docker/image-size/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub image size (latest semver)
-          :target: https://hub.docker.com/r/merpatterson/project-structure
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
           :alt: KeyBase PGP key ID
@@ -56,7 +43,6 @@ software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build, test and maintenance tasks
-- `Docker`_ container images for users and development in which tests are run
 - A `Makefile`_ target to format all Python code, including using `Black`_ for style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
   Python code checks
@@ -98,17 +84,13 @@ figure it out and submit a PR with corrections to this section.
      Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
-   - ``docker``:
-
-     The above plus Docker containers for both development and end-users/deployments.
-
    - etc.
 
 #. Reconcile VCS history:
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "docker" \
+     $ git clone --origin "template" --branch "${TEMPLATE_BRANCH}" \
      "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
@@ -120,7 +102,7 @@ figure it out and submit a PR with corrections to this section.
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/project-structure.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git merge --allow-unrelated-histories "template/docker"
+     $ git merge --allow-unrelated-histories "template/${TEMPLATE_BRANCH}"
 
 #. Rename file and directory paths derived from the project name::
 
@@ -164,49 +146,9 @@ should go straight to final release.  For example they may decide that:
 Installation
 ****************************************************************************************
 
-Install and use either via a local, native installation or a Docker container image:
-
-Local/Native Installation
-========================================================================================
-
 Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
   $ pip3 install --user project-structure
-
-Docker Container Image Installation
-========================================================================================
-
-The recommended way to use the Docker container image is via `Docker Compose`_.  See
-`the example ./docker-compose.yml file`_ for an example configuration.  Once you have
-your configuration, you can create and run the container::
-
-  $ docker compose up
-
-Alternatively, you make use the image directly.  Pull `the Docker image`_::
-
-  $ docker pull "docker.io/merpatterson/project-structure"
-
-And then use the image to create and run a container::
-
-  $ docker run --rm -it "docker.io/merpatterson/project-structure" ...
-
-Images variant tags are published for the Python version, branch, and major/minor
-versions so that users can control when they get new images over time,
-e.g. ``docker.io/merpatterson/project-structure:py310-main``.  The canonical
-Python version is 3.10 which is the version used in tags without ``py###``,
-e.g. ``docker.io/merpatterson/project-structure:main``.  Pre-releases are from
-``develop`` and final releases are from ``main`` which is also the default for tags
-without a branch, e.g. ``docker.io/merpatterson/project-structure:py310``. The
-major/minor version tags are only applied to the final release images and without the
-corresponding ``main`` branch tag,
-e.g. ``docker.io/merpatterson/project-structure:py310-v0.8``.
-
-Multi-platform Docker images are published containing images for the following
-platforms or architectures in the Python 3.10 ``py310`` variant:
-
-- ``linux/amd64``
-- ``linux/arm64``
-- ``linux/arm/v7``
 
 
 ****************************************************************************************
@@ -260,12 +202,8 @@ template.
    https://gitlab.com/rpatterson/project-structure
 .. _`a mirror on GitHub`:
    https://github.com/rpatterson/project-structure
-.. _`Docker`: https://docs.docker.com/
-.. _`Docker Compose`: https://docs.docker.com/compose/
-.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 
 .. _Makefile: ./Makefile
-.. _`the example ./docker-compose.yml file`: ./docker-compose.yml
 .. _`the ./CONTRIBUTING.rst file`: ./CONTRIBUTING.rst
 .. _`kitchen sink linter configuration`: ./.prospector.yaml
 .. _`tox.ini`: ./tox.ini

@@ -4,7 +4,7 @@
 
 # Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
 /*
-!.gitignore
+!.git*
 !/project_structure.egg-info
 !/.tox
 /*~

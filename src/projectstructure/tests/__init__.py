@@ -2,7 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
-/*
-!.git*
-/*~
+"""
+Tests for this project structure foundation or template.
+"""

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 """
 project-structure unit and integration tests.
 """
@@ -8,7 +12,7 @@ import subprocess  # nosec B404
 import unittest
 
 
-class ProjectstructureTests(unittest.TestCase):
+class ProjectStructureTests(unittest.TestCase):
     """
     project-structure unit and integration tests.
     """

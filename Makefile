@@ -13,8 +13,7 @@
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_SUPPORTED_MINORS=3.11 3.10 3.9 3.8 3.7
-# Project-specific variables
+PYTHON_SUPPORTED_MINORS=3.10 3.11 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
@@ -205,10 +204,9 @@ endif
 
 # Values used to run Tox:
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
+TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
-else
-TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 endif
 ifneq ($(PYTHON_WHEEL),)
 TOX_RUN_ARGS+= --installpkg "$(PYTHON_WHEEL)"
@@ -219,6 +217,7 @@ export TOX_RUN_ARGS
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
+PIP_COMPILE_EXTRA=
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
@@ -406,6 +405,20 @@ build: ./.git/hooks/pre-commit \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
 		build-docker
 
+.PHONY: build-requirements-compile
+### Compile the requirements for one Python version and one type/extra.
+build-requirements-compile:
+	$(MAKE) -e "./var/log/tox/$(PYTHON_ENV)/build.log"
+	pip_compile_opts="--resolver backtracking --upgrade"
+ifneq ($(PIP_COMPILE_EXTRA),)
+	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
+endif
+	./.tox/$(PYTHON_ENV)/bin/pip-compile $${pip_compile_opts} \
+	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
+	    --style "python" "$(PIP_COMPILE_OUT)"
+
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
@@ -560,6 +573,16 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
+.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
+### Pull container images and compile fixed/pinned dependency versions if necessary.
+$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
+	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
+	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
+	$(MAKE) -e "./var/docker/$${PYTHON_ENV}/log/build-devel.log"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
+	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
+
 
 ## Test Targets:
 #
@@ -570,7 +593,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
 test: test-docker-lint test-docker
 
 .PHONY: test-local
-### Run the full suite of tests on the local host.
+### Run the full suite of tests, coverage checks, and linters on the local host.
 test-local:
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
@@ -787,6 +810,7 @@ endif
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log ./var/log/tox/build/build.log \
+		$(HOME)/.local/var/log/project-structure-host-install.log \
 		./var/docker/$(PYTHON_ENV)/log/build-devel.log ./.env
 	if ! git diff --cached --exit-code
 	then
@@ -925,6 +949,9 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
+	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
+	    "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
@@ -977,7 +1004,9 @@ clean:
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
-	rm -rfv "./var/log/" "./var/docker/log/"
+	git clean -dfx "./var/docker/py*/.tox/" \
+	    "./var/docker/py*/project_structure.egg-info/"
+	rm -rfv "./var/log/" "./var/docker/py*/log/"
 
 
 ## Real Targets:
@@ -989,24 +1018,21 @@ clean:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 $(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/devel.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/devel.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --extra "devel" \
-	    --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/devel.txt=%)" \
+	    PIP_COMPILE_EXTRA="devel" PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
+	    build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/user.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/user.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/user.txt=%)" PIP_COMPILE_SRC="$(<)" \
+	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:build-host/requirements-%.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:build-host/requirements-%.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:build-host/requirements-%.txt=%)" \
+	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" build-requirements-compile
 # Only update the installed tox version for the latest/host/main/default Python version
 	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
 	then
@@ -1023,9 +1049,8 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e "$(@:requirements/%/build.txt=./var/log/tox/%/build.log)"
-	./.tox/$(@:requirements/%/build.txt=%)/bin/pip-compile \
-	    --resolver "backtracking" $(PIP_COMPILE_ARGS) --output-file "$(@)" "$(<)"
+	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
+	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
 # created and can be used directly to save time on Tox's overhead when we don't need
@@ -1073,8 +1098,10 @@ endif
 	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
+ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
+endif
 ifeq ($(CI),true)
 # On CI, any changes from compiling requirements is a failure so no need to waste time
 # rebuilding images:
@@ -1470,8 +1497,8 @@ bootstrap-project: \
 # the fixed/pinned versions as targets and the `./setup.cfg` file where dependencies are
 # defined as a prerequisite:
 #
-#    ./build/foo.txt: ./foo.txt.in
-#    	envsubst <"$(<)" >"$(@)"
+#    ./requirements.txt: setup.cfg
+#        ./.tox/py310/bin/pip-compile --output-file "$(@)" "$(<)"
 #
 # To that end, developers should use real target files whenever possible when adding
 # recipes to this file.
@@ -1484,7 +1511,7 @@ bootstrap-project: \
 #
 #     ./var/log/foo.log:
 #         mkdir -pv "$(dir $(@))"
-#         echo "Do some work here" | tee -a "$(@)"
+#         ./.tox/build/bin/python "./bin/foo.py" | tee -a "$(@)"
 #
 # This is also useful when none of the modification times of produced artifacts can be
 # counted on to correctly reflect when any subsequent targets need to be updated when
@@ -1492,7 +1519,7 @@ bootstrap-project: \
 # recipe can create arbitrary output:
 #
 #     ./var/log/foo.log:
-#         echo "Do some work here"
+#         ./.tox/build/bin/python "./bin/foo.py"
 #         mkdir -pv "$(dir $(@))"
 #         date | tee -a "$(@)"
 #

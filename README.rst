@@ -82,7 +82,6 @@ software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build, test and maintenance tasks
-- `Docker`_ container images for users and development
 - `Docker`_ container images for users and development in which tests are run
 - A `Makefile`_ target to format all Python code, including using `Black`_ for style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
@@ -99,11 +98,12 @@ software projects.  It includes:
 - A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
-developers can merge changes from this repository as we make changes related to project
-structure and tooling.  As we add structure specific to certain types of projects
-(e.g. CLI scripts, web development, etc.), frameworks, libraries and such, branches will
-be used for each such variation such that structure common to different variations can
-be merged back into the branches for those specific variations.
+developers can merge changes from this repository as we make changes related to Python
+project structure and tooling.  As we add structure specific to certain types of
+projects (e.g. CLI scripts, web development, etc.), frameworks (e.g. Flask, Pyramid,
+Django, etc.), libraries and such, branches will be used for each such variation such
+that structure common to different variations can be merged back into the branches for
+those specific variations.
 
 .. contents:: Table of Contents
 
@@ -119,13 +119,12 @@ figure it out and submit a PR with corrections to this section.
 
 #. Choose the right branch to use:
 
-   Is your project a CLI utility?  A web application?  For what programming language
-   will your project publish packages for?  Which project hosting provider
+   Is your project a CLI utility?  A web application?  Which project hosting provider
    and/or CI/CD platform will you use?  Choose the appropriate branch for your project:
 
-   - ``(py|js|ruby|etc.)``:
+   - ``dist``:
 
-     Basic package metadata with build, tests, linters, code formatting and release
+     Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
    - ``docker``:
@@ -164,12 +163,12 @@ figure it out and submit a PR with corrections to this section.
 
 #. Rename file and directory paths derived from the project name::
 
-     $ git ls-files | grep -iE 'project.?structure'
+     $ git ls-files | grep -iE 'python.?project.?structure'
 
 #. Rename strings derived from the project name and template author identity in project
    files::
 
-     $ git grep -iE 'project.?structure|ross|Patterson'
+     $ git grep -iE 'python.?project.?structure|ross|Patterson'
 
 #. Examine ``# TEMPLATE:`` comments and change as appropriate:
 
@@ -204,7 +203,7 @@ should go straight to final release.  For example they may decide that:
 Installation
 ****************************************************************************************
 
-Install and use either via a local, native installation or a Docker container image:
+Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
 Local/Native Installation
 ========================================================================================
@@ -265,18 +264,20 @@ development.
 Motivation
 ****************************************************************************************
 
-There are many other project templates so why make another? I've been doing full-stack
-web development since 1998, so I've had plenty of time to develop plenty of opinions of
-my own.  What I want in a template is complete tooling (e.g. test coverage, linting,
-formatting, CI/CD, etc.) but minimal dependencies, structure, and opinion beyond
-complete tooling (e.g. some build/task system, structure for frameworks/libraries not
+There are many other Python project templates so why make another? I've been doing
+Python development since 1998, so I've had plenty of time to develop plenty of opinions
+of my own.
+
+What I want in a template is complete tooling (e.g. test coverage, linting, formatting,
+CI/CD, etc.) but minimal dependencies, structure, and opinion beyond complete tooling
+(e.g. some non-Python build/task system, structure for frameworks/libraries not
 necessarily being used, etc.).  I couldn't find a template that manages that balance so
 here we are.
 
 I also find it hard to discern from other templates why they made what choices the did.
 As such, I also use this template as a way to try out various different options in the
-development world and evaluate them for myself.  You can learn about my findings and the
-reasons the choices I've made in the commit history.
+Python development world and evaluate them for myself.  You can learn about my findings
+and the reasons the choices I've made in the commit history.
 
 Most importantly, however, I've never found a satisfactory approach to keeping project
 structure up to date over time.  So the primary motivation is to use this repository as
@@ -298,9 +299,6 @@ template.
    https://gitlab.com/rpatterson/project-structure
 .. _`a mirror on GitHub`:
    https://github.com/rpatterson/project-structure
-.. _`Docker`: https://docs.docker.com/
-.. _`Docker Compose`: https://docs.docker.com/compose/
-.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 
 .. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
 

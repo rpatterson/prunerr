@@ -20,6 +20,14 @@ __pycache__
 *.so
 **/.so
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
 # Distribution / packaging
 .Python
 env/

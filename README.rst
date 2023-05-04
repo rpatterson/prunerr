@@ -5,13 +5,22 @@
 ########################################################################################
 Project Structure
 ########################################################################################
-project-structure foundation or template
+Project structure foundation or template
 ****************************************************************************************
 
 .. list-table::
    :class: borderless align-right
 
-   * - .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
+   * - .. figure:: https://img.shields.io/pypi/v/project-structure.svg?logo=pypi&label=PyPI&logoColor=gold
+          :alt: PyPI latest release version
+          :target: https://pypi.org/project/project-structure/
+       .. figure:: https://img.shields.io/pypi/pyversions/project-structure.svg?logo=python&label=Python&logoColor=gold
+          :alt: PyPI Python versions
+          :target: https://pypi.org/project/project-structure/
+       .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
+          :alt: Python code style
+          :target: https://github.com/psf/black
+       .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/project-structure
           :alt: REUSE license status
           :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
 
@@ -68,14 +77,18 @@ project-structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This repository is meant to be used as a minimal, yet opinionated baseline for software
-projects.  It includes:
+This repository is meant to be used as a minimal, yet opinionated baseline for `Python`_
+software projects.  It includes:
 
+- Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development build, test and maintenance tasks
 - `Docker`_ container images for users and development
 - `Docker`_ container images for users and development in which tests are run
-- A `Makefile`_ target to format all code, including using for style
-- A kitchen sink linter configuration that runs all available code checks
+- A `Makefile`_ target to format all Python code, including using `Black`_ for style
+- A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
+  Python code checks
+- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters in multiple Python
+  versions, including some checks not provided by Prospector.
 - `VCS hooks`_ to enforce `conventional commits`_ and successful build and test on
   commit and push, and release notes on push
 - Targets/recipes in the `Makefile`_ to automate releases controlled by `conventional
@@ -197,9 +210,9 @@ Install and use either via a local, native installation or a Docker container im
 Local/Native Installation
 ========================================================================================
 
-Install using any tool for installing standard packages for the project language::
+Install using any tool for installing standard Python 3 distributions such as `pip`_::
 
-  $ true "TEMPLATE: Always specific to the type of project"
+  $ pip3 install --user project-structure
 
 Docker Container Image Installation
 ========================================================================================
@@ -218,17 +231,19 @@ And then use the image to create and run a container::
 
   $ docker run --rm -it "registry.gitlab.com/rpatterson/project-structure" ...
 
-Images variant tags are published for the branch and major/minor versions so that users
-can control when they get new images over time,
+Images variant tags are published for the Python version, branch, and major/minor
+versions so that users can control when they get new images over time,
+e.g. ``registry.gitlab.com/rpatterson/project-structure:py310-main``.  The canonical
+Python version is 3.10 which is the version used in tags without ``py###``,
 e.g. ``registry.gitlab.com/rpatterson/project-structure:main``.  Pre-releases are from
 ``develop`` and final releases are from ``main`` which is also the default for tags
-without a branch, e.g. ``registry.gitlab.com/rpatterson/project-structure``. The
+without a branch, e.g. ``registry.gitlab.com/rpatterson/project-structure:py310``. The
 major/minor version tags are only applied to the final release images and without the
 corresponding ``main`` branch tag,
-e.g. ``registry.gitlab.com/rpatterson/project-structure:v0.8``.
+e.g. ``registry.gitlab.com/rpatterson/project-structure:py310-v0.8``.
 
-Multi-platform Docker images are published containing images for the following platforms
-or architectures:
+Multi-platform Docker images are published containing images for the following
+platforms or architectures in the Python 3.10 ``py310`` variant:
 
 - ``linux/amd64``
 - ``linux/arm64``
@@ -270,6 +285,12 @@ a remote from which we can merge structure updates over the life of projects usi
 template.
 
 
+.. _Python: https://docs.python.org/3/library/logging.html
+.. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
+.. _pip: https://pip.pypa.io/en/stable/installation/
+.. _`Black`: https://github.com/psf/black
+.. _`Prospector`: https://prospector.landscape.io
+.. _`Tox`: https://tox.wiki
 .. _`Towncrier`: https://towncrier.readthedocs.io
 
 .. _`conventional commits`: https://www.conventionalcommits.org
@@ -292,5 +313,9 @@ template.
    https://gitlab.com/rpatterson/project-structure/blob/main/docker-compose.yml
 .. _`the ./CONTRIBUTING.rst file`:
    https://gitlab.com/rpatterson/project-structure/blob/main/CONTRIBUTING.rst
+.. _`kitchen sink linter configuration`:
+   https://gitlab.com/rpatterson/project-structure/blob/main/.prospector.yaml
+.. _`tox.ini`:
+   https://gitlab.com/rpatterson/project-structure/blob/main/tox.ini
 .. _`VCS hooks`:
    https://gitlab.com/rpatterson/project-structure/blob/main/.pre-commit-config.yaml

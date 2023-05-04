@@ -18,5 +18,6 @@ gpg_sign = true
 bump_message = """\
 build(release): Version $current_version → $new_version
 
+[actions skip]
 [ci release]
 """

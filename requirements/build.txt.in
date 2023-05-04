@@ -15,13 +15,5 @@ pre-commit
 # hooks to enforce that commit messages comply with conventional commits:
 commitizen
 
-# Generate release notes/changelogs:
-towncrier
-
-# Check reStructuredText documentation:
-rstcheck
-
-# Check copyright and licensing:
-# Prevent upgrading to broken releases:
-# https://github.com/fsfe/reuse-tool/issues/738
-reuse @ git+https://github.com/fsfe/reuse-tool.git
+# Publish releas artifacts to remotes
+twine

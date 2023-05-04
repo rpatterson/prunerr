@@ -24,6 +24,12 @@
 #   Actions as duplicate CI for tests, then configure repository mirroring in your
 #   GitLab project -> Settings -> Repository using the same token.
 #
+# - `PYPI_PASSWORD`:
+#   A PyPI API token
+#
+# - `TEST_PYPI_PASSWORD`:
+#   A PyPI API token
+#
 # - `VCS_REMOTE_PUSH_URL`:
 #   A GitLab Personal or Project Access Token formatted as an HTTP authentication prefix
 #   to the hostname, e.g.:
@@ -77,24 +83,39 @@ build-test:
         )
         && $CI_PIPELINE_SOURCE != "schedule"
   interruptible: true
+  parallel:
+    matrix:
+      - PYTHON_MINORS:
+          - "3.11"
+          - "3.10"
+          - "3.9"
+          - "3.8"
+          - "3.7"
   script:
     # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
-      entrypoint make -e test-push build-docker test-docker release-docker test-clean
+      entrypoint make -e test-push
+      build-docker-$PYTHON_MINORS
+      test-docker-$PYTHON_MINORS
+      release-docker-$PYTHON_MINORS test-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "./build/*test*"
-      - "./build/coverage*"
-      - "./build/*lint*"
+      - "./build/py*/pytest*"
+      - "./build/py*/.coverage*"
+      - "./build/py*/coverage*"
+      - "./build/py*/htmlcov"
+      - "./build/py*/prospector*"
+      - "./build/py*/pylint*"
     reports:
       junit:
-        - "./build/*test-junit.xml"
+        - "./build/py*/pytest-junit.xml"
+        - "./build/py*/prospector-xunit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./build/coverage.xml"
+        path: "./build/py*/coverage.xml"
 
 release:
   stage: "release"

@@ -611,7 +611,7 @@ endif
 # The image installs the host requirements, reflect that in the bind mount volumes
 	date >>"$(@:%/build-user.log=%/host-install.log)"
 
-./var/ $(DOCKER_VOLUMES):
+$(DOCKER_VOLUMES):
 	mkdir -pv "$(@)"
 
 # Marker file used to trigger the rebuild of the image.

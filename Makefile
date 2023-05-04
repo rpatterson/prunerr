@@ -167,6 +167,7 @@ else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 endif
+DOCKER_PLATFORMS=
 ifeq ($(RELEASE_PUBLISH),true)
 # TEMPLATE: Choose the platforms on which your end-users need to be able to run the
 # image.  These default platforms should cover most common end-user platforms, including

@@ -174,7 +174,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters.
-test: build
+test: test-lint
 	true "TEMPLATE: Always specific to the type of project"
 
 .PHONY: test-lint

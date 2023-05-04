@@ -42,7 +42,6 @@ This repository is meant to be used as a minimal, yet opinionated baseline for `
 software projects.  It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- Command-line console script with sub-command boilerplate
 - A `Makefile`_ for local development build, test and maintenance tasks
 - A `Makefile`_ target to format all Python code, including using `Black`_ for style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
@@ -85,17 +84,13 @@ figure it out and submit a PR with corrections to this section.
      Basic Python distribution with build, tests, linters, code formatting and release
      publishing from local developer checkouts.
 
-   - ``cli``:
-
-     The above plus support for project's that provide an executable CLI.
-
    - etc.
 
 #. Reconcile VCS history:
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "cli" \
+     $ git clone --origin "template" --branch "${TEMPLATE_BRANCH}" \
      "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
@@ -107,7 +102,7 @@ figure it out and submit a PR with corrections to this section.
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/project-structure.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git merge --allow-unrelated-histories "template/cli"
+     $ git merge --allow-unrelated-histories "template/${TEMPLATE_BRANCH}"
 
 #. Rename file and directory paths derived from the project name::
 
@@ -155,23 +150,6 @@ Install using any tool for installing standard Python 3 distributions such as `p
 
   $ pip3 install --user project-structure
 
-Optional shell tab completion is available via `argcomplete`_.
-
-
-****************************************************************************************
-Usage
-****************************************************************************************
-
-See the command-line help for details on options and arguments::
-
-  $ project-structure --help
-  usage: project-structure [-h]
-
-  project structure foundation or template, top-level package.
-
-  optional arguments:
-    -h, --help  show this help message and exit
-
 
 ****************************************************************************************
 Contributing
@@ -217,7 +195,6 @@ template.
 .. _`Prospector`: https://prospector.landscape.io
 .. _`Tox`: https://tox.wiki
 .. _`Towncrier`: https://towncrier.readthedocs.io
-.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`conventional commits`: https://www.conventionalcommits.org
 

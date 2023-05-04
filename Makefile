@@ -439,16 +439,6 @@ build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.lo
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
 	    $${docker_image_tags} --file "$(DOCKER_FILE)" "./"
 
-.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
-### Pull container images and compile fixed/pinned dependency versions if necessary.
-$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
-	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
-	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
-	$(MAKE) -e "./var/docker/$${PYTHON_ENV}/log/build-devel.log"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
-	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
-	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
-
 
 ## Test Targets:
 #

@@ -8,3 +8,5 @@
 #
 #    pip-compile --output-file=requirements/py311/user.txt --resolver=backtracking pyproject.toml
 #
+argcomplete==3.0.8
+    # via project-structure (pyproject.toml)

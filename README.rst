@@ -203,8 +203,6 @@ should go straight to final release.  For example they may decide that:
 Installation
 ****************************************************************************************
 
-Install using any tool for installing standard Python 3 distributions such as `pip`_::
-
 Local/Native Installation
 ========================================================================================
 
@@ -300,8 +298,11 @@ template.
 .. _`a mirror on GitHub`:
    https://github.com/rpatterson/project-structure
 
-.. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
+ .. _`Docker`: https://docs.docker.com/
+ .. _`Docker Compose`: https://docs.docker.com/compose/
+ .. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 
+.. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
 .. _`GitHub Actions`: https://docs.github.com/en/actions
 
 .. _Makefile:

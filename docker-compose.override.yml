@@ -112,8 +112,8 @@ services:
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
-      --file "/data/var/README.md"
-      --short "project structure foundation or template"
+      --file "/data/README.md"
+      --short "Project structure foundation or template"
       --debug "merpatterson/project-structure"
 
   gitlab-release-cli:

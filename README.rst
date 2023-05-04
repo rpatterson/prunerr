@@ -293,9 +293,9 @@ template.
 
 .. _`conventional commits`: https://www.conventionalcommits.org
 
- .. _`Docker`: https://docs.docker.com/
- .. _`Docker Compose`: https://docs.docker.com/compose/
- .. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
+.. _`Docker`: https://docs.docker.com/
+.. _`Docker Compose`: https://docs.docker.com/compose/
+.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/project-structure

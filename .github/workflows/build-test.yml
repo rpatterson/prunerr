@@ -116,7 +116,7 @@ jobs:
         with:
           name: "Test Suite Reports"
           path: >-
-            ./build/*test-junit.xml
+            ./build/*/*test-junit.xml,
             ./build/*/prospector-xunit.xml
           reporter: "java-junit"
       - name: "Archive code coverage reports"

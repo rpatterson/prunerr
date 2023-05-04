@@ -12,7 +12,7 @@ import subprocess  # nosec B404
 import unittest
 
 
-class ProjectstructureTests(unittest.TestCase):
+class ProjectStructureTests(unittest.TestCase):
     """
     project-structure unit and integration tests.
     """

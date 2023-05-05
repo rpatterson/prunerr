@@ -675,14 +675,12 @@ endif
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
-	bump_rev="$$(git rev-parse HEAD)"
-	git switch -C "develop" --track "$(VCS_COMPARE_REMOTE)/develop" --
-	git merge --ff --gpg-sign \
-	    -m "Merge branch 'main' release back into develop" "$${bump_rev}"
+	$(MAKE) VCS_BRANCH="main" VCS_MERGE_BRANCH="develop" \
+	    VCS_REMOTE="$(VCS_COMPARE_REMOTE)" VCS_MERGE_BRANCH="develop" devel-merge
 ifeq ($(CI),true)
 	git push --no-verify "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
 endif
-	git switch -C "$(VCS_BRANCH)" "$${bump_rev}" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)

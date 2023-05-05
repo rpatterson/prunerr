@@ -415,9 +415,6 @@ ifneq ($(PIP_COMPILE_EXTRA),)
 endif
 	./.tox/$(PYTHON_ENV)/bin/pip-compile $${pip_compile_opts} \
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
-	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --style "python" \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
-	    "$(PIP_COMPILE_OUT)"
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -941,9 +938,6 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the latest versions as of $${now}." \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	./.tox/$(PYTHON_ENV)/bin/reuse annotate -r --skip-unrecognised \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
-	    "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
 	    "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"

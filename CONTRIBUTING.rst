@@ -45,6 +45,17 @@ and rules::
 
   $ make devel-format
 
+This project also uses `Reuse`_ to manage licenses and copyright.  If you add files,
+you'll need to put an `SPDX header comment`_ in each added file.  For those file types
+recognized by the `reuse-tool`_, you can use ``$ make devel-format`` to add such headers
+automatically.  Otherwise you may have to use ``$ reuse annotate`` manually specifying
+the appropriate ``--style`` option.  See ``$ reuse annotate --help`` for the available
+``${COMMENT_STYLE}`` values.  You can use ``--style "python"`` for unrecognized file
+types that support the common ``#`` comment style::
+
+  $ tox exec -e build -- reuse annotate --style "${COMMENT_STYLE:?}" \
+  --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "${PATH:?}"
+
 Contributions should be pushed to feature branches or forks off of the upstream
 ``develop`` branch.  Once work is finished and all the tests are passing, project
 maintainers can merge your work back into ``develop`` and run all checks and tests as
@@ -78,7 +89,11 @@ in executable form in the `Makefile`_.  See the philosophy commentary at the bot
 the `Makefile`_ for guidance on making contributions there.
 
 .. _`towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
-.. _`news fragment`: https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
+.. _`news fragment`:
+   https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
+.. _`Reuse`: https://reuse.software/tutorial/#step-2
+.. _`SPDX header comment`: https://spdx.dev/specifications/#current-version
+.. _`reuse-tool`: https://github.com/fsfe/reuse-tool#usage
 
 .. _`an issue/ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
 

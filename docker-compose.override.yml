@@ -54,7 +54,7 @@ services:
       - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var/docker/:/usr/local/src/project-structure/var/"
+      - "${CHECKOUT_DIR:-.}/var-docker/:/usr/local/src/project-structure/var/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:

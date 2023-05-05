@@ -19,8 +19,8 @@ downloads/
 lib/
 lib64/
 sdist/
-var/
-/.tox
+/var
+/var-docker
 /README.md
 
 # Translations

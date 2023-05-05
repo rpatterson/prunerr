@@ -341,7 +341,7 @@ build: ./.git/hooks/pre-commit \
 .PHONY: build-pkgs
 ### Ensure the built package is current.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/docker/log/build-devel.log
+		./var-docker/log/build-devel.log
 	true "TEMPLATE: Always specific to the type of project"
 
 ## Docker Build Targets:
@@ -354,7 +354,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: build-pkgs ./var/log/tox/build/build.log ./var/docker/log/build-user.log
+build-docker: build-pkgs ./var/log/tox/build/build.log ./var-docker/log/build-user.log
 
 .PHONY: build-docker-tags
 ### Print the list of image tags for the current registry and variant.
@@ -499,7 +499,7 @@ test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/docker/log/build-devel.log ./.env
+		./var-docker/log/build-devel.log ./.env
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),main)
@@ -615,7 +615,7 @@ endif
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/docker/log/build-devel.log ./.env
+		./var-docker/log/build-devel.log ./.env
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -785,7 +785,7 @@ clean:
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
 	git clean -dfx -e "var/" -e ".env"
-	rm -rfv "./var/log/" "./var/docker/log/"
+	rm -rfv "./var/log/" "./var-docker/log/"
 
 
 ## Real Targets:
@@ -807,18 +807,18 @@ clean:
 ## Docker real targets:
 
 # Build the development image:
-./var/docker/log/build-devel.log: \
+./var-docker/log/build-devel.log: \
 		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
 		./build-host/requirements.txt.in ./docker-compose.yml \
 		./docker-compose.override.yml ./.env \
-		./var/docker/log/rebuild.log
+		./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate as if it had been built here.
 	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
-	    touch "$(@)" "./var/docker/log/rebuild.log"
+	    touch "$(@)" "./var-docker/log/rebuild.log"
 	    exit
 	fi
 endif
@@ -826,9 +826,9 @@ endif
 	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
 
 # Build the end-user image:
-./var/docker/log/build-user.log: \
-		./var/docker/log/build-devel.log ./Dockerfile \
-		./var/docker/log/rebuild.log
+./var-docker/log/build-user.log: \
+		./var-docker/log/build-devel.log ./Dockerfile \
+		./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Build the end-user image now that all required artifacts are built"
 	mkdir -pv "$(dir $(@))"
@@ -839,7 +839,7 @@ endif
 
 # Marker file used to trigger the rebuild of the image.
 # Useful to workaround async timestamp issues when running jobs in parallel:
-./var/docker/log/rebuild.log:
+./var-docker/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 

@@ -851,11 +851,9 @@ endif
 	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
-ifeq ($(BUILD_REQUIREMENTS),true)
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
-endif
 
 # Build the end-user image:
 ./var-docker/$(PYTHON_ENV)/log/build-user.log: \

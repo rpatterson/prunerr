@@ -37,8 +37,13 @@ You can also inspect test failures and errors in an interactive debugger::
 
   $ make test-debug
 
-The ``$ make test`` target also runs the ``$ make format`` target to format code
-according to this project's guidelines and rules.
+The linters make various decisions on style, formatting, and conventions for you so you
+don't have to think about them and no one has to debate them.  They're enforced by ``$
+make test`` and the VCS hooks.  You may also use the same tools to apply all fixes and
+formatting that can be automated to format code according to this project's guidelines
+and rules::
+
+  $ make devel-format
 
 Contributions should be pushed to feature branches or forks off of the upstream
 ``develop`` branch.  Once work is finished and all the tests are passing, project

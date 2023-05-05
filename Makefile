@@ -19,7 +19,7 @@ GPG_SIGNING_KEYID=2EFF7CCE6828E359
 CI_UPSTREAM_NAMESPACE=rpatterson
 CI_PROJECT_NAME=prunerr
 # Project-specific options:
-export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var/media/Library/
+export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library/
 PRUNERR_CMD=exec
 PRUNERR_ARGS=$(PRUNERR_CMD)
 

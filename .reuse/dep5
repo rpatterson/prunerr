@@ -3,8 +3,23 @@ Upstream-Name: project-structure
 Upstream-Contact: Ross Patterson <me@rpatterson.net>
 Source: https://gitlab.com/rpatterson/project-structure
 
-# Sample paragraph, commented out:
-#
-# Files: src/*
-# Copyright: $YEAR $NAME <$CONTACT>
-# License: ...
+Files:
+ newsfragments/*
+ NEWS-VERSION.rst
+ NEWS.rst
+Copyright: 2023 Ross Patterson <me@rpatterson.net>
+License: MIT
+Comment:
+ Release notes, AKA the ChangeLog, are managed by
+ [Towncrier](https://towncrier.readthedocs.io) and thus inappropriate for header
+ annotations/commments.
+
+Files:
+ requirements/*/*.txt
+ build-host/requirements*.txt
+Copyright: 2023 Ross Patterson <me@rpatterson.net>
+License: MIT
+Comment:
+ Version pins/locks/freezez are managed by [Pip
+ Tools](https://pip-tools.readthedocs.io/en/latest/) and this inappropriate for header
+ annotations/commments.

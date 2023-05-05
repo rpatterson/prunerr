@@ -77,7 +77,7 @@ figure it out and submit a PR with corrections to this section.
 
    If starting a fresh project::
 
-     $ git clone --origin "template" --branch "${TEMPLATE_BRANCH}" \
+     $ git clone --origin "template" --branch "${TEMPLATE_BRANCH:?}" \
      "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
      $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
@@ -89,7 +89,7 @@ figure it out and submit a PR with corrections to this section.
      $ git remote add "template" \
      "https://gitlab.com/rpatterson/project-structure.git"
      $ git config remote.template.tagOpt --no-tags
-     $ git merge --allow-unrelated-histories "template/${TEMPLATE_BRANCH}"
+     $ git merge --allow-unrelated-histories "template/${TEMPLATE_BRANCH:?}"
 
 #. Rename file and directory paths derived from the project name::
 

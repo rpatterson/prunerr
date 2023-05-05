@@ -40,7 +40,8 @@ lib/
 lib64/
 parts/
 sdist/
-var/
+/var
+/var-docker
 /README.md
 *.egg-info
 **/*.egg-info

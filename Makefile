@@ -704,7 +704,7 @@ endif
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 	true "TEMPLATE: Always specific to the type of project"
-	$(TOX_EXEC_BUILD_ARGS) -- reuse annotate -r --skip-unrecognised \
+	$(TOX_EXEC_BUILD_ARGS) -- reuse addheader -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade

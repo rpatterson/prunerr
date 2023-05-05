@@ -58,11 +58,11 @@ services:
       - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/\
         :/usr/local/src/project-structure/var/"
-      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/.tox/\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/.tox/\
         :/usr/local/src/project-structure/.tox/"
-      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}\
         /project_structure.egg-info/\
         :/usr/local/src/project-structure/src/project_structure.egg-info/"
 

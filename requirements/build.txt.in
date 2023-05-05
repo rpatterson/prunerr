@@ -1,8 +1,9 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Build, release and development tools that can operate totally independently and are
 # used outside the Docker container in the developer's localhost environment.
-
-# Get the Python dist/package version from VCS `v#.#.#` tags dynamically.
-setuptools_scm
 
 # VCS hooks to enforce passint tests, test coverage, style and linting
 pre-commit
@@ -12,5 +13,6 @@ pre-commit
 # version tag should be a major, minor or patch bump and create the VCS tag.  Also VCS
 # hooks to enforce that commit messages comply with conventional commits
 commitizen
+
 # Publish releas artifacts to remotes
 twine

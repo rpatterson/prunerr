@@ -1,5 +1,9 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 """
-Test the Prunerr Command-Line Interface.
+Test the prunerr Command-Line Interface.
 """
 
 import sys

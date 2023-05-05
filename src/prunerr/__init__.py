@@ -1,4 +1,9 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # PYTHON_ARGCOMPLETE_OK
+
 """
 Remove Servarr download client items to preserve disk space according to rules.
 """

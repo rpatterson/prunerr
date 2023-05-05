@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 #
 # Perform any required volatile run-time initialization
 
@@ -26,7 +31,7 @@ main() {
 	    # Add a user to the `passwd` DB so that the `~prunerr/`
 	    # HOME directory can be looked up.
 	    adduser --uid "${PUID}" --disabled-password \
-		    --gecos "Prunerr,,," "prunerr" >"/dev/null"
+	        --gecos "Prunerr,,," "prunerr" >"/dev/null"
 	fi
 	# Fix the TTY ownership if the session is interactive
 	if tty_dev=$(tty)

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Override `$ docker compose ...` configuration for development or testing here in this
 # repo checkout.  Everything that may be used outside this checkout should be in
 # `./docker-compose.yml`.
@@ -65,11 +69,11 @@ services:
       - "${CHECKOUT_DIR:-.}/home/:/home/prunerr/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/\
         :/usr/local/src/prunerr/var/"
-      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}/.tox/\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/.tox/\
         :/usr/local/src/prunerr/.tox/"
-      - "${CHECKOUT_DIR:-.}/var/docker/${PYTHON_ENV:-py310}\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}\
         /prunerr.egg-info/\
         :/usr/local/src/prunerr/src/prunerr.egg-info/"
 

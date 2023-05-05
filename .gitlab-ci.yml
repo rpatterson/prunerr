@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 
 default:
@@ -103,7 +107,7 @@ release:
         && $CI_PROJECT_NAMESPACE == "rpatterson"
   script:
     - >-
-      entrypoint make -e release-python test-clean
+      entrypoint make -e release-pkgs test-clean
   artifacts:
     paths:
       - "./dist/prunerr-*"

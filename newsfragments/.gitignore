@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# https://towncrier.readthedocs.io/en/stable/quickstart.html#configuration
+!.git*
+!/*~

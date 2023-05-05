@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 name: "Build and Test"
 
 on:
@@ -78,7 +82,7 @@ jobs:
         with:
           name: "test-suite-reports"
           path: |
-            ./build/*/pytest*
+            ./build/*test*
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
@@ -93,9 +97,9 @@ jobs:
             )
           )
         with:
-          name: "PyTest Test Suite (python${{ matrix.PYTHON_MINORS }})"
+          name: "Test Suite Reports"
           path: >-
-            ./build/*/pytest-junit.xml,
+            ./build/*/*test-junit.xml,
             ./build/*/prospector-xunit.xml
           reporter: "java-junit"
       - name: "Archive code coverage reports"
@@ -111,5 +115,5 @@ jobs:
         with:
           name: "linter-reports"
           path: |
+            ./build/*/*lint*
             ./build/*/prospector*
-            ./build/*/pylint*

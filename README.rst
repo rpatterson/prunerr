@@ -1,3 +1,7 @@
+.. SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+..
+.. SPDX-License-Identifier: MIT
+
 ########################################################################################
 Prunerr
 ########################################################################################
@@ -10,15 +14,15 @@ Perma-seed Servarr media libraries
    * - .. figure:: https://img.shields.io/pypi/v/prunerr.svg?logo=pypi&label=PyPI&logoColor=gold
           :alt: PyPI latest release version
           :target: https://pypi.org/project/prunerr/
-       .. figure:: https://img.shields.io/pypi/dm/prunerr.svg?color=blue&label=Downloads&logo=pypi&logoColor=gold
-          :alt: PyPI downloads per month
-          :target: https://pypi.org/project/prunerr/
        .. figure:: https://img.shields.io/pypi/pyversions/prunerr.svg?logo=python&label=Python&logoColor=gold
           :alt: PyPI Python versions
           :target: https://pypi.org/project/prunerr/
        .. figure:: https://img.shields.io/badge/code%20style-black-000000.svg
           :alt: Python code style
           :target: https://github.com/psf/black
+       .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/prunerr
+          :alt: REUSE license status
+          :target: https://api.reuse.software/info/gitlab.com/rpatterson/prunerr
 
      - .. figure:: https://gitlab.com/rpatterson/prunerr/-/badges/release.svg
 	  :alt: GitLab latest release
@@ -139,8 +143,6 @@ See the `Usage`_ section below for full details.
 Installation
 ****************************************************************************************
 
-Install and use either via a local, native installation or a Docker container image:
-
 Local/Native Installation
 ========================================================================================
 
@@ -169,13 +171,14 @@ And then use the image to create and run a container::
 
 Images variant tags are published for the Python version, branch, and major/minor
 versions so that users can control when they get new images over time,
-e.g. ``registry.gitlab.com/rpatterson/prunerr:py310-main``.  The canonical Python
-version is 3.10 which is the version used in tags without ``py###``,
-e.g. ``registry.gitlab.com/rpatterson/prunerr:main``.  Pre-releases are from ``develop``
-and final releases are from ``main`` which is also the default for tags without a
-branch, e.g. ``registry.gitlab.com/rpatterson/prunerr:py310``. The major/minor version
-tags are only applied to the final release images and without the corresponding ``main``
-branch tag, e.g. ``registry.gitlab.com/rpatterson/prunerr:py310-v0.8``.
+e.g. ``registry.gitlab.com/rpatterson/prunerr:py310-main``.  The canonical
+Python version is 3.10 which is the version used in tags without ``py###``,
+e.g. ``registry.gitlab.com/rpatterson/prunerr:main``.  Pre-releases are from
+``develop`` and final releases are from ``main`` which is also the default for tags
+without a branch, e.g. ``registry.gitlab.com/rpatterson/prunerr:py310``. The
+major/minor version tags are only applied to the final release images and without the
+corresponding ``main`` branch tag,
+e.g. ``registry.gitlab.com/rpatterson/prunerr:py310-v0.8``.
 
 Multi-platform Docker images are published containing images for the following
 platforms or architectures in the Python 3.10 ``py310`` variant:

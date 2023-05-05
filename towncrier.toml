@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+[tool.towncrier]
+# https://towncrier.readthedocs.io/en/stable/#quick-start
+name = "prunerr"
+directory = "./newsfragments"
+package = "prunerr"
+package_dir = "src"

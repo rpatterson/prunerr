@@ -191,10 +191,11 @@ radon==5.1.0
 requests==2.30.0
     # via
     #   pyroma
+    #   reuse
     #   xenon
 requirements-detector==1.2.1
     # via prospector
-reuse @ git+https://github.com/fsfe/reuse-tool.git
+reuse==1.0.0
     # via project-structure (pyproject.toml)
 rich==12.6.0
     # via

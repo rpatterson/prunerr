@@ -56,12 +56,12 @@ and rules::
 This project also uses `Reuse`_ to manage licenses and copyright.  If you add files,
 you'll need to put an `SPDX header comment`_ in each added file.  For those file types
 recognized by the `reuse-tool`_, you can use ``$ make devel-format`` to add such headers
-automatically.  Otherwise you may have to use ``$ reuse annotate`` manually specifying
-the appropriate ``--style`` option.  See ``$ reuse annotate --help`` for the available
+automatically.  Otherwise you may have to use ``$ reuse addheader`` manually specifying
+the appropriate ``--style`` option.  See ``$ reuse addheader --help`` for the available
 ``${COMMENT_STYLE}`` values.  You can use ``--style "python"`` for unrecognized file
 types that support the common ``#`` comment style::
 
-  $ tox exec -e build -- reuse annotate --style "${COMMENT_STYLE:?}" \
+  $ tox exec -e build -- reuse addheader --style "${COMMENT_STYLE:?}" \
   --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "${PATH:?}"
 
 Contributions should be pushed to feature branches or forks off of the upstream

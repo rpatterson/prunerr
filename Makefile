@@ -899,7 +899,7 @@ devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 		--remove-unused-variables "./src/projectstructure/"
 	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
 	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- reuse annotate -r --skip-unrecognised \
+	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade

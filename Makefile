@@ -234,7 +234,6 @@ endif
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
 # hosts/indexes/registries:
-BUILD_REQUIREMENTS=true
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Only publish releases from the `main` or `develop` branches:

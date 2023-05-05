@@ -1,5 +1,9 @@
 #!/usr/bin/with-contenv bash
 
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 # Stop the container if the service fails
 #
 # https://github.com/just-containers/s6-overlay#writing-an-optional-finish-script

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 daemon:
   # Cover the `time.sleep(1)` part of the `daemon` loop.
   poll: 1

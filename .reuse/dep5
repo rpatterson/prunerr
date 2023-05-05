@@ -23,3 +23,11 @@ Comment:
  Version pins/locks/freezez are managed by [Pip
  Tools](https://pip-tools.readthedocs.io/en/latest/) and this inappropriate for header
  annotations/commments.
+
+Files:
+ src/prunerr/tests/responses/*
+ src/prunerr/tests/example-5s.mkv
+Copyright: 2023 Ross Patterson <me@rpatterson.net>
+License: MIT
+Comment:
+ Avoid noisy `*.license` files for test fixtures containing no significant IP.

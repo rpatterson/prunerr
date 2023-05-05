@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 daemon:
   ## The number of seconds to wait between each execution of the order of operations.
   ## Default: 60

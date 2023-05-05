@@ -19,7 +19,8 @@ downloads/
 lib/
 lib64/
 sdist/
-var/
+/var
+/var-docker
 /README.md
 
 # Translations

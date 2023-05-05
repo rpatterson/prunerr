@@ -45,6 +45,7 @@ ifeq ($(USER_FULL_NAME),)
 USER_FULL_NAME=$(USER_NAME)
 endif
 USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
+export CHECKOUT_DIR=$(PWD)
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
@@ -131,6 +132,9 @@ else ifeq ($(VCS_BRANCH),develop)
 RELEASE_PUBLISH=true
 endif
 
+# Override variable values if present in `./.env` and if not overridden on the CLI:
+include $(wildcard .env)
+
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
@@ -148,9 +152,8 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations.
-build: \
-	./.git/hooks/pre-commit \
-	$(HOME)/.local/var/log/project-structure-host-install.log
+build: ./.git/hooks/pre-commit ./.env \
+		$(HOME)/.local/var/log/project-structure-host-install.log
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -350,7 +353,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
-	git clean -dfx -e "var/"
+	git clean -dfx -e "var/" -e ".env"
 	rm -rfv "./var/log/"
 
 
@@ -360,6 +363,17 @@ clean:
 
 ./README.md: README.rst
 	docker compose run --rm "pandoc"
+
+# Local environment variables and secrets from a template:
+./.env: ./.env.in $(HOME)/.local/var/log/project-structure-host-install.log
+	if [ ! -e "$(@)" ]
+	then
+	    set +x
+	    echo "WARNING:Copy '$$ cp -av ./.env.in ./.env', \
+	review, adjust values as needed and re-run"
+	    exit 1
+	fi
+	$(call expand_template,$(<),$(@))
 
 # Install all tools required by recipes that have to be installed externally on the
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
@@ -430,29 +444,22 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
-
-## Utility Targets:
-#
-# Recipes used to make similar changes across targets where using Make's basic syntax
-# can't be used.
-
-.PHONY: expand-template
-## Create a file from a template replacing environment variables
-expand-template:
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
-	set +x
-	if [ -e "$(target)" ]
-	then
-ifeq ($(TEMPLATE_IGNORE_EXISTING),true)
-	    exit
-else
-	    envsubst <"$(template)" | diff -u "$(target)" "-" || true
-	    echo "ERROR: Template $(template) has been updated:"
-	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
-	    false
-endif
-	fi
-	envsubst <"$(template)" >"$(target)"
+define expand_template=
+if [ -e "$(2)" ]
+then
+    if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
+    then
+        touch "$(2)"
+        exit
+    fi
+    envsubst <"$(1)" | diff -u "$(2)" "-" || true
+    set +x
+    echo "ERROR: Template $(1) has been updated."
+    echo "       Reconcile changes and \`$$ touch $(2)\`:"
+    false
+fi
+envsubst <"$(1)" >"$(2)"
+endef
 
 
 ## Makefile Development:

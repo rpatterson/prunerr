@@ -323,6 +323,7 @@ endif
 GITHUB_RELEASE_ARGS=--prerelease
 # Only publish releases from the `main` or `develop` branches and only under the
 # canonical CI/CD platform:
+DOCKER_PLATFORMS=
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
@@ -331,7 +332,6 @@ else ifeq ($(VCS_BRANCH),develop)
 # Publish pre-releases from the `develop` branch:
 RELEASE_PUBLISH=true
 endif
-DOCKER_PLATFORMS=
 ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
 PYPI_HOSTNAME=pypi.org

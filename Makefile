@@ -680,7 +680,7 @@ ifeq ($(VCS_BRANCH),main)
 	git merge --ff --gpg-sign \
 	    -m "Merge branch 'main' release back into develop" "$${bump_rev}"
 ifeq ($(CI),true)
-	git push --no-verify --tags "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
+	git push --no-verify "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
 endif
 	git switch -C "$(VCS_BRANCH)" "$${bump_rev}" --
 endif
@@ -688,11 +688,14 @@ ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
 # Ensure the tag is available for creating the GitHub release below but push *before* to
 # GitLab to avoid a race with repository mirrorying:
-	git push --no-verify --tags "github" "HEAD:$(VCS_BRANCH)"
+	git push --no-verify "github" tag "v$${next_version}"
 endif
 endif
 ifeq ($(CI),true)
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
+# Push just this tag to avoid clashes with any previously failed release:
+	git push --no-verify "$(VCS_REMOTE)" tag "v$${next_version}"
+# Also push the branch:
+	git push --no-verify "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 
@@ -768,7 +771,7 @@ devel-merge: ~/.gitconfig ./var/log/git-remotes.log \
 	    $$'Merge branch \'$(VCS_BRANCH)\' into $(VCS_MERGE_BRANCH)\n\n[ci merge]' \
 	    "$${merge_rev}"
 ifeq ($(CI),true)
-	git push --no-verify --tags "$(VCS_REMOTE)" "HEAD:$(VCS_MERGE_BRANCH)"
+	git push --no-verify "$(VCS_REMOTE)" "HEAD:$(VCS_MERGE_BRANCH)"
 endif
 
 
@@ -991,7 +994,7 @@ endif
 endif
 	set -x
 # Fail fast if there's still no push access
-	git push --no-verify --tags "origin" | tee -a "$(@)"
+	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
 ./var/log/docker-login-DOCKER.log: ./.env
 	mkdir -pv "$(dir $(@))"

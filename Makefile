@@ -1120,7 +1120,9 @@ endif
 
 # Local environment variables from a template:
 ./.env: ./.env.in
+	set +x
 	export TRANSMISSION_PASS="$$(apg -M ncl -n 1)"
+	set -x
 	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
 
 # Install all tools required by recipes that have to be installed externally on the

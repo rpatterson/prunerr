@@ -26,8 +26,8 @@ fi
 main() {
     if which apk
     then
-        apk update
-        apk add "gettext" "py3-pip" "docker-cli-compose"
+        sudo apk update
+        sudo apk add "gettext" "py3-pip" "docker-cli-compose"
     elif which apt-get
     then
         sudo apt-get update

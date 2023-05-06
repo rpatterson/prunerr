@@ -15,6 +15,7 @@ services:
     container_name: "project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
+      target: "user"
       args:
         VERSION: "${VERSION:-}"
     volumes:
@@ -31,7 +32,7 @@ services:
       - "test"
     build:
       context: "${CHECKOUT_DIR:-.}/"
-      dockerfile: "${CHECKOUT_DIR:-.}/Dockerfile.devel"
+      target: "devel"
       args:
         VERSION: "${VERSION:-}"
     environment:

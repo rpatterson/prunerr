@@ -265,24 +265,30 @@ endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
-build-docker-build: $(HOME)/.local/var/log/docker-multi-platform-host-install.log \
+build-docker-build: ./Dockerfile \
+		$(HOME)/.local/var/log/docker-multi-platform-host-install.log \
 		./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
 	docker pull "buildpack-deps"
-	docker_image_tags=""
+	docker_build_args=""
 	for image_tag in $$(
 	    $(MAKE) -e --no-print-directory build-docker-tags
 	)
 	do
-	    docker_image_tags+="--tag $${image_tag} "
+	    docker_build_args+=" --tag $${image_tag}"
 	done
+ifeq ($(DOCKER_VARIANT),)
+	docker_build_args+=" --target user"
+else
+	docker_build_args+=" --target $(DOCKER_VARIANT)"
+endif
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker buildx build $(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE="1" \
 	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
-	    $${docker_image_tags} --file "$(DOCKER_FILE)" "./"
+	    $${docker_build_args} --file "$(<)" "./"
 
 
 ## Test Targets:
@@ -329,8 +335,6 @@ test-docker: build-pkgs ./var/log/tox/build/build.log build-docker
 test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
-	    hadolint "./Dockerfile.devel"
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
 
@@ -406,11 +410,10 @@ ifneq ($(DOCKER_PLATFORMS),)
 else
 endif
 	export DOCKER_BUILD_ARGS
-# Push the development manifest and images:
-	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
-	    build-docker-build
 # Push the end-user manifest and images:
 	$(MAKE) -e build-docker-build
+# Push the development manifest and images:
+	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
 # Update Docker Hub `README.md` using the `./README.rst` reStructuredText version:
 ifeq ($(VCS_BRANCH),main)
 	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
@@ -563,11 +566,9 @@ clean:
 ## Docker real targets:
 
 # Build the development image:
-./var-docker/log/build-devel.log: \
-		./Dockerfile.devel ./.dockerignore ./bin/entrypoint \
-		./build-host/requirements.txt.in ./docker-compose.yml \
-		./docker-compose.override.yml ./.env \
-		./var-docker/log/rebuild.log
+./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
+		./build-host/requirements.txt.in ./var-docker/log/rebuild.log \
+		./docker-compose.yml ./docker-compose.override.yml ./.env
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -578,12 +579,12 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	    exit
 	fi
 endif
-	$(MAKE) -e DOCKER_FILE="./Dockerfile.devel" DOCKER_VARIANT="devel" \
-	    DOCKER_BUILD_ARGS="--load" build-docker-build >>"$(@)"
+	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
+	    build-docker-build >>"$(@)"
 
 # Build the end-user image:
-./var-docker/log/build-user.log: \
-		./var-docker/log/build-devel.log ./Dockerfile \
+./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
+		./.dockerignore ./bin/entrypoint ./build-host/requirements.txt.in \
 		./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Build the end-user image now that all required artifacts are built"

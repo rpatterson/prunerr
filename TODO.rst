@@ -37,5 +37,3 @@ Nice to Have
 
 #. Better release notes content for final releases with no changes since the last
    pre-release.
-
-#. OS-X/Darwin support for local development in the ``./Makefile``

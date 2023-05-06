@@ -226,7 +226,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: build-pkgs ./var/log/tox/build/build.log ./var-docker/log/build-user.log
+build-docker: build-pkgs ./var-docker/log/build-user.log
 
 .PHONY: build-docker-tags
 ### Print the list of image tags for the current registry and variant.
@@ -236,13 +236,12 @@ build-docker-tags:
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
 $(DOCKER_REGISTRIES:%=build-docker-tags-%): \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/log/tox/build/build.log
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
 # Only update tags end users may depend on to be stable from the `main` branch
-	VERSION=$$(./.tox/build/bin/cz version --project)
+	VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
 	    echo $${VERSION} | sed -nE 's|([0-9]+\.[0-9]+).*|\1|p'
@@ -267,7 +266,6 @@ endif
 ### Run the actual commands used to build the Docker container image.
 build-docker-build: ./Dockerfile \
 		$(HOME)/.local/var/log/docker-multi-platform-host-install.log \
-		./var/log/tox/build/build.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
@@ -287,7 +285,9 @@ endif
 # https://github.com/moby/moby/issues/39003#issuecomment-879441675
 	docker buildx build $(DOCKER_BUILD_ARGS) \
 	    --build-arg BUILDKIT_INLINE_CACHE="1" \
-	    --build-arg VERSION="$$(./.tox/build/bin/cz version --project)" \
+	    --build-arg VERSION="$$(
+	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
+	    )" \
 	    $${docker_build_args} --file "$(<)" "./"
 
 
@@ -317,7 +317,7 @@ test-debug:
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs ./var/log/tox/build/build.log build-docker
+test-docker: build-pkgs
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -551,17 +551,6 @@ clean:
 ## Real Targets:
 #
 # Recipes that make actual changes and create and update files for the target.
-
-# Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created and can be used directly to save time on Tox's overhead when we don't need
-# Tox's logic about when to update/recreate them, e.g.:
-#     $ ./.tox/build/bin/cz --help
-# Mostly useful for build/release tools.
-./var/log/tox/build/build.log:
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
-	mkdir -pv "$(dir $(@))"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |&
-	    tee -a "$(@)"
 
 ## Docker real targets:
 

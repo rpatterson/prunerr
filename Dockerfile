@@ -67,7 +67,10 @@ WORKDIR "/usr/local/src/project-structure/"
 CMD [ "tox" ]
 
 # Then add everything that might contribute to efficient development.
-# Include Python build tools:
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get install --no-install-recommends -y tox=3.21.4-1
+# Initialize the Python build tools virtual environment:
+COPY [ "./requirements/build.txt.in", "./requirements/" ]
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    tox --no-recreate-pkg --skip-pkg-install --notest -e "build"

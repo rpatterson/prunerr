@@ -33,7 +33,7 @@ main() {
         sudo apt-get update
         sudo apt-get install -y "gettext-base" "python3-pip" "docker-compose-plugin"
     fi
-    pip install -r "./build-host/requirements.txt.in"
+    pip3 install -r "./build-host/requirements.txt.in"
 }
 
 

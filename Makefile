@@ -570,6 +570,9 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build >>"$(@)"
+# Represent that host install is baked into the image in the `${HOME}` bind volume:
+	docker compose run --rm project-structure-devel touch \
+	    "/home/project-structure/.local/var/log/project-structure-host-install.log"
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \

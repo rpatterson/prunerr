@@ -66,10 +66,17 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 WORKDIR "/usr/local/src/project-structure/"
 CMD [ "tox" ]
 
-# Then add everything that might contribute to efficient development.
+# Simulate the parts of the host install process from `./Makefile` needed for
+# development in the image:
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get install --no-install-recommends -y tox=3.21.4-1
+    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1"
+COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
+# hadolint ignore=DL3042
+RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    pip3 install -r "./build-host/requirements.txt.in" && \
+    mkdir -pv "${HOME}/.local/var/log/" && \
+    touch "${HOME}/.local/var/log/project-structure-host-install.log"
 # Initialize the Python build tools virtual environment:
 COPY [ "./requirements/build.txt.in", "./requirements/" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \

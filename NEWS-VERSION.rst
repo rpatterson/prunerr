@@ -1,8 +1,5 @@
-prunerr 1.1.9b1 (2023-05-05)
-============================
+prunerr 1.1.9 (2023-05-06)
+==========================
 
-Bugfixes
---------
-
-- Workaround the broken previous release not being published.
+No significant changes.
 

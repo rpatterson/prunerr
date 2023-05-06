@@ -26,12 +26,17 @@ fi
 main() {
     if which apk
     then
-        apk update
-        apk add "gettext" "py3-pip" "docker-cli-compose"
-    # TODO: Add OS-X/Darwin support.
-    else
+        sudo apk update
+        sudo apk add "gettext" "py3-pip" "docker-cli-compose"
+    elif which apt-get
+    then
         sudo apt-get update
         sudo apt-get install -y "gettext-base" "python3-pip" "docker-compose-plugin"
+    else
+        set +x
+        echo "ERROR: OS not supported for installing host dependencies"
+        # TODO: Add OS-X/Darwin support.
+        false
     fi
     if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]
     then

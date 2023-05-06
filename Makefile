@@ -135,16 +135,6 @@ endif
 .SHELLFLAGS+= -x
 
 
-## Makefile "functions":
-#
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
-# https://www.gnu.org/software/make/manual/html_node/Call-Function.html
-
-# Return the most recently built package:
-current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)
-
-
 ## Top-level targets:
 
 .PHONY: all
@@ -429,6 +419,16 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
+
+
+## Makefile "functions":
+#
+# Snippets whose output is frequently used including across recipes.  Used for output
+# only, not actually making any changes.
+# https://www.gnu.org/software/make/manual/html_node/Call-Function.html
+
+# Return the most recently built package:
+current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
 
 ## Utility Targets:

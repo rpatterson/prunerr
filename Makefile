@@ -392,6 +392,28 @@ build-docker-build: ./Dockerfile \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
 	docker pull "buildpack-deps"
+	docker_build_caches=""
+ifeq ($(GITLAB_CI),true)
+# Don't cache when building final releases on `main`
+	$(MAKE) -e "./var/log/docker-login-GITLAB.log" || true
+ifneq ($(VCS_BRANCH),main)
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" --cache-from $(DOCKER_IMAGE_GITLAB):\
+	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
+endif
+endif
+ifeq ($(GITHUB_ACTIONS),true)
+	$(MAKE) -e "./var/log/docker-login-GITHUB.log" || true
+ifneq ($(VCS_BRANCH),main)
+	if $(MAKE) -e pull-docker
+	then
+	    docker_build_caches+=" --cache-from $(DOCKER_IMAGE_GITHUB):\
+	$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)"
+	fi
+endif
+endif
 	docker_build_args=""
 	for image_tag in $$(
 	    $(MAKE) -e --no-print-directory build-docker-tags

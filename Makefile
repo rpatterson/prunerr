@@ -153,6 +153,7 @@ DOCKER_COMPOSE_RUN_ARGS+= --rm
 ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
 endif
+export DOCKER_PASS
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the final/official
@@ -173,18 +174,11 @@ ifeq ($(RELEASE_PUBLISH),true)
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 
+# Override variable values if present in `./.env` and if not overridden on the CLI:
+include $(wildcard .env)
+
 # Done with `$(shell ...)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
-
-
-## Makefile "functions":
-#
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
-# https://www.gnu.org/software/make/manual/html_node/Call-Function.html
-
-# Return the most recently built package:
-current_pkg = $(shell ls -t ./dist/*$(1) | head -n 1)
 
 
 ## Top-level targets:
@@ -212,7 +206,7 @@ run: build-docker ./.env
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit \
+build: ./.git/hooks/pre-commit ./.env \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
 		build-docker
 
@@ -605,37 +599,25 @@ endif
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 
-# Local environment variables from a template:
-./.env: ./.env.in
-	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+# Local environment variables and secrets from a template:
+./.env: ./.env.in $(HOME)/.local/var/log/project-structure-host-install.log
+	if [ ! -e "$(@)" ]
+	then
+	    set +x
+	    echo "WARNING:Copy '$$ cp -av ./.env.in ./.env', \
+	review, adjust values as needed and re-run"
+	    exit 1
+	fi
+	$(call expand_template,$(<),$(@))
 
 # Install all tools required by recipes that have to be installed externally on the
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
 # target specific to this project so that other projects can use the same approach but
 # with different requirements.
-$(HOME)/.local/var/log/project-structure-host-install.log:
+$(HOME)/.local/var/log/project-structure-host-install.log: ./bin/host-install \
+		./build-host/requirements.txt.in
 	mkdir -pv "$(dir $(@))"
-	(
-	    if ! which pip
-	    then
-	        if which apk
-	        then
-	            apk update
-	            apk add \
-# We need `$ envsubst` in the `expand-template:` target recipe:
-	                "gettext" \
-# We need `$ pip3` to install the project's Python tools:
-	                "py3-pip" \
-# Needed for dependencies we can't get current versions for locally:
-	                "docker-cli-compose"
-	        else
-	            sudo apt-get update
-	            sudo apt-get install -y "gettext-base" "python3-pip" \
-	                "docker-compose-plugin"
-	        fi
-	    fi
-	    pip install -r "./build-host/requirements.txt.in"
-	) |& tee -a "$(@)"
+	"$(<)" |& tee -a "$(@)"
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
@@ -685,36 +667,35 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ./var/log/docker-login-DOCKER.log: ./.env
 	mkdir -pv "$(dir $(@))"
-	set +x
-	source "./.env"
-	export DOCKER_PASS
-	set -x
 	printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
 	date | tee -a "$(@)"
 
 
-## Utility Targets:
+## Makefile "functions":
 #
-# Recipes used to make similar changes across targets where using Make's basic syntax
-# can't be used.
+# Snippets whose output is frequently used including across recipes.  Used for output
+# only, not actually making any changes.
+# https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
-.PHONY: expand-template
-## Create a file from a template replacing environment variables
-expand-template:
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
-	set +x
-	if [ -e "$(target)" ]
-	then
-ifeq ($(TEMPLATE_IGNORE_EXISTING),true)
-	    exit
-else
-	    envsubst <"$(template)" | diff -u "$(target)" "-" || true
-	    echo "ERROR: Template $(template) has been updated:"
-	    echo "       Reconcile changes and \`$$ touch $(target)\`:"
-	    false
-endif
-	fi
-	envsubst <"$(template)" >"$(target)"
+# Return the most recently built package:
+current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
+
+define expand_template=
+if [ -e "$(2)" ]
+then
+    if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
+    then
+        touch "$(2)"
+        exit
+    fi
+    envsubst <"$(1)" | diff -u "$(2)" "-" || true
+    set +x
+    echo "ERROR: Template $(1) has been updated."
+    echo "       Reconcile changes and \`$$ touch $(2)\`:"
+    false
+fi
+envsubst <"$(1)" >"$(2)"
+endef
 
 # TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
 # targets for the authentication environment variables that need to be set or just login

@@ -33,7 +33,7 @@ sdist/
 docs/_build/
 
 # dotenv
-.env
+/.env
 
 # Emacs editor settings
 /.dir-locals.el

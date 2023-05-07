@@ -365,7 +365,7 @@ clean:
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
-./.env: ./.env.in $(HOME)/.local/var/log/project-structure-host-install.log
+./.env: ./.env.in
 	if [ ! -e "$(@)" ]
 	then
 	    set +x
@@ -424,7 +424,17 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
+# Short-circuit/repeat the host-install recipe here because expanded templates should
+# *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
+# *but* it is required to expand templates.  We can't use a sub-make because any
+# expanded templates we use in `include ...` directives, such as `./.env`, are updated
+# as targets when reading the `./Makefile` leading to endless recursion.
 define expand_template=
+if ! which envsubst
+then
+    mkdir -pv "$(HOME)/.local/var/log/"
+    ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
+fi
 if [ -e "$(2)" ]
 then
     if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]

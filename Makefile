@@ -555,7 +555,7 @@ endif
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
-	    )" $${docker_build_args} \
+	    )" \
 	    $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
@@ -590,7 +590,8 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs ./var/log/codecov-install.log
+test-docker: build-pkgs $(HOME)/.local/var/log/project-structure-host-install.log \
+		build-docker ./var/log/codecov-install.log
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -608,7 +609,9 @@ $(PYTHON_MINORS:%=test-docker-%):
 
 .PHONY: test-docker-pyminor
 ### Run the full suite of tests inside a docker container for this Python version.
-test-docker-pyminor: build-docker-$(PYTHON_MINOR) ./var/log/codecov-install.log
+test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
+		$(HOME)/.local/var/log/project-structure-host-install.log \
+		./var/log/codecov-install.log
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -707,7 +710,7 @@ release: release-pkgs release-docker
 .PHONY: release-pkgs
 ### Publish installable Python packages to PyPI if conventional commits require.
 release-pkgs: $(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/log/tox/build/build.log ./var/log/git-remotes.log \
+		./var/var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc ./.env
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
@@ -724,7 +727,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e test-clean
 	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/project?structure-*
-	export VERSION=$$(./.tox/build/bin/cz version --project)
+	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" \
 	    ./dist/project?structure-*
@@ -804,12 +807,12 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    false
 	fi
 # Ensure the local branch is updated to the forthcoming version bump commit:
-	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 # Check if a release is required:
 	exit_code=0
 	if [ "$(VCS_BRANCH)" = "main" ] &&
-	    ./.tox/build/bin/python ./bin/get-base-version $$(
-	        ./.tox/build/bin/cz version --project
+	    $(TOX_EXEC_BUILD_ARGS) -qq -- python ./bin/get-base-version $$(
+	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	    )
 	then
 # Release a previous pre-release as final regardless of whether commits since then
@@ -817,7 +820,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    true
 	else
 # Is a release required by conventional commits:
-	    ./.tox/build/bin/python ./bin/cz-check-bump || exit_code=$$?
+	    $(TOX_EXEC_BUILD_ARGS) -qq -- python ./bin/cz-check-bump || exit_code=$$?
 	    if (( $$exit_code == 3 || $$exit_code == 21 ))
 	    then
 # No commits require a release:
@@ -867,7 +870,7 @@ ifeq ($(VCS_BRANCH),main)
 ifeq ($(CI),true)
 	git push --no-verify "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
 endif
-	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
@@ -1079,8 +1082,11 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
-	docker compose run --rm project-structure-devel touch \
-	    "/home/project-structure/.local/var/log/project-structure-host-install.log"
+	docker run --rm --workdir "/home/project-structure/" --entrypoint "tar" \
+	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
+	    -cv "./.local/var/log/project-structure-host-install.log" |
+	    docker compose run --rm -T --workdir "/home/project-structure/" \
+	        --entrypoint "tar" project-structure-devel -xv
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
@@ -1117,7 +1123,7 @@ endif
 	date >>"$(@)"
 
 # Local environment variables and secrets from a template:
-./.env: ./.env.in $(HOME)/.local/var/log/project-structure-host-install.log
+./.env: ./.env.in
 	if [ ! -e "$(@)" ]
 	then
 	    set +x
@@ -1213,7 +1219,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el: ./.dir-locals.el.in
-	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+	$(call expand_template,$(<),$(@))
 
 # Ensure minimal VCS configuration, mostly useful in automation such as CI.
 ~/.gitconfig:
@@ -1271,6 +1277,7 @@ endif
 # TEMPLATE: Add a cleanup rule for the GitLab container registry under the project
 # settings.
 ./var/log/docker-login-GITLAB.log: ./.env
+	$(MAKE) "./.env"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
 	then
@@ -1285,6 +1292,7 @@ endif
 # TEMPLATE: Connect the GitHub container registry to the repository using the `Connect`
 # button at the bottom of the container registry's web UI.
 ./var/log/docker-login-GITHUB.log: ./.env
+	$(MAKE) "./.env"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${PROJECT_GITHUB_PAT}" ]
 	then
@@ -1364,18 +1372,28 @@ endif
 
 ## Makefile "functions":
 #
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
+# Snippets whose output is frequently used including across recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
+# Short-circuit/repeat the host-install recipe here because expanded templates should
+# *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
+# *but* it is required to expand templates.  We can't use a sub-make because any
+# expanded templates we use in `include ...` directives, such as `./.env`, are updated
+# as targets when reading the `./Makefile` leading to endless recursion.
 define expand_template=
+if ! which envsubst
+then
+    mkdir -pv "$(HOME)/.local/var/log/"
+    ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
+fi
 if [ -e "$(2)" ]
 then
     if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
     then
+        touch "$(2)"
         exit
     fi
     envsubst <"$(1)" | diff -u "$(2)" "-" || true
@@ -1386,43 +1404,6 @@ then
 fi
 envsubst <"$(1)" >"$(2)"
 endef
-
-.PHONY: pull-docker
-### Pull an existing image best to use as a cache for building new images
-pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/log/tox/build/build.log
-	export VERSION=$$(./.tox/build/bin/cz version --project)
-	for vcs_branch in $(VCS_BRANCHES)
-	do
-	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"
-	    for docker_image in $(DOCKER_IMAGES)
-	    do
-	        if docker pull "$${docker_image}:$${docker_tag}"
-	        then
-	            docker tag "$${docker_image}:$${docker_tag}" \
-	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
-	            exit
-	        fi
-	    done
-	done
-	set +x
-	echo "ERROR: Could not pull any existing docker image"
-	false
-
-# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
-# targets for the authentication environment variables that need to be set or just login
-# to those container registries manually and touch these targets.
-.PHONY: bootstrap-project
-### Run any tasks needed to be run once for a given project by a maintainer
-bootstrap-project: \
-		./var/log/docker-login-GITLAB.log \
-		./var/log/docker-login-GITHUB.log
-# Initially seed the build host Docker image to bootstrap CI/CD environments
-# GitLab CI/CD:
-	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
-# GitHub Actions:
-	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release
-
 
 ## Makefile Development:
 #
@@ -1501,3 +1482,44 @@ bootstrap-project: \
 # developers who may not have significant familiarity with Make.  If there's a good,
 # pragmatic reason to add use of further features feel free to make the case but avoid
 # them if possible.
+
+
+## Maintainer targets:
+#
+# Recipes not used during the normal course of development.
+
+.PHONY: pull-docker
+### Pull an existing image best to use as a cache for building new images
+pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		$(HOME)/.local/var/log/project-structure-host-install.log
+	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
+	for vcs_branch in $(VCS_BRANCHES)
+	do
+	    docker_tag="$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$${vcs_branch}"
+	    for docker_image in $(DOCKER_IMAGES)
+	    do
+	        if docker pull "$${docker_image}:$${docker_tag}"
+	        then
+	            docker tag "$${docker_image}:$${docker_tag}" \
+	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
+	            exit
+	        fi
+	    done
+	done
+	set +x
+	echo "ERROR: Could not pull any existing docker image"
+	false
+
+# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
+# targets for the authentication environment variables that need to be set or just login
+# to those container registries manually and touch these targets.
+.PHONY: bootstrap-project
+### Run any tasks needed to be run once for a given project by a maintainer
+bootstrap-project: \
+		./var/log/docker-login-GITLAB.log \
+		./var/log/docker-login-GITHUB.log
+# Initially seed the build host Docker image to bootstrap CI/CD environments
+# GitLab CI/CD:
+	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
+# GitHub Actions:
+	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release

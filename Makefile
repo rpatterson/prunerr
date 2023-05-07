@@ -799,7 +799,8 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 		./bin/entrypoint ./build-host/requirements.txt.in \
 		./var-docker/$(PYTHON_ENV)/log/rebuild.log \
 		./pyproject.toml ./setup.cfg ./tox.ini \
-		./docker-compose.yml ./docker-compose.override.yml ./.env
+		./docker-compose.yml ./docker-compose.override.yml ./.env \
+		./bin/host-install
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -816,11 +817,12 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
-	docker run --rm --workdir "/home/project-structure/" --entrypoint "tar" \
+	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
-	    -cv "./.local/var/log/project-structure-host-install.log" |
+	    "./.local/var/log/project-structure-host-install.log" |
 	    docker compose run --rm -T --workdir "/home/project-structure/" \
-	        --entrypoint "tar" project-structure-devel -xv
+	        --entrypoint "tee" project-structure-devel -a \
+	        "./.local/var/log/project-structure-host-install.log" >"/dev/null"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \

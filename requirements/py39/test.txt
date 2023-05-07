@@ -4,6 +4,8 @@
 #
 #    pip-compile --extra=test --output-file=requirements/py39/test.txt --resolver=backtracking pyproject.toml
 #
+argcomplete==3.0.8
+    # via project-structure (pyproject.toml)
 build==0.10.0
     # via pip-tools
 click==8.1.3

@@ -114,7 +114,11 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
 # Match local development tool chain and avoid time consuming redundant package
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
 # package and all the development tools into the image:
-COPY [ "./requirements/${PYTHON_ENV}/devel.txt", "./requirements/${PYTHON_ENV}/" ]
+COPY [ \
+    "./requirements/${PYTHON_ENV}/test.txt", \
+    "./requirements/${PYTHON_ENV}/devel.txt", \
+    "./requirements/${PYTHON_ENV}/" \
+]
 COPY [ "./tox.ini", "./" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     tox --no-recreate-pkg --skip-pkg-install --notest -e "${PYTHON_ENV}"

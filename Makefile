@@ -651,7 +651,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el: ./.dir-locals.el.in
-	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+	$(call expand_template,$(<),$(@))
 
 # Ensure minimal VCS configuration, mostly useful in automation such as CI.
 ~/.gitconfig:

@@ -8,6 +8,8 @@
 # Stay as close to a vanilla Python environment as possible
 ARG PYTHON_MINOR=3.10
 FROM python:${PYTHON_MINOR} AS base
+# Defensive shell options:
+SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # Least volatile layers first:
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
@@ -57,6 +59,8 @@ LABEL org.opencontainers.image.version=${VERSION}
 
 # Stay as close to a vanilla environment as possible:
 FROM base AS user
+# Defensive shell options:
+SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # Least volatile layers first:
 WORKDIR "/home/project-structure/"
@@ -75,6 +79,8 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
 
 # Stay as close to the end user image as possible for build cache efficiency:
 FROM base AS devel
+# Defensive shell options:
+SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # Least volatile layers first:
 LABEL org.opencontainers.image.title="Project Structure Development"
@@ -96,13 +102,14 @@ CMD tox -e "${PYTHON_ENV}"
 # development in the image:
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1"
-COPY [ "./build-host/requirements-${PYTHON_ENV}.txt", "./build-host/" ]
+    mkdir -pv "${HOME}/.local/var/log/" && \
+    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1" | \
+        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
+COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip3 install -r "./build-host/requirements-${PYTHON_ENV}.txt" && \
-    mkdir -pv "${HOME}/.local/var/log/" && \
-    touch "${HOME}/.local/var/log/project-structure-host-install.log"
+    pip3 install -r "./build-host/requirements.txt.in" | \
+        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
 
 # Match local development tool chain and avoid time consuming redundant package
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this

@@ -807,7 +807,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	fi
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
-	    build-docker-build >>"$(@)"
+	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
 	docker compose run --rm project-structure-devel touch \
 	    "/home/project-structure/.local/var/log/project-structure-host-install.log"
@@ -961,7 +961,8 @@ endif
 # Fail fast if there's still no push access
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
-./var/log/docker-login-DOCKER.log: ./.env
+./var/log/docker-login-DOCKER.log:
+	$(MAKE) "./.env"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
@@ -1080,7 +1081,6 @@ if [ -e "$(2)" ]
 then
     if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
     then
-        touch "$(2)"
         exit
     fi
     envsubst <"$(1)" | diff -u "$(2)" "-" || true

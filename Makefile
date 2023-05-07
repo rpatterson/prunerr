@@ -203,16 +203,16 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations.
 build: \
-	./.git/hooks/pre-commit ./.env \
-	$(HOME)/.local/var/log/project-structure-host-install.log
+		./.git/hooks/pre-commit ./.env \
+		$(HOME)/.local/var/log/project-structure-host-install.log \
+		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
-	rm -vf "$(@:build-requirements-%=./var/log/tox/%/build.log)"
-	$(MAKE) -e "$(@:build-requirements-%=./var/log/tox/%/build.log)"
+	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
 	    ./requirements/$(@:build-requirements-%=%)/build.txt \
@@ -226,7 +226,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 .PHONY: build-requirements-compile
 ### Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
-	$(MAKE) -e "./var/log/tox/$(PYTHON_ENV)/build.log"
+	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
 	pip_compile_opts="--resolver backtracking --upgrade"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
@@ -259,7 +259,7 @@ test: build
 
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.
-test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
+test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-push
@@ -397,7 +397,7 @@ devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade:
+devel-upgrade: $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
@@ -493,18 +493,18 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
+$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |&
+	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest |&
 	    tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
-$(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
 	    pip install -e "./" |& tee -a "$(@)"
 
 ./README.md: README.rst

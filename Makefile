@@ -53,7 +53,7 @@ export CHECKOUT_DIR=$(PWD)
 # Use the same Python version tox would as a default.
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell \
-    pip --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
+    pip3 --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
 # Determine the latest installed Python version of the supported versions
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
@@ -78,6 +78,7 @@ export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
+PYTHON_EXTRAS=test devel
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
@@ -214,7 +215,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
-	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    $(PYTHON_EXTRAS:%=./requirements/$(@:build-requirements-%=%)/%.txt) \
 	    ./requirements/$(@:build-requirements-%=%)/build.txt \
 	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
 # Workaround race conditions in pip's HTTP file cache:
@@ -332,7 +333,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    false
 	fi
 # Ensure the local branch is updated to the forthcoming version bump commit:
-	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 # Check if a release is required:
 	exit_code=0
 	if [ "$(VCS_BRANCH)" = "main" ] &&
@@ -376,7 +377,7 @@ ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	$(MAKE) VCS_BRANCH="main" VCS_MERGE_BRANCH="develop" \
 	    VCS_REMOTE="$(VCS_COMPARE_REMOTE)" VCS_MERGE_BRANCH="develop" devel-merge
-	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 endif
 
 
@@ -458,10 +459,14 @@ clean:
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-$(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
+python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
+$(foreach extra,$(PYTHON_EXTRAS),$(call python_combine_requirements,$(extra))): \
+		./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/devel.txt=%)" \
-	    PIP_COMPILE_EXTRA="devel" PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
+	extra_basename="$$(basename "$(@)")"
+	$(MAKE) -e PYTHON_ENV="$$(basename "$$(dirname "$(@)")")" \
+	    PIP_COMPILE_EXTRA="$${extra_basename%.txt}" \
+	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
 	    build-requirements-compile
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
@@ -477,7 +482,7 @@ $(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.
 # Don't install tox into one of it's own virtual environments
 	    if [ -n "$${VIRTUAL_ENV:-}" ]
 	    then
-	        pip_bin="$$(which -a pip | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
+	        pip_bin="$$(which -a pip3 | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
 	    else
 	        pip_bin="pip"
 	    fi
@@ -495,9 +500,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # Mostly useful for build/release tools.
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
-	mkdir -pv "$(dir $(@))"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest |&
-	    tee -a "$(@)"
+	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
@@ -505,7 +508,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
-	    pip install -e "./" |& tee -a "$(@)"
+	    pip3 install -e "./" |& tee -a "$(@)"
 
 ./README.md: README.rst
 	docker compose run --rm "pandoc"
@@ -573,8 +576,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ## Makefile "functions":
 #
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
+# Snippets whose output is frequently used including across recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
 # Return the most recently built package:
@@ -585,6 +587,7 @@ if [ -e "$(2)" ]
 then
     if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
     then
+        touch "$(2)"
         exit
     fi
     envsubst <"$(1)" | diff -u "$(2)" "-" || true

@@ -40,9 +40,9 @@ main() {
     fi
     if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]
     then
-        pip install -r "./build-host/requirements-$(PYTHON_HOST_ENV).txt"
+        pip3 install -r "./build-host/requirements-$(PYTHON_HOST_ENV).txt"
     else
-        pip install -r "./build-host/requirements.txt.in"
+        pip3 install -r "./build-host/requirements.txt.in"
     fi
 }
 

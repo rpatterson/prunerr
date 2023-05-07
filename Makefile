@@ -809,8 +809,11 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
-	docker compose run --rm project-structure-devel touch \
-	    "/home/project-structure/.local/var/log/project-structure-host-install.log"
+	docker run --rm --workdir "/home/project-structure/" --entrypoint "tar" \
+	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
+	    -cv "./.local/var/log/project-structure-host-install.log" |
+	    docker compose run --rm -T --workdir "/home/project-structure/" \
+	        --entrypoint "tar" project-structure-devel -xv
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
@@ -831,7 +834,7 @@ endif
 	date >>"$(@)"
 
 # Local environment variables and secrets from a template:
-./.env: ./.env.in $(HOME)/.local/var/log/project-structure-host-install.log
+./.env: ./.env.in
 	if [ ! -e "$(@)" ]
 	then
 	    set +x
@@ -922,7 +925,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el: ./.dir-locals.el.in
-	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+	$(call expand_template,$(<),$(@))
 
 # Ensure minimal VCS configuration, mostly useful in automation such as CI.
 ~/.gitconfig:
@@ -1077,7 +1080,17 @@ endif
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
+# Short-circuit/repeat the host-install recipe here because expanded templates should
+# *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
+# *but* it is required to expand templates.  We can't use a sub-make because any
+# expanded templates we use in `include ...` directives, such as `./.env`, are updated
+# as targets when reading the `./Makefile` leading to endless recursion.
 define expand_template=
+if ! which envsubst
+then
+    mkdir -pv "$(HOME)/.local/var/log/"
+    ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
+fi
 if [ -e "$(2)" ]
 then
     if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]

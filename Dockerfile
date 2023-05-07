@@ -7,6 +7,8 @@
 
 # Stay as close to a vanilla environment as possible:
 FROM buildpack-deps:stable AS base
+# Defensive shell options:
+SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # Least volatile layers first:
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
@@ -47,6 +49,8 @@ LABEL org.opencontainers.image.version=${VERSION}
 
 # Stay as close to a vanilla environment as possible:
 FROM base AS user
+# Defensive shell options:
+SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # TEMPLATE: Add image setup specific to the end user image that is created by the
 # development image, usually installable packages.
@@ -56,6 +60,8 @@ FROM base AS user
 
 # Stay as close to the end user image as possible for build cache efficiency.
 FROM base AS devel
+# Defensive shell options:
+SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # Least volatile layers first:
 LABEL org.opencontainers.image.title="Project Structure Development"
@@ -70,14 +76,14 @@ CMD [ "tox" ]
 # development in the image:
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1"
+    mkdir -pv "${HOME}/.local/var/log/" && \
+    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1" | \
+        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
 COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip3 install -r "./build-host/requirements.txt.in" && \
-    mkdir -pv "${HOME}/.local/var/log/" && \
-    touch "${HOME}/.local/var/log/project-structure-host-install.log"
-# Initialize the Python build tools virtual environment:
-COPY [ "./requirements/build.txt.in", "./requirements/" ]
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    tox --no-recreate-pkg --skip-pkg-install --notest -e "build"
+    pip3 install -r "./build-host/requirements.txt.in" | \
+        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
+
+# TEMPLATE: Add image setup specific to the development for this project type, usually
+# at least installing development tools.

@@ -685,6 +685,7 @@ if [ -e "$(2)" ]
 then
     if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
     then
+        touch "$(2)"
         exit
     fi
     envsubst <"$(1)" | diff -u "$(2)" "-" || true

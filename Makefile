@@ -418,8 +418,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ## Makefile "functions":
 #
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
+# Snippets whose output is frequently used including across recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
 # Return the most recently built package:

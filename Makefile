@@ -557,7 +557,8 @@ clean:
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
 		./build-host/requirements.txt.in ./var-docker/log/rebuild.log \
-		./docker-compose.yml ./docker-compose.override.yml ./.env
+		./docker-compose.yml ./docker-compose.override.yml ./.env \
+		./bin/host-install
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -571,11 +572,12 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
-	docker run --rm --workdir "/home/project-structure/" --entrypoint "tar" \
+	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
-	    -cv "./.local/var/log/project-structure-host-install.log" |
+	    "./.local/var/log/project-structure-host-install.log" |
 	    docker compose run --rm -T --workdir "/home/project-structure/" \
-	        --entrypoint "tar" project-structure-devel -xv
+	        --entrypoint "tee" project-structure-devel -a \
+	        "./.local/var/log/project-structure-host-install.log" >"/dev/null"
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \

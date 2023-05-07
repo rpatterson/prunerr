@@ -84,7 +84,6 @@ COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install -r "./build-host/requirements.txt.in" | \
         tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
-# Initialize the Python build tools virtual environment:
-COPY [ "./requirements/build.txt.in", "./requirements/" ]
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    tox --no-recreate-pkg --skip-pkg-install --notest -e "build"
+
+# TEMPLATE: Add image setup specific to the development for this project type, usually
+# at least installing development tools.

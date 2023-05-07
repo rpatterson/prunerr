@@ -152,7 +152,7 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations.
-build: ./.git/hooks/pre-commit ./.env \
+build: ./.git/hooks/pre-commit ./.env.~out~ \
 		$(HOME)/.local/var/log/project-structure-host-install.log
 
 .PHONY: build-pkgs
@@ -353,7 +353,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
-	git clean -dfx -e "var/" -e ".env"
+	git clean -dfx -e "var/" -e ".env" -e "*~"
 	rm -rfv "./var/log/"
 
 
@@ -365,14 +365,7 @@ clean:
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
-./.env: ./.env.in
-	if [ ! -e "$(@)" ]
-	then
-	    set +x
-	    echo "WARNING:Copy '$$ cp -av ./.env.in ./.env', \
-	review, adjust values as needed and re-run"
-	    exit 1
-	fi
+./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
 # Install all tools required by recipes that have to be installed externally on the
@@ -407,8 +400,8 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
-./.dir-locals.el: ./.dir-locals.el.in
-	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+./.dir-locals.el.~out~: ./.dir-locals.el.in
+	$(call expand_template,$(<),$(@))
 
 # Ensure minimal VCS configuration, mostly useful in automation such as CI.
 ~/.gitconfig:
@@ -424,6 +417,9 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
+# Have to use a placeholder `*.~out~` as the target instead of the real expanded
+# template because we can't disable `.DELETE_ON_ERROR` on a per-target basis.
+#
 # Short-circuit/repeat the host-install recipe here because expanded templates should
 # *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
 # *but* it is required to expand templates.  We can't use a sub-make because any
@@ -435,20 +431,24 @@ then
     mkdir -pv "$(HOME)/.local/var/log/"
     ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
 fi
-if [ -e "$(2)" ]
+is_target_newer="0"
+test "$(2:%.~out~=%)" -nt "$(1)" || is_target_newer="$${?}"
+touch "$(2:%.~out~=%)"
+envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
+set +x
+echo "WARNING:Template $(1) has been updated."
+echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."
+set -x
+if [ ! -s "$(2:%.~out~=%)" ]
 then
-    if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
-    then
-        touch "$(2)"
-        exit
-    fi
-    envsubst <"$(1)" | diff -u "$(2)" "-" || true
-    set +x
-    echo "ERROR: Template $(1) has been updated."
-    echo "       Reconcile changes and \`$$ touch $(2)\`:"
-    false
+    envsubst <"$(1)" >"$(2:%.~out~=%)"
 fi
-envsubst <"$(1)" >"$(2)"
+if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ] || (( "$${is_target_newer}" == 0 ))
+then
+    envsubst <"$(1)" >"$(2)"
+    exit
+fi
+exit 1
 endef
 
 

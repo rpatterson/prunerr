@@ -620,7 +620,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    false
 	fi
 # Ensure the local branch is updated to the forthcoming version bump commit:
-	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 # Check if a release is required:
 	exit_code=0
 	if [ "$(VCS_BRANCH)" = "main" ] &&
@@ -677,7 +677,7 @@ ifeq ($(VCS_BRANCH),main)
 ifeq ($(CI),true)
 	git push --no-verify "$(VCS_COMPARE_REMOTE)" "HEAD:develop"
 endif
-	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)" --
+	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
@@ -721,7 +721,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	then
 	    remote_branch_exists=true
 	fi
-	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
 	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -976,6 +976,7 @@ endif
 # TEMPLATE: Add a cleanup rule for the GitLab container registry under the project
 # settings.
 ./var/log/docker-login-GITLAB.log: ./.env
+	$(MAKE) "./.env"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
 	then
@@ -990,6 +991,7 @@ endif
 # TEMPLATE: Connect the GitHub container registry to the repository using the `Connect`
 # button at the bottom of the container registry's web UI.
 ./var/log/docker-login-GITHUB.log: ./.env
+	$(MAKE) "./.env"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${PROJECT_GITHUB_PAT}" ]
 	then
@@ -1069,8 +1071,7 @@ endif
 
 ## Makefile "functions":
 #
-# Snippets whose output is frequently used including across recipes.  Used for output
-# only, not actually making any changes.
+# Snippets whose output is frequently used including across recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
 # Return the most recently built package:
@@ -1091,42 +1092,6 @@ then
 fi
 envsubst <"$(1)" >"$(2)"
 endef
-
-.PHONY: pull-docker
-### Pull an existing image best to use as a cache for building new images
-pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		$(HOME)/.local/var/log/project-structure-host-install.log
-	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
-	for vcs_branch in $(VCS_BRANCHES)
-	do
-	    docker_tag="$(DOCKER_VARIANT_PREFIX)$${vcs_branch}"
-	    for docker_image in $(DOCKER_IMAGES)
-	    do
-	        if docker pull "$${docker_image}:$${docker_tag}"
-	        then
-	            docker tag "$${docker_image}:$${docker_tag}" \
-	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
-	            exit
-	        fi
-	    done
-	done
-	set +x
-	echo "ERROR: Could not pull any existing docker image"
-	false
-
-# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
-# targets for the authentication environment variables that need to be set or just login
-# to those container registries manually and touch these targets.
-.PHONY: bootstrap-project
-### Run any tasks needed to be run once for a given project by a maintainer
-bootstrap-project: \
-		./var/log/docker-login-GITLAB.log \
-		./var/log/docker-login-GITHUB.log
-# Initially seed the build host Docker image to bootstrap CI/CD environments
-# GitLab CI/CD:
-	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
-# GitHub Actions:
-	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release
 
 
 ## Makefile Development:
@@ -1206,3 +1171,44 @@ bootstrap-project: \
 # developers who may not have significant familiarity with Make.  If there's a good,
 # pragmatic reason to add use of further features feel free to make the case but avoid
 # them if possible.
+
+
+## Maintainer targets:
+#
+# Recipes not used during the normal course of development.
+
+.PHONY: pull-docker
+### Pull an existing image best to use as a cache for building new images
+pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		$(HOME)/.local/var/log/project-structure-host-install.log
+	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
+	for vcs_branch in $(VCS_BRANCHES)
+	do
+	    docker_tag="$(DOCKER_VARIANT_PREFIX)$${vcs_branch}"
+	    for docker_image in $(DOCKER_IMAGES)
+	    do
+	        if docker pull "$${docker_image}:$${docker_tag}"
+	        then
+	            docker tag "$${docker_image}:$${docker_tag}" \
+	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
+	            exit
+	        fi
+	    done
+	done
+	set +x
+	echo "ERROR: Could not pull any existing docker image"
+	false
+
+# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
+# targets for the authentication environment variables that need to be set or just login
+# to those container registries manually and touch these targets.
+.PHONY: bootstrap-project
+### Run any tasks needed to be run once for a given project by a maintainer
+bootstrap-project: \
+		./var/log/docker-login-GITLAB.log \
+		./var/log/docker-login-GITHUB.log
+# Initially seed the build host Docker image to bootstrap CI/CD environments
+# GitLab CI/CD:
+	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release
+# GitHub Actions:
+	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITHUB)" release

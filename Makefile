@@ -91,37 +91,8 @@ export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
 PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
+PYTHON_EXTRAS=test devel
 export PYTHON_WHEEL=
-
-# Values concerning supported Python versions:
-# Use the same Python version tox would as a default.
-# https://tox.wiki/en/latest/config.html#base_python
-PYTHON_HOST_MINOR:=$(shell \
-    pip3 --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
-export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
-# Determine the latest installed Python version of the supported versions
-PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
-PYTHON_AVAIL_EXECS:=$(foreach \
-    PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
-PYTHON_LATEST_EXEC=$(firstword $(PYTHON_AVAIL_EXECS))
-PYTHON_LATEST_BASENAME=$(notdir $(PYTHON_LATEST_EXEC))
-PYTHON_MINOR=$(PYTHON_HOST_MINOR)
-ifeq ($(PYTHON_MINOR),)
-# Fallback to the latest installed supported Python version
-PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
-endif
-PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
-PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
-ifeq ($(PYTHON_MINOR),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
-else ifeq ($(findstring $(PYTHON_MINOR),$(PYTHON_MINORS)),)
-PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
-endif
-export PYTHON_ENV=py$(subst .,,$(PYTHON_MINOR))
-PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
-PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
-PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
@@ -303,7 +274,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
-	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    $(PYTHON_EXTRAS:%=./requirements/$(@:build-requirements-%=%)/%.txt) \
 	    ./requirements/$(@:build-requirements-%=%)/build.txt \
 	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
 # Workaround race conditions in pip's HTTP file cache:
@@ -696,9 +667,7 @@ devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: ./.env \
-		./var-docker/$(PYTHON_ENV)/log/build-devel.log \
-		./var/log/tox/build/build.log
+devel-upgrade: ./.env ./var-docker/$(PYTHON_ENV)/log/build-devel.log
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions
@@ -766,10 +735,14 @@ clean:
 # Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
-$(PYTHON_ENVS:%=./requirements/%/devel.txt): ./pyproject.toml ./setup.cfg ./tox.ini
+python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
+$(foreach extra,$(PYTHON_EXTRAS),$(call python_combine_requirements,$(extra))): \
+		./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/devel.txt=%)" \
-	    PIP_COMPILE_EXTRA="devel" PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
+	extra_basename="$$(basename "$(@)")"
+	$(MAKE) -e PYTHON_ENV="$$(basename "$$(dirname "$(@)")")" \
+	    PIP_COMPILE_EXTRA="$${extra_basename%.txt}" \
+	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
 	    build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
@@ -809,9 +782,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # Mostly useful for build/release tools.
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
-	mkdir -pv "$(dir $(@))"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest |&
-	    tee -a "$(@)"
+	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
@@ -837,9 +808,8 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 	then
 	    touch "$(@)" "./var-docker/$(PYTHON_ENV)/log/rebuild.log"
 # Ensure the virtualenv in the volume is also current:
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        project-structure-devel make -e PYTHON_MINORS="$(PYTHON_MINOR)" \
-	        "./var/log/tox/$(PYTHON_ENV)/build.log"
+	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) project-structure-devel \
+	        tox run $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --notest
 	    exit
 	fi
 endif

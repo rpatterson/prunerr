@@ -33,7 +33,7 @@ build==0.10.0
     #   pip-tools
     #   prunerr (pyproject.toml)
     #   pyroma
-certifi==2022.12.7
+certifi==2023.5.7
     # via requests
 chardet==5.1.0
     # via

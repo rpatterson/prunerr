@@ -925,7 +925,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.
 ~/.pypirc: ./home/.pypirc.in
-	$(MAKE) -e "template=$(<)" "target=$(@)" expand-template
+	$(call expand_template,$(<),$(@))
 
 ./var/log/docker-login-DOCKER.log:
 	$(MAKE) "./.env"

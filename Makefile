@@ -658,7 +658,8 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 
-./var/log/docker-login-DOCKER.log: ./.env
+./var/log/docker-login-DOCKER.log:
+	$(MAKE) "./.env"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then

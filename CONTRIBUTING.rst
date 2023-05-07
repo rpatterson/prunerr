@@ -20,7 +20,7 @@ If there's not already `an issue/ticket`_ for the changes you'll be making, crea
 Regardless, take note of the issue/ticket number, e.g. ``#123``.  Then create a
 branch/fork off of the ``develop`` branch::
 
-  $ git switch -c feat-123-foo-bar origin/develop
+  $ git switch -c feat-123-foo-bar --track origin/develop
 
 This project uses `towncrier`_ to manage it's release notes, AKA changelog and thus
 requires at least one `news fragment`_ before merging back into ``develop``.  The VCS

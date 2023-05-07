@@ -552,7 +552,8 @@ release: release-pkgs release-docker
 .PHONY: release-pkgs
 ### Publish installable packages if conventional commits require a release.
 release-pkgs: $(HOME)/.local/var/log/project-structure-host-install.log \
-		$(HOME)/.local/var/log/project-structure-host-install.log ./var/log/git-remotes.log \
+		$(HOME)/.local/var/log/project-structure-host-install.log \
+		./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)

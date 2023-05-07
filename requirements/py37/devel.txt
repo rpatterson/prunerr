@@ -29,7 +29,7 @@ build==0.10.0
     #   pip-tools
     #   project-structure (pyproject.toml)
     #   pyroma
-certifi==2022.12.7
+certifi==2023.5.7
     # via requests
 chardet==5.1.0
     # via
@@ -162,7 +162,7 @@ pygments==2.15.1
     # via
     #   pyroma
     #   rich
-pylint==2.17.3
+pylint==2.17.4
     # via
     #   prospector
     #   pylint-celery

@@ -297,10 +297,25 @@ build: ./.git/hooks/pre-commit ./.env \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
 		build-docker
 
+.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
+### Compile fixed/pinned dependency versions if necessary.
+$(PYTHON_ENVS:%=build-requirements-%):
+# Avoid parallel tox recreations stomping on each other
+	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
+	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
+	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
+	    ./requirements/$(@:build-requirements-%=%)/build.txt \
+	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+# Workaround race conditions in pip's HTTP file cache:
+# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
+	$(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets} ||
+	    $(MAKE) -e -j $${targets}
+
 .PHONY: build-requirements-compile
 ### Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
-	$(MAKE) -e "./var/log/tox/$(PYTHON_ENV)/build.log"
+	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
 	pip_compile_opts="--resolver backtracking --upgrade"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
@@ -329,21 +344,6 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	cp -lfv "$$(
 	    ls -t ./var-docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
 	)" "./dist/"
-
-.PHONY: $(PYTHON_ENVS:%=build-requirements-%)
-### Compile fixed/pinned dependency versions if necessary.
-$(PYTHON_ENVS:%=build-requirements-%):
-# Avoid parallel tox recreations stomping on each other
-	tox run $(TOX_EXEC_OPTS) --notest -e "$(@:build-requirements-%=%)"
-	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
-	    ./requirements/$(@:build-requirements-%=%)/devel.txt \
-	    ./requirements/$(@:build-requirements-%=%)/build.txt \
-	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
-# Workaround race conditions in pip's HTTP file cache:
-# https://github.com/pypa/pip/issues/6970#issuecomment-527678672
-	$(MAKE) -e -j $${targets} ||
-	    $(MAKE) -e -j $${targets} ||
-	    $(MAKE) -e -j $${targets}
 
 ## Docker Build Targets:
 #
@@ -460,8 +460,8 @@ test-local:
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-debug
-### Run tests in the host environment and invoke the debugger on errors/failures.
-test-debug: ./var/log/tox/$(PYTHON_ENV)/editable.log
+### Run tests directly on the host and invoke the debugger on errors/failures.
+test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-docker
@@ -712,7 +712,7 @@ devel-upgrade: ./.env \
 .PHONY: devel-upgrade-branch
 ### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-	git switch -C "$(VCS_BRANCH)-upgrade" --track "$(VCS_BRANCH)" --
+	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
 	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -807,18 +807,18 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
-$(PYTHON_ALL_ENVS:%=./var/log/tox/%/build.log):
+$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/build.log=%)" --notest |&
+	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest |&
 	    tee -a "$(@)"
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
-$(PYTHON_ENVS:%=./var/log/tox/%/editable.log):
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:var/log/tox/%/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"
 
 ## Docker real targets:

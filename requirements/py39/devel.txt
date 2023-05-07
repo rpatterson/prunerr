@@ -28,10 +28,9 @@ boolean-py==4.0
     #   reuse
 build==0.10.0
     # via
-    #   pip-tools
     #   project-structure (pyproject.toml)
     #   pyroma
-certifi==2022.12.7
+certifi==2023.5.7
     # via requests
 chardet==5.1.0
     # via
@@ -43,7 +42,6 @@ click==8.1.3
     # via
     #   black
     #   click-default-group
-    #   pip-tools
     #   towncrier
     #   typer
 click-default-group==1.2.2
@@ -64,8 +62,6 @@ docutils==0.19
     #   rstcheck-core
 dodgy==0.2.1
     # via prospector
-exceptiongroup==1.1.1
-    # via pytest
 flake8==2.3.0
     # via
     #   flake8-polyfill
@@ -84,8 +80,6 @@ idna==3.4
     # via requests
 incremental==22.10.0
     # via towncrier
-iniconfig==2.0.0
-    # via pytest
 isort==5.12.0
     # via pylint
 jinja2==3.1.2
@@ -117,7 +111,6 @@ packaging==23.1
     #   build
     #   prospector
     #   pyroma
-    #   pytest
     #   requirements-detector
 pathspec==0.11.1
     # via black
@@ -127,14 +120,10 @@ pep8==1.7.1
     # via flake8
 pep8-naming==0.10.0
     # via prospector
-pip-tools==6.13.0
-    # via project-structure (pyproject.toml)
 platformdirs==3.5.0
     # via
     #   black
     #   pylint
-pluggy==1.0.0
-    # via pytest
 prospector[with_everything]==1.9.0
     # via project-structure (pyproject.toml)
 pycodestyle==2.10.0
@@ -154,7 +143,7 @@ pygments==2.15.1
     # via
     #   pyroma
     #   rich
-pylint==2.17.3
+pylint==2.17.4
     # via
     #   prospector
     #   pylint-celery
@@ -177,8 +166,6 @@ pyproject-hooks==1.0.0
     # via build
 pyroma==4.2
     # via prospector
-pytest==7.3.1
-    # via project-structure (pyproject.toml)
 python-debian==0.1.49
     # via reuse
 pyyaml==6.0
@@ -233,7 +220,6 @@ tomli==2.0.1
     #   mypy
     #   pylint
     #   pyproject-hooks
-    #   pytest
     #   towncrier
 tomlkit==0.11.8
     # via pylint
@@ -256,13 +242,10 @@ urllib3==2.0.2
     # via requests
 vulture==2.7
     # via prospector
-wheel==0.40.0
-    # via pip-tools
 wrapt==1.15.0
     # via astroid
 xenon==0.9.0
     # via project-structure (pyproject.toml)
 
 # The following packages are considered to be unsafe in a requirements file:
-# pip
 # setuptools

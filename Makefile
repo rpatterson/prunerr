@@ -697,15 +697,6 @@ fi
 envsubst <"$(1)" >"$(2)"
 endef
 
-# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
-# targets for the authentication environment variables that need to be set or just login
-# to those container registries manually and touch these targets.
-.PHONY: bootstrap-project
-### Run any tasks needed to be run once for a given project by a maintainer
-bootstrap-project: ./var/log/docker-login-DOCKER.log
-# Initially seed the build host Docker image to bootstrap CI/CD environments
-	$(MAKE) -e -C "./build-host/" release
-
 
 ## Makefile Development:
 #
@@ -784,3 +775,17 @@ bootstrap-project: ./var/log/docker-login-DOCKER.log
 # developers who may not have significant familiarity with Make.  If there's a good,
 # pragmatic reason to add use of further features feel free to make the case but avoid
 # them if possible.
+
+
+## Maintainer targets:
+#
+# Recipes not used during the normal course of development.
+
+# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
+# targets for the authentication environment variables that need to be set or just login
+# to those container registries manually and touch these targets.
+.PHONY: bootstrap-project
+### Run any tasks needed to be run once for a given project by a maintainer
+bootstrap-project: ./var/log/docker-login-DOCKER.log
+# Initially seed the build host Docker image to bootstrap CI/CD environments
+	$(MAKE) -e -C "./build-host/" release

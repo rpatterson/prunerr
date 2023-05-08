@@ -530,7 +530,8 @@ release: release-python release-docker
 
 .PHONY: release-python
 ### Publish installable Python packages to PyPI if conventional commits require.
-release-python: $(HOME)/.local/var/log/project-structure-host-install.log ~/.pypirc
+release-python: $(HOME)/.local/var/log/project-structure-host-install.log \
+		~/.pypirc.~out~
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -919,7 +920,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.
-~/.pypirc: ./home/.pypirc.in
+~/.pypirc.~out~: ./home/.pypirc.in
 	$(call expand_template,$(<),$(@))
 
 ./var/log/docker-login-DOCKER.log:

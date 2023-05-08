@@ -578,7 +578,7 @@ ifeq ($(VCS_BRANCH),main)
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	    docker compose pull --quiet pandoc docker-pushrm
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) docker-pushrm
+	    docker compose up docker-pushrm
 	fi
 endif
 

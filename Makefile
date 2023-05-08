@@ -801,7 +801,7 @@ endif
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		./var/log/git-remotes.log ./var/log/tox/build/build.log \
+		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code

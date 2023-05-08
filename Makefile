@@ -994,7 +994,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
-	git clean -dfx -e "/var" -e "/.env" -e "*~"
+	git clean -dfx -e "/var" -e "var-docker/" -e "/.env" -e "*~"
 	git clean -dfx "./var-docker/py*/.tox/" \
 	    "./var-docker/py*/project_structure.egg-info/"
 	rm -rfv "./var/log/" "./var-docker/py*/log/"
@@ -1089,6 +1089,8 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
+	docker compose run --rm -T --workdir "/home/project-structure/" \
+	    --entrypoint "mkdir" project-structure-devel -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
 	    "./.local/var/log/project-structure-host-install.log" |
@@ -1277,7 +1279,7 @@ endif
 	date | tee -a "$(@)"
 # TEMPLATE: Add a cleanup rule for the GitLab container registry under the project
 # settings.
-./var/log/docker-login-GITLAB.log: ./.env
+./var/log/docker-login-GITLAB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
@@ -1292,7 +1294,7 @@ endif
 	date | tee -a "$(@)"
 # TEMPLATE: Connect the GitHub container registry to the repository using the `Connect`
 # button at the bottom of the container registry's web UI.
-./var/log/docker-login-GITHUB.log: ./.env
+./var/log/docker-login-GITHUB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${PROJECT_GITHUB_PAT}" ]

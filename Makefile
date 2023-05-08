@@ -718,7 +718,7 @@ release: release-pkgs release-docker
 .PHONY: release-pkgs
 ### Publish installable Python packages to PyPI if conventional commits require.
 release-pkgs: $(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/var/log/git-remotes.log \
+		./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc.~out~ \
 		./.env.~out~
 # Only release from the `main` or `develop` branches:

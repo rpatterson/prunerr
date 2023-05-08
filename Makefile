@@ -544,7 +544,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
-	git clean -dfx -e "/var" -e "/.env" -e "*~"
+	git clean -dfx -e "/var" -e "var-docker/" -e "/.env" -e "*~"
 	rm -rfv "./var/log/" "./var-docker/log/"
 
 

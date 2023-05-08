@@ -976,7 +976,7 @@ endif
 	date | tee -a "$(@)"
 # TEMPLATE: Add a cleanup rule for the GitLab container registry under the project
 # settings.
-./var/log/docker-login-GITLAB.log: ./.env
+./var/log/docker-login-GITLAB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
@@ -991,7 +991,7 @@ endif
 	date | tee -a "$(@)"
 # TEMPLATE: Connect the GitHub container registry to the repository using the `Connect`
 # button at the bottom of the container registry's web UI.
-./var/log/docker-login-GITHUB.log: ./.env
+./var/log/docker-login-GITHUB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${PROJECT_GITHUB_PAT}" ]

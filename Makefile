@@ -572,6 +572,8 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
+	docker compose run --rm -T --workdir "/home/project-structure/" \
+	    --entrypoint "mkdir" project-structure-devel -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
 	    "./.local/var/log/project-structure-host-install.log" |

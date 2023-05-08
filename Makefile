@@ -714,7 +714,7 @@ release: release-pkgs release-docker
 ### Publish installable Python packages to PyPI if conventional commits require.
 release-pkgs: $(HOME)/.local/var/log/project-structure-host-install.log \
 		./var/var/log/git-remotes.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc.~out~ \
 		./.env.~out~
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
@@ -1260,7 +1260,7 @@ endif
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
 # Ensure release publishing authentication, mostly useful in automation such as CI.
-~/.pypirc: ./home/.pypirc.in
+~/.pypirc.~out~: ./home/.pypirc.in
 	$(call expand_template,$(<),$(@))
 
 ./var/log/docker-login-DOCKER.log:

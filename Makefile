@@ -189,13 +189,13 @@ all: build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons.
-start: build-docker ./.env
+start: build-docker ./.env.~out~
 	docker compose down
 	docker compose up -d
 
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging.
-run: build-docker ./.env
+run: build-docker ./.env.~out~
 	docker compose down
 	docker compose up
 
@@ -206,7 +206,7 @@ run: build-docker ./.env
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env \
+build: ./.git/hooks/pre-commit ./.env.~out~ \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
 		build-docker
 
@@ -332,7 +332,7 @@ test-docker: build-pkgs
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
+test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -342,7 +342,7 @@ test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var-docker/log/build-devel.log ./.env
+		./var-docker/log/build-devel.log ./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -426,7 +426,7 @@ endif
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var-docker/log/build-devel.log ./.env
+		./var-docker/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -544,7 +544,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
-	git clean -dfx -e "var/" -e ".env"
+	git clean -dfx -e "/var" -e "/.env" -e "*~"
 	rm -rfv "./var/log/" "./var-docker/log/"
 
 
@@ -557,7 +557,7 @@ clean:
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
 		./build-host/requirements.txt.in ./var-docker/log/rebuild.log \
-		./docker-compose.yml ./docker-compose.override.yml ./.env \
+		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
 		./bin/host-install
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
@@ -598,14 +598,7 @@ endif
 	date >>"$(@)"
 
 # Local environment variables and secrets from a template:
-./.env: ./.env.in
-	if [ ! -e "$(@)" ]
-	then
-	    set +x
-	    echo "WARNING:Copy '$$ cp -av ./.env.in ./.env', \
-	review, adjust values as needed and re-run"
-	    exit 1
-	fi
+./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
 # Install all tools required by recipes that have to be installed externally on the
@@ -655,7 +648,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
-./.dir-locals.el: ./.dir-locals.el.in
+./.dir-locals.el.~out~: ./.dir-locals.el.in
 	$(call expand_template,$(<),$(@))
 
 # Ensure minimal VCS configuration, mostly useful in automation such as CI.
@@ -664,7 +657,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "./.env"
+	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
@@ -685,6 +678,9 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
+# Have to use a placeholder `*.~out~` as the target instead of the real expanded
+# template because we can't disable `.DELETE_ON_ERROR` on a per-target basis.
+#
 # Short-circuit/repeat the host-install recipe here because expanded templates should
 # *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
 # *but* it is required to expand templates.  We can't use a sub-make because any
@@ -696,20 +692,24 @@ then
     mkdir -pv "$(HOME)/.local/var/log/"
     ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
 fi
-if [ -e "$(2)" ]
+is_target_newer="0"
+test "$(2:%.~out~=%)" -nt "$(1)" || is_target_newer="$${?}"
+touch "$(2:%.~out~=%)"
+envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
+set +x
+echo "WARNING:Template $(1) has been updated."
+echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."
+set -x
+if [ ! -s "$(2:%.~out~=%)" ]
 then
-    if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
-    then
-        touch "$(2)"
-        exit
-    fi
-    envsubst <"$(1)" | diff -u "$(2)" "-" || true
-    set +x
-    echo "ERROR: Template $(1) has been updated."
-    echo "       Reconcile changes and \`$$ touch $(2)\`:"
-    false
+    envsubst <"$(1)" >"$(2:%.~out~=%)"
 fi
-envsubst <"$(1)" >"$(2)"
+if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ] || (( "$${is_target_newer}" == 0 ))
+then
+    envsubst <"$(1)" >"$(2)"
+    exit
+fi
+exit 1
 endef
 
 

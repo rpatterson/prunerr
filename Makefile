@@ -247,13 +247,13 @@ all: build
 
 .PHONY: start
 ### Run the local development end-to-end stack services in the background as daemons.
-start: build-docker-$(PYTHON_MINOR) ./.env
+start: build-docker-$(PYTHON_MINOR) ./.env.~out~
 	docker compose down
 	docker compose up -d
 
 .PHONY: run
 ### Run the local development end-to-end stack services in the foreground for debugging.
-run: build-docker ./.env
+run: build-docker ./.env.~out~
 	docker compose down
 	docker compose up
 
@@ -264,7 +264,7 @@ run: build-docker ./.env
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env \
+build: ./.git/hooks/pre-commit ./.env.~out~ \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
 		build-docker
 
@@ -408,7 +408,7 @@ endif
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ### Pull container images and compile fixed/pinned dependency versions if necessary.
-$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env
+$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
 	$(MAKE) -e "./var-docker/$${PYTHON_ENV}/log/build-devel.log"
@@ -472,7 +472,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
+test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -482,7 +482,7 @@ test-docker-lint: ./.env ./var/log/docker-login-DOCKER.log
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env
+		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -586,7 +586,7 @@ endif
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env
+		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -667,7 +667,7 @@ devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: ./.env ./var-docker/$(PYTHON_ENV)/log/build-devel.log
+devel-upgrade: ./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/build-devel.log
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions
@@ -722,7 +722,7 @@ clean:
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
 	    || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit clean || true
-	git clean -dfx -e "var/" -e ".env"
+	git clean -dfx -e "/var" -e "var-docker/" -e "/.env" -e "*~"
 	git clean -dfx "./var-docker/py*/.tox/" \
 	    "./var-docker/py*/project_structure.egg-info/"
 	rm -rfv "./var/log/" "./var-docker/py*/log/"
@@ -799,7 +799,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 		./bin/entrypoint ./build-host/requirements.txt.in \
 		./var-docker/$(PYTHON_ENV)/log/rebuild.log \
 		./pyproject.toml ./setup.cfg ./tox.ini \
-		./docker-compose.yml ./docker-compose.override.yml ./.env \
+		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
 		./bin/host-install
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
@@ -817,6 +817,8 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
+	docker compose run --rm -T --workdir "/home/project-structure/" \
+	    --entrypoint "mkdir" project-structure-devel -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
 	    "./.local/var/log/project-structure-host-install.log" |
@@ -853,14 +855,7 @@ endif
 	date >>"$(@)"
 
 # Local environment variables and secrets from a template:
-./.env: ./.env.in
-	if [ ! -e "$(@)" ]
-	then
-	    set +x
-	    echo "WARNING:Copy '$$ cp -av ./.env.in ./.env', \
-	review, adjust values as needed and re-run"
-	    exit 1
-	fi
+./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
 # Install all tools required by recipes that have to be installed externally on the
@@ -915,7 +910,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
-./.dir-locals.el: ./.dir-locals.el.in
+./.dir-locals.el.~out~: ./.dir-locals.el.in
 	$(call expand_template,$(<),$(@))
 
 # Ensure minimal VCS configuration, mostly useful in automation such as CI.
@@ -928,7 +923,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(call expand_template,$(<),$(@))
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "./.env"
+	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
@@ -949,6 +944,9 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 # Return the most recently built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
+# Have to use a placeholder `*.~out~` as the target instead of the real expanded
+# template because we can't disable `.DELETE_ON_ERROR` on a per-target basis.
+#
 # Short-circuit/repeat the host-install recipe here because expanded templates should
 # *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
 # *but* it is required to expand templates.  We can't use a sub-make because any
@@ -960,20 +958,24 @@ then
     mkdir -pv "$(HOME)/.local/var/log/"
     ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
 fi
-if [ -e "$(2)" ]
+is_target_newer="0"
+test "$(2:%.~out~=%)" -nt "$(1)" || is_target_newer="$${?}"
+touch "$(2:%.~out~=%)"
+envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
+set +x
+echo "WARNING:Template $(1) has been updated."
+echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."
+set -x
+if [ ! -s "$(2:%.~out~=%)" ]
 then
-    if ( ! [ "$(1)" -nt "$(2)" ] ) || [ "$(TEMPLATE_IGNORE_EXISTING)" = "true" ]
-    then
-        touch "$(2)"
-        exit
-    fi
-    envsubst <"$(1)" | diff -u "$(2)" "-" || true
-    set +x
-    echo "ERROR: Template $(1) has been updated."
-    echo "       Reconcile changes and \`$$ touch $(2)\`:"
-    false
+    envsubst <"$(1)" >"$(2:%.~out~=%)"
 fi
-envsubst <"$(1)" >"$(2)"
+if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ] || (( "$${is_target_newer}" == 0 ))
+then
+    envsubst <"$(1)" >"$(2)"
+    exit
+fi
+exit 1
 endef
 
 

@@ -1,5 +1,8 @@
-prunerr 1.1.11 (2023-05-08)
+prunerr 1.1.12 (2023-05-08)
 ===========================
 
-No significant changes.
+Bugfixes
+--------
+
+- Fix pushing README to Docker Hub.
 

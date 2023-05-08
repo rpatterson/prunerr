@@ -266,6 +266,9 @@ endif
 export DOCKER_PASS
 
 # Values derived from or overridden by CI environments:
+ifeq ($(CI),true)
+TEMPLATE_IGNORE_EXISTING=true
+endif
 GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
 # Determine if this checkout is a fork of the upstream project:
 CI_IS_FORK=false
@@ -1398,7 +1401,10 @@ fi
 is_target_newer="0"
 test "$(2:%.~out~=%)" -nt "$(1)" || is_target_newer="$${?}"
 touch "$(2:%.~out~=%)"
-envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
+if [ "$(CI)" != "true" ]
+then
+    envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
+fi
 set +x
 echo "WARNING:Template $(1) has been updated."
 echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."

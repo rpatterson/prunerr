@@ -100,14 +100,10 @@ CMD tox -e "${PYTHON_ENV}"
 
 # Simulate the parts of the host install process from `./Makefile` needed for
 # development in the image:
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    mkdir -pv "${HOME}/.local/var/log/" && \
-    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1" | \
-        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
 COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
+    mkdir -pv "${HOME}/.local/var/log/" && \
     pip3 install -r "./build-host/requirements.txt.in" | \
         tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
 

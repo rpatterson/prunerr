@@ -10,6 +10,10 @@
 # targets that follow.  If making changes here, please start by reading the philosophy
 # commentary at the bottom of this file.
 
+# Project specific values:
+PROJECT_NAMESPACE=rpatterson
+PROJECT_NAME=project-structure
+
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
@@ -203,9 +207,8 @@ all: build
 
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations.
-build: \
-		./.git/hooks/pre-commit ./.env.~out~ \
-		$(HOME)/.local/var/log/project-structure-host-install.log \
+build: ./.git/hooks/pre-commit ./.env.~out~ \
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
@@ -255,8 +258,14 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters.
-test: build
+test: build test-lint
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
+
+.PHONY: test-lint
+### Perform any linter or style checks, including non-code checks.
+test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+# Run non-code checks, e.g. documentation:
+	tox run -e "build"
 
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.
@@ -266,7 +275,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 .PHONY: test-push
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/project-structure-host-install.log
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -309,7 +318,7 @@ test-clean:
 
 .PHONY: release
 ### Publish installable Python packages if conventional commits require a release.
-release: $(HOME)/.local/var/log/project-structure-host-install.log ~/.pypirc.~out~
+release: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log ~/.pypirc.~out~
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -325,7 +334,7 @@ endif
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/project-structure-host-install.log
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -387,7 +396,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
+devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/projectstructure/"
@@ -499,13 +508,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Mostly useful for build/release tools.
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite when using Tox-managed virtual environments directly and changes to code
 # need to take effect immediately.
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"
@@ -521,7 +530,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
 # target specific to this project so that other projects can use the same approach but
 # with different requirements.
-$(HOME)/.local/var/log/project-structure-host-install.log: ./bin/host-install \
+$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install \
 		./build-host/requirements.txt.in
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
@@ -544,13 +553,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Capture any project initialization tasks for reference.  Not actually usable.
 ./pyproject.toml:
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
@@ -587,7 +596,7 @@ define expand_template=
 if ! which envsubst
 then
     mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
+    ./bin/host-install >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

@@ -29,11 +29,19 @@ hooks enforce this when pushing to ``develop`` or ``main``::
   $ towncrier create 123.feature
 
 From there you can begin writing your tests or making other changes and run the tests to
-check your work::
+check your work.  For reproducibility and to expose clean build issues, the tests can be
+run inside the development container.  This is the command run by the VCS hooks and the
+``$ make test`` target as well::
 
-  $ make test
+  $ make test-docker
 
-You can also inspect test failures and errors in `Python's post-mortem debugger`_::
+During the inner loop of development iterations, it may be more efficient to run the
+tests locally directly on your development host::
+
+  $ make test-local
+
+You can also inspect test failures and errors in `Python's post-mortem debugger`_.  This
+also runs locally directly on your development host::
 
   $ make test-debug
 

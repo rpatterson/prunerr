@@ -10,4 +10,5 @@
       . "${PWD}/.tox/${PYTHON_ENV}/bin/prospector")
      (flycheck-python-flake8-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/python")
      (flycheck-python-pylint-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/pylint")
-     (flycheck-python-mypy-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/mypy"))))
+     (flycheck-python-mypy-executable . "${PWD}/.tox/${PYTHON_ENV}/bin/mypy")))
+ (dockerfile-mode . ((flycheck-dockerfile-hadolint-executable . "${PWD}/bin/hadolint"))))

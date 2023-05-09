@@ -2,5 +2,21 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Empty so as not to interfere with any end-user container usage:
+# Minimal `$ docker compose ...` configuration to demonstrate the requirements for
+# running project-structure in containers.
 version: "3.8"
+
+services:
+
+  ## Container for use by end users:
+  project-structure:
+    image: "merpatterson/project-structure"
+    container_name: "project-structure"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+      # Make the run-time user configurable in `./.env` to match permissions inside and
+      # outside the container.  Default to the common/standard main/first user and group
+      # IDs
+      PUID: "${PUID:-1000}"
+      PGID: "${PGID:-${PUID:-1000}}"
+    restart: "unless-stopped"

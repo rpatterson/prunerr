@@ -10,11 +10,15 @@ FROM buildpack-deps:stable AS base
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
+# Project contstants:
+ARG PROJECT_NAMESPACE=rpatterson
+ARG PROJECT_NAME=project-structure
+
 # Least volatile layers first:
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
-LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/project-structure"
-LABEL org.opencontainers.image.documentation="https://gitlab.com/rpatterson/project-structure"
-LABEL org.opencontainers.image.source="https://gitlab.com/rpatterson/project-structure"
+LABEL org.opencontainers.image.url="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.documentation="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.source="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
 LABEL org.opencontainers.image.title="Project Structure"
 LABEL org.opencontainers.image.description="Project structure foundation or template"
 LABEL org.opencontainers.image.licenses="MIT"
@@ -23,8 +27,8 @@ LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/buildpack-deps"
 
 # Find the same home directory even when run as another user, e.g. `root`.
-ENV HOME="/home/project-structure"
-WORKDIR "/home/project-structure/"
+ENV HOME="/home/${PROJECT_NAME}"
+WORKDIR "/home/${PROJECT_NAME}/"
 ENTRYPOINT [ "entrypoint" ]
 
 # Put the `ENTRYPOINT` on the `$PATH`
@@ -69,7 +73,7 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
-WORKDIR "/usr/local/src/project-structure/"
+WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 CMD [ "tox" ]
 
 # Simulate the parts of the host install process from `./Makefile` needed for
@@ -78,12 +82,12 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     mkdir -pv "${HOME}/.local/var/log/" && \
     apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1" | \
-        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
+        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install -r "./build-host/requirements.txt.in" | \
-        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
+        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 # TEMPLATE: Add image setup specific to the development for this project type, usually
 # at least installing development tools.

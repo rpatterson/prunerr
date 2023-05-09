@@ -24,7 +24,6 @@ name: "Build and Test"
 env:
   PUID: "1001"
   PGID: "123"
-  CHECKOUT_DIR: "${{ github.workspace }}"
   # Project specific values:
   PROJECT_NAMESPACE: "rpatterson"
   PROJECT_NAME: "project-structure"
@@ -64,6 +63,8 @@ jobs:
     runs-on: "ubuntu-latest"
     container:
       image: "ghcr.io/rpatterson/project-structure:build-host"
+      env:
+        CHECKOUT_DIR: "${{ github.workspace }}"
     permissions:
       packages: "write"
       checks: "write"

@@ -914,7 +914,7 @@ devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
 devel-upgrade: ./.env.~out~ $(HOME)/.local/var/log/project-structure-host-install.log \
-		./var-docker/$(PYTHON_ENV)/log/build-devel.log
+		build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions
@@ -1093,12 +1093,12 @@ endif
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
 	docker compose run --rm -T --workdir "/home/project-structure/" \
-	    --entrypoint "mkdir" project-structure-devel -pv "./.local/var/log/"
+	    project-structure-devel mkdir -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
 	    "./.local/var/log/project-structure-host-install.log" |
 	    docker compose run --rm -T --workdir "/home/project-structure/" \
-	        --entrypoint "tee" project-structure-devel -a \
+	        project-structure-devel tee -a \
 	        "./.local/var/log/project-structure-host-install.log" >"/dev/null"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.

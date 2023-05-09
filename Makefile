@@ -10,6 +10,10 @@
 # targets that follow.  If making changes here, please start by reading the philosophy
 # commentary at the bottom of this file.
 
+# Project specific values:
+PROJECT_NAMESPACE=rpatterson
+PROJECT_NAME=project-structure
+
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 
@@ -153,7 +157,7 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ \
-		$(HOME)/.local/var/log/project-structure-host-install.log
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -172,7 +176,7 @@ test: test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/project-structure-host-install.log
+test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 # Run non-code checks, e.g. documentation:
 	tox run -e "build"
 
@@ -184,7 +188,7 @@ test-debug:
 .PHONY: test-push
 ### Perform any checks that should only be run before pushing.
 test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/project-structure-host-install.log
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -227,7 +231,7 @@ test-clean:
 
 .PHONY: release
 ### Publish installable packages if conventional commits require a release.
-release: $(HOME)/.local/var/log/project-structure-host-install.log
+release: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -238,7 +242,7 @@ endif
 .PHONY: release-bump
 ### Bump the package version if on a branch that should trigger a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/project-structure-host-install.log
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -300,7 +304,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
+devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	true "TEMPLATE: Always specific to the type of project"
 	$(TOX_EXEC_BUILD_ARGS) -- reuse addheader -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
@@ -372,7 +376,7 @@ clean:
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
 # target specific to this project so that other projects can use the same approach but
 # with different requirements.
-$(HOME)/.local/var/log/project-structure-host-install.log: ./bin/host-install \
+$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install \
 		./build-host/requirements.txt.in
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
@@ -395,7 +399,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(HOME)/.local/var/log/project-structure-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
@@ -429,7 +433,7 @@ define expand_template=
 if ! which envsubst
 then
     mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
+    ./bin/host-install >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

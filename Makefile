@@ -465,7 +465,7 @@ test-debug:
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
 test-docker: build-pkgs $(HOME)/.local/var/log/project-structure-host-install.log \
-		build-docker ./var/log/codecov-install.log
+		build-docker
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -480,6 +480,7 @@ test-docker: build-pkgs $(HOME)/.local/var/log/project-structure-host-install.lo
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
 ifneq ($(CODECOV_TOKEN),)
+	$(MAKE) "./var/log/codecov-install.log"
 	codecov --nonZero -t "$(CODECOV_TOKEN)" --file "./build/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)
 	set +x

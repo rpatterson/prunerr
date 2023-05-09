@@ -11,8 +11,8 @@
 # commentary at the bottom of this file.
 
 # Project specific values:
-PROJECT_NAMESPACE=rpatterson
-PROJECT_NAME=project-structure
+export PROJECT_NAMESPACE=rpatterson
+export PROJECT_NAME=project-structure
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
@@ -21,8 +21,6 @@ PYTHON_SUPPORTED_MINORS=3.10 3.11 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
-CI_PROJECT_NAME=$(PROJECT_NAME)
 
 
 ## "Private" Variables:
@@ -270,6 +268,8 @@ endif
 export DOCKER_PASS
 
 # Values derived from or overridden by CI environments:
+CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
+CI_PROJECT_NAME=$(PROJECT_NAME)
 ifeq ($(CI),true)
 TEMPLATE_IGNORE_EXISTING=true
 endif

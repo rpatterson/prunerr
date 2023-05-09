@@ -26,6 +26,10 @@ RUN \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 
+# Project contstants:
+ARG PROJECT_NAMESPACE=rpatterson
+ARG PROJECT_NAME=project-structure
+
 # Find the same home directory even when run as another user, e.g. `root`.
 ENV HOME="/home/runner"
 # Add user installs to PATH
@@ -34,16 +38,16 @@ ENV PATH="${HOME}/.local/bin:${PATH}"
 COPY [ "./requirements-py310.txt", "${HOME}/.local/lib/" ]
 RUN mkdir -pv "${HOME}/.local/var/log/" && \
     pip3 install --no-cache-dir --user -r "${HOME}/.local/lib/requirements-py310.txt" \
-    >"${HOME}/.local/var/log/project-structure-host-install.log"
+    >"${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
-LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/project-structure"
-LABEL org.opencontainers.image.documentation="https://gitlab.com/rpatterson/project-structure"
-LABEL org.opencontainers.image.source="https://gitlab.com/rpatterson/project-structure"
+LABEL org.opencontainers.image.url="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.documentation="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.source="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
 LABEL org.opencontainers.image.title="Project Structure Build Host"
 LABEL org.opencontainers.image.description="Project structure foundation or template, build host"
 LABEL org.opencontainers.image.licenses="MIT"

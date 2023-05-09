@@ -816,12 +816,12 @@ endif
 	    build-docker-build | tee -a "$(@)"
 # Represent that host install is baked into the image in the `${HOME}` bind volume:
 	docker compose run --rm -T --workdir "/home/project-structure/" \
-	    --entrypoint "mkdir" project-structure-devel -pv "./.local/var/log/"
+	    project-structure-devel mkdir -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/project-structure/" --entrypoint "cat" \
 	    "$$(docker compose config --images project-structure-devel | head -n 1)" \
 	    "./.local/var/log/project-structure-host-install.log" |
 	    docker compose run --rm -T --workdir "/home/project-structure/" \
-	        --entrypoint "tee" project-structure-devel -a \
+	        project-structure-devel tee -a \
 	        "./.local/var/log/project-structure-host-install.log" >"/dev/null"
 
 # Build the end-user image:

@@ -12,8 +12,8 @@ services:
   # Configuration specific to development:
   project-structure:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:?}/${PROJECT_NAME:?}\
-      :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
+      /${PROJECT_NAME:?}:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "${PROJECT_NAME:?}-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
@@ -31,8 +31,8 @@ services:
   # Container for use by developers:
   project-structure-devel:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:?}/${PROJECT_NAME:?}\
-      :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
+      /${PROJECT_NAME:?}:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "${PROJECT_NAME:?}-devel"
     profiles:
       - "test"

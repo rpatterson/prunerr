@@ -616,8 +616,7 @@ $(PYTHON_MINORS:%=test-docker-%):
 .PHONY: test-docker-pyminor
 ### Run the full suite of tests inside a docker container for this Python version.
 test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
-		$(HOME)/.local/var/log/project-structure-host-install.log \
-		./var/log/codecov-install.log
+		$(HOME)/.local/var/log/project-structure-host-install.log
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -635,6 +634,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
 ifeq ($(GITLAB_CI),true)
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 ifneq ($(CODECOV_TOKEN),)
+	$(MAKE) "./var/log/codecov-install.log"
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \
 	    --file "./build/$(PYTHON_ENV)/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)

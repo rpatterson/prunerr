@@ -11,8 +11,8 @@
 # commentary at the bottom of this file.
 
 # Project specific values:
-PROJECT_NAMESPACE=rpatterson
-PROJECT_NAME=project-structure
+export PROJECT_NAMESPACE=rpatterson
+export PROJECT_NAME=project-structure
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false

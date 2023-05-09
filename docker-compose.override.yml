@@ -11,8 +11,8 @@ services:
 
   # Configuration specific to development:
   project-structure:
-    image: "merpatterson/project-structure:${DOCKER_BRANCH_TAG:-develop}"
-    container_name: "project-structure-checkout"
+    image: "${DOCKER_USER:?}/${PROJECT_NAME:?}:${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "${PROJECT_NAME:?}-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       target: "user"
@@ -20,14 +20,14 @@ services:
         VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
+      - "${CHECKOUT_DIR:-.}/home/:/home/${PROJECT_NAME:?}/"
 
   ## Contianers used for development and release:
 
   # Container for use by developers:
   project-structure-devel:
-    image: "merpatterson/project-structure:devel-${DOCKER_BRANCH_TAG:-develop}"
-    container_name: "project-structure-devel"
+    image: "${DOCKER_USER:?}/${PROJECT_NAME:?}:devel-${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "${PROJECT_NAME:?}-devel"
     profiles:
       - "test"
     build:
@@ -46,12 +46,12 @@ services:
     volumes:
       # Ensure local changes are reflected inside the container.
       - "${CHECKOUT_DIR:-.}/bin/entrypoint:/usr/local/bin/entrypoint"
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure/"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:?}/"
       # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
+      - "${CHECKOUT_DIR:-.}/home/:/home/${PROJECT_NAME:?}/"
       # Avoid any clashes between image variants and/or the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var-docker/:/usr/local/src/project-structure/var/"
+      - "${CHECKOUT_DIR:-.}/var-docker/:/usr/local/src/${PROJECT_NAME:?}/var/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -61,8 +61,8 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure/"
-    working_dir: "/usr/local/src/project-structure/"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-}/"
+    working_dir: "/usr/local/src/${PROJECT_NAME:-}/"
     command: >-
       hadolint "./Dockerfile"
 
@@ -94,14 +94,14 @@ services:
       - "release"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      DOCKER_USER: "${DOCKER_USER:-merpatterson}"
-      DOCKER_PASS: "${DOCKER_PASS}"
+      DOCKER_USER: "${DOCKER_USER:-}"
+      DOCKER_PASS: "${DOCKER_PASS:-}"
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
       --file "/data/var/README.md"
       --short "project structure foundation or template"
-      --debug "merpatterson/project-structure"
+      --debug "${DOCKER_USER:-}/${PROJECT_NAME:-}"
 
   gitlab-release-cli:
     image: "registry.gitlab.com/gitlab-org/release-cli:latest"
@@ -110,13 +110,13 @@ services:
     environment:
       CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
     volumes:
-      - "./:/usr/local/src/project-structure/"
-    working_dir: "/usr/local/src/project-structure/"
+      - "./:/usr/local/src/${PROJECT_NAME:-}/"
+    working_dir: "/usr/local/src/${PROJECT_NAME:-}/"
 
   ## Containers for simulating CI/CD:
 
   build-host:
-    image: "merpatterson/project-structure:build-host"
+    image: "${DOCKER_USER:-}/${PROJECT_NAME:-}:build-host"
     profiles:
       - "ci"
     build: "${CHECKOUT_DIR:-.}/build-host/"

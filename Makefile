@@ -667,7 +667,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
-	    printenv "DOCKER_PASS" | docker login -u "merpatterson" --password-stdin
+	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
 	elif [ "$(CI_IS_FORK)" != "true" ]
 	then
 	    echo "ERROR: DOCKER_PASS missing from ./.env"

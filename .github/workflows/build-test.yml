@@ -21,6 +21,9 @@ env:
   PUID: "1001"
   PGID: "123"
   CHECKOUT_DIR: "${{ github.workspace }}"
+  # Project specific values:
+  PROJECT_NAMESPACE: "rpatterson"
+  PROJECT_NAME: "project-structure"
   # Requires the secrets to be added to GitHub either through the web UI or the
   # GitHub CLI tool:
   # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
@@ -34,8 +37,8 @@ env:
     ${{
       (
         (
-          (github.repository_owner != 'rpatterson')
-          || (github.event.pull_request.head.repo.owner.login != 'rpatterson')
+          (github.repository_owner != '${PROJECT_NAMESPACE}')
+          || (github.event.pull_request.head.repo.owner.login != '${PROJECT_NAMESPACE}')
         ) && 'true'
       ) || 'false'
     }}
@@ -56,7 +59,7 @@ jobs:
   build-test:
     runs-on: "ubuntu-latest"
     container:
-      image: "ghcr.io/rpatterson/project-structure:build-host"
+      image: "ghcr.io/${PROJECT_NAMESPACE}/${PROJECT_NAME}:build-host"
     permissions:
       packages: "write"
       checks: "write"
@@ -96,8 +99,11 @@ jobs:
           && (
             (! github.event.pull_request)
             || ! (
-              (github.repository_owner == 'rpatterson')
-              && (github.event.pull_request.head.repo.owner.login != 'rpatterson')
+              (github.repository_owner == '${PROJECT_NAMESPACE}')
+              && (
+                github.event.pull_request.head.repo.owner.login
+                != '${PROJECT_NAMESPACE}'
+              )
             )
           )
         with:

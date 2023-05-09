@@ -21,6 +21,31 @@ name: "Build and Test"
 # - `TEST_PYPI_PASSWORD`:
 #   A PyPI API token
 
+env:
+  PUID: "1001"
+  PGID: "123"
+  # Project specific values:
+  PROJECT_NAMESPACE: "rpatterson"
+  PROJECT_NAME: "project-structure"
+  # Requires the secrets to be added to GitHub either through the web UI or the
+  # GitHub CLI tool:
+  # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
+  GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
+  GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
+  DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
+  # Enable the GitHub CLI
+  PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
+  # Tell the `./Makefile` about GitHub specific environment details:
+  CI_IS_FORK: >-
+    ${{
+      (
+        (
+          (github.repository_owner != '${PROJECT_NAMESPACE}')
+          || (github.event.pull_request.head.repo.owner.login != '${PROJECT_NAMESPACE}')
+        ) && 'true'
+      ) || 'false'
+    }}
+
 on:
   # Only run on branches, not tags:
   # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
@@ -39,27 +64,7 @@ jobs:
     container:
       image: "ghcr.io/rpatterson/project-structure:build-host"
       env:
-        PUID: "1001"
-        PGID: "123"
         CHECKOUT_DIR: "${{ github.workspace }}"
-        # Requires the secrets to be added to GitHub either through the web UI or the
-        # GitHub CLI tool:
-        # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
-        GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
-        GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
-        DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-        # Enable the GitHub CLI
-        PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
-        # Tell the `./Makefile` about GitHub specific environment details:
-        CI_IS_FORK: >-
-          ${{
-            (
-              (
-                (github.repository_owner != 'rpatterson')
-                || (github.event.pull_request.head.repo.owner.login != 'rpatterson')
-              ) && 'true'
-            ) || 'false'
-          }}
     permissions:
       packages: "write"
       checks: "write"
@@ -109,8 +114,11 @@ jobs:
           && (
             (! github.event.pull_request)
             || ! (
-              (github.repository_owner == 'rpatterson')
-              && (github.event.pull_request.head.repo.owner.login != 'rpatterson')
+              (github.repository_owner == '${PROJECT_NAMESPACE}')
+              && (
+                github.event.pull_request.head.repo.owner.login
+                != '${PROJECT_NAMESPACE}'
+              )
             )
           )
         with:

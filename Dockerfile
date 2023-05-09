@@ -11,11 +11,15 @@ FROM python:${PYTHON_MINOR} AS base
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
+# Project contstants:
+ARG PROJECT_NAMESPACE=rpatterson
+ARG PROJECT_NAME=project-structure
+
 # Least volatile layers first:
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
-LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/project-structure"
-LABEL org.opencontainers.image.documentation="https://gitlab.com/rpatterson/project-structure"
-LABEL org.opencontainers.image.source="https://gitlab.com/rpatterson/project-structure"
+LABEL org.opencontainers.image.url="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.documentation="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECpT_NAME}"
+LABEL org.opencontainers.image.source="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
 LABEL org.opencontainers.image.title="Project Structure"
 LABEL org.opencontainers.image.description="Project structure foundation or template"
 LABEL org.opencontainers.image.licenses="MIT"
@@ -24,7 +28,7 @@ LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 
 # Find the same home directory even when run as another user, e.g. `root`.
-ENV HOME="/home/project-structure"
+ENV HOME="/home/${PROJECT_NAME}"
 ENTRYPOINT [ "entrypoint" ]
 CMD [ "project-structure" ]
 
@@ -41,7 +45,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install --no-install-recommends -y "gosu=1.12-1+b6"
 
-WORKDIR "/usr/local/src/project-structure/"
+WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
 # because this step takes the most time and changes the least frequently.
 ARG PYTHON_ENV=py310
@@ -63,7 +67,7 @@ FROM base AS user
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
 # Least volatile layers first:
-WORKDIR "/home/project-structure/"
+WORKDIR "/home/${PROJECT_NAME}/"
 
 # Install this package in the most common/standard Python way while still being able to
 # build the image locally.
@@ -87,11 +91,11 @@ LABEL org.opencontainers.image.title="Project Structure Development"
 LABEL org.opencontainers.image.description="Project structure foundation or template, development image"
 
 # Activate the Python virtual environment
-ENV VIRTUAL_ENV="/usr/local/src/project-structure/.tox/${PYTHON_ENV}"
+ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
-WORKDIR "/usr/local/src/project-structure/"
+WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Have to use the shell form of `CMD` because we need variable substitution:
 # hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
@@ -105,7 +109,7 @@ COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     mkdir -pv "${HOME}/.local/var/log/" && \
     pip3 install -r "./build-host/requirements.txt.in" | \
-        tee -a "${HOME}/.local/var/log/project-structure-host-install.log"
+        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 # Match local development tool chain and avoid time consuming redundant package
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this

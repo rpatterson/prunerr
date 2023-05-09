@@ -11,8 +11,8 @@
 # commentary at the bottom of this file.
 
 # Project specific values:
-PROJECT_NAMESPACE=rpatterson
-PROJECT_NAME=project-structure
+export PROJECT_NAMESPACE=rpatterson
+export PROJECT_NAME=project-structure
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
@@ -21,8 +21,6 @@ PYTHON_SUPPORTED_MINORS=3.10 3.11 3.9 3.8 3.7
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
-CI_PROJECT_NAME=$(PROJECT_NAME)
 
 
 ## "Private" Variables:
@@ -100,6 +98,8 @@ PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 PYTHON_EXTRAS=test devel
+PYTHON_PROJECT_PACKAGE=$(subst -,,$(PROJECT_NAME))
+PYTHON_PROJECT_GLOB=$(subst -,?,$(PROJECT_NAME))
 export PYTHON_WHEEL=
 
 # Values derived from VCS/git:
@@ -270,6 +270,8 @@ endif
 export DOCKER_PASS
 
 # Values derived from or overridden by CI environments:
+CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
+CI_PROJECT_NAME=$(PROJECT_NAME)
 ifeq ($(CI),true)
 TEMPLATE_IGNORE_EXISTING=true
 endif
@@ -635,7 +637,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
 	fi
 # Ensure the dist/package has been correctly installed in the image
 	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME) \
-	    python -m projectstructure --help
+	    python -m "$(PYTHON_PROJECT_PACKAGE)" --help
 	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME) \
 	    $(PROJECT_NAME) --help
 # Run from the development Docker container for consistency
@@ -738,14 +740,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/$(PYTHON_PROJECT_GLOB)-*
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" \
@@ -915,9 +917,9 @@ endif
 devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
+		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 

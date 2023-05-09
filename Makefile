@@ -536,11 +536,11 @@ test-clean:
 
 .PHONY: release
 ### Publish installable Python packages and container images as required by commits.
-release: release-python release-docker
+release: release-pkgs release-docker
 
-.PHONY: release-python
+.PHONY: release-pkgs
 ### Publish installable Python packages to PyPI if conventional commits require.
-release-python: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+release-pkgs: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		~/.pypirc.~out~
 # Only release from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)

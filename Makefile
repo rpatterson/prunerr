@@ -19,8 +19,6 @@ export TEMPLATE_IGNORE_EXISTING=false
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
-CI_PROJECT_NAME=$(PROJECT_NAME)
 
 
 ## "Private" Variables:
@@ -222,6 +220,8 @@ endif
 export DOCKER_PASS
 
 # Values derived from or overridden by CI environments:
+CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
+CI_PROJECT_NAME=$(PROJECT_NAME)
 ifeq ($(CI),true)
 TEMPLATE_IGNORE_EXISTING=true
 endif

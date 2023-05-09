@@ -589,9 +589,15 @@ then
     mkdir -pv "$(HOME)/.local/var/log/"
     ./bin/host-install >"$(HOME)/.local/var/log/project-structure-host-install.log"
 fi
-is_target_newer="0"
-test "$(2:%.~out~=%)" -nt "$(1)" || is_target_newer="$${?}"
-touch "$(2:%.~out~=%)"
+if [ "$(2:%.~out~=%)" -nt "$(1)" ]
+then
+    envsubst <"$(1)" >"$(2)"
+    exit
+fi
+if [ ! -e "$(2:%.~out~=%)" ]
+then
+    touch -d "@0" "$(2:%.~out~=%)"
+fi
 envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
 set +x
 echo "WARNING:Template $(1) has been updated."
@@ -600,8 +606,9 @@ set -x
 if [ ! -s "$(2:%.~out~=%)" ]
 then
     envsubst <"$(1)" >"$(2:%.~out~=%)"
+    touch -d "@0" "$(2:%.~out~=%)"
 fi
-if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ] || (( "$${is_target_newer}" == 0 ))
+if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ]
 then
     envsubst <"$(1)" >"$(2)"
     exit

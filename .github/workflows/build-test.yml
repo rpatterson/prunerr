@@ -59,7 +59,7 @@ jobs:
   build-test:
     runs-on: "ubuntu-latest"
     container:
-      image: "ghcr.io/${PROJECT_NAMESPACE}/${PROJECT_NAME}:build-host"
+      image: "ghcr.io/rpatterson/project-structure:build-host"
     permissions:
       packages: "write"
       checks: "write"

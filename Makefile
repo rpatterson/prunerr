@@ -912,7 +912,7 @@ devel-format: $(HOME)/.local/var/log/project-structure-host-install.log
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.
 devel-upgrade: ./.env.~out~ $(HOME)/.local/var/log/project-structure-host-install.log \
-		./var-docker/$(PYTHON_ENV)/log/build-devel.log
+		build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in" \
 	    "./build-host/requirements.txt.in"
 # Ensure the network is create first to avoid race conditions

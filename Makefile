@@ -98,6 +98,8 @@ PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 PYTHON_EXTRAS=test devel
+PYTHON_PROJECT_PACKAGE=$(subst -,,$(PROJECT_NAME))
+PYTHON_PROJECT_GLOB=$(subst -,?,$(PROJECT_NAME))
 export PYTHON_WHEEL=
 
 # Values derived from VCS/git:
@@ -634,8 +636,8 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
 	    docker_run_args+=" -T"
 	fi
 # Ensure the dist/package has been correctly installed in the image
-	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME) \
-	    python -c 'import projectstructure; print(projectstructure)'
+	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME) python -c \
+	    'import $(PYTHON_PROJECT_PACKAGE); print($(PYTHON_PROJECT_PACKAGE))'
 # Run from the development Docker container for consistency
 	docker compose run $${docker_run_args} $(PROJECT_NAME)-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
@@ -736,14 +738,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	./.tox/build/bin/twine check ./dist/project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.  Also ensure the tag is in
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
-	./.tox/build/bin/twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
+	    ./dist/$(PYTHON_PROJECT_GLOB)-*
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 # Create a GitLab release
 	./.tox/build/bin/twine upload -s -r "gitlab" \
@@ -913,9 +915,9 @@ endif
 devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
+		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 

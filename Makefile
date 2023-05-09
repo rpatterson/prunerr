@@ -11,8 +11,8 @@
 # commentary at the bottom of this file.
 
 # Project specific values:
-PROJECT_NAMESPACE=rpatterson
-PROJECT_NAME=project-structure
+export PROJECT_NAMESPACE=rpatterson
+export PROJECT_NAME=project-structure
 
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
@@ -83,6 +83,8 @@ PYTHON_SHORT_MINORS=$(subst .,,$(PYTHON_MINORS))
 PYTHON_ENVS=$(PYTHON_SHORT_MINORS:%=py%)
 PYTHON_ALL_ENVS=$(PYTHON_ENVS) build
 PYTHON_EXTRAS=test devel
+PYTHON_PROJECT_PACKAGE=$(subst -,,$(PROJECT_NAME))
+PYTHON_PROJECT_GLOB=$(subst -,?,$(PROJECT_NAME))
 
 # Values derived from VCS/git:
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
@@ -323,12 +325,12 @@ release: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log ~/.pypirc.~out~
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/project?structure-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
 # The VCS remote should reflect the release before the release is published to ensure
 # that a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/project?structure-*
+	    ./dist/$(PYTHON_PROJECT_GLOB)-*
 endif
 
 .PHONY: release-bump
@@ -399,9 +401,9 @@ endif
 devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/projectstructure/"
-	$(TOX_EXEC_ARGS) -- black "./src/projectstructure/"
+		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 

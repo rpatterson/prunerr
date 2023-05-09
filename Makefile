@@ -726,7 +726,7 @@ clean:
 	git clean -dfx -e "/var" -e "var-docker/" -e "/.env" -e "*~"
 	git clean -dfx "./var-docker/py*/.tox/" \
 	    "./var-docker/py*/project_structure.egg-info/"
-	rm -rfv "./var/log/" "./var-docker/py*/log/"
+	rm -rfv "./var/log/" ./var-docker/py*/log/
 
 
 ## Real Targets:

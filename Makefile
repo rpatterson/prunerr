@@ -354,8 +354,8 @@ build-docker-tags:
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%): \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
@@ -391,6 +391,8 @@ build-docker-build: ./Dockerfile \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
 	docker pull "python:$(PYTHON_MINOR)"
+# Assemble the tags for all the variant permutations:
+	$(MAKE) "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_build_args=""
 	for image_tag in $$(
 	    $(MAKE) -e --no-print-directory build-docker-tags
@@ -898,7 +900,7 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 
 # Retrieve VCS data needed for versioning (tags) and release (release notes).
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
-	git_fetch_args=--tags
+	git_fetch_args="--tags --prune --prune-tags --force"
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
 	    git_fetch_args+=" --unshallow"

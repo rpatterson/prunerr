@@ -4,7 +4,6 @@
 
 # Backup files
 *~
-*.rej
 
 # Distribution / packaging
 env/

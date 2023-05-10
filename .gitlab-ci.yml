@@ -4,9 +4,18 @@
 
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 
+variables:
+  # Variables controlling behavior:
+  PUID: "1001"
+  PGID: "1001"
+  # Project specific values:
+  PROJECT_NAMESPACE: "rpatterson"
+  # Uncomment to get more debugging output:
+  # DEBUG: "true"
+
 default:
   image:
-    name: "$CI_TEMPLATE_REGISTRY_HOST/rpatterson/$CI_PROJECT_NAME:build-host"
+    name: "$CI_TEMPLATE_REGISTRY_HOST/$PROJECT_NAMESPACE/$CI_PROJECT_NAME:build-host"
     entrypoint:
       - "docker-entrypoint.sh"
   services:
@@ -14,13 +23,6 @@ default:
   before_script:
     - "chown -R $PUID:$PGID ./"
   # TODO: Debug stale venv issues and restore cache once fixed
-
-variables:
-  # Variables controlling behavior:
-  PUID: "1001"
-  PGID: "1001"
-  # Uncomment to get more debugging output:
-  # DEBUG: "true"
 
 stages:
   - "build-test"
@@ -104,7 +106,7 @@ release:
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
           )
         )
-        && $CI_PROJECT_NAMESPACE == "rpatterson"
+        && $CI_PROJECT_NAMESPACE == $PROJECT_NAMESPACE
   script:
     - >-
       entrypoint make -e release-pkgs test-clean

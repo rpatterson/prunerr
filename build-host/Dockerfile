@@ -27,6 +27,10 @@ RUN \
     "apg" \
     && rm -rf /var/cache/apk/*
 
+# Project contstants:
+ARG PROJECT_NAMESPACE=rpatterson
+ARG PROJECT_NAME=prunerr
+
 # Find the same home directory even when run as another user, e.g. `root`.
 ENV HOME="/home/runner"
 # Add user installs to PATH
@@ -35,16 +39,16 @@ ENV PATH="${HOME}/.local/bin:${PATH}"
 COPY [ "./requirements-py310.txt", "${HOME}/.local/lib/" ]
 RUN mkdir -pv "${HOME}/.local/var/log/" && \
     pip3 install --no-cache-dir --user -r "${HOME}/.local/lib/requirements-py310.txt" \
-    >"${HOME}/.local/var/log/prunerr-host-install.log"
+    >"${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
-LABEL org.opencontainers.image.url="https://gitlab.com/rpatterson/prunerr"
-LABEL org.opencontainers.image.documentation="https://gitlab.com/rpatterson/prunerr"
-LABEL org.opencontainers.image.source="https://gitlab.com/rpatterson/prunerr"
+LABEL org.opencontainers.image.url="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.documentation="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
+LABEL org.opencontainers.image.source="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
 LABEL org.opencontainers.image.title="Prunerr Build Host"
 LABEL org.opencontainers.image.description="The host in which Prunerr is built"
 LABEL org.opencontainers.image.licenses="MIT"

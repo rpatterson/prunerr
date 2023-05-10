@@ -5,8 +5,6 @@
 # Backup files
 *~
 **/*~
-*.rej
-**/*.rej
 
 # Byte-compiled / optimized / DLL files
 __pycache__
@@ -19,14 +17,6 @@ __pycache__
 # C extensions
 *.so
 **/.so
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-# C extensions
-*.so
 
 # Distribution / packaging
 .Python

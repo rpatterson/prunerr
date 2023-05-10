@@ -928,7 +928,8 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 devel-upgrade: ./.env.~out~ $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "./build-host/requirements.txt.in"
+	    "./build-host/requirements.txt.in" \
+	    "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel
 	$(MAKE) -e -j PIP_COMPILE_ARGS="--upgrade" \

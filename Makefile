@@ -1214,7 +1214,7 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 
 # Retrieve VCS data needed for versioning (tags) and release (release notes).
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
-	git_fetch_args=--tags
+	git_fetch_args="--tags --prune --prune-tags --force"
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
 	then
 	    git_fetch_args+=" --unshallow"

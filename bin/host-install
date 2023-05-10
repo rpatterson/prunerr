@@ -38,6 +38,7 @@ main() {
     else
         set +x
         echo "ERROR: OS not supported for installing host dependencies"
+        # TODO: Add OS-X/Darwin support.
         false
     fi
     if [ -e ./build-host/requirements-$(PYTHON_HOST_ENV).txt ]

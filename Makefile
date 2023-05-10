@@ -682,7 +682,8 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 ### Update all fixed/pinned dependencies to their latest available versions.
 devel-upgrade: ./.env.~out~ build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "./build-host/requirements.txt.in"
+	    "./build-host/requirements.txt.in" \
+	    "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel
 	$(MAKE) -e -j PIP_COMPILE_ARGS="--upgrade" \

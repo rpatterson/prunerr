@@ -526,6 +526,7 @@ build-docker-build: ./Dockerfile \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
 	docker pull "python:$(PYTHON_MINOR)"
+# Pull images to use as build caches:
 	docker_build_caches=""
 ifeq ($(GITLAB_CI),true)
 # Don't cache when building final releases on `main`

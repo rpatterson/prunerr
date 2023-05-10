@@ -140,7 +140,7 @@ release:
         /^build\(release\): Version [0-9]+\.[0-9]+\.[0-9]+.* → [0-9]+\.[0-9]+\.[0-9]+$/
           )
         )
-        && $CI_PROJECT_NAMESPACE == "$PROJECT_NAMESPACE"
+        && $CI_PROJECT_NAMESPACE == $PROJECT_NAMESPACE
   script:
     - >-
       entrypoint make -e release-pkgs test-clean

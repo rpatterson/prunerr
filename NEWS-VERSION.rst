@@ -1,4 +1,8 @@
-prunerr 1.1.13b1 (2023-05-10)
+prunerr 1.1.13b2 (2023-05-10)
 =============================
 
-No significant changes.
+Bugfixes
+--------
+
+- Upgrade all requirements to the latest versions as of Wed May 10 06:49:51 PM UTC 2023.
+

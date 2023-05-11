@@ -11,8 +11,9 @@ bootstrap the local development environment.  Once installed, clone the reposito
 
   $ git clone "https://gitlab.com/rpatterson/project-structure"
 
-Then hand the rest over to the `Makefile`_ to install the VCS hooks the rest of the set
-up and build required for local development::
+Various development tools are best used through Docker containers, so `install Docker`_
+first if you haven't already.  Then hand the rest over to the `Makefile`_ to install the
+VCS hooks the rest of the set up and build required for local development::
 
   $ make
 
@@ -88,6 +89,7 @@ important enough to include in the documentation, then it's important enough to 
 in executable form in the `Makefile`_.  See the philosophy commentary at the bottom of
 the `Makefile`_ for guidance on making contributions there.
 
+.. _`install Docker`: https://docs.docker.com/engine/install/#supported-platforms
 .. _`towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
 .. _`news fragment`:
    https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments

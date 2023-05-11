@@ -179,6 +179,8 @@ test: test-lint
 test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 # Run non-code checks, e.g. documentation:
 	tox run -e "build"
+# Check copyright and licensing:
+	docker compose run --rm -T "reuse"
 
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.
@@ -306,7 +308,7 @@ endif
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	true "TEMPLATE: Always specific to the type of project"
-	$(TOX_EXEC_BUILD_ARGS) -- reuse addheader -r --skip-unrecognised \
+	docker compose run --rm "reuse" annotate -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade

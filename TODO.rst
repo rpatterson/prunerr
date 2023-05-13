@@ -33,7 +33,7 @@ High Priority
 Nice to Have
 ****************************************************************************************
 
-#. Documentation via Sphinx with CI to publish to RTFD.
+#. ``base``: Documentation via Sphinx with CI to publish to RTFD.
 
-#. Better release notes content for final releases with no changes since the last
-   pre-release.
+#. ``base``: Better release notes content for final releases with no changes since the
+   last pre-release.

@@ -202,7 +202,7 @@ test-push: $(VCS_FETCH_TARGETS) \
 	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
 	    $(TOX_EXEC_BUILD_ARGS) -- \
-	        python ./bin/cz-check-bump --compare-ref "$${vcs_compare_rev}"
+	        python ./bin/cz-check-bump.py --compare-ref "$${vcs_compare_rev}"
 	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -256,7 +256,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 # Check if a release is required:
 	exit_code=0
 	if [ "$(VCS_BRANCH)" = "main" ] &&
-	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version $$(
+	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version.py $$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	    )
 	then
@@ -265,7 +265,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    true
 	else
 # Is a release required by conventional commits:
-	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/cz-check-bump || exit_code=$$?
+	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/cz-check-bump.py || exit_code=$$?
 	    if (( $$exit_code == 3 || $$exit_code == 21 ))
 	    then
 # No commits require a release:
@@ -378,7 +378,7 @@ clean:
 # host.  Use a target file outside this checkout to support multiple checkouts.  Use a
 # target specific to this project so that other projects can use the same approach but
 # with different requirements.
-$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install \
+$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh \
 		./build-host/requirements.txt.in
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
@@ -427,15 +427,15 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 # template because we can't disable `.DELETE_ON_ERROR` on a per-target basis.
 #
 # Short-circuit/repeat the host-install recipe here because expanded templates should
-# *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
-# *but* it is required to expand templates.  We can't use a sub-make because any
-# expanded templates we use in `include ...` directives, such as `./.env`, are updated
-# as targets when reading the `./Makefile` leading to endless recursion.
+# *not* be updated when `./bin/host-install.sh` is, so we can't use it as a
+# prerequisite, *but* it is required to expand templates.  We can't use a sub-make
+# because any expanded templates we use in `include ...` directives, such as `./.env`,
+# are updated as targets when reading the `./Makefile` leading to endless recursion.
 define expand_template=
 if ! which envsubst
 then
     mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+    ./bin/host-install.sh >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

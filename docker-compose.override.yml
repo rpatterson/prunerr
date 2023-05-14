@@ -11,7 +11,7 @@ services:
   reuse:
     image: "docker.io/fsfe/reuse:latest-debian"
     profiles:
-      - "release"
+      - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     environment:
       TZ: "${TZ:-Etc/UTC}"

@@ -16,6 +16,8 @@ care about and add your own.
 Required
 ****************************************************************************************
 
+#. ``base``: Add an Open Collective badge and any related setup.
+
 
 ****************************************************************************************
 High Priority

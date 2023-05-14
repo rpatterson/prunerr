@@ -20,6 +20,19 @@ services:
     command: >-
       lint
 
+  vale:
+    image: "docker.io/jdkato/vale"
+    profiles:
+      - "lint"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-project-structure}"
+    working_dir: "/usr/local/src/${PROJECT_NAME:-project-structure}"
+    command: >-
+      .
+
   pandoc:
     image: "docker.io/pandoc/core"
     profiles:

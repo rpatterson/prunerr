@@ -176,11 +176,45 @@ test: test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log test-lint-prose
 # Run non-code checks, e.g. documentation:
 	tox run -e "build"
 # Check copyright and licensing:
 	docker compose run --rm -T "reuse"
+
+.PHONY: test-lint-prose
+### Check prose text for spelling, grammar and style
+test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/vale-sync.log
+# Check all files tracked in VCS with extensions supported by Vale:
+# https://vale.sh/docs/topics/scoping/#formats
+	git ls-files -co --exclude-standard -z \
+	    "*.md" "*.mdown" "*.markdown" "*.markdn" \
+	    "*.html" "*.htm" "*.shtml" "*.xhtml" \
+	    "*.rst" "*.rest" \
+	    "*.adoc" "*.asciidoc" "*.asc" \
+	    "*.org" \
+	    "*.c" "*.h" \
+	    "*.cs" "*.csx" \
+	    "*.cpp" "*.cc" "*.cxx" "*.hpp" \
+	    "*.css" \
+	    "*.go" \
+	    "*.hs" \
+	    "*.java" "*.bsh" \
+	    "*.js" \
+	    "*.less" \
+	    "*.lua" \
+	    "*.pl" "*.pm" "*.pod" \
+	    "*.php" \
+	    "*.ps1" \
+	    "*.py" "*.py3" "*.pyw" "*.pyi" "rpy" \
+	    "*.r" "*.R" \
+	    "*.rb" \
+	    "*.rs" \
+	    "*.sass" \
+	    "*.scala" "*.sbt" \
+	    "*.swift" \
+	    | xargs -0 -t -- docker compose run --rm -T vale
 
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.
@@ -404,6 +438,11 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+
+./var/log/vale-sync.log: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./.env.~out~ ./.vale.ini
+	mkdir -pv "$(dir $(@))"
+	docker compose run --rm vale sync | tee -a "$(@)"
 
 # Tell Emacs where to find checkout-local tools needed to check the code.
 ./.dir-locals.el.~out~: ./.dir-locals.el.in

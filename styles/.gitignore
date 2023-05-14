@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# Ignore downloaded styles
+/Vale
+/Microsoft
+/Google
+/RedHat
+/proselint
+/write-good
+/alex
+/Readability
+/Joblint

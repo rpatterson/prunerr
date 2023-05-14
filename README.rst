@@ -40,10 +40,8 @@ projects.  It includes:
 - Targets/recipes in the `Makefile`_ to automate releases controlled by `conventional
   commits`_ and end-user oriented release notes by `Towncrier`_
 - Targets/recipes in the `Makefile`_ to automate upgrading requirements and dependencies
-- [Organize source code by
-  component](https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/)
-  e.g. ``\./src/foo/(template|view|model)\..*``, rather than by type of code,
-  e.g. ``\./src/(templates|views|models)/foo\..*``.
+- `Organize source code by component`_ e.g. ``\./src/foo/(template|view|model)\..*``,
+  rather than by type of code, e.g. ``\./src/(templates|views|models)/foo\..*``.
 
 The intended use is to add this repository as a VCS remote for your project.  Thus
 developers can merge changes from this repository as we make changes related to project
@@ -178,8 +176,9 @@ template.
 
 
 .. _`Towncrier`: https://towncrier.readthedocs.io
-
 .. _`conventional commits`: https://www.conventionalcommits.org
+.. _`Organize source code by component`:
+   https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 
 .. _`This project is hosted on GitLab`:
    https://gitlab.com/rpatterson/project-structure

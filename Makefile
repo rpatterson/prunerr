@@ -188,33 +188,10 @@ test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./var/log/vale-sync.log
 # Check all files tracked in VCS with extensions supported by Vale:
 # https://vale.sh/docs/topics/scoping/#formats
-	git ls-files -co --exclude-standard -z \
-	    "*.md" "*.mdown" "*.markdown" "*.markdn" \
-	    "*.html" "*.htm" "*.shtml" "*.xhtml" \
-	    "*.rst" "*.rest" \
-	    "*.adoc" "*.asciidoc" "*.asc" \
-	    "*.org" \
-	    "*.c" "*.h" \
-	    "*.cs" "*.csx" \
-	    "*.cpp" "*.cc" "*.cxx" "*.hpp" \
-	    "*.css" \
-	    "*.go" \
-	    "*.hs" \
-	    "*.java" "*.bsh" \
-	    "*.js" \
-	    "*.less" \
-	    "*.lua" \
-	    "*.pl" "*.pm" "*.pod" \
-	    "*.php" \
-	    "*.ps1" \
-	    "*.py" "*.py3" "*.pyw" "*.pyi" "rpy" \
-	    "*.r" "*.R" \
-	    "*.rb" \
-	    "*.rs" \
-	    "*.sass" \
-	    "*.scala" "*.sbt" \
-	    "*.swift" \
-	    | xargs -0 -t -- docker compose run --rm -T vale
+	git ls-files -co --exclude-standard -z |
+	    xargs -0 -t -- docker compose run --rm -T vale
+	git ls-files -co --exclude-standard -z |
+	    xargs -0 -t -- docker compose run --rm -T vale --config="./styles/code.ini"
 
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.

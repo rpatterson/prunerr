@@ -65,7 +65,7 @@ any issues you have or better yet submit a PR with corrections.
    Is your project a command-line tool? A web app? Which programming language? Which
    project host or CI platform? Pick the branch for your project:
 
-   - ``(py|js|ruby|...)``:
+   - ``(py|js|ruby|…)``:
 
      Basic package metadata for a given language.
 
@@ -114,7 +114,7 @@ straight to final release. For example they can decide that:
 - Merge public contributions into ``develop``. See `the ./CONTRIBUTING.rst file`_ for an
   example public contributions policy and workflow.
 
-- Optionally commit fixes for bugs in final releases to a branch off of ``main``. After
+- Optionally commit fixes for bugs in final releases to a branch off ``main``. After
   passing all tests and checks, merge back into ``main`` to publish final releases
   directly.
 

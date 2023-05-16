@@ -16,7 +16,7 @@ Set up for local development and install Version Control System (VCS) hooks::
   $ make
 
 Create an `issue or ticket`_ for the changes if one doesn't exist. Take note of its
-number, for example ``#123``. Create a branch or fork off of the ``develop`` branch::
+number, for example ``#123``. Create a branch or fork off the ``develop`` branch::
 
   $ git switch -c feat-123-foo-bar --track origin/develop
 

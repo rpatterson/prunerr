@@ -23,3 +23,5 @@ rstcheck
 
 # Workaround Vale prose linter limitations:
 configobj
+# More complete prose linter:
+proselint

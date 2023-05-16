@@ -186,7 +186,7 @@ test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log test-lint-pro
 ### Check prose text for spelling, grammar and style
 test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./var/log/vale-sync.log ./.vale.ini ./styles/code.ini
-# Check all files tracked in VCS with extensions supported by Vale:
+# Check all files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z |
 	    xargs -0 -t -- docker compose run --rm -T vale

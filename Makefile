@@ -185,7 +185,7 @@ test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log test-lint-pro
 .PHONY: test-lint-prose
 ### Check prose text for spelling, grammar and style
 test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/vale-sync.log
+		./var/log/vale-sync.log ./.vale.ini ./styles/code.ini
 # Check all files tracked in VCS with extensions supported by Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z |
@@ -415,6 +415,10 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+
+# Tell Emacs where to find checkout-local tools needed to check the code.
+./.vale.ini ./styles/code.ini: ./var/log/vale-sync.log
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
 ./var/log/vale-sync.log: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./.env.~out~ ./.vale.ini

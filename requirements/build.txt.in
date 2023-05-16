@@ -20,3 +20,6 @@ towncrier
 
 # Check reStructuredText documentation:
 rstcheck
+
+# Workaround Vale prose linter limitations:
+configobj

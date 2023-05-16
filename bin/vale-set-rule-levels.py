@@ -7,7 +7,7 @@
 """
 Set all Vale rules from `BasedOnStyles` to the given level.
 
-No change is made for any existing rules specified in the same section.
+Make no change for any existing rules specified in the same section.
 """
 
 import sys

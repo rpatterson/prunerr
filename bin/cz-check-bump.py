@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 """
-Check if the conventional commits since the last release require a new release.
+Succeed if the conventional commits after `--compare-ref` require a release.
 
 Works around Commitizen's version handling when bumping from a pre-release:
 
@@ -71,12 +71,13 @@ def main(args=None):  # pylint: disable=missing-function-docstring
             current_version, tag_format=tag_format
         )
 
-    # Only check if commits require a bump:
+    # Remove the rest of the conditions from `commitizen` except for checking commit
+    # messages:
     commits = git.get_commits(compare_ref)
     increment = bump_cmd.find_increment(commits)
 
     if increment is not None:
-        # Yes, a version bump is required by the conventional commits.
+        # Yes, the conventional commits require a version bump.
         print(increment)
         sys.exit(0)
     exc_value = exceptions.NoCommitsFoundError(

@@ -159,7 +159,8 @@ all: build
 .PHONY: build
 ### Perform any currently necessary local set-up common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/npm-install.log
 
 .PHONY: build-pkgs
 ### Ensure the built package is current when used outside of tox.
@@ -390,6 +391,10 @@ clean:
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
+
+./var/log/npm-install.log: ./package.json
+	mkdir -pv "$(dir $(@))"
+	~/.nvm/nvm-exec npm install
 
 ./package.json:
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file

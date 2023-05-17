@@ -25,3 +25,6 @@ rstcheck
 configobj
 # More complete prose linter:
 proselint
+# Required by `textlint-plugin-rst` for reStructuredtext:
+# https://github.com/jimo1001/textlint-plugin-rst#installation
+docutils-ast-writer

@@ -194,9 +194,6 @@ test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 	    xargs -0 -t -- docker compose run --rm -T vale
 	git ls-files -co --exclude-standard -z |
 	    xargs -0 -t -- docker compose run --rm -T vale --config="./styles/code.ini"
-# Check all files tracked in VCS with textlint:
-# https://textlint.github.io/docs/cli.html#run-the-clhi
-	~/.nvm/nvm-exec npm run lint
 
 .PHONY: test-debug
 ### Run tests directly on the host and invoke the debugger on errors/failures.
@@ -330,9 +327,6 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	true "TEMPLATE: Always specific to the type of project"
 	docker compose run --rm "reuse" annotate -r --skip-unrecognised \
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
-# Make any possibl automatic prose fixes:
-# https://textlint.github.io/docs/cli.html#run-the-clhi
-	~/.nvm/nvm-exec npm run format
 
 .PHONY: devel-upgrade
 ### Update all fixed/pinned dependencies to their latest available versions.

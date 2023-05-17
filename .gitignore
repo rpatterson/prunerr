@@ -9,8 +9,6 @@
 env/
 build/
 var/
-/node_modules
-/package-lock.json
 /README.md
 
 # Translations

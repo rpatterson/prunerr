@@ -83,7 +83,7 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     exc_value = exceptions.NoCommitsFoundError(
         "[NO_COMMITS_FOUND]\n"
         "No commits found to generate a pre-release.\n"
-        "To avoid this error, manually specify the type of increment with `--increment`"
+        "To avoid this error, manually specify the increment type with `--increment`"
     )
     exc_value.output_method(exc_value.message)
     sys.exit(exc_value.exit_code)

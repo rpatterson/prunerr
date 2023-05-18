@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "description": "Project structure foundation or template, package metadata",
   "scripts": {
-    "lint": "prettier --check './'",
+    "lint": "npm run lint:prettier && npm run lint:write-good",
+    "lint:prettier": "prettier --check './'",
+    "lint:write-good": "git ls-files -co --exclude-standard -z | grep -Ezv '^LICENSES/' | xargs -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
     "format": "prettier --write './'"
   },
   "keywords": [
@@ -26,6 +28,7 @@
     "url": "https://liberapay.com/rpatterson/donate"
   },
   "devDependencies": {
-    "prettier": "2.8.8"
+    "prettier": "2.8.8",
+    "write-good": "^1.0.8"
   }
 }

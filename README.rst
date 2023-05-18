@@ -40,7 +40,7 @@ This is a minimal, yet opinionated baseline for software projects. It includes:
 - Targets that automate releases
 - Targets that automate dependency upgrades
 - `Organize source by feature`_, for example ``\./src/foo/(template|view|model)\..*``,
-  rather than by type of source, for example
+  rather than by source type, for example
   ``\./src/(templates|views|models)/foo\..*``.
 
 Add a VCS remote for this repository to a real project. When the template adds
@@ -128,7 +128,7 @@ Installation
 
 Install by using any tool for installing standard packages for the project language::
 
-  $ true "TEMPLATE: Always specific to the type of project"
+  $ true "TEMPLATE: Always specific to the project type"
 
 
 ****************************************************************************************

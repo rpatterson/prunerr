@@ -164,9 +164,9 @@ build: ./.git/hooks/pre-commit ./.env.~out~ \
 		./var/log/npm-install.log
 
 .PHONY: build-pkgs
-### Update the built package for use outside of tox.
+### Update the built package for use outside tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 
 
 ## Test Targets:
@@ -176,7 +176,7 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters.
 test: test-lint
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
@@ -212,7 +212,7 @@ test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 .PHONY: test-debug
 ### Run tests directly on the host and start the debugger on errors or failures.
 test-debug:
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
@@ -264,7 +264,7 @@ release: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 	$(MAKE) -e test-clean
 endif
 
@@ -337,7 +337,7 @@ endif
 ### Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./var/log/npm-install.log
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z | grep -zv '\.license$$' |
 	while read -d $$'\0'
@@ -517,8 +517,7 @@ then
 fi
 envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
 set +x
-echo "WARNING:Template $(1) has been updated."
-echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."
+echo "WARNING:Template $(1) changed, reconcile and \`$$ touch $(2:%.~out~=%)\`."
 set -x
 if [ ! -s "$(2:%.~out~=%)" ]
 then

@@ -5,8 +5,8 @@
 # SPDX-License-Identifier: MIT
 
 #
-# Install all tools required by recipes that have to be installed externally on the
-# host.  Must be able to be run again on hosts that have previously run it.
+# Install into the host all external tools required by recipes.  Must support running
+# again on the same host.
 #
 # Host OS packages:
 # - `gettext`: We need `$ envsubst` in the `expand_template` `./Makefile` function

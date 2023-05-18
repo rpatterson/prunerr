@@ -330,8 +330,20 @@ endif
 devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the type of project"
-	docker compose run --rm "reuse" annotate -r --skip-unrecognised \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
+# Add license and copyright header to files missing them:
+	git ls-files -co --exclude-standard -z | grep -zv '\.license$$' |
+	while read -d $$'\0'
+	do
+	    if ! (
+	        test -e  "$${REPLY}.license" ||
+	        grep -Eq 'SPDX-License-Identifier:' "$${REPLY}"
+	    )
+	    then
+	        docker compose run --rm -T "reuse" annotate -r --skip-unrecognised \
+	            --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
+	            "$${REPLY}"
+	    fi
+	done
 # Run formatters implemented in JavaScript:
 	~/.nvm/nvm-exec npm run format
 

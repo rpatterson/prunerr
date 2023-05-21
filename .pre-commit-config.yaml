@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Run all test, linters and other code checks before committing and pushing.
+# Run all test, linters, and other code checks before committing and pushing.
 fail_fast: true
 repos:
-  # Check commit message format and style before pushing to a remote
+  # Enforce conventional commit messages before pushing to a remote:
   - repo: "https://github.com/commitizen-tools/commitizen"
     rev: "3.1.1"
     hooks:
@@ -20,7 +20,7 @@ repos:
         entry: "make -e test-push"
         language: "system"
         pass_filenames: false
-      # Only run the longer running test check after everything else
+      # Fail fast, run the longer running tests if everything else has already passed:
       - id: "test"
         name: "test"
         stages: ["commit", "merge-commit", "push", "manual"]

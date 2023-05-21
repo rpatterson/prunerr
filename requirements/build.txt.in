@@ -2,26 +2,27 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Build, release and development tools that can operate totally independently of the
+# Build, release, and development tools that can operate totally independently of the
 # project's code or package.
 
-# VCS hooks to enforce passint tests, test coverage, style and linting:
+# Version Control System (VCS) hooks to enforce passing tests, test coverage, style, and
+# linting:
 pre-commit
 
 # Release libraries and tools.
 #
-# Parse commit messages according to conventional commits to decide wether the next
-# version tag should be a major, minor or patch bump and create the VCS tag.  Also VCS
-# hooks to enforce that commit messages comply with conventional commits:
+# Parse commit messages according to conventional commits to decide the next version
+# increment, major, minor or patch, and create the VCS tag. Also supplies VCS hooks to
+# enforce conventional commit messages:
 commitizen
 
-# Generate release notes/changelogs:
+# Generate release notes:
 towncrier
 
-# Check reStructuredText documentation:
+# Verify reStructuredText documentation:
 rstcheck
 
 # Workaround Vale prose linter limitations:
 configobj
-# More complete prose linter:
+# More thorough prose linter:
 proselint

@@ -6,3 +6,11 @@ pylint
 disable
 invalid
 type
+code
+[Ff]ail
+[Mm]ake
+MAKE
+mkdir
+gnu
+cz
+shell

@@ -35,3 +35,5 @@ Nice to have
 #. ``base``: Sphinx docs with CI publishing to readthedocs.org.
 
 #. ``base``: Better final release notes when nothing changed after the last pre-release.
+
+#. ``base``: `Homebrew formula and badge <https://formulae.brew.sh/formula/commitizen>`_

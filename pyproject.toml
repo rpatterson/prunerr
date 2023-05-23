@@ -15,7 +15,7 @@ write_to = "src/projectstructure/version.py"
 # Uncomment to test uploading to PyPI locally
 # local_scheme = "no-local-version"
 
-[tool.pylint.MASTER]
+[tool.pylint.main]
 # Ensure `duplicate-code` and any other errors that depend on not runnining in parallel
 # are reported:
 jobs = 1
@@ -29,7 +29,7 @@ ignore-paths = [
 ]
 # Extend linting to usage of trusted extension packages
 extension-pkg-allow-list = ["lxml"]
-[tool.pylint.TYPECHECK]
+[tool.pylint.typecheck]
 # Ignore false negatives from external packages
 ignored-classes = ["lxml.etree.QName.localname"]
 # Match Black's defaults

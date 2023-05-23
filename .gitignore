@@ -24,6 +24,7 @@ docs/_build/
 /.env
 
 # Linters
+.mypy_cache
 # Ignore downloaded styles:
 /styles/Vale
 /styles/Microsoft

@@ -33,7 +33,7 @@ This is a minimal, yet opinionated baseline for software projects. It includes:
 
 - A `Makefile`_ for local development, build, test, and maintenance
 - A target that formats all source, including for style
-- A kitchen sink linter configuration that runs all available source checks
+- A kitchen sink linter configuration that runs all source checks
 - `Version Control System (VCS) hooks`_ to enforce `conventional commits`_, successful
   build and test on commit and push, and `Towncrier`_ end-user oriented release notes on
   push
@@ -57,13 +57,13 @@ Template usage
 ****************************************************************************************
 
 This is a rough guide for how to use this template in your project. This isn't widely
-tested. Such tests are meta and wasteful of developer time to create and support. Report
-any issues you have or better yet submit a PR with corrections.
+tested. Such tests are meta and wasteful to create and support. Report any issues you
+have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
    Is your project a command-line tool? A web app? Which programming language? Which
-   project host or CI platform? Pick the branch for your project:
+   project hosting provider or CI platform? Pick the branch for your project:
 
    - ``(py|js|ruby|…)``:
 

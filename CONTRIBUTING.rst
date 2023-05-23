@@ -11,7 +11,7 @@ the repository::
 
   $ git clone "https://gitlab.com/rpatterson/project-structure"
 
-Set up for local development and install Version Control System (VCS) hooks::
+Set up for local development and install the Version Control System (VCS) integration::
 
   $ make
 
@@ -21,7 +21,7 @@ number, for example ``#123``. Create a branch or fork off the ``develop`` branch
   $ git switch -c feat-123-foo-bar --track origin/develop
 
 `Towncrier`_ manages release notes. Changes require at least one `news fragment`_. The
-VCS hooks enforce this when pushing::
+VCS integration enforces this when pushing::
 
   $ towncrier create 123.feature
 
@@ -35,7 +35,7 @@ You can use a debugger to inspect tests::
   $ make test-debug
 
 The linters make decisions on style and formatting. This encourages consistency and
-minimizes debate. The ``$ make test`` target and the VCS hooks enforce those
+minimizes debate. The ``$ make test`` target and the VCS integration enforce those
 policies. You can use the same tools to apply automated fixes and formatting::
 
   $ make devel-format

@@ -5,7 +5,7 @@
 [tool.commitizen]
 # Parse commit messages according to conventional commits to decide the next version
 # increment, major, minor or patch, and create the Version Control System (VCS)
-# tag. Also supplies VCS hooks to enforce conventional commit messages:
+# tag. Also supplies a VCS integration to enforce conventional commit messages:
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
 # TEMPLATE: Update these versions to the current version for your project and verify the

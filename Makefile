@@ -22,13 +22,13 @@ NPM_SCOPE=rpattersonnet
 
 ## "Private" Variables:
 
-# Variables not of concern those just running and reading top-level targets. These
-# variables most often derive from the environment or other values. Place variables
-# holding literal constants or option variables intended for use on the command-line
-# towards the top. Otherwise, add variables to the appropriate following grouping. Make
-# requires defining variables referenced in targets or prerequisites before those
-# references, in contrast with references in recipes. As a result, the Makefile can't
-# place these further down for readability and discover.
+# Variables not of concern those running and reading top-level targets. These variables
+# most often derive from the environment or other values. Place variables holding
+# literal constants or option variables intended for use on the command-line towards the
+# top. Otherwise, add variables to the appropriate following grouping. Make requires
+# defining variables referenced in targets or prerequisites before those references, in
+# contrast with references in recipes. As a result, the Makefile can't place these
+# further down for readability and discover.
 
 ### Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
@@ -128,7 +128,7 @@ TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
-# hosts, indexes, and registries:
+# project hosting services, indexes, and registries:
 RELEASE_PUBLISH=false
 # Publish releases from the `main` or `develop` branches:
 ifeq ($(VCS_BRANCH),main)
@@ -144,6 +144,8 @@ include $(wildcard .env)
 
 # Finished with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
+
+# <!--alex disable hooks-->
 
 
 ## Top-level targets:
@@ -210,7 +212,7 @@ test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 	    done
 
 .PHONY: test-debug
-### Run tests directly on the host and start the debugger on errors or failures.
+### Run tests directly on the system and start the debugger on errors or failures.
 test-debug:
 	true "TEMPLATE: Always specific to the project type"
 
@@ -358,7 +360,7 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade:
-# Update VCS hooks from remotes to the most recent tag:
+# Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
@@ -433,10 +435,10 @@ $(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
-# Install all tools required by recipes installed outside the checkout on the host. Use
-# a target file outside this checkout to support more than one checkout. Support other
-# projects that use the same approach but with different requirements, use a target
-# specific to this project:
+# Install all tools required by recipes installed outside the checkout on the
+# system. Use a target file outside this checkout to support more than one
+# checkout. Support other projects that use the same approach but with different
+# requirements, use a target specific to this project:
 $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh \
 		./build-host/requirements.txt.in
 	mkdir -pv "$(dir $(@))"
@@ -586,7 +588,7 @@ endef
 #         date | tee -a "$(@)"
 #
 # If the recipe of a target needs another target but updating that other target doesn't
-# mean that this target's recipe needs to re-run, such as one-time host install tasks,
+# mean that this target's recipe needs to re-run, such as one-time system install tasks,
 # use that target in a sub-make instead of a prerequisite:
 #
 #     ./var/log/bar.log:

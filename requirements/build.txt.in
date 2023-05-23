@@ -5,15 +5,15 @@
 # Build, release, and development tools that can operate totally independently of the
 # project's code or package.
 
-# Version Control System (VCS) hooks to enforce passing tests, test coverage, style, and
-# linting:
+# Version Control System (VCS) integration to enforce passing tests, test coverage,
+# style, and linting:
 pre-commit
 
 # Release libraries and tools.
 #
 # Parse commit messages according to conventional commits to decide the next version
-# increment, major, minor or patch, and create the VCS tag. Also supplies VCS hooks to
-# enforce conventional commit messages:
+# increment, major, minor or patch, and create the VCS tag. Also supplies VCS
+# integration to enforce conventional commit messages:
 commitizen
 
 # Generate release notes:

@@ -5,10 +5,10 @@
 # SPDX-License-Identifier: MIT
 
 #
-# Install into the host all external tools required by recipes.  Must support running
-# again on the same host.
+# Install into the local system all external tools required by recipes.  Must support
+# running again on the same system.
 #
-# Host OS packages:
+# System OS packages:
 # - `gettext`: We need `$ envsubst` in the `expand_template` `./Makefile` function
 # - `py3-pip`: We need `$ pip3` to install the project's Python build tools
 # - `docker-cli-compose`: Dependencies for which we can't get current versions otherwise
@@ -34,7 +34,7 @@ main() {
         sudo apt-get install -y "gettext-base" "python3-pip" "docker-compose-plugin"
     else
         set +x
-        echo "ERROR: OS not supported for installing host dependencies"
+        echo "ERROR: OS not supported for installing system dependencies"
         # TODO: Add OS-X/Darwin support.
         false
     fi

@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "description": "Project structure foundation or template, package metadata",
   "scripts": {
-    "lint": "npm run lint:prettier && npm run lint:write-good",
+    "lint": "npm run lint:prettier && npm run lint:write-good && npm run lint:alex",
     "lint:prettier": "prettier --check './'",
     "lint:write-good": "git ls-files -co --exclude-standard -z | grep -Ezv '^LICENSES/' | xargs -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
+    "lint:alex": "git ls-files -co --exclude-standard -z | grep -Ezv '^(LICENSES|styles/Vocab)/|\\.license$' | xargs -0 -t -- alex",
     "format": "prettier --write './'"
   },
   "keywords": [
@@ -28,6 +29,7 @@
     "url": "https://liberapay.com/rpatterson/donate"
   },
   "devDependencies": {
+    "alex": "^11.0.0",
     "prettier": "2.8.8",
     "write-good": "^1.0.8"
   }

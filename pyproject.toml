@@ -19,7 +19,6 @@ write_to = "src/projectstructure/version.py"
 # Ensure `duplicate-code` and any other errors that depend on not runnining in parallel
 # are reported:
 jobs = 1
-enable-all-extensions = true
 output-format = "colorized"
 ignore-paths = [
 # Managed by tools, best to use `# pylint: disable=...` inline comments for any other
@@ -29,7 +28,37 @@ ignore-paths = [
 ]
 # Extend linting to usage of trusted extension packages
 extension-pkg-allow-list = ["lxml"]
-load-plugins = ["pylint.extensions.docparams"]
+# Update the list of extensions or plugins with:
+#     $ pylint --list-extensions
+load-plugins = [
+    "pylint.extensions.confusing_elif",
+    "pylint.extensions.dict_init_mutate",
+    "pylint.extensions.eq_without_hash",
+    "pylint.extensions.typing",
+    "pylint.extensions.consider_refactoring_into_while_condition",
+    "pylint.extensions.no_self_use",
+    "pylint.extensions.bad_builtin",
+    "pylint.extensions.set_membership",
+    "pylint.extensions.emptystring",
+    "pylint.extensions.comparison_placement",
+    "pylint.extensions.magic_value",
+    "pylint.extensions.code_style",
+    "pylint.extensions.redefined_loop_name",
+    "pylint.extensions.private_import",
+    "pylint.extensions.while_used",
+    "pylint.extensions.check_elif",
+    "pylint.extensions.mccabe",
+    "pylint.extensions.consider_ternary_expression",
+    "pylint.extensions.comparetozero",
+    "pylint.extensions.docparams",
+    "pylint.extensions.docstyle",
+    "pylint.extensions.broad_try_clause",
+    "pylint.extensions.redefined_variable_type",
+    "pylint.extensions.for_any_all",
+    "pylint.extensions.dunder",
+    "pylint.extensions.empty_comment",
+    "pylint.extensions.overlapping_exceptions",
+]
 [tool.pylint.typecheck]
 # Ignore false negatives from external packages
 ignored-classes = ["lxml.etree.QName.localname"]
@@ -40,7 +69,10 @@ max-line-length = "88"
 [tool.pylint."messages control"]
 # Workaround Prospector bug with PyLint:
 # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
-disable = ["relative-beyond-top-level"]
+disable = [
+    "relative-beyond-top-level",
+    "docstring-first-line-empty",
+]
 [tool.pylint.parameter_documentation]
 accept-no-param-doc = false
 accept-no-raise-doc = false

@@ -68,7 +68,7 @@ current versions::
 
   $ make devel-upgrade
 
-See `the ./TODO.rst file`_ for known bugs and desirable features.
+See `the TODO file`_ for known bugs and desirable features.
 
 Capture changes to development processes, such as build or release processes, in the
 `Makefile`_. Tasks important enough to include in the docs are important enough to
@@ -87,4 +87,4 @@ capture in executable form in the `Makefile`_. See the commentary at the bottom 
 .. _`issue or ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
 
 .. _Makefile: ./Makefile
-.. _`the ./TODO.rst file`: ./TODO.rst
+.. _`the TODO file`: ./todo.rst

@@ -3,7 +3,7 @@
 .. SPDX-License-Identifier: MIT
 
 ########################################################################################
-Seeking contributions
+Most wanted contributions
 ########################################################################################
 
 Known bugs and desired features for contributions.
@@ -35,3 +35,9 @@ Nice to have
 #. ``base``: Better final release notes when nothing changed after the last pre-release.
 
 #. ``base``: `Homebrew formula and badge <https://formulae.brew.sh/formula/commitizen>`_
+
+#. ``base``: Try out `other Sphinx themes
+   <https://www.sphinx-doc.org/en/master/tutorial/more-sphinx-customization.html#using-a-third-party-html-theme>`_
+
+#. ``base``: Switch to `the badge formatting
+   <https://rstcheck-core.readthedocs.io/en/latest/#>`_ from ``rstcheck``

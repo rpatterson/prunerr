@@ -170,6 +170,15 @@ build: ./.git/hooks/pre-commit ./.env.~out~ \
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	true "TEMPLATE: Always specific to the project type"
 
+.PHONY: build-docs
+### Render the static HTML form of the Sphinx documentation
+build-docs: build-docs-html
+
+.PHONY: build-docs-%
+build-docs-%: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	    "./docs/" "./build/docs/"
+
 
 ## Test Targets:
 #
@@ -183,7 +192,7 @@ test: test-lint
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log test-lint-prose
+		./var/log/npm-install.log build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:

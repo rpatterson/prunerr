@@ -21,6 +21,8 @@ towncrier
 
 # Verify reStructuredText documentation:
 rstcheck
+# Rich, full documentation site:
+sphinx
 
 # Workaround Vale prose linter limitations:
 configobj

@@ -43,13 +43,23 @@ This is a minimal, yet opinionated baseline for software projects. It includes:
   rather than by source type, for example
   ``\./src/(templates|views|models)/foo\..*``.
 
-Add a VCS remote for this repository to a real project. When the template adds
-structure specific to certain types of projects, for example command-line tools, web
-services, UI apps, the template adds branches for each variant. When the template makes
-changes to structure common to different variants it can merge those changes into those
+Add a VCS remote for this repository to a real project. When the template adds structure
+specific to certain types of projects, for example command-line tools, web services, UI
+apps, the it adds branches for each variant. When the template makes changes to
+structure common to different variants it can merge those changes into those
 variants. Real projects can also merge those changes.
 
+.. _Makefile: https://gitlab.com/rpatterson/project-structure/-/blob/main/Makefile
+.. _`Version Control System (VCS) hooks`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
+.. _`conventional commits`: https://www.conventionalcommits.org
+.. _`Towncrier`: https://towncrier.readthedocs.io
+.. _`Organize source by feature`:
+   https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
+
+.. include-end-before
 .. contents:: Table of Contents
+.. include-start-after
 
 
 ****************************************************************************************
@@ -111,34 +121,23 @@ releases on push to the ``main`` branch. Project owners can decide the types of 
 that require a pre-release before final release and the types of changes that go
 straight to final release. For example they can decide that:
 
-- Merge public contributions into ``develop``. See `the ./CONTRIBUTING.rst file`_ for an
-  example public contributions policy and workflow.
+- Merge public contributions into ``develop``. See `the contributing documentation`_ for
+  an example public contributions policy and workflow.
 
 - Optionally commit fixes for bugs in final releases to a branch off ``main``. After
   passing all tests and checks, merge back into ``main`` to publish final releases
   directly.
 
-- Optionally also merge routine version upgrades for security updates directly to
-  ``main``.
+- Optionally also merge version upgrades for security updates directly to ``main``.
 
 
 ****************************************************************************************
 Installation
 ****************************************************************************************
 
-Install by using any tool for installing standard packages for the project language::
+Install by using any tool for installing packages for the project language::
 
   $ true "TEMPLATE: Always specific to the project type"
-
-
-****************************************************************************************
-Contributing
-****************************************************************************************
-
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
-development.
 
 
 ****************************************************************************************
@@ -147,7 +146,7 @@ Motivation
 
 .. vale off
 
-Plenty other project templates exits, why make another? I've been a full-stack web
+Plenty other project templates exists. Why make another? I've been a full-stack web
 developer from 1998 on. I've had plenty of time to develop plenty of opinions of my
 own. From a template I want a full tool set (for example test coverage, linting,
 formatting, CI). Conversely, I want minimal dependencies, structure, and opinion beyond
@@ -166,16 +165,19 @@ remote, merging structure updates into real projects over their lifetime.
 .. vale on
 
 
-.. _`Towncrier`: https://towncrier.readthedocs.io
-.. _`conventional commits`: https://www.conventionalcommits.org
-.. _`Organize source by feature`:
-   https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
+****************************************************************************************
+Contributing
+****************************************************************************************
+
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
+
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
 .. _`mirrors it to GitHub`:
    https://github.com/rpatterson/project-structure
-
-.. _Makefile: ./Makefile
-.. _`the ./CONTRIBUTING.rst file`: ./CONTRIBUTING.rst
-.. _`Version Control System (VCS) hooks`: ./.pre-commit-config.yaml
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst

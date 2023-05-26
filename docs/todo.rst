@@ -15,6 +15,10 @@ TEMPLATE: remove items your project doesn't care about and add your own.
 Required
 ****************************************************************************************
 
+#. ``base``: Restore `general and module Sphinx indexes
+   <https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#special-names>`_
+   in specific project types as appropriate.
+
 #. ``base``: Add an Open Collective badge.
 
 

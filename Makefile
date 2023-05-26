@@ -356,7 +356,8 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z | grep -zv '\.license$$' |
+	git ls-files -co --exclude-standard -z |
+	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -364,11 +365,11 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 	        grep -Eq 'SPDX-License-Identifier:' "$${REPLY}"
 	    )
 	    then
-	        docker compose run --rm -T "reuse" annotate -r --skip-unrecognised \
-	            --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" \
-	            "$${REPLY}"
+	        echo "$${REPLY}"
 	    fi
-	done
+	done | xargs -r -t -- \
+	    docker compose run --rm -T "reuse" annotate --skip-unrecognised \
+	        --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT"
 # Run source code formatting tools implemented in JavaScript:
 	~/.nvm/nvm-exec npm run format
 

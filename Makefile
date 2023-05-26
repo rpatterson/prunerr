@@ -212,10 +212,11 @@ test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z |
-	    xargs -0 -t -- docker compose run --rm -T vale
+	    xargs -r -0 -t -- docker compose run --rm -T vale
 # Lint all source code files tracked in VCS with Vale:
 	git ls-files -co --exclude-standard -z |
-	    xargs -0 -t -- docker compose run --rm -T vale --config="./styles/code.ini"
+	    xargs -r -0 -t -- \
+	    docker compose run --rm -T vale --config="./styles/code.ini"
 # Lint source code files tracked in VCS but without extensions with Vale:
 	git ls-files -co --exclude-standard -z | grep -Ez '^[^.]+$$' |
 	    while read -d $$'\0'

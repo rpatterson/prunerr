@@ -3,9 +3,9 @@
 .. SPDX-License-Identifier: MIT
 
 ########################################################################################
-Project structure
+Project Structure
 ########################################################################################
-Project structure foundation or template
+Project Structure foundation or template
 ****************************************************************************************
 
 .. list-table::

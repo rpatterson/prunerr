@@ -174,6 +174,11 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ### Render the static HTML form of the Sphinx documentation
 build-docs: build-docs-html
 
+.PHONY: build-docs-watch
+### Serve the Sphinx documentation with live updates
+build-docs-watch:
+	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
+
 .PHONY: build-docs-%
 build-docs-%: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \

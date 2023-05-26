@@ -23,6 +23,7 @@ towncrier
 rstcheck
 # Rich, full documentation site:
 sphinx
+sphinx-watch
 
 # Workaround Vale prose linter limitations:
 configobj

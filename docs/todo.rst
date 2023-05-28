@@ -15,9 +15,19 @@ TEMPLATE: remove items your project doesn't care about and add your own.
 Required
 ****************************************************************************************
 
+#. ``base``: Investigate `Sphinx TODO extension
+   <https://www.sphinx-doc.org/en/master/usage/extensions/todo.html>`_.
+
 #. ``base``: Restore `general and module Sphinx indexes
    <https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#special-names>`_
    in specific project types as appropriate.
+
+#. ``base``: Publish Sphinx docs to `all available documentation hosts
+   <https://www.sphinx-doc.org/en/master/faq.html#using-sphinx-with>`_.
+
+#. Investigate recommended 3rd party Sphinx extensions:
+   - https://github.com/yoloseem/awesome-sphinxdoc
+   - https://sphinx-extensions.readthedocs.io/en/latest/
 
 #. ``base``: Add an Open Collective badge.
 

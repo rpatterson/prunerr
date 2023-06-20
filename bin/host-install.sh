@@ -38,7 +38,6 @@ main() {
         # TODO: Add OS-X/Darwin support.
         false
     fi
-    pip3 install -r "./build-host/requirements.txt.in"
 # Manage JavaScript/TypeScript packages:
 # https://github.com/nvm-sh/nvm#install--update-script
     if ! which nvm

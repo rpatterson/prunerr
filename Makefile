@@ -123,6 +123,7 @@ VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
 
 # Run Python tools in isolated environments managed by Tox:
+export PATH:=./.tox/bootstrap/bin:$(PATH)
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
@@ -176,11 +177,11 @@ build-docs: build-docs-html
 
 .PHONY: build-docs-watch
 ### Serve the Sphinx documentation with live updates
-build-docs-watch:
+build-docs-watch: ./.tox/bootstrap/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
-build-docs-%: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+build-docs-%: ./.tox/bootstrap/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
@@ -233,8 +234,7 @@ test-debug:
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+test-push: $(VCS_FETCH_TARGETS) ./.tox/bootstrap/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -375,7 +375,7 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade:
+devel-upgrade: ./.tox/bootstrap/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
@@ -451,12 +451,17 @@ $(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
+# Bootstrap the right version of Tox for this checkout:
+./.tox/bootstrap/bin/tox: ./.tox/bootstrap/bin/pip
+	"$(<)" install "$(@:.tox/bootstrap/bin/%=%)"
+./.tox/bootstrap/bin/pip: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+	python3 -m venv "$(@:%/bin/pip=%/)"
+
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh \
-		./build-host/requirements.txt.in
+$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
 

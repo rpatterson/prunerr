@@ -42,7 +42,7 @@ RUN \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install --no-install-recommends -y "gosu=1.12-1+b6"
+    apt-get install --no-install-recommends -y "gosu=1.14-1+b6"
 
 # Build-time `LABEL`s
 ARG VERSION=
@@ -81,7 +81,7 @@ CMD [ "tox" ]
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     mkdir -pv "${HOME}/.local/var/log/" && \
-    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1" | \
+    apt-get install --no-install-recommends -y "python3-pip=23.0.1+dfsg-1" | \
         tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
 # hadolint ignore=DL3042

@@ -15,11 +15,14 @@ https://github.com/commitizen-tools/commitizen/issues/688#issue-1628052526
 import sys
 import argparse
 
+import decli
+
 from commitizen import exceptions  # type: ignore # pylint: disable=import-error
 from commitizen import git  # pylint: disable=import-error
 from commitizen import bump  # pylint: disable=import-error
 from commitizen import config  # pylint: disable=import-error
 from commitizen import commands  # pylint: disable=import-error
+from commitizen import cli  # pylint: disable=import-error
 
 arg_parser = argparse.ArgumentParser(
     description=__doc__.strip(),
@@ -35,31 +38,18 @@ arg_parser.add_argument(
 def main(args=None):  # pylint: disable=missing-function-docstring
     parsed_args = arg_parser.parse_args(args=args)
     conf = config.read_cfg()
+    # Inspecting "private" attributes makes code fragile, but reproducing cz's
+    # command-line argument parsing also does.  Ideally, the `argparse` library adds a
+    # stable public API to introspect command-line arguments, but for now:
+    bump_cli_parser = decli.cli(  # pylint: disable=protected-access
+        cli.data
+    )._subparsers._group_actions[0].choices["bump"]
     # Reproduce `commitizen.commands.bump.Bump.__init__()`:
     arguments = {
-        arg: None
-        for arg in (
-            "tag_format",
-            "prerelease",
-            "increment",
-            "bump_message",
-            "gpg_sign",
-            "annotated_tag",
-            "major_version_zero",
-            "prerelease_offset",
-        )
+        action.dest: action.default
+        for action in bump_cli_parser._actions  # pylint: disable=protected-access
+        if action.default != argparse.SUPPRESS
     }
-    arguments.update(
-        (arg, False)
-        for arg in (
-            "changelog",
-            "changelog_to_stdout",
-            "no_verify",
-            "check_consistency",
-            "retry",
-            "version_type",
-        )
-    )
     bump_cmd = commands.Bump(config=conf, arguments=arguments)
 
     compare_ref = parsed_args.compare_ref

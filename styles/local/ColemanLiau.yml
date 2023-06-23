@@ -1,8 +1,13 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
 extends: metric
-message: "Try to keep the Coleman–Liau Index grade (%s) below 9."
+message: "Try to keep the Coleman–Liau Index grade (%s) below 13."
 link: https://en.wikipedia.org/wiki/Coleman%E2%80%93Liau_index
+level: error
 
 formula: |
   (0.0588 * (characters / words) * 100) - (0.296 * (sentences / words) * 100) - 15.8
 
-condition: "> 9"
+condition: "> 13"

@@ -3,40 +3,58 @@
 .. SPDX-License-Identifier: MIT
 
 ########################################################################################
-Seeking Contributions
+Most wanted contributions
 ########################################################################################
 
-Known bugs and desirable features for which contributions are most welcome.
+Known bugs and desired features for contributions.
 
-TEMPLATE: Remove any of the following TODOs from the template that your project doesn't
-care about and add your own.
+TEMPLATE: remove items your project doesn't care about and add your own.
 
 
 ****************************************************************************************
 Required
 ****************************************************************************************
 
+#. ``base``: Investigate `Sphinx TODO extension
+   <https://www.sphinx-doc.org/en/master/usage/extensions/todo.html>`_.
+
+#. ``base``: Restore `general and module Sphinx indexes
+   <https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#special-names>`_
+   in the branches for appropriate project types.
+
+#. ``base``: Publish Sphinx docs to `all available documentation hosts
+   <https://www.sphinx-doc.org/en/master/faq.html#using-sphinx-with>`_.
+
+#. Investigate recommended third-party Sphinx extensions:
+   - https://github.com/yoloseem/awesome-sphinxdoc
+   - https://sphinx-extensions.readthedocs.io/en/latest/
+
+#. ``base``: Add an Open Collective badge.
+
 
 ****************************************************************************************
-High Priority
+High priority
 ****************************************************************************************
 
-#. Any documentation improvements!
+#. Any documentation improvements:
 
-   Documentation benefits perhaps most from the attention of fresh eyes.  If you find
-   anything confusing, please ask for clarification and once you understand what you
-   didn't before, please do contribute changes to the documentation to spare future
-   users the same confusion.
+   Docs benefit most from fresh eyes. If you find anything confusing, ask for help. When
+   you understand better, contribute changes to the docs to help others.
 
 
 ****************************************************************************************
-Nice to Have
+Nice to have
 ****************************************************************************************
 
-#. Documentation via Sphinx with CI to publish to RTFD.
+#. ``base``: Better final release notes when nothing changed after the last pre-release.
 
-#. Better release notes content for final releases with no changes since the last
-   pre-release.
+#. ``base``: `Homebrew formula and badge <https://formulae.brew.sh/formula/commitizen>`_
+
+#. ``base``: Try out `other Sphinx themes
+   <https://www.sphinx-doc.org/en/master/tutorial/more-sphinx-customization.html#using-a-third-party-html-theme>`_
+
+#. ``base``: Switch to `the badge formatting
+   <https://rstcheck-core.readthedocs.io/en/latest/#>`_ from ``rstcheck``
 
 #. `Docker image build-time LABEL's
    <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::

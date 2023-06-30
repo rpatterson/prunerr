@@ -5,10 +5,10 @@
 # SPDX-License-Identifier: MIT
 
 #
-# Install all tools required by recipes that have to be installed externally on the
-# host.  Must be able to be run again on hosts that have previously run it.
+# Install into the local system all external tools required by recipes.  Must support
+# running again on the same system.
 #
-# Host OS packages:
+# System OS packages:
 # - `gettext`: We need `$ envsubst` in the `expand_template` `./Makefile` function
 # - `py3-pip`: We need `$ pip3` to install the project's Python build tools
 # - `docker-cli-compose`: Dependencies for which we can't get current versions otherwise
@@ -34,11 +34,25 @@ main() {
         sudo apt-get install -y "gettext-base" "python3-pip" "docker-compose-plugin"
     else
         set +x
-        echo "ERROR: OS not supported for installing host dependencies"
+        echo "ERROR: OS not supported for installing system dependencies"
         # TODO: Add OS-X/Darwin support.
         false
     fi
-    pip3 install -r "./build-host/requirements.txt.in"
+# Manage JavaScript/TypeScript packages:
+# https://github.com/nvm-sh/nvm#install--update-script
+    if ! which nvm
+    then
+        wget -qO- \
+            "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" \
+            | bash
+        set +x
+        . ~/.nvm/nvm.sh || true
+    fi
+# The `./.nvmrc` is using latest stable version:
+# https://github.com/nodejs/release#release-schedule
+    set +x
+    nvm install
+    set -x
 }
 
 

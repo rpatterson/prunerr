@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 """
-Check if the conventional commits since the last release require a new release.
+Succeed if the conventional commits after `--compare-ref` require a release.
 
 Works around Commitizen's version handling when bumping from a pre-release:
 
@@ -15,11 +15,14 @@ https://github.com/commitizen-tools/commitizen/issues/688#issue-1628052526
 import sys
 import argparse
 
+import decli
+
 from commitizen import exceptions  # type: ignore # pylint: disable=import-error
 from commitizen import git  # pylint: disable=import-error
 from commitizen import bump  # pylint: disable=import-error
 from commitizen import config  # pylint: disable=import-error
 from commitizen import commands  # pylint: disable=import-error
+from commitizen import cli  # pylint: disable=import-error
 
 arg_parser = argparse.ArgumentParser(
     description=__doc__.strip(),
@@ -35,31 +38,18 @@ arg_parser.add_argument(
 def main(args=None):  # pylint: disable=missing-function-docstring
     parsed_args = arg_parser.parse_args(args=args)
     conf = config.read_cfg()
+    # Inspecting "private" attributes makes code fragile, but reproducing cz's
+    # command-line argument parsing also does.  Ideally, the `argparse` library adds a
+    # stable public API to introspect command-line arguments, but for now:
+    bump_cli_parser = decli.cli(  # pylint: disable=protected-access
+        cli.data
+    )._subparsers._group_actions[0].choices["bump"]
     # Reproduce `commitizen.commands.bump.Bump.__init__()`:
     arguments = {
-        arg: None
-        for arg in (
-            "tag_format",
-            "prerelease",
-            "increment",
-            "bump_message",
-            "gpg_sign",
-            "annotated_tag",
-            "major_version_zero",
-            "prerelease_offset",
-        )
+        action.dest: action.default
+        for action in bump_cli_parser._actions  # pylint: disable=protected-access
+        if action.default != argparse.SUPPRESS
     }
-    arguments.update(
-        (arg, False)
-        for arg in (
-            "changelog",
-            "changelog_to_stdout",
-            "no_verify",
-            "check_consistency",
-            "retry",
-            "version_type",
-        )
-    )
     bump_cmd = commands.Bump(config=conf, arguments=arguments)
 
     compare_ref = parsed_args.compare_ref
@@ -71,18 +61,19 @@ def main(args=None):  # pylint: disable=missing-function-docstring
             current_version, tag_format=tag_format
         )
 
-    # Only check if commits require a bump:
+    # Remove the rest of the conditions from `commitizen` except for checking commit
+    # messages:
     commits = git.get_commits(compare_ref)
     increment = bump_cmd.find_increment(commits)
 
     if increment is not None:
-        # Yes, a version bump is required by the conventional commits.
+        # Yes, the conventional commits require a version bump.
         print(increment)
         sys.exit(0)
     exc_value = exceptions.NoCommitsFoundError(
         "[NO_COMMITS_FOUND]\n"
         "No commits found to generate a pre-release.\n"
-        "To avoid this error, manually specify the type of increment with `--increment`"
+        "To avoid this error, manually specify the increment type with `--increment`"
     )
     exc_value.output_method(exc_value.message)
     sys.exit(exc_value.exit_code)

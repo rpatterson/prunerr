@@ -1,0 +1,6 @@
+{
+  "checks": {
+    "typography.symbols": false,
+    "annotations.misc": false
+  }
+}

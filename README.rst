@@ -16,7 +16,7 @@ Project Structure foundation or template
           :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
 
      - .. figure:: https://img.shields.io/docker/v/merpatterson/project-structure?sort=semver&logo=docker
-          :alt: Docker Hub image version (latest semver)
+          :alt: Docker Hub image version
           :target: https://hub.docker.com/r/merpatterson/project-structure
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/project-structure?logo=docker
           :alt: Docker Hub image pulls count
@@ -25,7 +25,7 @@ Project Structure foundation or template
 	  :alt: Docker Hub stars
           :target: https://hub.docker.com/r/merpatterson/project-structure
        .. figure:: https://img.shields.io/docker/image-size/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub image size (latest semver)
+	  :alt: Docker Hub image size
           :target: https://hub.docker.com/r/merpatterson/project-structure
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
@@ -42,10 +42,12 @@ Project Structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This is a minimal, yet opinionated baseline for software projects. It includes:
+This repository provides a minimal, yet opinionated baseline for software projects. It
+includes:
 
 - A `Makefile`_ for local development, build, test, and maintenance
-- `Docker`_ container images for users and development in which tests are run
+- A `Docker`_ container image for end users
+- A Docker image for development, which runs tests
 - A target that formats all source, including for style
 - A kitchen sink linter configuration that runs all source checks
 - `Version Control System (VCS) hooks`_ to enforce `conventional commits`_, successful
@@ -80,9 +82,9 @@ variants. Real projects can also merge those changes.
 Template usage
 ****************************************************************************************
 
-This is a rough guide for how to use this template in your project. This isn't widely
-tested. Such tests are meta and wasteful to create and support. Report any issues you
-have or better yet submit a PR with corrections.
+These steps offer a rough guide for how to use this template in your project. They
+haven't been widely tested. Such tests are meta and wasteful to create and
+support. Report any issues you have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
@@ -95,7 +97,7 @@ have or better yet submit a PR with corrections.
 
    - ``docker``:
 
-     The above plus Docker containers for both development and end-users/deployments.
+     Docker images for development and end-users or deployments.
 
 #. Merge into your project:
 
@@ -153,42 +155,39 @@ straight to final release. For example they can decide that:
 Installation
 ****************************************************************************************
 
-Install and use either via a local, native installation or a Docker container image:
+Install locally or use the Docker container image:
 
-Local/Native Installation
+Local Installation
 ========================================================================================
 
-Install by using any tool for installing packages for the project language::
+Use a package manager for the project language to install locally::
 
   $ true "TEMPLATE: Always specific to the project type"
 
-Docker Container Image Installation
+Docker Container Image
 ========================================================================================
 
-The recommended way to use the Docker container image is via `Docker Compose`_.  See
-`the example ./docker-compose.yml file`_ for an example configuration.  Once you have
-your configuration, you can create and run the container::
+The recommended way to use the container image is by using `Docker Compose`_. See `the
+example ./docker-compose.yml file`_. Write your configuration and run the container::
 
   $ docker compose up
 
-Alternatively, you make use the image directly.  Pull `the Docker image`_::
+You can also use the image directly. Pull `the Docker image`_. Use it to create and run
+a container::
 
   $ docker pull "docker.io/merpatterson/project-structure"
-
-And then use the image to create and run a container::
-
   $ docker run --rm -it "docker.io/merpatterson/project-structure" ...
 
-Images variant tags are published for the branch and major/minor versions so that users
-can control when they get new images over time,
-e.g. ``docker.io/merpatterson/project-structure:main``.  Pre-releases are from
-``develop`` and final releases are from ``main`` which is also the default for tags
-without a branch, e.g. ``docker.io/merpatterson/project-structure``. The major/minor
-version tags are only applied to the final release images and without the corresponding
-``main`` branch tag, e.g. ``docker.io/merpatterson/project-structure:v0.8``.
+Use image variant tags to control when the image updates. Releases publish tags for the
+branch and for major and minor versions. For example, to keep up to date with a specific
+branch, use a tag such as ``docker.io/merpatterson/project-structure:main``. Releases
+from ``develop`` publish pre-releases. Releases from ``main`` publish final releases.
+Releases from ``main`` also publish tags without a branch, for example
+``docker.io/merpatterson/project-structure``. Releases from ``main`` also publish tags
+for the major and minor version, for example
+``docker.io/merpatterson/project-structure:v0.8``.
 
-Multi-platform Docker images are published containing images for the following platforms
-or architectures:
+Releases publish multi-platform images for the following platforms:
 
 - ``linux/amd64``
 - ``linux/arm64``
@@ -199,11 +198,11 @@ or architectures:
 Contributing
 ****************************************************************************************
 
-NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
-GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
-activity.
+`GitLab hosts this project`_ and `mirrored on GitHub`_. Use GitLab for reporting
+issues, submitting Pull Requests or Merge Requests, and any other development or
+maintenance activity.
 
-See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
+See `the contributing documentation`_ for more details on how to get started with
 development.
 
 
@@ -232,19 +231,9 @@ remote, merging structure updates into real projects over their lifetime.
 .. vale on
 
 
-****************************************************************************************
-Contributing
-****************************************************************************************
-
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the contributing documentation`_ for more details on how to get started
-with development.
-
-
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
-.. _`mirrors it to GitHub`:
+.. _`mirrored on GitHub`:
    https://github.com/rpatterson/project-structure
 
 .. _`Docker`: https://docs.docker.com/

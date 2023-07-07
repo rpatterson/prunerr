@@ -39,7 +39,7 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     parsed_args = arg_parser.parse_args(args=args)
     conf = config.read_cfg()
     # Inspecting "private" attributes makes code fragile, but reproducing cz's
-    # command-line argument parsing also does.  Ideally, the `argparse` library adds a
+    # command-line argument parsing also does. Ideally, the `argparse` library adds a
     # stable public API to introspect command-line arguments, but for now:
     bump_cli_parser = decli.cli(  # pylint: disable=protected-access
         cli.data

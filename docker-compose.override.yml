@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 # Override `$ docker compose` configuration for development or testing here in this
-# repository checkout.  Put everything used outside this checkout in
+# repository checkout. Put everything used outside this checkout in
 # `./docker-compose.yml`.
 version: "3.8"
 

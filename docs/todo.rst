@@ -59,3 +59,6 @@ Nice to have
 #. ``base``: Upgrade Vale when they publish a release that fixes `the 'script run:
    Compile Error: unresolved reference' errors
    <https://github.com/errata-ai/vale/issues/697#issue-1932675573>`_.
+
+#. ``base``: Keep an eye on `editor support in UniBeautify
+   <https://unibeautify.com/docs/editors#emacs>`_

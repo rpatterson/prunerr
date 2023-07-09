@@ -60,5 +60,7 @@ Nice to have
    Compile Error: unresolved reference' errors
    <https://github.com/errata-ai/vale/issues/697#issue-1932675573>`_.
 
-#. ``base``: Keep an eye on `editor support in UniBeautify
-   <https://unibeautify.com/docs/editors#emacs>`_
+#. ``base``: Evaluate some of the linters and formatters `supported by UniBeautify
+   <https://unibeautify.com/docs/beautifier-stylelint>`_:
+   - `Stylelint <https://stylelint.io/>`_
+   - `js-beautify <https://www.npmjs.com/package/js-beautify>`_

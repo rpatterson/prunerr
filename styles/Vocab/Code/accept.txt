@@ -19,6 +19,10 @@ HEAD
 VCS
 CI
 CD
+CI/CD
+free
+formatter
+it's
 I
 FIXME
 TODO

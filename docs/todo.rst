@@ -6,9 +6,9 @@
 Most wanted contributions
 ########################################################################################
 
-Known bugs and wanted features for contributions.
+Known bugs and wanted features.
 
-TEMPLATE: remove items your project doesn't care about and add your own.
+TEMPLATE: clear items and add items for your project.
 
 
 ****************************************************************************************
@@ -60,7 +60,7 @@ Nice to have
    Compile Error: unresolved reference' errors
    <https://github.com/errata-ai/vale/issues/697#issue-1932675573>`_.
 
-#. ``base``: Evaluate some of the linters and formatters `supported by UniBeautify
-   <https://unibeautify.com/docs/beautifier-stylelint>`_:
-   - `Stylelint <https://stylelint.io/>`_
+#. ``base``: Try some of `the linters and formatters
+   <https://unibeautify.com/docs/beautifier-stylelint>`_ supported by ``UniBeautify``:
+   - ``Stylelint`` `CSS linter <https://stylelint.io/>`_
    - `js-beautify <https://www.npmjs.com/package/js-beautify>`_

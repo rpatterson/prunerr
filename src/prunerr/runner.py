@@ -9,18 +9,16 @@ Run Prunerr commands across multiple Servarr instances and download clients.
 import gc
 import os
 import time
-import socket
 import pathlib
-import json
 import logging
 
 import yaml
 import tenacity
 import transmission_rpc
-import arrapi
 
 import prunerr.downloadclient
 import prunerr.servarr
+from . import utils
 from .utils import cached_property
 
 logger = logging.getLogger(__name__)
@@ -47,17 +45,7 @@ class PrunerrRunner:
         self.servarrs = {}
 
     @tenacity.retry(
-        retry=tenacity.retry_if_exception_type(
-            (
-                socket.error,
-                # Can be raised by `transmission_rpc` when deserializing JSON
-                ValueError,
-                # Can be raised by `transmission_rpc` when a response is interrupted
-                json.JSONDecodeError,
-                transmission_rpc.error.TransmissionError,
-                arrapi.exceptions.ConnectionFailure,
-            )
-        ),
+        retry=tenacity.retry_if_exception_type(utils.RETRY_EXC_TYPES),
         wait=tenacity.wait_fixed(1),
         reraise=True,
         before_sleep=tenacity.before_sleep_log(logger, logging.ERROR),
@@ -310,11 +298,7 @@ class PrunerrRunner:
                 self.resume_verified_items()
                 # Run the `exec` sub-command as the inner loop
                 self.exec_()
-            except (
-                socket.error,
-                transmission_rpc.TransmissionError,
-                arrapi.exceptions.ConnectionFailure,
-            ) as exc:
+            except utils.RETRY_EXC_TYPES as exc:  # pragma: no cover
                 logger.error(
                     "Connection error while updating from server: %s",
                     exc,

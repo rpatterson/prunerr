@@ -9,7 +9,12 @@ Particularly useful to avoid circular imports.
 """
 
 import os
+import socket
+import json
 import logging
+
+import transmission_rpc
+import arrapi
 
 try:
     # BBB: Python <3.10 compat
@@ -32,6 +37,16 @@ DEBUG = (  # noqa: F841
 POST_MORTEM = (  # noqa: F841
     "POST_MORTEM" in os.environ
     and os.environ["POST_MORTEM"].strip().lower() in TRUE_STRS
+)
+
+RETRY_EXC_TYPES = (
+    socket.error,
+    transmission_rpc.error.TransmissionError,
+    arrapi.exceptions.ConnectionFailure,
+    # Can be raised by `transmission_rpc` when deserializing JSON from an interrupted
+    # response:
+    ValueError,
+    json.JSONDecodeError,
 )
 
 

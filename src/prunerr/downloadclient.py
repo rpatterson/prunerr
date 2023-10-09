@@ -15,6 +15,7 @@ import transmission_rpc
 
 import prunerr.downloaditem
 import prunerr.operations
+from . import utils
 from .utils import pathlib
 
 logger = logging.getLogger(__name__)
@@ -130,7 +131,14 @@ class PrunerrDownloadClient:
         # `self.items`.
         download_dir = pathlib.Path(self.client.session.download_dir)
         for item in [item for item in self.items if download_dir in item.path.parents]:
-            item_results = item.review(servarr_queue)
+            item_results = None
+            try:
+                item_results = item.review(servarr_queue)
+            except utils.RETRY_EXC_TYPES:
+                logger.exception(
+                    "Error reviewing item: %s",
+                    item,
+                )
             if item_results:
                 results[item.hashString] = item_results
         return results

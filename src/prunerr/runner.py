@@ -60,7 +60,7 @@ class PrunerrRunner:
         ),
         wait=tenacity.wait_fixed(1),
         reraise=True,
-        before_sleep=tenacity.before_sleep_log(logger, logging.DEBUG),
+        before_sleep=tenacity.before_sleep_log(logger, logging.ERROR),
     )
     def update(self):
         """

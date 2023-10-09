@@ -33,13 +33,36 @@ class PrunerrRunnerTests(tests.PrunerrTestCase):
 
     def test_runner_empty_config(self):
         """
-        The runner succeeds with a configuration file as close to empty as supported.
+        The runner succeeds with an empty configuration file.
         """
         runner = prunerr.runner.PrunerrRunner(self.CONFIG)
-        runner.update()
-        self.assertIsNone(
-            runner.exec_(),
-            "Wrong `exec` result from empty config file",
+        with self.assertRaises(
+            prunerr.runner.PrunerrValidationError,
+            msg="Wrong empty config file validation exception type",
+        ) as exc_context:
+            runner.update()
+        self.assertIn(
+            "must include at least one URL",
+            str(exc_context.exception),
+            "Wrong empty config file validation error message",
+        )
+
+    def test_runner_missing_config(self):
+        """
+        The runner succeeds with a missing configuration file.
+        """
+        runner = prunerr.runner.PrunerrRunner(
+            self.HOME.parent / "missing" / ".config" / "prunerr.yml",
+        )
+        with self.assertRaises(
+            prunerr.runner.PrunerrValidationError,
+            msg="Wrong missing config file validation exception type",
+        ) as exc_context:
+            runner.update()
+        self.assertIn(
+            "file not found",
+            str(exc_context.exception),
+            "Wrong missing config file validation error message",
         )
 
     def test_runner_empty_operations(self):

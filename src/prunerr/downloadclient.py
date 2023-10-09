@@ -69,6 +69,7 @@ class PrunerrDownloadClient:
 
         # Connect to the download client's RPC API, also retrieves session data
         split_url = urllib.parse.urlsplit(self.config["url"])
+        # Normalize the port for URLs without one specified:
         port = split_url.port
         if not port:
             if split_url.scheme == "http":
@@ -76,7 +77,9 @@ class PrunerrDownloadClient:
             elif split_url.scheme == "https":
                 port = 443
             else:
-                raise ValueError(f"Could not guess port from URL: {self.config['url']}")
+                raise ValueError(
+                    f"Could not guess port from URL: {self.config['url']}",
+                )
         logger.debug(
             "Connecting to download client: %s",
             self.config["url"],
@@ -290,7 +293,7 @@ class PrunerrDownloadClient:
         """
         Resume downloading if it's been stopped.
         """
-        speed_limit_down = self.runner.config.get("download-clients", {}).get(
+        speed_limit_down = self.runner.config["download-clients"].get(
             "max-download-bandwidth",
             100,
         )
@@ -397,6 +400,17 @@ class DownloadClientTimeout(Exception):
     """A download client operation took too long."""
 
 
+def config_from_url(auth_url):
+    """
+    Normalize download client URLs for the port and without the password.
+
+    Used for matching with Servarr download clients.
+    """
+    auth_url_split = urllib.parse.urlsplit(auth_url)
+    url = utils.normalize_url(auth_url)
+    return (url, {"url": url, "password": auth_url_split.password})
+
+
 def calc_free_space_margin(config):
     """
     Calculate an appropriate margin of disk space to keep free.
@@ -408,7 +422,7 @@ def calc_free_space_margin(config):
     """
     return (
         (
-            config.get("download-clients", {}).get("max-download-bandwidth", 100)
+            config["download-clients"].get("max-download-bandwidth", 100)
             # Convert bandwidth bits to bytes
             / 8
         )
@@ -419,7 +433,7 @@ def calc_free_space_margin(config):
         )
         * (
             # Multiply by seconds of download time margin
-            config.get("download-clients", {}).get("min-download-time-margin", 3600)
+            config["download-clients"].get("min-download-time-margin", 3600)
         )
     )
 

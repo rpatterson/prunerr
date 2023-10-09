@@ -20,10 +20,12 @@ servarrs:
     api-key: ""
     type: "radarr"
 download-clients:
-  ## Support managing download clients without Servarr instances, use these URLs to
-  ## connect to download clients instead of looking them up from Servarr settings.
-  # urls:
-  #   - "https://transmission:secret@transmission.example.com"
+  ## Authenticated URLs for all download clients.  These will be reconciled with the
+  ## download clients configured in each Servarr instance by `Host`, `Port`, `Url Base`
+  ## and `Username`.  Download clients not attached to Servarr instance will still be
+  ## managed by Prunerr without the features that require Servarr:
+  urls:
+    - "http://transmission:secret@localhost:9091/transmission/"
   ## Calculate an appropriate margin of disk space to keep free when deciding whether to
   ## prune download items based the maximum download bandwidth/speed in Mbps and the
   ## amount of time in seconds at that rate for which download clients should be able to

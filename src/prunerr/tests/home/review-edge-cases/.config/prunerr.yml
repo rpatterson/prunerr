@@ -11,6 +11,9 @@ servarrs:
     url: "http://localhost:7878"
     api-key: ""
     type: "radarr"
+download-clients:
+  urls:
+    - "http://transmission:secret@localhost:9091/transmission/"
 indexers:
   hostnames:
     ExamplePrivateTracker:

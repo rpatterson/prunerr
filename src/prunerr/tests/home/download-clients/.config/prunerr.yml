@@ -11,8 +11,12 @@ servarrs:
     url: "http://localhost:7878"
     api-key: ""
     type: "radarr"
+
 download-clients:
   urls:
+    - "http://transmission:secret@localhost:9091/transmission/"
+    - "http://transmission@192.168.1.1:9091/transmission/"
+    - "http://192.168.1.2/transmission/"
     - "https://transmission.example.com"
     - "https://transmission.foo.example.com"
   max-download-bandwidth: 100

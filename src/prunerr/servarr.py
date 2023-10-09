@@ -305,14 +305,7 @@ def deserialize_servarr_download_client(download_client_config):
     if download_client_config["fieldValues"].get("port") is not None:
         netloc = f"{netloc}:{download_client_config['fieldValues']['port']}"
     if download_client_config["fieldValues"].get("username"):
-        if download_client_config["fieldValues"].get("password"):
-            netloc = (
-                f"{download_client_config['fieldValues']['username']}:"
-                f"{download_client_config['fieldValues']['password']}@"
-                f"{netloc}"
-            )
-        else:
-            netloc = f"{download_client_config['fieldValues']['username']}@{netloc}"
+        netloc = f"{download_client_config['fieldValues']['username']}@{netloc}"
     download_client_config["url"] = urllib.parse.SplitResult(
         "http" if not download_client_config["fieldValues"]["useSsl"] else "https",
         netloc,

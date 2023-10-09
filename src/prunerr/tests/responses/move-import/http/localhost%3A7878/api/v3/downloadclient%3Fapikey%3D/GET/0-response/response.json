@@ -53,7 +53,7 @@
         "order": 5,
         "name": "password",
         "label": "Password",
-        "value": "secret",
+        "value": "********",
         "type": "password",
         "advanced": false
       },

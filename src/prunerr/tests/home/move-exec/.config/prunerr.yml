@@ -7,3 +7,7 @@ servarrs:
     url: "http://localhost:8989"
     api-key: ""
     type: "sonarr"
+
+download-clients:
+  urls:
+    - "http://transmission:secret@localhost:9091/transmission/"

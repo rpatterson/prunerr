@@ -141,16 +141,10 @@ class PrunerrTestCase(
                     )
                 ]
         self.download_client_items_responses = {}
-        self.download_client_urls = set()
-        for (
-            servarr_download_client_response
-        ) in self.servarr_download_client_responses.values():
-            self.download_client_urls.update(
-                download_client_config["url"]
-                for download_client_config in servarr_download_client_response
-                if download_client_config["enable"]
-            )
-        self.download_client_urls = list(self.download_client_urls)
+        self.download_client_urls = self.config.get(
+            "download-clients",
+            {},
+        ).get("urls", [])
         for download_client_url in self.download_client_urls:
             self.set_up_download_item_files(download_client_url)
 
@@ -237,11 +231,12 @@ class PrunerrTestCase(
                     ].lstrip(os.path.sep)
                 else:
                     download_item_dir = self.incomplete_dir
-                download_item_file = (
-                    download_item_dir / download_item["files"][0]["name"]
-                )
-                download_item_file.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(self.EXAMPLE_VIDEO, download_item_file)
+                if download_item["files"]:
+                    download_item_file = (
+                        download_item_dir / download_item["files"][0]["name"]
+                    )
+                    download_item_file.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(self.EXAMPLE_VIDEO, download_item_file)
 
     def patch_paths(self, data):
         """

@@ -24,6 +24,12 @@ from .utils import cached_property
 logger = logging.getLogger(__name__)
 
 
+class PrunerrValidationError(Exception):
+    """
+    Incorrect Prunerr configuration.
+    """
+
+
 class PrunerrRunner:
     """
     Run Prunerr sub-commands across multiple Servarr instances and download clients.
@@ -57,8 +63,17 @@ class PrunerrRunner:
         Aggregate all download clients from all Servarr instances defined in the config.
         """
         # Refresh the Prunerr configuration from the file
+        if not self.config_file.is_file():
+            raise PrunerrValidationError(
+                f"Configuration file not found: {self.config_file}"
+            )
         with self.config_file.open(encoding="utf-8") as config_opened:
             self.config = yaml.safe_load(config_opened)
+        if not self.config.get("download-clients", {}).get("urls"):
+            raise PrunerrValidationError(
+                "Configuration file must include at least one URL under"
+                f" `download-clients/urls`: {self.config_file}"
+            )
 
         # Update Servarr API clients
         servarrs = {}
@@ -72,23 +87,17 @@ class PrunerrRunner:
 
         # Update download client RPC clients
         # Download clients not connected to a Servarr instance
-        download_client_configs = {
-            utils.normalize_url(download_client_url): {"url": download_client_url}
-            for download_client_url in self.config.get("download-clients", {}).get(
-                "urls",
-                [],
-            )
-        }
+        download_client_configs = dict(
+            prunerr.downloadclient.config_from_url(download_client_auth_url)
+            for download_client_auth_url in self.config["download-clients"]["urls"]
+        )
         # Reconcile with download clients defined in Servarr settings
         for servarr in self.servarrs.values():
-            for (
-                download_client_url,
-                servarr_download_client,
-            ) in servarr.download_clients.items():
-                download_client_configs.setdefault(
-                    download_client_url,
-                    {"url": servarr_download_client.config["url"]},
-                ).setdefault("servarrs", set()).add(servarr.config["url"])
+            for download_client_url in servarr.download_clients.keys():
+                download_client_configs[download_client_url].setdefault(
+                    "servarrs",
+                    set(),
+                ).add(servarr.config["url"])
         # Update the download clients, instantiating if newly defined
         download_clients = {}
         for (

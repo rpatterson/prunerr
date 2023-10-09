@@ -571,7 +571,7 @@ $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"
 
 ./README.md: README.rst

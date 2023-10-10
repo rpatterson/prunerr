@@ -55,3 +55,7 @@ Nice to have
 
 #. ``base``: Switch to `the badge formatting
    <https://rstcheck-core.readthedocs.io/en/latest/#>`_ from ``rstcheck``
+
+#. ``base``: Upgrade Vale to the most recent release when `the 'script run: Compile
+   Error: unresolved reference' errors
+   <https://github.com/errata-ai/vale/issues/697#issue-1932675573>`_ are fixed.

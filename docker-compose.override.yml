@@ -21,7 +21,7 @@ services:
       lint
 
   vale:
-    image: "docker.io/jdkato/vale"
+    image: "docker.io/jdkato/vale:v2.28.1"
     profiles:
       - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"

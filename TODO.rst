@@ -14,6 +14,13 @@ to implement in Prunerr.  IOW, contributions are particularly welcome for the fo
 Required
 ****************************************************************************************
 
+#. Take ``done-date`` from Servarr when missing or 0 in Transmission.
+
+#. `Fix missing ``*-(date|time|seconds)``
+   fields
+   <https://github.com/transmission/transmission/issues/4314#issuecomment-1336485761>`_
+   from Servarr in ``./transmission/config/resume/*.resume`` and restart transmission.
+
 
 ****************************************************************************************
 High Priority

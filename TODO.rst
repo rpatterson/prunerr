@@ -49,6 +49,8 @@ Nice to Have
    Currently, Prunerr hard-codes the ``.../incomplete/``, ``.../downloads/``, and
    ``.../seeding/`` paths.
 
+#. Report multi-season items that are only partially imported.
+
 #. Unit tests
 
    The current tests are probably most accurately described as integration tests.  Any

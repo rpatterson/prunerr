@@ -103,8 +103,11 @@ VCS_COMPARE_BRANCH=main
 endif
 VCS_BRANCH_SUFFIX=upgrade
 VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX)=%)
+# Tolerate detached `HEAD`, such as during a rebase:
+VCS_FETCH_TARGETS=
+ifneq ($(VCS_BRANCH),)
 # Assemble the targets used to avoid redundant fetches during release tasks:
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
@@ -120,6 +123,7 @@ endif
 endif
 ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:

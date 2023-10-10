@@ -303,7 +303,9 @@ def deserialize_servarr_download_client(download_client_config):
         if "value" in download_client_config_field
     }
     netloc = f"{download_client_config['fieldValues']['host']}"
-    if "port" in download_client_config["fieldValues"]:
+    if download_client_config["fieldValues"].get("port") and int(
+        download_client_config["fieldValues"]["port"]
+    ) != (443 if download_client_config["fieldValues"]["useSsl"] else 80):
         netloc = f"{netloc}:{download_client_config['fieldValues']['port']}"
     if download_client_config["fieldValues"].get("username"):
         if download_client_config["fieldValues"].get("password"):

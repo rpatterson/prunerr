@@ -10,13 +10,11 @@ Files:
 Copyright: 2023 Ross Patterson <me@rpatterson.net>
 License: MIT
 Comment:
- Release notes, AKA the ChangeLog, are managed by
- [Towncrier](https://towncrier.readthedocs.io) and thus inappropriate for header
- annotations/commments.
+ [Towncrier](https://towncrier.readthedocs.io) manages the release notes, AKA the
+ ChangeLog, and thus these files are inappropriate for header annotations/commments.
 
 Files:
  requirements/*/*.txt
- build-host/requirements*.txt
 Copyright: 2023 Ross Patterson <me@rpatterson.net>
 License: MIT
 Comment:

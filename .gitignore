@@ -27,6 +27,8 @@ lib64/
 parts/
 sdist/
 var/
+/node_modules
+/package-lock.json
 /README.md
 *.egg-info/
 .installed.cfg
@@ -86,6 +88,23 @@ celerybeat-schedule
 # dotenv
 /.env
 
+# Linters
+.tox
+.mypy_cache
+# Ignore downloaded styles:
+/styles/Vale
+/styles/Microsoft
+/styles/Google
+/styles/RedHat
+/styles/proselint
+/styles/write-good
+/styles/alex
+/styles/Readability
+/styles/Joblint
+
+# Emacs editor settings
+/.dir-locals.el
+
 # virtualenv
 venv/
 ENV/
@@ -95,6 +114,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-# Emacs editor settings
-/.dir-locals.el

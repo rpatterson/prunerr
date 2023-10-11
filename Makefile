@@ -55,13 +55,13 @@ endif
 USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export CHECKOUT_DIR=$(PWD)
 
-# Values concerning supported Python versions:
+# Values related to supported Python versions:
 # Use the same Python version tox would as a default.
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell \
     pip3 --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
-# Determine the latest installed Python version of the supported versions
+# Find the latest installed Python version of the supported versions:
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
 PYTHON_AVAIL_EXECS:=$(foreach \
     PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
@@ -169,8 +169,8 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
-# The options that allow for rapid execution of arbitrary commands in the venvs managed
-# by tox
+# The options that support running arbitrary commands in the venvs managed by tox with
+# the least overhead:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
@@ -191,7 +191,7 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
 endif
-# Address undefined variables warnings when running under local development
+# Avoid undefined variables warnings when running under local development:
 PYPI_PASSWORD=
 export PYPI_PASSWORD
 TEST_PYPI_PASSWORD=
@@ -253,8 +253,8 @@ endif
 .PHONY: build-pkgs
 ### Update the built package for use outside tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
-# Defined as a .PHONY recipe so that multiple targets can depend on this as a
-# pre-requisite and it will only be run once per invocation.
+# Defined as a .PHONY recipe so that more than one target can depend on this as a
+# pre-requisite and it runs one time:
 	rm -vf ./dist/*
 	tox run -e "$(PYTHON_ENV)" --pkg-only
 # Copy the wheel to a location not managed by tox:
@@ -375,8 +375,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
-# The VCS remote should reflect the release before the release is published to ensure
-# that a published release is never *not* reflected in VCS.
+# The VCS remote should reflect the release before publishing the release to ensure that
+# a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/$(PYTHON_PROJECT_GLOB)-*
@@ -536,7 +536,7 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-# Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
+# Manage fixed/pinned versions in `./requirements/**.txt` files.  Must run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
@@ -558,16 +558,16 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created and can be used directly to save time on Tox's overhead when we don't need
-# Tox's logic about when to update/recreate them, e.g.:
+# created so other targets can use them directly to save time on Tox's overhead when
+# they don't need Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
-# Mostly useful for build/release tools.
+# Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
-# prerequisite when using Tox-managed virtual environments directly and changes to code
-# need to take effect immediately.
+# prerequisite for targets that use Tox virtual environments directly and changes to
+# code need to take effect in real-time:
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	mkdir -pv "$(dir $(@))"
@@ -656,7 +656,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 
-# Ensure release publishing authentication, mostly useful in automation such as CI.
+# Set up release publishing authentication, useful in automation such as CI:
 ~/.pypirc.~out~: ./home/.pypirc.in
 	$(call expand_template,$(<),$(@))
 
@@ -742,7 +742,7 @@ endef
 #
 # To that end, use real target and prerequisite files whenever possible when adding
 # recipes to this file. Make calls targets whose name doesn't correspond to a real build
-# artifact phony targets. Use phony targets to compose sets or real targets and define
+# artifact PHONY targets. Use PHONY targets to compose sets or real targets and define
 # recipes for tasks that don't produce build artifacts, for example, the top-level
 # targets.
 

@@ -18,7 +18,7 @@ class ProjectStructureTests(unittest.TestCase):
 
     def test_importable(self):
         """
-        The Python package is on `sys.path` and thus importable.
+        The Python package is on `sys.path` and importable.
         """
         import_process = subprocess.run(  # nosec B603
             [sys.executable, "-c", "import projectstructure"],

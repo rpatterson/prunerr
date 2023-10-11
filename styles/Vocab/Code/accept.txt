@@ -16,3 +16,8 @@ cz
 shell
 master
 HEAD
+noqa
+nosec
+pragma
+Pylint
+pyroma

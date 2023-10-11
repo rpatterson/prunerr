@@ -27,8 +27,8 @@ pylint:
 # https://github.com/timothycrosley/deprecated.frosted#important-note-frosted-is-deprecated-long-live-flake8
 # frosted:
 #   run: true
-# FIXME: I confirmed the package is installed but couldn't get to work:
-#     Cannot run tool pyroma as support was not installed.
+# FIXME: I confirmed installing the package but couldn't get to work:
+#     Can't run tool pyroma as support wasn't installed.
 #     Please install by running 'pip3 install prospector[with_pyroma]'
 # pyroma:
 #   run: true
@@ -36,9 +36,9 @@ pylint:
 pyflakes:
   disable:
     # Redundant with `pylint - unused-import`.
-    # If a line disables that error with a `  # pylint: disable=unused-import` comment,
-    # then the `pyflakes - F401` error is returned and vice versa with a `  # noqa: `
-    # comment and I couldn't get both to work in the same comment.
+    # If a line disables that error with a ` # pylint: disable=unused-import` comment,
+    # then it fails with `pyflakes - F401` and vice versa with a ` # noqa: ` comment and
+    # I couldn't get both to work in the same comment:
     - "F401"
 pep257:
   disable:
@@ -47,11 +47,11 @@ pep257:
     - "D212"
     # https://github.com/PyCQA/pydocstyle/issues/141#issuecomment-146903063
     - "D203"
-    # Disable `One-line docstring should fit on one line with quotes`.  I don't like
-    # this rule in the first place, I think the mix makes docstrings harder to scan
-    # visually.  The point of these tools, however, is to minimize choices so I went
-    # along with it until I discovered that `$ pydocstyle` will issue this warning even
-    # when the one-line version exceeds the `max-line-length`.
+    # I dislike the `One-line docstring should fit on one line with quotes` rule in the
+    # first place. I think the mix makes docstrings more difficult to scan visually.
+    # The point of these tools is to avoid choices so I went along with it until I
+    # discovered that `$ pydocstyle` issues this warning even when the one-line version
+    # exceeds the `max-line-length`:
     - "D200"
 
 # Defensively avoid scanning large artifacts:

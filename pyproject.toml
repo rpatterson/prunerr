@@ -8,21 +8,20 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-# Use VCS tags as the sole authority on versions.  Dynamically determine the current
-# version from VCS tags:
+# Use VCS tags as the sole authority on versions.  Get the current version from VCS
+# tags:
 # https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
 write_to = "src/projectstructure/version.py"
 # Uncomment to test uploading to PyPI locally
 # local_scheme = "no-local-version"
 
 [tool.pylint.main]
-# Ensure `duplicate-code` and any other errors that depend on not runnining in parallel
-# are reported:
+# The `duplicate-code` and other checks depend on not running in parallel:
 jobs = 1
 output-format = "colorized"
 ignore-paths = [
-# Managed by tools, best to use `# pylint: disable=...` inline comments for any other
-# ignores.
+# Managed by tools, best to use `# pylint: disable=` inline comments for any other
+# ignores:
     "src/.+/version.py",
     ".*/src/.+/version.py",
 ]
@@ -67,7 +66,7 @@ ignored-classes = ["lxml.etree.QName.localname"]
 [tool.pylint.format]
 max-line-length = "88"
 [tool.pylint."messages control"]
-# Workaround Prospector bug with PyLint:
+# Workaround Prospector bug with Pylint:
 # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
 disable = [
     "relative-beyond-top-level",

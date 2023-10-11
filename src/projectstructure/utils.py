@@ -4,7 +4,7 @@
 """
 Utility functions or other shared constants and values.
 
-Particularly useful to avoid circular imports.
+Useful to avoid circular imports.
 """
 
 import os

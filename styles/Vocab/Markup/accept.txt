@@ -2,3 +2,4 @@ TODO
 Makefile
 Towncrier
 Project Structure
+Pylint

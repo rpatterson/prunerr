@@ -36,8 +36,8 @@ var/
 /src/*/version.py
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+#  Usually a python script writes these files from a template before PyInstaller builds
+#  the exe to inject date/other infos into it:
 *.manifest
 *.spec
 

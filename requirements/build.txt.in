@@ -30,5 +30,5 @@ configobj
 # More thorough prose linter:
 proselint
 
-# Publish releas artifacts to remotes
+# Publish release artifacts to remotes:
 twine

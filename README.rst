@@ -46,8 +46,8 @@ includes:
 - A target that formats all source, including `Black`_ for Python code style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
   Python code checks
-- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters in multiple Python
-  versions, including some checks not provided by Prospector.
+- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters across supported
+  Python versions, including some checks not provided by Prospector.
 - `Version Control System (VCS) hooks`_ to enforce `conventional commits`_, successful
   build and test on commit and push, and `Towncrier`_ end-user oriented release notes on
   push
@@ -156,7 +156,8 @@ straight to final release. For example they can decide that:
 Installation
 ****************************************************************************************
 
-Install using any tool for installing standard Python 3 distributions such as `pip`_::
+Install by using any tool for installing standard Python 3 distributions such as
+`pip`_::
 
   $ pip3 install --user project-structure
 

@@ -72,8 +72,8 @@ See `the TODO file`_ for known bugs and desirable features.
 
 Capture changes to development processes, such as build or release processes, in the
 `Makefile`_. Tasks important enough to include in the docs are important enough to
-capture in executable form in the `Makefile`_. See the commentary at the bottom of the
-`Makefile`_ for guidance.
+capture in a machine runnable form in the `Makefile`_. See the commentary at the bottom
+of the `Makefile`_ for guidance.
 
 .. _`Docker`: https://docs.docker.com/engine/install/#supported-platforms
 .. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy

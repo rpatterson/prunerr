@@ -16,6 +16,16 @@ cz
 shell
 master
 HEAD
+VCS
+CI
+CD
+I
+FIXME
+TODO
+PHONY
+ensure
+Tox
+tox
 noqa
 nosec
 pragma

@@ -742,9 +742,9 @@ endef
 #
 # To that end, use real target and prerequisite files whenever possible when adding
 # recipes to this file. Make calls targets whose name doesn't correspond to a real build
-# artifact PHONY targets. Use PHONY targets to compose sets or real targets and define
-# recipes for tasks that don't produce build artifacts, for example, the top-level
-# targets.
+# artifact `.PHONY:` targets. Use `.PHONY:` targets to compose sets or real targets and
+# define recipes for tasks that don't produce build artifacts, for example, the
+# top-level targets.
 
 # If a recipe doesn't produce an appropriate build artifact, define an arbitrary target
 # the recipe writes to, such as piping output to a log file. Also use this approach when

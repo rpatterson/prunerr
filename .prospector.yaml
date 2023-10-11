@@ -54,13 +54,12 @@ pep257:
     # exceeds the `max-line-length`:
     - "D200"
 
-# Defensively avoid scanning large artifacts:
 # https://prospector.landscape.io/en/master/profiles.html#ignoring-paths-and-patterns
 ignore-paths:
+  # Ignore failures in these artifacts:
   - "src/projectstructure/version.py"
-  - ".tox"
-  - "var"
-
-  # Prospector's file finding process seems quite expensive, best to aggressively
-  # exclude directories it should never have to check:
-  - "src/prunerr/newsfragments"
+# Prospector's file finding process seems quite expensive, best to aggressively
+# exclude directories it should never have to search:
+# TEMPLATE: Add any paths that never contain Python code under `./src/projectstructure/`
+# for your project:
+#  - "src/projectstructure/tests/fixtures"

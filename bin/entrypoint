@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 #
-# Perform any required volatile run-time initialization
+# Perform any required volatile run time initialization
 
 set -eu -o pipefail
 shopt -s inherit_errexit
@@ -28,14 +28,14 @@ main() {
 	fi
 	if ! id "${PUID}" >"/dev/null" 2>&1
 	then
-	    # Add a user to the `passwd` DB so that the `~project-structure/`
-	    # HOME directory can be looked up.
+	    # Add a user to the `passwd` DB to support looking up the
+	    # `~project-structure/` HOME directory:
 	    adduser --uid "${PUID}" --disabled-password \
 	        --gecos "Project Structure,,," "project-structure" >"/dev/null"
 	fi
-	# Fix the TTY ownership if the session is interactive
 	if tty_dev=$(tty)
 	then
+	    # Fix interactive session terminal ownership:
 	    chown "${PUID}" "${tty_dev}"
 	fi
 	# Delegate the rest to the `CMD`

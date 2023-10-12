@@ -28,5 +28,13 @@ FIXME
 TODO
 PHONY
 ensure
+Ensure
 Tox
 tox
+admin
+touch
+HOME
+home
+CMD
+TTY
+

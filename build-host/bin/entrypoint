@@ -22,8 +22,8 @@ main() {
     # The build host image depends on the baked in `HOME` directory for the installed
     # host requirements:
     export HOME=/home/runner
-    # Signal to `$ make` that host requirements are baked into the image and need not be
-    # reinstalled:
+    # Signal to `$ make` that the image baked in the host requirements and don't need
+    # reinstalling:
     touch "${HOME}/.local/var/log/project-structure-host-install.log"
 
     # Run as the user from the enironment, adding that user if necessary
@@ -37,8 +37,8 @@ main() {
         fi
 	# Ensure the home directory in the image has the correct permissions:
 	chown -R "${PUID}:${PGID:-${PUID}}" "/home/runner/"
-        # Add an unprivileged user to cover those use cases and more closely match local
-	# development
+        # Add an unprivileged user to cover those use cases and better match local
+	# development:
         if ! getent group "${PGID}" >"/dev/null"
         then
             addgroup -g "${PGID}" "runner"
@@ -60,7 +60,7 @@ main() {
                 adduser "${user_name}" "docker"
             fi
         fi
-	# Run the rest of the CLI arguments as the unprivileged user:
+	# Run the rest of the command-line arguments as the unprivileged user:
 	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"
     fi
 

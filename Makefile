@@ -179,9 +179,9 @@ RELEASE_PUBLISH=true
 endif
 DOCKER_PLATFORMS=
 ifeq ($(RELEASE_PUBLISH),true)
-# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
-# image.  These default platforms should cover most common end-user platforms, including
-# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
+# TEMPLATE: Choose the platforms on which your users run the image. These default
+# platforms should cover most common end-user platforms, including modern Apple M1 CPUs,
+# Raspberry Pi devices, and AWS Graviton instances:
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 
@@ -247,10 +247,10 @@ build-docs-%: ./.tox/bootstrap/bin/tox
 ## Docker Build Targets:
 #
 # Strive for as much consistency as possible in development tasks between the local host
-# and inside containers.  To that end, most of the `*-docker` container target recipes
+# and inside containers. To that end, most of the `*-docker` container target recipes
 # should run the corresponding `*-local` local host target recipes inside the
-# development container.  Top level targets, like `test`, should run as much as possible
-# inside the development container.
+# development container. Top level targets, such as `test`, should run as much as
+# possible inside the development container.
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
@@ -268,7 +268,7 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%):
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
-# Only update tags end users may depend on to be stable from the `main` branch
+# Update tags users depend on to be stable from the `main` branch:
 	VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -278,7 +278,7 @@ ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${major_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)
 endif
-# This variant is the default used for tags such as `latest`
+# Use this variant as the default used for tags such as `latest`
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
@@ -380,7 +380,7 @@ test-docker: build-pkgs
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
 	fi
-# Ensure the end-user image runs successfully:
+# Test that the end-user image can run commands:
 	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME) true
 # Run from the development Docker container for consistency:
 	docker compose run $${docker_run_args} $(PROJECT_NAME)-devel \
@@ -459,7 +459,7 @@ endif
 release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
-# previously built native images into the manifests.
+# native images built before into the manifests:
 	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
 ifneq ($(DOCKER_PLATFORMS),)
 	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
@@ -636,7 +636,7 @@ clean:
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
-# Pull the development image and simulate as if it had been built here.
+# Pull the development image and simulate building it here:
 	if docker compose pull --quiet $(PROJECT_NAME)-devel
 	then
 	    touch "$(@)" "./var-docker/log/rebuild.log"
@@ -645,7 +645,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-# Represent that host install is baked into the image in the `${HOME}` bind volume:
+# Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
 	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
 	    $(PROJECT_NAME)-devel mkdir -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
@@ -660,7 +660,7 @@ endif
 		./.dockerignore ./bin/entrypoint ./build-host/requirements.txt.in \
 		./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-# Build the end-user image now that all required artifacts are built"
+# Build the user image after building all required artifacts:
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load" \
 	    build-docker-build >>"$(@)"
@@ -668,7 +668,8 @@ endif
 	date >>"$(@:%/build-user.log=%/host-install.log)"
 
 # Marker file used to trigger the rebuild of the image.
-# Useful to workaround async timestamp issues when running jobs in parallel:
+
+# Useful to workaround asynchronous timestamp issues when running jobs in parallel:
 ./var-docker/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
@@ -907,13 +908,14 @@ endef
 
 ## Maintainer targets:
 #
-# Recipes not used during the normal course of development.
+# Recipes not used during the usual course of development.
 
-# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
-# targets for the authentication environment variables that need to be set or just login
-# to those container registries manually and touch these targets.
+# TEMPLATE: Run this a single time for your project or when the `./build-host/` image
+# changes. See the `./var/log/docker-login*.log` targets for the authentication
+# environment variables to set or login to those container registries manually and `$
+# touch` these targets.
 .PHONY: bootstrap-project
-### Run any tasks needed to be run once for a given project by a maintainer
+### Run any tasks needed a single time for a given project by a maintainer.
 bootstrap-project: ./var/log/docker-login-DOCKER.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 	$(MAKE) -e -C "./build-host/" release

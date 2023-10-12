@@ -65,45 +65,48 @@ Nice to have
    - ``Stylelint`` `CSS linter <https://stylelint.io/>`_
    - `js-beautify <https://www.npmjs.com/package/js-beautify>`_
 
-#. `Docker image build-time LABEL's
+#. `Docker image build-time labels
    <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::
 
      org.opencontainers.image.revision Source control revision identifier for the packaged software.
      org.opencontainers.image.ref.name Name of the reference for a target (string).
-     org.opencontainers.image.base.digest Digest of the image this image is based on (string)
+     org.opencontainers.image.base.digest Digest of the base image of this image (string).
 
-#. Container image variants, e.g. slim/alpine:
+#. Container image variants, for example ``*:slim`` or ``*:alpine``:
 
-   I'm increasingly unconvinced this is worth it, so this likely won't happen until I
-   hear of a convincing use case.
+   The might save less disk space than by using the most widely used base image, given
+   that `different images share common image layers
+   <https://hub.docker.com/_/buildpack-deps/>`_. This might also have security benefits
+   but it also increases risk of incompatibility bugs, whether in the libraries or in
+   distribution differences. As such, this probably isn't worth the effort until users
+   report convincing use cases.
 
 #. CI/CD for other image platforms:
 
-   One issue with this is CI resources.  We already exhaust GitLab free CI/CD minutes
-   too quickly.  Actually running the tests in ARM images would either consume even more
-   free CI/CD minutes to run on the cloud ARM runners or would take forever using
-   emulation in the dedicated project runners.
+   This would cause one issue with CI resources. The pipelines already exhaust too much
+   of the GitLab free CI/CD minutes for each run. Running the tests in ARM images would
+   either consume even more free CI/CD minutes to run on cloud ARM runners. Or would
+   take forever by using emulation in the dedicated project runners.
 
-   Another issue is lack of important support from Docker.  Docker provides both the
+   Docker also lacks important support, creating another issue. Docker provides both the
    capability to build images for non-native platforms *and* run images for non-native
-   platforms, both albeit slowly via QEMU emulation.  So it seems like we have
-   everything we need to build a non-native image, run the tests against it as a check,
-   and then publish it once passing.  Unfortunately, Docker doesn't provide local access
-   to built multi-platform images, it only supports pushing them to a registry or
-   exporting them to some form of filesystem archive.  This means we can't depend on
-   subsequent runs of the image tag to be the same image we just built as someone else
-   could have pushed another build to the registry between our push and subsequent pull.
-   This is made worse given that each time we change the ``platform: ...`` in
-   ``./docker-compose*.yml`` requires a ``$ docker compose pull ...`` to switch the
-   image so that means we could be pulling again and again some time after the push
-   increasingly the likelihood that we end up pulling an image other than the one we
-   built.  This leaves us with a couple options.  We could parse the build output to
-   extract the manifest digest and then use that to retrieve the digests for each
-   platform's image and then use those digests in ``./docker-compose*.yml``.  Or we
-   could output the multi-platform image to one of the local filesystem formats, figure
-   how to import from there and do the equivalent dance to retrieve and use the digests.
-   This would be very fragile and would take a lot of work that is likely to be wasted
-   when Docker or someone else provides a better way.  IOW, we would be wastefully
-   fighting our tools and frameworks.
+   platforms, both under QEMU emulation, albeit with a significant performance
+   penalty. It seems support exists to build a non-native image, run the tests in it,
+   and then publish it after passing. But Docker doesn't support local access to built
+   multi-platform images, it only supports pushing them to a registry or exporting them
+   to some form of filesystem archive. This means following runs of the image tag might
+   use a different image than the one built locally. Someone else could have pushed
+   another build to the registry between the push and following pull. Even worse,
+   changing the ``platform: ...`` in ``./docker-compose*.yml`` requires a ``$ docker
+   compose pull ...`` to switch the image. This means pulling again and again some time
+   after the push increasingly the likelihood of pulling an image other than the one
+   built locally. This leaves a couple options. Parse the build output to extract the
+   manifest digest and then use that to retrieve the digests for each platform's image
+   and then use those digests in ``./docker-compose*.yml``. Or output the multi-platform
+   image to one of the local filesystem formats, figure how to import from there and do
+   a similar dance to retrieve and use the digests. This would be very fragile and would
+   take a lot of work that is likely wasted effort when Docker or someone else provides
+   a better way. IOW, these options would mean wastefully fighting tools and frameworks.
 
-   So this is unlikely to happen until I start seeing significant platform-specific bugs.
+   As such, this probably isn't worth the effort until users report significant
+   platform-specific bugs.

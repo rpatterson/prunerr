@@ -31,3 +31,6 @@ PHONY
 ensure
 Tox
 tox
+stdin
+stdout
+stderr

@@ -536,7 +536,7 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-# Manage fixed/pinned versions in `./requirements/**.txt` files.  Must run for each
+# Manage fixed/pinned versions in `./requirements/**.txt` files. Must run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
@@ -565,7 +565,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
 # prerequisite for targets that use Tox virtual environments directly and changes to
 # code need to take effect in real-time:
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
@@ -642,7 +642,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
-# Capture any project initialization tasks for reference.  Not actually usable.
+# Capture any project initialization tasks for reference. Not actually usable.
 ./pyproject.toml:
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- cz init

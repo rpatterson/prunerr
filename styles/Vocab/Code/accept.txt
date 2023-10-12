@@ -39,3 +39,5 @@ nosec
 pragma
 Pylint
 pyroma
+args
+kwargs

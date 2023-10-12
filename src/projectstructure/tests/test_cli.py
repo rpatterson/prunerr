@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
 
 """
@@ -37,9 +36,12 @@ class ProjectstructureCLITests(unittest.TestCase):
             "The Python package not importable",
         )
 
-    def get_cli_error_messages(self, args):
+    def get_cli_error_messages(self, args: list) -> str:
         """
         Run the command-line script and return any error messages.
+
+        :param args: Command-line arguments
+        :return: Output of stderr
         """
         stderr_file = io.StringIO()
         with self.assertRaises(SystemExit, msg="Command-line didn't exit"):
@@ -123,13 +125,16 @@ class ProjectstructureCLITests(unittest.TestCase):
     def test_cli_exit_code(self):
         """
         The command line script exits with status code zero if it raises no exceptions.
+
+        :raises ValueError: Couldn't find script prefix path
         """
         # Find the location of the `console_scripts` for this test environment
-        prefix_path = pathlib.Path(sys.argv[0]).parent
-        while not (prefix_path / "bin").is_dir():
-            prefix_path = prefix_path.parent
-            if prefix_path.parent is list(prefix_path.parents)[-1]:  # pragma: no cover
-                raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
+        for parent_path in pathlib.Path(sys.argv[0]).parents:
+            if (parent_path / "bin").is_dir():
+                prefix_path = parent_path
+                break
+        else:  # pragma: no cover
+            raise ValueError(f"Couldn't find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(  # nosec B603
             [prefix_path / "bin" / "project-structure", "foobar"],

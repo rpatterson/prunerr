@@ -12,6 +12,7 @@ import logging
 import argparse
 import json
 import pdb
+import typing
 
 import argcomplete
 
@@ -49,9 +50,12 @@ subparsers = parser.add_subparsers(
 
 
 # TEMPLATE: Replace with the subcommands and arguments your project provides.
-def foobar(quiet=False):
+def foobar(quiet: bool = False) -> typing.Optional[list]:
     """
     Run the foobar subcommand from the command line.
+
+    :param quiet: Whether to return results
+    :return: Subcommand results
     """
     if not quiet:
         return ["foo", "bar"]
@@ -78,12 +82,16 @@ argcomplete.autocomplete(parser)
 
 
 def config_cli_logging(
-    root_level=logging.INFO,
-    log_level=parser.get_default("--log-level"),
+    root_level: int = logging.INFO,
+    log_level: str = parser.get_default("--log-level"),
     **_,
 ):
     """
     Configure logging command-line usage as soon as possible to affect all output.
+
+    :param root_level: Logging level for other packages
+    :param log_level: Logging level for this package
+    :param _: Ignores other kwargs
     """
     # Set just this package's logger level, not others', from options and environment
     # variables:
@@ -94,7 +102,6 @@ def config_cli_logging(
         if utils.DEBUG:  # pragma: no cover
             log_level = "DEBUG"
     logger.setLevel(getattr(logging, log_level.strip().upper()))
-    return log_level
 
 
 def main(args=None):  # pylint: disable=missing-function-docstring
@@ -137,8 +144,7 @@ def _main(args=None):
     logger.debug("Running %r subcommand", parsed_args.command.__name__)
     # subcommands can return a result to pretty print, or handle output themselves and
     # return nothing:
-    result = parsed_args.command(**command_kwargs)
-    if result is not None:
+    if (result := parsed_args.command(**command_kwargs)) is not None:
         json.dump(result, sys.stdout, indent=2)
 
 

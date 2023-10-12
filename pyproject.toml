@@ -70,6 +70,8 @@ max-line-length = "88"
 disable = [
     "relative-beyond-top-level",
     "docstring-first-line-empty",
+    # BBB: Python 3.8 compatibility:
+    "consider-alternative-union-syntax",
 ]
 [tool.pylint.parameter_documentation]
 accept-no-param-doc = false

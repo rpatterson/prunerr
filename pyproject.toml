@@ -8,8 +8,7 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-# Use VCS tags as the sole authority on versions.  Get the current version from VCS
-# tags:
+# Use VCS tags as the sole authority on versions. Get the current version from VCS tags:
 # https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
 write_to = "src/projectstructure/version.py"
 # Uncomment to test uploading to PyPI locally

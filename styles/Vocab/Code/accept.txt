@@ -6,6 +6,7 @@ pylint
 disable
 invalid
 type
+Code
 code
 [Ff]ail
 [Mm]ake
@@ -30,8 +31,13 @@ PHONY
 ensure
 Tox
 tox
+stdin
+stdout
+stderr
 noqa
 nosec
 pragma
 Pylint
 pyroma
+args
+kwargs

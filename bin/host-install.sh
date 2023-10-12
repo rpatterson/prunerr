@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 #
-# Install into the local system all external tools required by recipes.  Must support
+# Install into the local system all external tools required by recipes. Must support
 # running again on the same system.
 #
 # System OS packages:

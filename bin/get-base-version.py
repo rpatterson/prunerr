@@ -7,7 +7,8 @@
 """
 Return the current version minus any pre-release suffix along with its type.
 
-Useful to get the final/stable version to bump a earlier pre-release to a final release.
+Useful to get the final, stable version to bump a earlier pre-release to a final
+release.
 """  # pylint: disable=invalid-name
 
 import sys

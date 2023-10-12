@@ -115,8 +115,11 @@ VCS_COMPARE_BRANCH=main
 endif
 VCS_BRANCH_SUFFIX=upgrade
 VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX)=%)
+# Tolerate detached `HEAD`, such as during a rebase:
+VCS_FETCH_TARGETS=
+ifneq ($(VCS_BRANCH),)
 # Assemble the targets used to avoid redundant fetches during release tasks:
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
@@ -132,6 +135,7 @@ endif
 endif
 ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
@@ -853,9 +857,9 @@ endef
 #
 # To that end, use real target and prerequisite files whenever possible when adding
 # recipes to this file. Make calls targets whose name doesn't correspond to a real build
-# artifact phony targets. Use phony targets to compose sets or real targets and define
-# recipes for tasks that don't produce build artifacts, for example, the top-level
-# targets.
+# artifact `.PHONY:` targets. Use `.PHONY:` targets to compose sets or real targets and
+# define recipes for tasks that don't produce build artifacts, for example, the
+# top-level targets.
 
 # If a recipe doesn't produce an appropriate build artifact, define an arbitrary target
 # the recipe writes to, such as piping output to a log file. Also use this approach when

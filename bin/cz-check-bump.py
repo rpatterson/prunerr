@@ -14,6 +14,8 @@ https://github.com/commitizen-tools/commitizen/issues/688#issue-1628052526
 
 import sys
 import argparse
+import pathlib
+import logging
 
 import decli
 
@@ -23,6 +25,8 @@ from commitizen import bump  # pylint: disable=import-error
 from commitizen import config  # pylint: disable=import-error
 from commitizen import commands  # pylint: disable=import-error
 from commitizen import cli  # pylint: disable=import-error
+
+logger = logging.getLogger(pathlib.Path(sys.argv[0]).stem)
 
 arg_parser = argparse.ArgumentParser(
     description=__doc__.strip(),
@@ -36,6 +40,7 @@ arg_parser.add_argument(
 
 
 def main(args=None):  # pylint: disable=missing-function-docstring
+    logging.basicConfig(level=logging.INFO)
     parsed_args = arg_parser.parse_args(args=args)
     conf = config.read_cfg()
     # Inspecting "private" attributes makes code fragile, but reproducing cz's
@@ -64,6 +69,11 @@ def main(args=None):  # pylint: disable=missing-function-docstring
     # Remove the rest of the conditions from `commitizen` except for checking commit
     # messages:
     commits = git.get_commits(compare_ref)
+    if commits:
+        logger.info(
+            "Checking commits for version bump increment:\n%s",
+            "\n".join(str(commit) for commit in commits),
+        )
     increment = bump_cmd.find_increment(commits)
 
     if increment is not None:

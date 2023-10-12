@@ -38,6 +38,7 @@ main() {
         # TODO: Add OS-X/Darwin support.
         false
     fi
+
 # Manage JavaScript/TypeScript packages:
 # https://github.com/nvm-sh/nvm#install--update-script
     if ! which nvm

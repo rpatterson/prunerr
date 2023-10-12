@@ -14,7 +14,7 @@
 export PROJECT_NAMESPACE=rpatterson
 export PROJECT_NAME=project-structure
 # TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
-NPM_SCOPE=$(PROJECT_NAMESPACE)
+NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
 
 # Variables used as options to control behavior:
@@ -67,13 +67,13 @@ endif
 export TZ
 export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
-# Values concerning supported Python versions:
+# Values related to supported Python versions:
 # Use the same Python version tox would as a default.
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell \
     pip3 --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
-# Determine the latest installed Python version of the supported versions
+# Find the latest installed Python version of the supported versions:
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
 PYTHON_AVAIL_EXECS:=$(foreach \
     PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
@@ -189,6 +189,8 @@ endif
 export TOX_RUN_ARGS
 # The options that allow for rapid execution of arbitrary commands in the venvs managed
 # by tox
+# The options that support running arbitrary commands in the venvs managed by tox with
+# the least overhead:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
@@ -240,7 +242,7 @@ ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 endif
-# Address undefined variables warnings when running under local development
+# Avoid undefined variables warnings when running under local development:
 PYPI_PASSWORD=
 export PYPI_PASSWORD
 TEST_PYPI_PASSWORD=
@@ -283,7 +285,9 @@ run: build-docker ./.env.~out~
 ### Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ \
 		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log build-docker
+		./var/log/npm-install.log build-docker \
+		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
+	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
 ### Compile fixed/pinned dependency versions if necessary.
@@ -292,8 +296,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    $(PYTHON_EXTRAS:%=./requirements/$(@:build-requirements-%=%)/%.txt) \
-	    ./requirements/$(@:build-requirements-%=%)/build.txt \
-	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+	    ./requirements/$(@:build-requirements-%=%)/build.txt"
 # Workaround race conditions in pip's HTTP file cache:
 # https://github.com/pypa/pip/issues/6970#issuecomment-527678672
 	$(MAKE) -e -j $${targets} ||
@@ -312,11 +315,11 @@ endif
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
-### Ensure the built package is current when used outside of tox.
+### Update the built package for use outside tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log
-# Defined as a .PHONY recipe so that multiple targets can depend on this as a
-# pre-requisite and it will only be run once per invocation.
+# Defined as a .PHONY recipe so that more than one target can depend on this as a
+# pre-requisite and it runs one time:
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
@@ -455,7 +458,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 # Recipes that run the test suite.
 
 .PHONY: test
-### Format the code and run the full suite of tests, coverage checks, and linters.
+### Run the full suite of tests, coverage checks, and linters.
 test: test-docker-lint test-docker
 
 .PHONY: test-local
@@ -591,7 +594,7 @@ test-clean:
 # end-users.
 
 .PHONY: release
-### Publish installable Python packages and container images as required by commits.
+### Publish PyPI packages and Docker images if conventional commits require a release.
 release: release-pkgs release-docker
 
 .PHONY: release-pkgs
@@ -603,8 +606,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
-# The VCS remote should reflect the release before the release is published to ensure
-# that a published release is never *not* reflected in VCS.
+# The VCS remote should reflect the release before publishing the release to ensure that
+# a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/$(PYTHON_PROJECT_GLOB)-*
@@ -749,12 +752,19 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 	        --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT"
 # Run source code formatting tools implemented in JavaScript:
 	~/.nvm/nvm-exec npm run format
+# Run source code formatting tools implemented in Python:
+	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
+		--remove-duplicate-keys --remove-unused-variables \
+		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
+	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: ./.tox/bootstrap/bin/tox ./.env.~out~ build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "./build-host/requirements.txt.in" \
 	    "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel
@@ -778,8 +788,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the most recent versions as of $${now}." \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
-	    "./.pre-commit-config.yaml"
+	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade to most recent versions"
@@ -818,7 +827,7 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-# Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
+# Manage fixed/pinned versions in `./requirements/**.txt` files.  Must run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
@@ -838,44 +847,26 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.i
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
-	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e PYTHON_ENV="$(@:build-host/requirements-%.txt=%)" \
-	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" build-requirements-compile
-# Only update the installed tox version for the latest/host/main/default Python version
-	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
-	then
-# Don't install tox into one of it's own virtual environments
-	    if [ -n "$${VIRTUAL_ENV:-}" ]
-	    then
-	        pip_bin="$$(which -a pip3 | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
-	    else
-	        pip_bin="pip3"
-	    fi
-	    "$${pip_bin}" install -r "$(@)"
-	fi
-	mkdir -pv "./var/log/"
-	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created and can be used directly to save time on Tox's overhead when we don't need
-# Tox's logic about when to update/recreate them, e.g.:
+# created so other targets can use them directly to save time on Tox's overhead when
+# they don't need Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
-# Mostly useful for build/release tools.
+# Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
-# prerequisite when using Tox-managed virtual environments directly and changes to code
-# need to take effect immediately.
+# prerequisite for targets that use Tox virtual environments directly and changes to
+# code need to take effect in real-time:
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"
 
 ## Docker real targets:
@@ -1032,7 +1023,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 
-# Ensure release publishing authentication, mostly useful in automation such as CI.
+# Set up release publishing authentication, useful in automation such as CI:
 ~/.pypirc.~out~: ./home/.pypirc.in
 	$(call expand_template,$(<),$(@))
 

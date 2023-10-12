@@ -15,10 +15,9 @@ Comment:
 
 Files:
  requirements/*/*.txt
- build-host/requirements*.txt
 Copyright: 2023 Ross Patterson <me@rpatterson.net>
 License: MIT
 Comment:
- Version pins/locks/freezez are managed by [Pip
- Tools](https://pip-tools.readthedocs.io/en/latest/) and this inappropriate for header
- annotations/commments.
+ Version pins/locks/freezes that [Pip
+ Tools](https://pip-tools.readthedocs.io/en/latest/) manage and are thus inappropriate
+ for header annotations/commments.

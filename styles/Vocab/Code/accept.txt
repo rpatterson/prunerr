@@ -37,4 +37,8 @@ HOME
 home
 CMD
 TTY
-
+noqa
+nosec
+pragma
+Pylint
+pyroma

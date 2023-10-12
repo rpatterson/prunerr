@@ -61,8 +61,8 @@ projects. It includes:
 - A target that formats all Python code, including using `Black`_ for style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
   Python code checks
-- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters in multiple Python
-  versions, including some checks not provided by Prospector.
+- A `tox.ini`_ configuration for `Tox`_ to run all tests and linters across supported
+  Python versions, including some checks not provided by Prospector.
 - `Version Control System (VCS) hooks`_ to enforce `conventional commits`_, successful
   build and test on commit and push, and `Towncrier`_ end-user oriented release notes on
   push
@@ -114,7 +114,7 @@ support. Report any issues you have or better yet submit a PR with corrections.
 
    - ``py``:
 
-     Basic Python distribution package metadata.
+     Basic Python distribution metadata and packaging.
 
    - ``docker``:
 
@@ -185,7 +185,8 @@ Install locally or use the Docker container image:
 Local Installation
 ========================================================================================
 
-Install using any tool for installing standard Python 3 distributions such as `pip`_::
+Install by using any tool for installing standard Python 3 distributions such as
+`pip`_::
 
   $ pip3 install --user project-structure
 
@@ -223,15 +224,12 @@ Releases publish multi-platform images for the following platforms:
 Contributing
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrored on GitHub`_. Use GitLab for reporting
-issues, submitting Pull Requests or Merge Requests, and any other development or
-maintenance activity.
-
-See `the contributing documentation`_ for more details on how to get started with
-development.
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
 
 
-****************************************************************************************
 Motivation
 ****************************************************************************************
 
@@ -258,14 +256,13 @@ remote, merging structure updates into real projects over their lifetime.
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
-.. _`mirrored on GitHub`:
-   https://github.com/rpatterson/project-structure
+.. _`mirrors it to GitHub`:
+   https://github.com/rpatterson/project-HEAD
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
 .. _`Docker Compose`: https://docs.docker.com/compose/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 .. _`the example ./docker-compose.yml file`: ./docker-compose.yml
-
-.. _`the contributing documentation`:
-   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
 .. _pip: https://pip.pypa.io/en/stable/installation/

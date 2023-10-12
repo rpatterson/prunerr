@@ -110,3 +110,5 @@ Nice to have
 
    As such, this probably isn't worth the effort until users report significant
    platform-specific bugs.
+
+#. ``py``: Create new branches for different frameworks, e.g.: Flask, Pyramid, Django.

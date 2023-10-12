@@ -43,8 +43,8 @@ sdist/
 /src/*/version.py
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+#  Usually a python script writes these files from a template before PyInstaller builds
+#  the exe to inject date/other infos into it:
 *.manifest
 **/.manifest
 *.spec
@@ -130,6 +130,9 @@ celerybeat-schedule
 /styles/Readability
 /styles/Joblint
 
+# Emacs editor settings
+/.dir-locals.el
+
 # virtualenv
 venv/
 ENV/
@@ -139,9 +142,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-# Emacs editor settings
-/.dir-locals.el
 
 # Explicit ignores for the Docker build context.
 .local

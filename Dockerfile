@@ -83,11 +83,6 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     mkdir -pv "${HOME}/.local/var/log/" && \
     apt-get install --no-install-recommends -y "python3-pip=23.0.1+dfsg-1" | \
         tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
-COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
-# hadolint ignore=DL3042
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip3 install -r "./build-host/requirements.txt.in" | \
-        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 # TEMPLATE: Add image setup specific to the development for this project type, often at
 # least installing development tools.

@@ -630,9 +630,8 @@ clean:
 
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
-		./build-host/requirements.txt.in ./var-docker/log/rebuild.log \
-		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
-		./bin/host-install
+		./var-docker/log/rebuild.log ./docker-compose.yml \
+		./docker-compose.override.yml ./.env.~out~ ./bin/host-install
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -657,8 +656,7 @@ endif
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
-		./.dockerignore ./bin/entrypoint ./build-host/requirements.txt.in \
-		./var-docker/log/rebuild.log
+		./.dockerignore ./bin/entrypoint ./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Build the user image after building all required artifacts:
 	mkdir -pv "$(dir $(@))"

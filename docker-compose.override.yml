@@ -8,7 +8,6 @@
 version: "3.8"
 
 services:
-
   # Configuration specific to development:
   project-structure:
     image: "${DOCKER_USER:?}/project-structure:${DOCKER_BRANCH_TAG:-develop}"

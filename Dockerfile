@@ -93,24 +93,10 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
-ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/src/${PROJECT_NAME}/.tox/bootstrap/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Have to use the shell form of `CMD` because we need variable substitution:
 # hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
-
-# Then add everything that might contribute to efficient development.
-
-# Match local development tool chain and avoid time consuming redundant package
-# installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
-# package and all the development tools into the image:
-COPY [ \
-    "./requirements/${PYTHON_ENV}/test.txt", \
-    "./requirements/${PYTHON_ENV}/devel.txt", \
-    "./requirements/${PYTHON_ENV}/" \
-]
-COPY [ "./tox.ini", "./" ]
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    tox --no-recreate-pkg --skip-pkg-install --notest -e "${PYTHON_ENV}"

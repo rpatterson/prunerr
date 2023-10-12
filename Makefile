@@ -360,7 +360,7 @@ build-docs-%: ./.tox/bootstrap/bin/tox
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: build-pkgs ./var-docker/$(PYTHON_ENV)/log/build-user.log
+build-docker: ./.tox/bootstrap/bin/tox build-pkgs ./var-docker/$(PYTHON_ENV)/log/build-user.log
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -463,13 +463,14 @@ test: test-docker-lint test-docker
 
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters on the local host.
-test-local:
+test-local: ./.tox/bootstrap/bin/tox
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log build-docs test-lint-prose
+		./var/log/npm-install.log ./.tox/bootstrap/bin/tox build-docs \
+		test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -505,7 +506,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs
+test-docker: ./.tox/bootstrap/bin/tox build-pkgs
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -857,13 +858,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # they don't need Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
-$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
+$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile): ./.tox/bootstrap/bin/tox
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
 # prerequisite for targets that use Tox virtual environments directly and changes to
 # code need to take effect in real-time:
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log): ./.tox/bootstrap/bin/tox
 	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
@@ -872,10 +873,11 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 ## Docker real targets:
 
 # Build the development image:
-./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
-		./bin/entrypoint ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
-		./pyproject.toml ./setup.cfg ./tox.ini ./docker-compose.yml \
-		./docker-compose.override.yml ./.env.~out~ ./bin/host-install.sh
+./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./.tox/bootstrap/bin/tox ./Dockerfile \
+		./.dockerignore ./bin/entrypoint \
+		./var-docker/$(PYTHON_ENV)/log/rebuild.log ./pyproject.toml ./setup.cfg \
+		./tox.ini ./docker-compose.yml ./docker-compose.override.yml \
+		./.env.~out~ ./bin/host-install.sh
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -893,13 +895,9 @@ endif
 	    build-docker-build | tee -a "$(@)"
 # Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
 	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	    $(PROJECT_NAME)-devel mkdir -pv "./.local/var/log/"
-	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
-	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "./.local/var/log/$(PROJECT_NAME)-host-install.log" |
-	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	        $(PROJECT_NAME)-devel tee -a \
-	        "./.local/var/log/$(PROJECT_NAME)-host-install.log" >"/dev/null"
+	    $(PROJECT_NAME)-devel bash -xeu -o pipefail -c '\
+		mkdir -pv "./.local/var/log/" && \
+		date >"./.local/var/log/$(PROJECT_NAME)-host-install.log"'
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \

@@ -6,6 +6,7 @@ pylint
 disable
 invalid
 type
+Code
 code
 [Ff]ail
 [Mm]ake

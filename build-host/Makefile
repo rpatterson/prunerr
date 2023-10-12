@@ -17,7 +17,7 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
-# Done with `$(shell ...)`, echo recipe commands going forward
+# Done with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
 DOCKER_IMAGE=merpatterson/project-structure

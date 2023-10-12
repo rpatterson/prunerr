@@ -5,13 +5,13 @@
 
 ## Image layers shared between all variants.
 
-# Stay as close to a vanilla Python environment as possible
+# Stay as close to an un-customized environment as possible:
 ARG PYTHON_MINOR=3.10
 FROM python:${PYTHON_MINOR} AS base
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
-# Project contstants:
+# Project constants:
 ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=project-structure
 
@@ -27,7 +27,7 @@ LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 
-# Find the same home directory even when run as another user, e.g. `root`.
+# Find the same home directory even when run as another user, for example `root`.
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "/home/${PROJECT_NAME}/"
 ENTRYPOINT [ "entrypoint" ]
@@ -36,7 +36,7 @@ CMD [ "python" ]
 # Put the `ENTRYPOINT` on the `$PATH`
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
-# Install OS packages needed for the image `ENDPOINT`:
+# Install operating system packages needed for the image `ENDPOINT`:
 RUN \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
@@ -44,7 +44,7 @@ RUN \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install --no-install-recommends -y "gosu=1.12-1+b6"
+    apt-get install --no-install-recommends -y "gosu=1.14-1+b6"
 
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
@@ -55,14 +55,14 @@ COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" 
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install -r "./requirements/${PYTHON_ENV}/user.txt"
 
-# Build-time `LABEL`s
+# Build-time labels:
 ARG VERSION=
 LABEL org.opencontainers.image.version=${VERSION}
 
 
 ## Container image for use by end users.
 
-# Stay as close to a vanilla environment as possible:
+# Stay as close to an un-customized environment as possible:
 FROM base AS user
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
@@ -82,7 +82,7 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
 
 ## Container image for use by developers.
 
-# Stay as close to the end user image as possible for build cache efficiency:
+# Stay as close to the user image as possible for build cache efficiency:
 FROM base AS devel
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
@@ -102,15 +102,6 @@ WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 CMD tox -e "${PYTHON_ENV}"
 
 # Then add everything that might contribute to efficient development.
-
-# Simulate the parts of the host install process from `./Makefile` needed for
-# development in the image:
-COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
-# hadolint ignore=DL3042
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    mkdir -pv "${HOME}/.local/var/log/" && \
-    pip3 install -r "./build-host/requirements.txt.in" | \
-        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 # Match local development tool chain and avoid time consuming redundant package
 # installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this

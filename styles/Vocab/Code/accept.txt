@@ -6,6 +6,7 @@ pylint
 disable
 invalid
 type
+Code
 code
 [Ff]ail
 [Mm]ake
@@ -31,10 +32,12 @@ ensure
 Ensure
 Tox
 tox
+stdin
+stdout
+stderr
 admin
 touch
 HOME
 home
 CMD
 TTY
-

@@ -2,22 +2,44 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Override `$ docker compose ...` configuration for development or testing here in this
-# repo checkout.  Everything that may be used outside this checkout should be in
+# Override `$ docker compose` configuration for development or testing here in this
+# repository checkout. Put everything used outside this checkout in
 # `./docker-compose.yml`.
 version: "3.8"
 
 services:
-
-  pandoc:
-    image: "pandoc/core"
+  reuse:
+    image: "docker.io/fsfe/reuse:latest-debian"
     profiles:
-      - "release"
+      - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR}/:/data/"
+      - "${CHECKOUT_DIR:-.}/:/data/"
+    command: >-
+      lint
+
+  vale:
+    image: "docker.io/jdkato/vale:v2.28.1"
+    profiles:
+      - "lint"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-project-structure}"
+    working_dir: "/usr/local/src/${PROJECT_NAME:-project-structure}"
+    command: >-
+      .
+
+  pandoc:
+    image: "docker.io/pandoc/core"
+    profiles:
+      - "release"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/data/"
     entrypoint: "ash"
     # Strip reStructuredText directives unsupported in Markdown:
     command: >-

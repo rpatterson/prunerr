@@ -2,5 +2,5 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Empty so as not to interfere with any end-user container usage:
+# Don't interfere with end-user container usage, leave empty:
 version: "3.8"

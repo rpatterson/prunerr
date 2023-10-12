@@ -20,7 +20,7 @@ import projectstructure
 
 class ProjectstructureCLITests(unittest.TestCase):
     """
-    Test the project-structure Command-Line Interface.
+    Test the project-structure command-line interface.
     """
 
     def test_importable(self):
@@ -39,20 +39,20 @@ class ProjectstructureCLITests(unittest.TestCase):
 
     def get_cli_error_messages(self, args):
         """
-        Run the CLI script and return any error messages.
+        Run the command-line script and return any error messages.
         """
         stderr_file = io.StringIO()
-        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
+        with self.assertRaises(SystemExit, msg="Command-line didn't exit"):
             with contextlib.redirect_stderr(stderr_file):
                 projectstructure.main(args=args)
         return stderr_file.getvalue()
 
     def test_cli_help(self):
         """
-        The command line script is self-docummenting.
+        The command line script documents itself.
         """
         stdout_file = io.StringIO()
-        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
+        with self.assertRaises(SystemExit, msg="Command-line didn't exit"):
             with contextlib.redirect_stdout(stdout_file):
                 projectstructure.main(args=["--help"])
         stdout = stdout_file.getvalue()
@@ -93,7 +93,7 @@ class ProjectstructureCLITests(unittest.TestCase):
 
     def test_cli_dash_m_option(self):
         """
-        The package supports execution via Python's `-m` CLI option.
+        The package supports running by using Python's `-m` command-line option.
         """
         module_main_process = subprocess.run(  # nosec B603
             [sys.executable, "-m", "projectstructure", "foobar"],
@@ -107,9 +107,12 @@ class ProjectstructureCLITests(unittest.TestCase):
 
     def test_cli_module_main(self):
         """
-        The package supports execution via Python's `-m` option.
+        The package exits with the right exception from the command-line.
         """
-        with self.assertRaises(SystemExit, msg="CLI didn't exit") as exc_context:
+        with self.assertRaises(
+            SystemExit,
+            msg="Command-line didn't exit",
+        ) as exc_context:
             runpy.run_module("projectstructure")
         self.assertEqual(
             exc_context.exception.code,
@@ -119,7 +122,7 @@ class ProjectstructureCLITests(unittest.TestCase):
 
     def test_cli_exit_code(self):
         """
-        The command line script exits with status code zero if there are no exceptions.
+        The command line script exits with status code zero if it raises no exceptions.
         """
         # Find the location of the `console_scripts` for this test environment
         prefix_path = pathlib.Path(sys.argv[0]).parent

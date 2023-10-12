@@ -36,22 +36,22 @@ parser = argparse.ArgumentParser(
 parser.add_argument(
     "--log-level",
     default=argparse.SUPPRESS,
-    # I only wish the `logging` module provided public access to all defined levels
+    # The `logging` module provides no public access to all defined levels:
     choices=logging._nameToLevel,  # pylint: disable=protected-access
     help="Select logging verbosity. (default: INFO)",
 )
-# Define CLI sub-commands
+# Define command-line subcommands:
 subparsers = parser.add_subparsers(
     dest="command",
     required=True,
-    help="sub-command",
+    help="subcommand",
 )
 
 
-# TEMPLATE: Replace with the sub-commands and arguments your project provides.
+# TEMPLATE: Replace with the subcommands and arguments your project provides.
 def foobar(quiet=False):
     """
-    Run the foobar sub-command from the command line.
+    Run the foobar subcommand from the command line.
     """
     if not quiet:
         return ["foo", "bar"]
@@ -63,8 +63,8 @@ parser_foobar = subparsers.add_parser(
     help=foobar.__doc__.strip(),  # type: ignore
     description=foobar.__doc__.strip(),  # type: ignore
 )
-# Make the function for the sub-command specified in the CLI argument available in the
-# argument parser for delegation below.
+# Make the function for the subcommand specified in the command-line argument available
+# in the argument parser for delegation:
 parser_foobar.set_defaults(command=foobar)
 parser_foobar.add_argument(
     "-q",
@@ -83,11 +83,12 @@ def config_cli_logging(
     **_,
 ):
     """
-    Configure logging CLI usage as early as possible to affect all output.
+    Configure logging command-line usage as soon as possible to affect all output.
     """
-    # Want just our logger's level, not others', to be controlled by options/environment
+    # Set just this package's logger level, not others', from options and environment
+    # variables:
     logging.basicConfig(level=root_level)
-    # If the CLI option was not specified, fallback to the environment variable
+    # If the command-line option wasn't specified, fallback to the environment variable:
     if log_level is None:
         log_level = "INFO"
         if utils.DEBUG:  # pragma: no cover
@@ -107,19 +108,17 @@ def main(args=None):  # pylint: disable=missing-function-docstring
 
 def _main(args=None):
     """
-    Inner main CLI handler for outer exception handling.
+    Inner main command-line handler for outer exception handling.
     """
-    # Parse CLI options and positional arguments
+    # Parse command-line options and positional arguments:
     parsed_args = parser.parse_args(args=args)
-    # Avoid noisy boilerplate, functions meant to handle CLI usage should accept kwargs
-    # that match the defined option and argument names.
+    # Avoid noisy boilerplate, functions meant to handle command-line usage should
+    # accept kwargs that match the defined option and argument names:
     cli_kwargs = dict(vars(parsed_args))
     # Remove any meta options and arguments, those used to direct option and argument
-    # handling, that shouldn't be passed onto functions meant to handle CLI usage.  More
-    # generally, err on the side of options and arguments being kwargs, remove the
-    # exceptions.
+    # handling:
     del cli_kwargs["command"]
-    # Separate the arguments for the sub-command
+    # Separate the arguments for the subcommand:
     prunerr_dests = {
         action.dest for action in parser._actions  # pylint: disable=protected-access
     }
@@ -130,14 +129,14 @@ def _main(args=None):
             command_kwargs[dest] = value
             del shared_kwargs[dest]
 
-    # Configure logging for CLI usage
+    # Configure logging for command-line usage:
     config_cli_logging(**shared_kwargs)
     shared_kwargs.pop("log_level", None)
 
-    # Delegate to the function for the sub-command CLI argument
-    logger.debug("Running %r sub-command", parsed_args.command.__name__)
-    # Sub-commands may return a result to be pretty printed, or handle output themselves
-    # and return nothing.
+    # Delegate to the function for the subcommand command-line argument:
+    logger.debug("Running %r subcommand", parsed_args.command.__name__)
+    # subcommands can return a result to pretty print, or handle output themselves and
+    # return nothing:
     result = parsed_args.command(**command_kwargs)
     if result is not None:
         json.dump(result, sys.stdout, indent=2)

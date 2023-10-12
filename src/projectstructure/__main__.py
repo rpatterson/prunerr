@@ -7,7 +7,7 @@
 # PYTHON_ARGCOMPLETE_OK
 # https://kislyuk.github.io/argcomplete/#global-completion
 """
-Execute CLI via Python's `-m` option.
+Run from the command-line by using Python's `-m` option.
 """
 
 import sys

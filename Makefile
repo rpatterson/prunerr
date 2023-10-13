@@ -456,10 +456,10 @@ $(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
 # Bootstrap the right version of Tox for this checkout:
-./.tox/bootstrap/bin/tox: ./.tox/bootstrap/bin/pip
-	"$(<)" install "$(@:.tox/bootstrap/bin/%=%)"
-./.tox/bootstrap/bin/pip: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
-	python3 -m venv "$(@:%/bin/pip=%/)"
+./.tox/bootstrap/bin/tox: ./build-host/requirements.txt.in ./.tox/bootstrap/bin/activate
+	"./.tox/bootstrap/bin/pip" install --force-reinstall -r "$(<)"
+./.tox/bootstrap/bin/activate: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+	python3 -m venv "$(@:%/bin/activate=%/)"
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one

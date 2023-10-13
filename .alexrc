@@ -5,6 +5,7 @@
     "failed",
     "host-hostess",
     "hostesses-hosts",
-    "kill"
+    "kill",
+    "dummy"
   ]
 }

@@ -132,10 +132,11 @@ and support. Report any issues you have or better yet submit a PR with correctio
      The preceding plus GitLab CI/CD pipelines that run tests and linters as CI and
      publish releases from ``develop`` and ``main`` as CD.
 
-   Don't use the ``develop`` or ``main`` branches in your project. Template developers
-   use those branches to test the release process. They contain bumped versions, release
-   notes, and other release artifacts that maintainers shouldn't merge into real
-   projects.
+   It's important to use one of the preceding branches to merge into your project and
+   *not* the ``develop`` or ``main`` branches from the template. Template developers use
+   those branches to test the release process. They contain bumped versions, release
+   notes, and other release artifacts that real projects shouldn't merge into their code
+   or history.
 
 #. Merge into your project:
 

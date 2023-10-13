@@ -12,6 +12,7 @@ type
 [Mm]ake
 MAKE
 mkdir
+GNU
 gnu
 cz
 shell
@@ -19,7 +20,9 @@ master
 HEAD
 VCS
 CI
+ci
 CD
+cd
 CI/CD
 free
 formatter
@@ -33,3 +36,13 @@ PHONY
 stdin
 stdout
 stderr
+admin
+touch
+HOME
+home
+CMD
+TTY
+allows
+yaml
+kill
+[Gg]it

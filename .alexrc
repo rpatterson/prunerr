@@ -1,3 +1,10 @@
 {
-  "allow": ["master", "failures", "host-hostess"]
+  "allow": [
+    "master",
+    "failures",
+    "failed",
+    "host-hostess",
+    "hostesses-hosts",
+    "kill"
+  ]
 }

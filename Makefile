@@ -55,6 +55,9 @@ USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 export CHECKOUT_DIR=$(PWD)
+# Managed user-specific directory out of the checkout:
+# https://specifications.freedesktop.org/basedir-spec/0.8/ar01s03.html
+STATE_DIR=$(HOME)/.local/state/$(PROJECT_NAME)
 TZ=Etc/UTC
 ifneq ("$(wildcard /usr/share/zoneinfo/)","")
 TZ=$(shell \
@@ -139,7 +142,7 @@ endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
-export PATH:=./.tox/bootstrap/bin:$(PATH)
+export PATH:=$(STATE_DIR)/bin:$(PATH)
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
@@ -220,8 +223,7 @@ run: build-docker ./.env.~out~
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env.~out~ \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+build: ./.git/hooks/pre-commit ./.env.~out~ $(STATE_DIR)/log/host-install.log \
 		./var/log/npm-install.log build-docker
 
 .PHONY: build-pkgs
@@ -236,11 +238,11 @@ build-docs: build-docs-html
 
 .PHONY: build-docs-watch
 ### Serve the Sphinx documentation with live updates
-build-docs-watch: ./.tox/bootstrap/bin/tox
+build-docs-watch: $(STATE_DIR)/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
-build-docs-%: ./.tox/bootstrap/bin/tox
+build-docs-%: $(STATE_DIR)/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
@@ -336,8 +338,8 @@ test-local:
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log build-docs test-lint-prose
+test-lint: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log build-docs \
+		test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -347,8 +349,8 @@ test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/vale-sync.log ./.vale.ini ./styles/code.ini
+test-lint-prose: $(STATE_DIR)/log/host-install.log ./var/log/vale-sync.log ./.vale.ini \
+		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z |
@@ -396,9 +398,8 @@ test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./.tox/bootstrap/bin/tox ./var-docker/log/build-devel.log ./.env.~out~
+test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
+		./var-docker/log/build-devel.log ./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -446,7 +447,7 @@ release: release-pkgs release-docker
 
 .PHONY: release-pkgs
 ### Publish installable packages if conventional commits require a release.
-release-pkgs: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+release-pkgs: $(STATE_DIR)/log/host-install.log
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -479,10 +480,9 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		./var/log/git-remotes.log \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var-docker/log/build-devel.log ./.env.~out~
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) ./var/log/git-remotes.log \
+		$(STATE_DIR)/log/host-install.log ./var-docker/log/build-devel.log \
+		./.env.~out~
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -548,8 +548,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log
+devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
@@ -571,7 +570,7 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: ./.tox/bootstrap/bin/tox
+devel-upgrade: $(STATE_DIR)/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
@@ -649,10 +648,10 @@ endif
 	    $(PROJECT_NAME)-devel mkdir -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
 	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "./.local/var/log/$(PROJECT_NAME)-host-install.log" |
+	    "./.local/state/$(PROJECT_NAME)/log/host-install.log" |
 	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
 	        $(PROJECT_NAME)-devel tee -a \
-	        "./.local/var/log/$(PROJECT_NAME)-host-install.log" >"/dev/null"
+	        "./.local/state/$(PROJECT_NAME)/log/host-install.log" >"/dev/null"
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
@@ -692,16 +691,16 @@ $(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
 # Bootstrap the right version of Tox for this checkout:
-./.tox/bootstrap/bin/tox: ./.tox/bootstrap/bin/pip
-	"$(<)" install "$(@:.tox/bootstrap/bin/%=%)"
-./.tox/bootstrap/bin/pip: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
-	python3 -m venv "$(@:%/bin/pip=%/)"
+$(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate
+	"$(STATE_DIR)/bin/pip" install --force-reinstall -r "$(<)"
+$(STATE_DIR)/bin/activate: $(STATE_DIR)/log/host-install.log
+	python3 -m venv "$(@:%/bin/activate=%/)"
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh
+$(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
 
@@ -738,7 +737,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
@@ -747,8 +746,8 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(MAKE) "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
-./var/log/vale-sync.log: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./.env.~out~ ./.vale.ini ./styles/code.ini
+./var/log/vale-sync.log: $(STATE_DIR)/log/host-install.log ./.env.~out~ ./.vale.ini \
+		./styles/code.ini
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
@@ -795,7 +794,7 @@ define expand_template=
 if ! which envsubst
 then
     mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install.sh >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+    ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

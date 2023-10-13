@@ -54,7 +54,6 @@ on:
   pull_request: {}
 
 jobs:
-
   build-test:
     runs-on: "ubuntu-latest"
     container:
@@ -66,7 +65,6 @@ jobs:
       checks: "write"
     name: "build-test"
     steps:
-
       # Shared/common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"

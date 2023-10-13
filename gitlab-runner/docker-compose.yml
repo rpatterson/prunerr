@@ -8,7 +8,6 @@
 version: "3.8"
 
 services:
-
   # Conserve shared runner minutes, run GitLab CI/CD jobs locally:
   gitlab-runner:
     image: "gitlab/gitlab-runner"

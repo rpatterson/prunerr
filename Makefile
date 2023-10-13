@@ -52,6 +52,9 @@ USER_FULL_NAME=$(USER_NAME)
 endif
 USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export CHECKOUT_DIR=$(PWD)
+# Managed user-specific directory out of the checkout:
+# https://specifications.freedesktop.org/basedir-spec/0.8/ar01s03.html
+STATE_DIR=$(HOME)/.local/state/$(PROJECT_NAME)
 
 # Values derived from Version Control Systems (VCS):
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
@@ -166,8 +169,7 @@ all: build
 
 .PHONY: build
 ### Perform any necessary local set-up common to most operations.
-build: ./.git/hooks/pre-commit ./.env.~out~ \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+build: ./.git/hooks/pre-commit ./.env.~out~ $(STATE_DIR)/log/host-install.log \
 		./var/log/npm-install.log
 
 .PHONY: build-pkgs
@@ -201,8 +203,8 @@ test: test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log build-docs test-lint-prose
+test-lint: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log build-docs \
+		test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -212,8 +214,8 @@ test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/vale-sync.log ./.vale.ini ./styles/code.ini
+test-lint-prose: $(STATE_DIR)/log/host-install.log ./var/log/vale-sync.log ./.vale.ini \
+		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z |
@@ -281,7 +283,7 @@ test-clean:
 
 .PHONY: release
 ### Publish installable packages if conventional commits require a release.
-release: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+release: $(STATE_DIR)/log/host-install.log
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -292,7 +294,7 @@ endif
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+		$(STATE_DIR)/log/host-install.log
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -356,8 +358,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var/log/npm-install.log
+devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
@@ -458,14 +459,14 @@ $(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
 # Bootstrap the right version of Tox for this checkout:
 ./.tox/bootstrap/bin/tox: ./build-host/requirements.txt.in ./.tox/bootstrap/bin/activate
 	"./.tox/bootstrap/bin/pip" install --force-reinstall -r "$(<)"
-./.tox/bootstrap/bin/activate: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+./.tox/bootstrap/bin/activate: $(STATE_DIR)/log/host-install.log
 	python3 -m venv "$(@:%/bin/activate=%/)"
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh
+$(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
 
@@ -487,7 +488,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
@@ -496,8 +497,8 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(MAKE) "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
-./var/log/vale-sync.log: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./.env.~out~ ./.vale.ini ./styles/code.ini
+./var/log/vale-sync.log: $(STATE_DIR)/log/host-install.log ./.env.~out~ ./.vale.ini \
+		./styles/code.ini
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
@@ -531,7 +532,7 @@ define expand_template=
 if ! which envsubst
 then
     mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install.sh >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+    ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

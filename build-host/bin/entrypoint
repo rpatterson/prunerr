@@ -19,9 +19,6 @@ fi
 
 
 main() {
-    # The build host image depends on the baked in `HOME` directory for the installed
-    # host requirements:
-    export HOME=/home/runner
     # Signal to `$ make` that the image baked in the host requirements and don't need
     # reinstalling:
     touch "${HOME}/.local/var/log/project-structure-host-install.log"

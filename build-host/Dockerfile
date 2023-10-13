@@ -31,8 +31,10 @@ ARG PROJECT_NAME=project-structure
 
 # Find the same home directory even when run as another user, for example `root`:
 ENV HOME="/home/runner"
-# Add user installs to PATH
-ENV PATH="${HOME}/.local/bin:${PATH}"
+
+# Reflect that the container image already has all build dependencies installed:
+RUN mkdir -pv "${HOME}/.local/var/log/" && \
+    date >"${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]

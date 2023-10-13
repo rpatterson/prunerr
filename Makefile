@@ -130,7 +130,7 @@ endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
-export PATH:=./.tox/bootstrap/bin:$(PATH)
+export PATH:=$(STATE_DIR)/bin:$(PATH)
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
@@ -183,11 +183,11 @@ build-docs: build-docs-html
 
 .PHONY: build-docs-watch
 ### Serve the Sphinx documentation with live updates
-build-docs-watch: ./.tox/bootstrap/bin/tox
+build-docs-watch: $(STATE_DIR)/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
-build-docs-%: ./.tox/bootstrap/bin/tox
+build-docs-%: $(STATE_DIR)/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
@@ -240,7 +240,7 @@ test-debug:
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) ./.tox/bootstrap/bin/tox
+test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -380,7 +380,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: ./.tox/bootstrap/bin/tox
+devel-upgrade: $(STATE_DIR)/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
@@ -457,9 +457,9 @@ $(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
 # Bootstrap the right version of Tox for this checkout:
-./.tox/bootstrap/bin/tox: ./build-host/requirements.txt.in ./.tox/bootstrap/bin/activate
-	"./.tox/bootstrap/bin/pip" install --force-reinstall -r "$(<)"
-./.tox/bootstrap/bin/activate: $(STATE_DIR)/log/host-install.log
+$(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate
+	"$(STATE_DIR)/bin/pip" install --force-reinstall -r "$(<)"
+$(STATE_DIR)/bin/activate: $(STATE_DIR)/log/host-install.log
 	python3 -m venv "$(@:%/bin/activate=%/)"
 
 # Install all tools required by recipes installed outside the checkout on the

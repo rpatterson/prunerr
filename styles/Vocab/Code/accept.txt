@@ -6,9 +6,9 @@ pylint
 disable
 invalid
 type
-Code
-code
+[Cc]ode
 [Ff]ail
+[Ff]ailed
 [Mm]ake
 MAKE
 mkdir
@@ -28,9 +28,8 @@ I
 FIXME
 TODO
 PHONY
-ensure
-Tox
-tox
+[Ee]nsure
+[Tt]ox
 stdin
 stdout
 stderr

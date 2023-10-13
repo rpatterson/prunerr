@@ -295,7 +295,7 @@ endif
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
 build-docker-build: ./Dockerfile \
-		$(HOME)/.local/var/log/docker-multi-platform-host-install.log \
+		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
@@ -458,7 +458,7 @@ endif
 .PHONY: release-docker
 ### Publish all container images to all container registries.
 release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
-		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
+		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # native images built before into the manifests:
 	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
@@ -645,13 +645,15 @@ endif
 	    build-docker-build | tee -a "$(@)"
 # Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
 	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	    $(PROJECT_NAME)-devel mkdir -pv "./.local/var/log/"
+	    $(PROJECT_NAME)-devel mkdir -pv \
+	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/"
 	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
 	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "./.local/state/$(PROJECT_NAME)/log/host-install.log" |
+	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" |
 	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
 	        $(PROJECT_NAME)-devel tee -a \
-	        "./.local/state/$(PROJECT_NAME)/log/host-install.log" >"/dev/null"
+	        "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" \
+	        >"/dev/null"
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
@@ -684,7 +686,7 @@ endif
 	$(MAKE) "$(HOME)/.npmrc"
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
-$(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
+$(HOME)/.npmrc: $(STATE_DIR)/log/host-install.log
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
@@ -705,7 +707,7 @@ $(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
 	"$(<)" |& tee -a "$(@)"
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
-$(HOME)/.local/var/log/docker-multi-platform-host-install.log:
+$(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -793,7 +795,7 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 define expand_template=
 if ! which envsubst
 then
-    mkdir -pv "$(HOME)/.local/var/log/"
+    mkdir -pv "$(STATE_DIR)/log/"
     ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]

@@ -21,7 +21,7 @@ fi
 main() {
     # Signal to `$ make` that the image baked in the host requirements and don't need
     # reinstalling:
-    touch "${HOME}/.local/var/log/project-structure-host-install.log"
+    touch "${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log"
 
     # Run as the user from the enironment, adding that user if necessary
     if [ -n "${PUID:-}" ]

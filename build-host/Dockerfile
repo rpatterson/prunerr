@@ -33,8 +33,8 @@ ARG PROJECT_NAME=project-structure
 ENV HOME="/home/runner"
 
 # Reflect that the container image already has all build dependencies installed:
-RUN mkdir -pv "${HOME}/.local/var/log/" && \
-    date >"${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
+RUN mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
+    date >"${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]

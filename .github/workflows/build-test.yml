@@ -4,18 +4,27 @@
 
 name: "Build and Test"
 
-# TEMPLATE: If using GitHub Actions, then add the following secrets to the project:
+# TEMPLATE: If the project uses GitHub Actions, then add the following secrets to the
+# project:
+#
 # - `CODECOV_TOKEN`:
 #   Add your project to https://app.codecov.io/gl and use the generated token
+#
 # - `DOCKER_PASS`:
 #   A Docker Hub Personal Access Token
+#
 # - `GPG_PASSPHRASE`:
 #   See the comments towards the bottom of the `./Makefile`
+#
 # - `GPG_SIGNING_PRIVATE_KEY`:
 #   See the comments towards the bottom of the `./Makefile`
+#
 # - `PROJECT_GITHUB_PAT`:
 #   A GitHub "Classic" Personal Access Token with scopes: `repo`, `workflow`,
 #   `packages`, and `project`
+#
+# Add them through the web UI or use the GitHub command-line tool:
+# https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
 
 env:
   PUID: "1001"
@@ -23,13 +32,10 @@ env:
   # Project specific values:
   PROJECT_NAMESPACE: "rpatterson"
   PROJECT_NAME: "project-structure"
-  # Requires the secrets to be added to GitHub either through the web UI or the
-  # GitHub CLI tool:
-  # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
   GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
   GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
   DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-  # Enable the GitHub CLI
+  # Enable the GitHub command-line:
   PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
   # Tell the `./Makefile` about GitHub specific environment details:
   CI_IS_FORK: >-
@@ -43,7 +49,7 @@ env:
     }}
 
 on:
-  # Only run on branches, not tags:
+  # Run only on branches, not tags:
   # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
   push:
     branches:
@@ -65,10 +71,10 @@ jobs:
       checks: "write"
     name: "build-test"
     steps:
-      # Shared/common set up:
+      # Shared or common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      # TODO: Debug stale venv issues and restore cache once fixed
+      # TODO: Debug stale venv issues and restore cache after fixing.
       - name: "Change checkout owner"
         # https://stackoverflow.com/a/58474340/624787
         run: >-
@@ -92,7 +98,7 @@ jobs:
       # https://github.com/marketplace/actions/test-reporter#example
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
-        # run this step even if previous step failed
+        # run this step even if preceding step failed
         if: >-
           (success() || failure())
           && (

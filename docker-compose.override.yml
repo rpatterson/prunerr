@@ -141,7 +141,7 @@ services:
 
   ## Containers related to CI/CD:
 
-  # The container in which CI/CD is run:
+  # The container in which CI/CD runs:
   build-host:
     image: "\
       ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/project-structure\

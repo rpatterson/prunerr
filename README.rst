@@ -25,7 +25,7 @@ Project Structure foundation or template
           :alt: GitLab coverage report
 	  :target: https://gitlab.com/rpatterson/project-structure/-/commits/main
        .. figure:: https://img.shields.io/gitlab/stars/rpatterson/project-structure?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
-	  :alt: GitLab repo stars
+	  :alt: GitLab repository stars
 	  :target: https://gitlab.com/rpatterson/project-structure
 
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/project-structure?logo=github
@@ -38,7 +38,7 @@ Project Structure foundation or template
           :alt: Codecov test coverage
 	  :target: https://app.codecov.io/github/rpatterson/project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/project-structure?logo=github
-	  :alt: GitHub repo stars
+	  :alt: GitHub repository stars
 	  :target: https://github.com/rpatterson/project-structure/
 
      - .. figure:: https://img.shields.io/docker/v/merpatterson/project-structure?sort=semver&logo=docker
@@ -81,9 +81,9 @@ includes:
   push
 - Targets that automate releases
 - Targets that automate dependency upgrades
-- `Makefile`_ recipes/targets used for both local development and on CI/CD platforms
-- A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes/targets
-- A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
+- `Makefile`_ recipes and targets used for both local development and on CI/CD platforms
+- A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes and targets
+- A `GitHub Actions`_ workflow integrating those CI/CD recipes and targets
 - `Organize source by feature`_, for example ``\./src/foo/(template|view|model)\..*``,
   rather than by source type, for example
   ``\./src/(templates|views|models)/foo\..*``.
@@ -111,14 +111,13 @@ variants. Real projects can also merge those changes.
 Template usage
 ****************************************************************************************
 
-These steps offer a rough guide for how to use this template in your project. They
-haven't been widely tested. Such tests are meta and wasteful to create and
-support. Report any issues you have or better yet submit a PR with corrections.
+These steps offer a rough guide for how to use this template in your project. Template
+developers don't test this process widely. Such tests are meta and wasteful to create
+and support. Report any issues you have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
-   Is your project a command-line tool? A web app? Which programming language? Which
-   project hosting provider or CI platform? Pick the branch for your project:
+   Pick the branch for your project type:
 
    - ``(py|js|ruby|…)``:
 
@@ -130,13 +129,13 @@ support. Report any issues you have or better yet submit a PR with corrections.
 
    - ``ci``:
 
-     The above plus GitLab CI/CD pipelines that run tests and linters as CI and
+     The preceding plus GitLab CI/CD pipelines that run tests and linters as CI and
      publish releases from ``develop`` and ``main`` as CD.
 
-   Do not use the ``develop`` or ``main`` branches in your project as those branches
-   are used to test the CI/CD automatic releases process and as such contain bumped
-   versions, release notes, and other release artifacts that shouldn't be merged into
-   real projects.
+   Don't use the ``develop`` or ``main`` branches in your project. Template developers
+   use those branches to test the release process. They contain bumped versions, release
+   notes, and other release artifacts that maintainers shouldn't merge into real
+   projects.
 
 #. Merge into your project:
 
@@ -206,8 +205,8 @@ Use a package manager for the project language to install locally::
 Docker Container Image
 ========================================================================================
 
-The recommended way to use the container image is by using `Docker Compose`_. See `the
-example ./docker-compose.yml file`_. Write your configuration and run the container::
+`Docker Compose`_ is the recommended way to use the container image. See `the example
+./docker-compose.yml file`_. Write your configuration and run the container::
 
   $ docker compose up
 
@@ -221,7 +220,7 @@ Use image variant tags to control when the image updates. Releases publish tags 
 branch and for major and minor versions. For example, to keep up to date with a specific
 branch, use a tag such as
 ``registry.gitlab.com/rpatterson/project-structure:main``. Releases from ``develop``
-publish pre-releases. Releases from ``main`` publish final releases.  Releases from
+publish pre-releases. Releases from ``main`` publish final releases. Releases from
 ``main`` also publish tags without a branch, for example
 ``registry.gitlab.com/rpatterson/project-structure``. Releases from ``main`` also
 publish tags for the major and minor version, for example

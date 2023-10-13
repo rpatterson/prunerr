@@ -129,7 +129,8 @@ VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
 ifeq ($(VCS_COMPARE_BRANCH),)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 endif
-# Under CI, check commits and release notes against the branch to be merged into:
+# Under CI, verify commits and release notes by comparing this branch with the branch
+# maintainers would merge this branch into:
 CI=false
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),develop)
@@ -165,8 +166,8 @@ endif
 ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
-# Determine the sequence of branches to find closes existing build artifacts, such as
-# docker images:
+# The sequence of branches from which to find closest existing build artifacts, such as
+# container images:
 VCS_BRANCHES=$(VCS_BRANCH)
 ifneq ($(VCS_BRANCH),main)
 ifneq ($(VCS_BRANCH),develop)
@@ -233,7 +234,7 @@ ifeq ($(CI),true)
 TEMPLATE_IGNORE_EXISTING=true
 endif
 GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
-# Determine if this checkout is a fork of the upstream project:
+# Is this checkout a fork of the upstream project?:
 CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
 USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
@@ -260,7 +261,8 @@ DOCKER_REGISTRIES=GITHUB
 DOCKER_IMAGES+=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
 endif
 endif
-# Take GitHub auth from env under GitHub actions but from secrets on other hosts:
+# Take GitHub auth from the environment under GitHub actions but from secrets on other
+# project hosts:
 GITHUB_TOKEN=
 PROJECT_GITHUB_PAT=
 ifeq ($(GITHUB_TOKEN),)
@@ -350,7 +352,7 @@ build: ./.git/hooks/pre-commit ./.env.~out~ \
 		./var/log/npm-install.log build-docker
 
 .PHONY: build-pkgs
-### Ensure the built package is current.
+### Ensure a current built package.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/log/build-devel.log
 	true "TEMPLATE: Always specific to the project type"
@@ -562,7 +564,7 @@ test-push: $(VCS_FETCH_TARGETS) \
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),main)
-# On `main`, compare with the previous commit on `main`
+# On `main`, compare with the preceding commit on `main`:
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
 endif
 endif
@@ -621,10 +623,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e ./var/log/gpg-import.log
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
-# The VCS remote should reflect the release before the release is published to ensure
-# that a published release is never *not* reflected in VCS.  Also ensure the tag is in
-# place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
-# well:
+# Ensure VCS has captured all the effects of building the release:
 	$(MAKE) -e test-clean
 	true "TEMPLATE: Always specific to the project type"
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
@@ -661,7 +660,7 @@ endif
 	$(MAKE) -e build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` using the `./README.rst` reStructuredText version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version:
 ifeq ($(VCS_BRANCH),main)
 	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull --quiet pandoc docker-pushrm
@@ -712,9 +711,9 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-# Capture the release notes for *just this* release for creating the GitHub release.
+# Capture the release notes for *only this* release for creating the GitHub release.
 # Have to run before the real `$ towncrier build` run without the `--draft` option
-# because after that the `newsfragments` will have been deleted.
+# because it deletes the `newsfragments`.
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
@@ -725,7 +724,7 @@ endif
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-# Build and stage the release notes to be commited by `$ cz bump`:
+# Build and stage the release notes that `$ cz bump` commits:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    $(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
@@ -744,13 +743,13 @@ endif
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Ensure the tag is available for creating the GitHub release below but push *before* to
-# GitLab to avoid a race with repository mirrorying:
+# Make the tag available for creating the following GitHub release but push to GitHub
+# *before* pushing to GitLab to avoid a race with repository mirroring:
 	git push --no-verify "github" tag "v$${next_version}"
 endif
 endif
 ifeq ($(CI),true)
-# Push just this tag to avoid clashes with any previously failed release:
+# Push only this tag to avoid clashes with any preceding failed release:
 	git push --no-verify "$(VCS_REMOTE)" tag "v$${next_version}"
 # Also push the branch:
 	git push --no-verify "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
@@ -815,7 +814,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)
-# Don't duplicate the CI run from the push below:
+# Don't duplicate the CI run from the following push:
 	git_push_args+=" --no-verify"
 endif
 	git commit $${git_commit_args} -m \
@@ -823,9 +822,9 @@ endif
 # Fail if upgrading left un-tracked files in VCS:
 	$(MAKE) -e "test-clean"
 ifeq ($(CI),true)
-# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
-# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
-# multiple `pushUrl`:
+# Push any upgrades to the remote for review. Specify both the ref and the expected ref
+# for `--force-with-lease=` to support pushing to more than one mirror or remote by
+# using more than one `pushUrl`:
 	git_push_args="--no-verify"
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
@@ -965,7 +964,7 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 
 ./var/log/codecov-install.log:
 	mkdir -pv "$(dir $(@))"
-# Install the code test coverage publishing tool
+# Install the code test coverage publishing tool:
 	(
 	    if ! which codecov
 	    then
@@ -973,16 +972,16 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 # https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
 	        if which brew
 	        then
-# Mac OS X
+# macOS:
 	            curl --output-dir ~/.local/bin/ -Os \
 	                "https://uploader.codecov.io/latest/macos/codecov"
 	        elif which apk
 	        then
-# Alpine
+# Alpine:
 	            wget --directory-prefix ~/.local/bin/ \
 	                "https://uploader.codecov.io/latest/alpine/codecov"
 	        else
-# Other Linux distributions
+# Other Linux distributions:
 	            curl --output-dir ~/.local/bin/ -Os \
 	                "https://uploader.codecov.io/latest/linux/codecov"
 	        fi
@@ -991,7 +990,7 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	    if ! which codecov
 	    then
 	        set +x
-	        echo "ERROR: CodeCov CLI tool still not on PATH"
+	        echo "ERROR: CodeCov command-line tool still not on PATH"
 	        false
 	    fi
 	) | tee -a "$(@)"
@@ -1051,7 +1050,7 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Also add a fetch remote for the `$ gh ...` CLI tool to detect:
+# Also add a fetch remote for the `$ gh` command-line tool to detect:
 	if ! git remote get-url "github" >"/dev/null"
 	then
 	    echo "INFO:Adding remote 'github'"
@@ -1066,7 +1065,7 @@ else ifneq ($(CI_IS_FORK),true)
 endif
 endif
 	set -x
-# Fail fast if there's still no push access
+# Fail fast if there's still no push access:
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
 ./var/log/docker-login-DOCKER.log:
@@ -1096,8 +1095,8 @@ endif
 	    false
 	fi
 	date | tee -a "$(@)"
-# TEMPLATE: Connect the GitHub container registry to the repository using the `Connect`
-# button at the bottom of the container registry's web UI.
+# TEMPLATE: Connect the GitHub container registry to the repository by using the
+# `Connect` button at the bottom of the container registry's web UI.
 ./var/log/docker-login-GITHUB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
@@ -1112,29 +1111,30 @@ endif
 	fi
 	date | tee -a "$(@)"
 
-# GPG signing key creation and management in CI
+# GNU Privacy Guard (GPG) signing key creation and management in CI:
 export GPG_PASSPHRASE=
 GPG_SIGNING_PRIVATE_KEY=
 ./var/ci-cd-signing-subkey.asc:
-# We need a private key in the CI/CD environment for signing release commits and
-# artifacts.  Use a subkey so that it can be revoked without affecting your main key.
-# This recipe captures what I had to do to export a private signing subkey.  It's not
-# widely tested so it should probably only be used for reference.  It worked for me but
-# the risk is leaking your main private key so double and triple check all your
-# assumptions and results.
-# 1. Create a signing subkey with a NEW, SEPARATE passphrase:
+# Signing release commits and artifacts requires a GPG private key in the CI/CD
+# environment. Use a subkey that you can revoke without affecting your main key. This
+# recipe captures what I had to do to export a private signing subkey. It's not widely
+# tested so you should probably only use this for reference. It worked for me but this
+# process risks leaking your main private key so confirm all your assumptions and
+# results well.
+#
+# 1. Create a signing subkey with a *new*, *separate* passphrase:
 #    https://wiki.debian.org/Subkeys#How.3F
 # 2. Get the long key ID for that private subkey:
-#	gpg --list-secret-keys --keyid-format "LONG"
-# 3. Export *just* that private subkey and verify that the main secret key packet is the
+#	gpg --list-secret-keys --keyid-format "long"
+# 3. Export *only* that private subkey and verify that the main secret key packet is the
 #    GPG dummy packet and that the only other private key included is the intended
 #    subkey:
 #	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
 #	    gpg --list-packets
 # 4. Export that key as text to a file:
 	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" >"$(@)"
-# 5. Confirm that the exported key can be imported into a temporary GNU PG directory and
-#    that temporary directory can then be used to sign files:
+# 5. Confirm that a temporary GNU PG directory can import the exported key and that it
+#    can sign files:
 #	gnupg_homedir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
 #	printenv 'GPG_PASSPHRASE' >"$${gnupg_homedir}/.passphrase"
 #	gpg --homedir "$${gnupg_homedir}" --batch --import <"$(@)"
@@ -1153,7 +1153,7 @@ ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
-# "Unlock" the signing key for the remainder of this CI run:
+# "Unlock" the signing key for the rest of this CI run:
 	printenv 'GPG_PASSPHRASE' >"./var/ci-cd-signing-subkey.passphrase"
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
@@ -1170,8 +1170,8 @@ endif
 
 # TEMPLATE: Optionally, use the following command to generate a GitLab CI/CD runner
 # configuration, register it with your project, compare it with the template
-# prerequisite, apply the appropriate changes and then  run using `$ docker compose up
-# gitlab-runner`.  Particularly useful to conserve shared runner minutes:
+# prerequisite, apply the appropriate changes and then run by using `$ docker compose up
+# gitlab-runner`. Useful to conserve shared runner minutes:
 ./var/gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
 	docker compose run --rm gitlab-runner register \
 	    --url "https://gitlab.com/" --docker-image "docker" --executor "docker"

@@ -41,3 +41,10 @@ HOME
 home
 CMD
 TTY
+[Cc]odecov
+gh
+GPG
+gpg
+gpgconf
+agent
+dummy

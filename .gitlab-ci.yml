@@ -4,7 +4,8 @@
 
 # https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
 
-# TEMPLATE: If using GitLab CI/CD, then add the following secrets to the project:
+# TEMPLATE: If the project uses GitLab CI/CD, then add the following secrets to the
+# project:
 #
 # - `CODECOV_TOKEN`:
 #   Add your project to https://app.codecov.io/gl and use the generated token
@@ -20,17 +21,18 @@
 #
 # - `PROJECT_GITHUB_PAT`:
 #   A GitHub "Classic" Personal Access Token with scopes: `repo`, `workflow`,
-#   `packages`, and `project`. If using both GitLab CI/CD for releases and GitHub
-#   Actions as duplicate CI for tests, then configure repository mirroring in your
-#   GitLab project -> Settings -> Repository using the same token.
+#   `packages`, and `project`. If the project uses both GitLab CI/CD for releases and
+#   GitHub Actions as duplicate CI for tests, then configure repository mirroring in
+#   your GitLab project -> Settings -> Repository by using the same token.
 #
 # - `VCS_REMOTE_PUSH_URL`:
 #   A GitLab Personal or Project Access Token formatted as an HTTP authentication prefix
 #   to the hostname, e.g.:
 #     https://token-name:token-value@gitlab.com/rpatterson/project-structure.git
 #
-# All that can be masked should be.  All should be protected except `CODECOV_TOKEN` and
-# `DOCKER_PASS`.
+# Mask all except `GPG_SIGNING_PRIVATE_KEY`, which is too large to mask. Protect all
+# except `CODECOV_TOKEN` and `DOCKER_PASS` which contributors need to use CI to test
+# their work before maintainers merge into `develop` or `main`.
 
 variables:
   # Variables controlling behavior:
@@ -50,7 +52,7 @@ default:
     - "docker:dind"
   before_script:
     - "chown -R $PUID:$PGID ./"
-  # TODO: Debug stale venv issues and restore cache once fixed
+  # TODO: Debug stale venv issues and restore cache after fixing.
 
 stages:
   - "build-test"
@@ -182,13 +184,14 @@ release-version:
 # - `SCHEDULED_TARGETS=devel-upgrade-branch`
 # - `TEMPLATE_IGNORE_EXISTING=true`
 #
-# The `merge-upgrade` job will automatically merge `*-upgrade` branches when
-# `build-test` is successful, so add a protected branch rule for the `*-upgrade`
-# wildcard that allows force pushing.  The target branch for the scheduled pipeline thus
-# determines whether upgrade branches that pass CI will publish releases, pre-releases
-# for `develop` and final releases for `main`.
+# The `merge-upgrade` job automatically merges `*-upgrade` branches when `build-test`
+# succeeds, so add a protected branch rule for the `*-upgrade` wildcard that allows
+# force pushing. As such, the target branch for the scheduled pipeline determines
+# whether upgrade branches publish releases after passing CI, pre-releases for `develop`
+# and final releases for `main`.
 #
-# WARNING: Running this even just daily can easily exhaust the gitlab.com free quotas.
+# WARNING: Running this even no more often than every day can exhaust the gitlab.com
+# free quotas in the beginning of the month.
 
 scheduled:
   stage: "scheduled"

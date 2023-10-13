@@ -29,7 +29,10 @@ ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=project-structure
 
 # Find the same home directory even when run as another user, for example `root`:
+ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
+ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/runner"
+ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${PATH}"
 
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
@@ -52,8 +55,13 @@ RUN \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 
-# Reflect that the container image already has all build dependencies installed:
+# Reflect that the container image already has all build dependencies installed and
+# install tox locally:
+COPY [ "./requirements.txt.in", "${HOME}/.local/state/${PROJECT_NAME}/lib/" ]
 RUN mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
-    date >"${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log"
+    date >"${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log" && \
+    python3 -m venv "${HOME}/.local/state/${PROJECT_NAME}/" && \
+    "${HOME}/.local/state/${PROJECT_NAME}/bin/pip" install --force-reinstall -r \
+        "${HOME}/.local/state/${PROJECT_NAME}/lib/requirements.txt.in"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.base.name="docker.io/library/buildpack-deps"
 
 # Find the same home directory even when run as another user, for example `root`.
 ENV HOME="/home/${PROJECT_NAME}"
-WORKDIR "/home/${PROJECT_NAME}/"
+WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint" ]
 
 # Put the `ENTRYPOINT` on the `$PATH`

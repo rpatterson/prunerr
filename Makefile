@@ -2,34 +2,36 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Development, build and maintenance tasks:
+## Development, build, and maintenance tasks:
 #
-# To ease discovery for new contributors, variables that act as options affecting
-# behavior are at the top.  Then skip to `## Top-level targets:` below to find targets
-# intended for use by developers.  The real work, however, is in the recipes for real
-# targets that follow.  If making changes here, please start by reading the philosophy
-# commentary at the bottom of this file.
+# To ease discovery for contributors, place option variables affecting behavior at the
+# top. Skip down to `## Top-level targets:` to find targets intended for use by
+# developers. The recipes for real targets that follow the top-level targets do the real
+# work. If making changes here, start by reading the philosophy commentary at the bottom
+# of this file.
 
 # Project specific values:
 export PROJECT_NAMESPACE=rpatterson
 export PROJECT_NAME=project-structure
-
-# Variables used as options to control behavior:
-export TEMPLATE_IGNORE_EXISTING=false
+# TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
+NPM_SCOPE=$(PROJECT_NAMESPACE)
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 
+# Option variables that control behavior:
+export TEMPLATE_IGNORE_EXISTING=false
+
 
 ## "Private" Variables:
 
-# Variables that aren't likely to be of concern those just using and reading top-level
-# targets.  Mostly variables whose values are derived from the environment or other
-# values.  If adding a variable whose value isn't a literal constant or intended for use
-# on the CLI as an option, add it to the appropriate grouping below.  Unfortunately,
-# variables referenced in targets or prerequisites need to be defined above those
-# references (as opposed to references in recipes), which means we can't move these
-# further below for readability and discover.
+# Variables not of concern those running and reading top-level targets. These variables
+# most often derive from the environment or other values. Place variables holding
+# literal constants or option variables intended for use on the command-line towards the
+# top. Otherwise, add variables to the appropriate following grouping. Make requires
+# defining variables referenced in targets or prerequisites before those references, in
+# contrast with references in recipes. As a result, the Makefile can't place these
+# further down for readability and discover.
 
 ### Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
@@ -65,7 +67,7 @@ endif
 export TZ
 export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
 
-# Values derived from VCS/git:
+# Values derived from Version Control Systems (VCS):
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
 CI_COMMIT_BRANCH=
 GITHUB_REF_TYPE=
@@ -89,14 +91,14 @@ endif
 ifeq ($(VCS_LOCAL_BRANCH),)
 # Guess branch name from tag:
 ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$'),)
-# Final release, should be from main:
+# Publish final releases from the `main` branch:
 VCS_LOCAL_BRANCH=main
 else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$$'),)
-# Pre-release, should be from develop:
+# Publish pre-releases from the `develop` branch:
 VCS_LOCAL_BRANCH=develop
 endif
 endif
-# Reproduce what we need of git's branch and remote configuration and logic:
+# Reproduce Git branch and remote configuration and logic:
 VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")
 ifeq ($(VCS_CLONE_REMOTE),)
 VCS_CLONE_REMOTE=origin
@@ -114,11 +116,11 @@ VCS_UPSTREAM_REMOTE:=$(shell git config "checkout.defaultRemote")
 endif
 VCS_UPSTREAM_REF:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).merge")
 VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
-# Determine the best remote and branch for versioning data, e.g. `v*` tags:
+# Find the remote and branch for `v*` tags versioning data:
 VCS_REMOTE=$(VCS_PUSH_REMOTE)
 VCS_BRANCH=$(VCS_LOCAL_BRANCH)
 export VCS_BRANCH
-# Determine the best remote and branch for release data, e.g. conventional commits:
+# Find the remote and branch for conventional commits release data:
 VCS_COMPARE_REMOTE=$(VCS_UPSTREAM_REMOTE)
 ifeq ($(VCS_COMPARE_REMOTE),)
 VCS_COMPARE_REMOTE=$(VCS_PUSH_REMOTE)
@@ -135,15 +137,18 @@ VCS_COMPARE_BRANCH=main
 else ifneq ($(VCS_BRANCH),main)
 VCS_COMPARE_BRANCH=develop
 endif
-# If pushing to upstream release branches, get release data compared to the previous
+# If pushing to upstream release branches, get release data compared to the preceding
 # release:
 else ifeq ($(VCS_COMPARE_BRANCH),develop)
 VCS_COMPARE_BRANCH=main
 endif
 VCS_BRANCH_SUFFIX=upgrade
 VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX)=%)
+# Tolerate detached `HEAD`, such as during a rebase:
+VCS_FETCH_TARGETS=
+ifneq ($(VCS_BRANCH),)
 # Assemble the targets used to avoid redundant fetches during release tasks:
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
@@ -169,8 +174,10 @@ VCS_BRANCHES+=develop
 endif
 VCS_BRANCHES+=main
 endif
+endif
 
 # Run Python tools in isolated environments managed by Tox:
+export PATH:=./.tox/bootstrap/bin:$(PATH)
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
@@ -267,10 +274,10 @@ export GITHUB_TOKEN
 export PROJECT_GITHUB_PAT
 
 # Values used for publishing releases:
-# Safe defaults for testing the release process without publishing to the final/official
-# hosts/indexes/registries:
+# Safe defaults for testing the release process without publishing to the official
+# project hosting services, indexes, and registries:
 RELEASE_PUBLISH=false
-# Only publish releases from the `main` or `develop` branches:
+# Publish releases from the `main` or `develop` branches:
 GITHUB_RELEASE_ARGS=--prerelease
 # Only publish releases from the `main` or `develop` branches and only under the
 # canonical CI/CD platform:
@@ -284,9 +291,9 @@ RELEASE_PUBLISH=true
 endif
 DOCKER_PLATFORMS=
 ifeq ($(RELEASE_PUBLISH),true)
-# TEMPLATE: Choose the platforms on which your end-users need to be able to run the
-# image.  These default platforms should cover most common end-user platforms, including
-# modern Apple M1 CPUs, Raspberry Pi devices, etc.:
+# TEMPLATE: Choose the platforms on which your users run the image. These default
+# platforms should cover most common end-user platforms, including modern Apple M1 CPUs,
+# Raspberry Pi devices, and AWS Graviton instances:
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 endif
@@ -303,11 +310,14 @@ CI_REGISTRY_PASSWORD=
 export CI_REGISTRY_PASSWORD
 GH_TOKEN=
 
-# Override variable values if present in `./.env` and if not overridden on the CLI:
+# Override variable values if present in `./.env` and if not overridden on the
+# command-line:
 include $(wildcard .env)
 
-# Done with `$(shell ...)`, echo recipe commands going forward
+# Finished with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
+
+# <!--alex disable hooks-->
 
 
 ## Top-level targets:
@@ -337,21 +347,35 @@ run: build-docker ./.env.~out~
 ### Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ \
 		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		build-docker
+		./var/log/npm-install.log build-docker
 
 .PHONY: build-pkgs
 ### Ensure the built package is current.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/log/build-devel.log
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
+
+.PHONY: build-docs
+### Render the static HTML form of the Sphinx documentation
+build-docs: build-docs-html
+
+.PHONY: build-docs-watch
+### Serve the Sphinx documentation with live updates
+build-docs-watch: ./.tox/bootstrap/bin/tox
+	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
+
+.PHONY: build-docs-%
+build-docs-%: ./.tox/bootstrap/bin/tox
+	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	    "./docs/" "./build/docs/"
 
 ## Docker Build Targets:
 #
 # Strive for as much consistency as possible in development tasks between the local host
-# and inside containers.  To that end, most of the `*-docker` container target recipes
+# and inside containers. To that end, most of the `*-docker` container target recipes
 # should run the corresponding `*-local` local host target recipes inside the
-# development container.  Top level targets, like `test`, should run as much as possible
-# inside the development container.
+# development container. Top level targets, such as `test`, should run as much as
+# possible inside the development container.
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
@@ -369,7 +393,7 @@ $(DOCKER_REGISTRIES:%=build-docker-tags-%):
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
-# Only update tags end users may depend on to be stable from the `main` branch
+# Update tags users depend on to be stable from the `main` branch:
 	VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -379,7 +403,7 @@ ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${major_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)
 endif
-# This variant is the default used for tags such as `latest`
+# Use this variant as the default used for tags such as `latest`
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
@@ -456,18 +480,44 @@ test: test-lint test-docker-lint test-docker
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters.
 test-local:
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
-# Run non-code checks, e.g. documentation:
+test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/npm-install.log build-docs test-lint-prose
+# Run linters implemented in Python:
 	tox run -e "build"
+# Lint copyright and licensing:
+	docker compose run --rm -T "reuse"
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint
+
+.PHONY: test-lint-prose
+### Lint prose text for spelling, grammar, and style
+test-lint-prose: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/vale-sync.log ./.vale.ini ./styles/code.ini
+# Lint all markup files tracked in VCS with Vale:
+# https://vale.sh/docs/topics/scoping/#formats
+	git ls-files -co --exclude-standard -z |
+	    xargs -r -0 -t -- docker compose run --rm -T vale
+# Lint all source code files tracked in VCS with Vale:
+	git ls-files -co --exclude-standard -z |
+	    xargs -r -0 -t -- \
+	    docker compose run --rm -T vale --config="./styles/code.ini"
+# Lint source code files tracked in VCS but without extensions with Vale:
+	git ls-files -co --exclude-standard -z | grep -Ez '^[^.]+$$' |
+	    while read -d $$'\0'
+	    do
+	        cat "$${REPLY}" |
+	            docker compose run --rm -T vale --config="./styles/code.ini" \
+	                --ext=".pl"
+	    done
 
 .PHONY: test-debug
-### Run tests directly on the host and invoke the debugger on errors/failures.
+### Run tests directly on the system and start the debugger on errors or failures.
 test-debug:
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
@@ -479,7 +529,7 @@ test-docker: build-pkgs $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log 
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
 	fi
-# Ensure the end-user image runs successfully:
+# Test that the end-user image can run commands:
 	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME) true
 # Run from the development Docker container for consistency:
 	docker compose run $${docker_run_args} $(PROJECT_NAME)-devel \
@@ -505,10 +555,10 @@ test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test-push
-### Perform any checks that should only be run before pushing.
+### Verify commits before pushing to the remote.
 test-push: $(VCS_FETCH_TARGETS) \
 		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var-docker/log/build-devel.log ./.env.~out~
+		./.tox/bootstrap/bin/tox ./var-docker/log/build-devel.log ./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),main)
@@ -518,7 +568,7 @@ endif
 endif
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
-# Compare with the pre-release branch if this branch hasn't been pushed yet:
+# For a newly created branch not yet on the remote, compare with the pre-release branch:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
 	exit_code=0
@@ -526,7 +576,7 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
 	    $(TOX_EXEC_BUILD_ARGS) -- \
-	        python ./bin/cz-check-bump --compare-ref "$${vcs_compare_rev}"
+	        python ./bin/cz-check-bump.py --compare-ref "$${vcs_compare_rev}"
 	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -541,7 +591,7 @@ endif
 	fi
 
 .PHONY: test-clean
-### Confirm that the checkout is free of uncommitted VCS changes.
+### Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
 	if [ -n "$$(git status --porcelain)" ]
 	then
@@ -565,7 +615,7 @@ release: release-pkgs release-docker
 release-pkgs: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
 		./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~
-# Only release from the `main` or `develop` branches:
+# Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
@@ -576,7 +626,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 # place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
 # well:
 	$(MAKE) -e test-clean
-	true "TEMPLATE: Always specific to the type of project"
+	true "TEMPLATE: Always specific to the project type"
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 # Create a GitLab release
 	release_cli_args="--description ./NEWS-VERSION.rst"
@@ -600,7 +650,7 @@ endif
 release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
-# previously built native images into the manifests.
+# native images built before into the manifests:
 	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
 ifneq ($(DOCKER_PLATFORMS),)
 	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
@@ -619,7 +669,7 @@ ifeq ($(VCS_BRANCH),main)
 endif
 
 .PHONY: release-bump
-### Bump the package version if on a branch that should trigger a release.
+### Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 		./var/log/git-remotes.log \
 		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
@@ -630,21 +680,19 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
-# Ensure the local branch is updated to the forthcoming version bump commit:
+# Update the local branch to the forthcoming version bump commit:
 	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
-# Check if a release is required:
 	exit_code=0
 	if [ "$(VCS_BRANCH)" = "main" ] &&
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- python ./bin/get-base-version $$(
+	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version.py $$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	    )
 	then
-# Release a previous pre-release as final regardless of whether commits since then
-# require a release:
+# Make a final release from the last pre-release:
 	    true
 	else
-# Is a release required by conventional commits:
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- python ./bin/cz-check-bump || exit_code=$$?
+# Do the conventional commits require a release?:
+	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/cz-check-bump.py || exit_code=$$?
 	    if (( $$exit_code == 3 || $$exit_code == 21 ))
 	    then
 # No commits require a release:
@@ -671,14 +719,18 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
+# Assemble the release notes for this next version:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_ARGS) -qq -- \
+	    $(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
 # Build and stage the release notes to be commited by `$ cz bump`:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
+	    $(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
+# Bump the version in the NPM package metadata:
+	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
+	git add -- "./package*.json"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
 ifeq ($(VCS_BRANCH),main)
@@ -711,15 +763,31 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
-	true "TEMPLATE: Always specific to the type of project"
-	$(TOX_EXEC_BUILD_ARGS) -- reuse addheader -r --skip-unrecognised \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
+devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./var/log/npm-install.log
+	true "TEMPLATE: Always specific to the project type"
+# Add license and copyright header to files missing them:
+	git ls-files -co --exclude-standard -z |
+	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
+	while read -d $$'\0'
+	do
+	    if ! (
+	        test -e  "$${REPLY}.license" ||
+	        grep -Eq 'SPDX-License-Identifier:' "$${REPLY}"
+	    )
+	    then
+	        echo "$${REPLY}"
+	    fi
+	done | xargs -r -t -- \
+	    docker compose run --rm -T "reuse" annotate --skip-unrecognised \
+	        --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT"
+# Run source code formatting tools implemented in JavaScript:
+	~/.nvm/nvm-exec npm run format
 
 .PHONY: devel-upgrade
-### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
-# Update VCS hooks from remotes to the latest tag.
+### Update all locked or frozen dependencies to their most recent available versions.
+devel-upgrade: ./.tox/bootstrap/bin/tox
+# Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
@@ -737,11 +805,11 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	$(MAKE) -e devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
-# No changes from upgrade, exit successfully but push nothing
+# No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the latest versions as of $${now}." \
+	echo "Upgrade all requirements to the most recent versions as of $${now}." \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
@@ -751,8 +819,8 @@ ifeq ($(CI),true)
 	git_push_args+=" --no-verify"
 endif
 	git commit $${git_commit_args} -m \
-	    "fix(deps): Upgrade requirements latest versions"
-# Fail if upgrading left untracked files in VCS
+	    "fix(deps): Upgrade to most recent versions"
+# Fail if upgrading left un-tracked files in VCS:
 	$(MAKE) -e "test-clean"
 ifeq ($(CI),true)
 # Push any upgrades to the remote for review.  Specify both the ref and the expected ref
@@ -768,7 +836,7 @@ ifeq ($(CI),true)
 endif
 
 .PHONY: devel-merge
-### Merge this branch with a suffix back into it's un-suffixed upstream.
+### Merge this branch with a suffix back into its un-suffixed upstream.
 devel-merge: ~/.gitconfig ./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
@@ -786,7 +854,7 @@ endif
 # Recipes used to restore the checkout to initial conditions.
 
 .PHONY: clean
-### Restore the checkout to a state as close to an initial clone as possible.
+### Restore the checkout to an initial clone state.
 clean:
 	docker compose down --remove-orphans --rmi "all" -v || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
@@ -805,13 +873,12 @@ clean:
 
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
-		./build-host/requirements.txt.in ./var-docker/log/rebuild.log \
-		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
-		./bin/host-install
+		./var-docker/log/rebuild.log ./docker-compose.yml \
+		./docker-compose.override.yml ./.env.~out~ ./bin/host-install.sh
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
-# Pull the development image and simulate as if it had been built here.
+# Pull the development image and simulate building it here:
 	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
 	    touch "$(@)" "./var-docker/log/rebuild.log"
@@ -820,7 +887,7 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-# Represent that host install is baked into the image in the `${HOME}` bind volume:
+# Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
 	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
 	    $(PROJECT_NAME)-devel mkdir -pv "./.local/var/log/"
 	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
@@ -832,10 +899,9 @@ endif
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
-		./.dockerignore ./bin/entrypoint ./build-host/requirements.txt.in \
-		./var-docker/log/rebuild.log
+		./.dockerignore ./bin/entrypoint ./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
-# Build the end-user image now that all required artifacts are built"
+# Build the user image after building all required artifacts:
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load" \
 	    build-docker-build >>"$(@)"
@@ -843,7 +909,8 @@ endif
 	date >>"$(@:%/build-user.log=%/host-install.log)"
 
 # Marker file used to trigger the rebuild of the image.
-# Useful to workaround async timestamp issues when running jobs in parallel:
+
+# Useful to workaround asynchronous timestamp issues when running jobs in parallel:
 ./var-docker/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
@@ -852,12 +919,32 @@ endif
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
-# Install all tools required by recipes that have to be installed externally on the
-# host.  Use a target file outside this checkout to support multiple checkouts.  Use a
-# target specific to this project so that other projects can use the same approach but
-# with different requirements.
-$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install \
-		./build-host/requirements.txt.in
+./var/log/npm-install.log: ./package.json
+	mkdir -pv "$(dir $(@))"
+	~/.nvm/nvm-exec npm install
+
+./package.json:
+# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
+	$(MAKE) "$(HOME)/.npmrc"
+	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+
+$(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
+# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
+	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
+	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
+	~/.nvm/nvm-exec npm set init-license "MIT"
+
+# Bootstrap the right version of Tox for this checkout:
+./.tox/bootstrap/bin/tox: ./.tox/bootstrap/bin/pip
+	"$(<)" install "$(@:.tox/bootstrap/bin/%=%)"
+./.tox/bootstrap/bin/pip: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+	python3 -m venv "$(@:%/bin/pip=%/)"
+
+# Install all tools required by recipes installed outside the checkout on the
+# system. Use a target file outside this checkout to support more than one
+# checkout. Support other projects that use the same approach but with different
+# requirements, use a target specific to this project:
+$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install.sh
 	mkdir -pv "$(dir $(@))"
 	"$(<)" |& tee -a "$(@)"
 
@@ -909,7 +996,7 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	    fi
 	) | tee -a "$(@)"
 
-# Retrieve VCS data needed for versioning (tags) and release (release notes).
+# Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
 	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
@@ -931,11 +1018,21 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
-# Tell Emacs where to find checkout-local tools needed to check the code.
+# Set Vale levels for added style rules:
+./.vale.ini ./styles/code.ini:
+	$(MAKE) "./var/log/vale-sync.log"
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
+
+./var/log/vale-sync.log: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+		./.env.~out~ ./.vale.ini ./styles/code.ini
+	mkdir -pv "$(dir $(@))"
+	docker compose run --rm vale sync | tee -a "$(@)"
+
+# Tell editors where to find tools in the checkout needed to verify the code:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in
 	$(call expand_template,$(<),$(@))
 
-# Ensure minimal VCS configuration, mostly useful in automation such as CI.
+# Initialize minimal VCS configuration, useful in automation such as CI:
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
@@ -1082,25 +1179,25 @@ endif
 
 ## Makefile "functions":
 #
-# Snippets whose output is frequently used including across recipes:
+# Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
-# Return the most recently built package:
+# Return the most recent built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
-# Have to use a placeholder `*.~out~` as the target instead of the real expanded
-# template because we can't disable `.DELETE_ON_ERROR` on a per-target basis.
+# Have to use a placeholder `*.~out~` target instead of the real expanded template
+# because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.
 #
-# Short-circuit/repeat the host-install recipe here because expanded templates should
-# *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
-# *but* it is required to expand templates.  We can't use a sub-make because any
-# expanded templates we use in `include ...` directives, such as `./.env`, are updated
-# as targets when reading the `./Makefile` leading to endless recursion.
+# Copy and short-circuit the host-install recipe. Don't update expanded templates when
+# `./bin/host-install.sh` changes but expanding a template requires the host-install
+# recipe. The recipe can't use a sub-make because Make updates any expanded template
+# targets used in `include` directives when reading the `./Makefile`, for example
+# `./.env`, leading to endless recursion:
 define expand_template=
 if ! which envsubst
 then
     mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+    ./bin/host-install.sh >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then
@@ -1116,8 +1213,7 @@ then
     envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
 fi
 set +x
-echo "WARNING:Template $(1) has been updated."
-echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."
+echo "WARNING:Template $(1) changed, reconcile and \`$$ touch $(2:%.~out~=%)\`."
 set -x
 if [ ! -s "$(2:%.~out~=%)" ]
 then
@@ -1137,84 +1233,85 @@ endef
 #
 # Development primarily requires a balance of 2 priorities:
 #
-# - Ensure the correctness of the code and build artifacts
-# - Minimize iteration time overhead in the inner loop of development
+# - Correctness of the source code and build artifacts
+# - Reduce iteration time in the inner loop of development
 #
-# This project uses Make to balance those priorities.  Target recipes capture the
-# commands necessary to build artifacts, run tests, and check the code.  Top-level
-# targets assemble those recipes to put it all together and ensure correctness.  Target
-# prerequisites are used to define when build artifacts need to be updated so that
-# time isn't wasted on unnecessary updates in the inner loop of development.
+# This project uses Make to balance those priorities. Target recipes capture the
+# commands necessary to build artifacts, run tests, and verify the code. Top-level
+# targets compose related target recipes for often needed tasks. Targets use
+# prerequisites to define when to update build artifacts prevent time wasted on
+# unnecessary updates in the inner loop of development.
 #
-# The most important Make concept to understand if making changes here is that of real
-# targets and prerequisites, as opposed to "phony" targets.  The target is only updated
-# if any of its prerequisites are newer, IOW have a more recent modification time, than
-# the target.  For example, if a new feature adds library as a new project dependency
-# then correctness requires that the fixed/pinned versions be updated to include the new
-# library.  Most of the time, however, the fixed/pinned versions don't need to be
-# updated and it would waste significant time to always update them in the inner loop of
-# development.  We express this relationship in Make by defining the files containing
-# the fixed/pinned versions as targets and the `./setup.cfg` file where dependencies are
-# defined as a prerequisite:
+# Make provides an important feature to achieve that second priority, a framework for
+# determining when to do work. Targets define build artifact paths. The target's recipe
+# lists the commands that create or update that build artifact. The target's
+# prerequisites define when to update that target. Make runs the recipe when any of the
+# prerequisites have more recent modification times than the target to update the
+# target.
 #
-#    ./build/foo.txt: ./foo.txt.in
+# For example, if a feature adds library to the project's dependencies, correctness
+# requires the project to update the frozen, or locked versions to include the added
+# library. The rest of the time the locked or frozen versions don't need updating and it
+# wastes significant time to always update them in the inner loop of development. To
+# express such relationships in Make, define targets for the files containing the locked
+# or frozen versions and add a prerequisite for the file that defines dependencies:
+#
+#    ./build/bar.txt: ./bar.txt.in
 #    	envsubst <"$(<)" >"$(@)"
 #
-# To that end, developers should use real target files whenever possible when adding
-# recipes to this file.
+# To that end, use real target and prerequisite files whenever possible when adding
+# recipes to this file. Make calls targets whose name doesn't correspond to a real build
+# artifact `.PHONY:` targets. Use `.PHONY:` targets to compose sets or real targets and
+# define recipes for tasks that don't produce build artifacts, for example, the
+# top-level targets.
+
+# If a recipe doesn't produce an appropriate build artifact, define an arbitrary target
+# the recipe writes to, such as piping output to a log file. Also use this approach when
+# none of the modification times of produced artifacts reflect when any downstream
+# targets need updating:
 #
-# Sometimes the task we need a recipe to accomplish should only be run when certain
-# changes have been made and as such we can use those changed files as prerequisites but
-# the task doesn't produce an artifact appropriate for use as the target for the recipe.
-# In that case, the recipe can write "simulated" artifact such as by piping output to a
-# log file:
-#
-#     ./var/log/foo.log:
+#     ./var/log/bar.log:
 #         mkdir -pv "$(dir $(@))"
 #         echo "Do some work here" | tee -a "$(@)"
 #
-# This is also useful when none of the modification times of produced artifacts can be
-# counted on to correctly reflect when any subsequent targets need to be updated when
-# using this target as a pre-requisite in turn.  If no output can be captured, then the
-# recipe can create arbitrary output:
+# If the recipe produces no output, the recipe can create arbitrary output:
 #
-#     ./var/log/foo.log:
+#     ./var/log/bar.log:
 #         echo "Do some work here"
 #         mkdir -pv "$(dir $(@))"
 #         date | tee -a "$(@)"
 #
-# If a target is needed by the recipe of another target but should *not* trigger updates
-# when it's newer, such as one-time host install tasks, then use that target in a
-# sub-make instead of as a prerequisite:
+# If the recipe of a target needs another target but updating that other target doesn't
+# mean that this target's recipe needs to re-run, such as one-time system install tasks,
+# use that target in a sub-make instead of a prerequisite:
 #
-#     ./var/log/foo.log:
-#         $(MAKE) "./var/log/bar.log"
+#     ./var/log/bar.log:
+#         $(MAKE) "./var/log/qux.log"
 #
-# We use a few more Make features than these core features and welcome further use of
-# such features:
+# This project uses some more Make features than these core features and welcome further
+# use of such features:
 #
 # - `$(@)`:
-#   The automatic variable containing the file path for the target
+#   The automatic variable containing the path for the target
 #
 # - `$(<)`:
-#   The automatic variable containing the file path for the first prerequisite
+#   The automatic variable containing the path for the first prerequisite
 #
-# - `$(FOO:%=foo-%)`:
+# - `$(VARIABLE_FOO:%=bar-%)`:
 #   Substitution references to generate transformations of space-separated values
 #
-# - `$ make FOO=bar ...`:
-#   Overriding variables on the command-line when invoking make as "options"
+# - `$ make OPTION_FOO=bar`:
+#   Use "option" variables and support overriding on the command-line
 #
-# We want to avoid, however, using many more features of Make, particularly the more
-# "magical" features, to keep it readable, discover-able, and otherwise accessible to
-# developers who may not have significant familiarity with Make.  If there's a good,
-# pragmatic reason to add use of further features feel free to make the case but avoid
-# them if possible.
+# Avoid the more "magical" features of Make, to keep it readable, discover-able, and
+# otherwise approachable to developers who might not have significant familiarity with
+# Make. If you have good, pragmatic reasons to add use of further features, make the
+# case for them but avoid them if possible.
 
 
 ## Maintainer targets:
 #
-# Recipes not used during the normal course of development.
+# Recipes not used during the usual course of development.
 
 .PHONY: pull-docker
 ### Pull an existing image best to use as a cache for building new images
@@ -1238,11 +1335,12 @@ pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	echo "ERROR: Could not pull any existing docker image"
 	false
 
-# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
-# targets for the authentication environment variables that need to be set or just login
-# to those container registries manually and touch these targets.
+# TEMPLATE: Run this a single time for your project or when the `./build-host/` image
+# changes. See the `./var/log/docker-login*.log` targets for the authentication
+# environment variables to set or login to those container registries manually and `$
+# touch` these targets.
 .PHONY: bootstrap-project
-### Run any tasks needed to be run once for a given project by a maintainer
+### Run any tasks needed a single time for a given project by a maintainer.
 bootstrap-project: \
 		./var/log/docker-login-GITLAB.log \
 		./var/log/docker-login-GITHUB.log

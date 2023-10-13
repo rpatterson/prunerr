@@ -5,12 +5,12 @@
 
 ## Image layers shared between all variants.
 
-# Stay as close to a vanilla environment as possible:
+# Stay as close to an un-customized environment as possible:
 FROM buildpack-deps:stable AS base
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
-# Project contstants:
+# Project constants:
 ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=project-structure
 
@@ -26,7 +26,7 @@ LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/buildpack-deps"
 
-# Find the same home directory even when run as another user, e.g. `root`.
+# Find the same home directory even when run as another user, for example `root`.
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "/home/${PROJECT_NAME}/"
 ENTRYPOINT [ "entrypoint" ]
@@ -34,7 +34,7 @@ ENTRYPOINT [ "entrypoint" ]
 # Put the `ENTRYPOINT` on the `$PATH`
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 
-# Install OS packages needed for the image `ENDPOINT`:
+# Install operating system packages needed for the image `ENDPOINT`:
 RUN \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
@@ -42,27 +42,27 @@ RUN \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install --no-install-recommends -y "gosu=1.12-1+b6"
+    apt-get install --no-install-recommends -y "gosu=1.14-1+b6"
 
-# Build-time `LABEL`s
+# Build-time labels:
 ARG VERSION=
 LABEL org.opencontainers.image.version=${VERSION}
 
 
 ## Container image for use by end users.
 
-# Stay as close to a vanilla environment as possible:
+# Stay as close to an un-customized environment as possible:
 FROM base AS user
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
-# TEMPLATE: Add image setup specific to the end user image that is created by the
-# development image, usually installable packages.
+# TEMPLATE: Add image setup specific to the user image, often installable packages built
+# from the project.
 
 
 ## Container image for use by developers.
 
-# Stay as close to the end user image as possible for build cache efficiency.
+# Stay as close to the user image as possible for build cache efficiency:
 FROM base AS devel
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
@@ -81,13 +81,8 @@ CMD [ "tox" ]
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     mkdir -pv "${HOME}/.local/var/log/" && \
-    apt-get install --no-install-recommends -y "python3-pip=20.3.4-4+deb11u1" | \
-        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
-COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
-# hadolint ignore=DL3042
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip3 install -r "./build-host/requirements.txt.in" | \
+    apt-get install --no-install-recommends -y "python3-pip=23.0.1+dfsg-1" | \
         tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
-# TEMPLATE: Add image setup specific to the development for this project type, usually
-# at least installing development tools.
+# TEMPLATE: Add image setup specific to the development for this project type, often at
+# least installing development tools.

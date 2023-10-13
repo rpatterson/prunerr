@@ -9,8 +9,8 @@
 # hadolint ignore=DL3007
 FROM docker:latest
 
-# Install the minimum OS packages needed to use the `./Makefile`.  Also install any OS
-# packages the `./Makefile` might install to optimize build times.
+# Install the operating system packages needed to use the `./Makefile`.  Also install
+# any operating system packages the `./Makefile` might install to optimize build times:
 # hadolint ignore=DL3018
 RUN \
     apk add --no-cache \
@@ -26,19 +26,14 @@ RUN \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 
-# Project contstants:
+# Project constants:
 ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=project-structure
 
-# Find the same home directory even when run as another user, e.g. `root`.
+# Find the same home directory even when run as another user, for example `root`:
 ENV HOME="/home/runner"
 # Add user installs to PATH
 ENV PATH="${HOME}/.local/bin:${PATH}"
-
-COPY [ "./requirements.txt.in", "${HOME}/.local/lib/" ]
-RUN mkdir -pv "${HOME}/.local/var/log/" && \
-    pip3 install --no-cache-dir --user -r "${HOME}/.local/lib/requirements.txt.in" \
-    >"${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
@@ -54,5 +49,5 @@ LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/docker:latest"
-# Build-time `LABEL`s
+# Build-time labels:
 LABEL org.opencontainers.image.version=0.0.1

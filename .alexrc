@@ -1,0 +1,3 @@
+{
+  "allow": ["master", "failures", "host-hostess"]
+}

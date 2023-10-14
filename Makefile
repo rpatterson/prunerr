@@ -20,7 +20,7 @@ export DOCKER_USER=merpatterson
 # Variables used as options to control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_SUPPORTED_MINORS=3.10 3.11 3.9 3.8 3.7
+PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 
 
 ## "Private" Variables:
@@ -763,7 +763,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 ### Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(STATE_DIR)/bin/tox ./.env.~out~ build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	    "$(STATE_DIR)/log/host-install.log"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel
 	$(MAKE) -e -j PIP_COMPILE_ARGS="--upgrade" \
@@ -825,7 +825,7 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-# Manage fixed/pinned versions in `./requirements/**.txt` files.  Must run for each
+# Manage fixed/pinned versions in `./requirements/**.txt` files. Must run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
@@ -855,14 +855,14 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # they don't need Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
-$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile): ./.tox/bootstrap/bin/tox
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile): $(STATE_DIR)/bin/tox
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
 # prerequisite for targets that use Tox virtual environments directly and changes to
 # code need to take effect in real-time:
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log): ./.tox/bootstrap/bin/tox
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log): $(STATE_DIR)/bin/tox
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"
@@ -1010,9 +1010,9 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
-# Capture any project initialization tasks for reference.  Not actually usable.
+# Capture any project initialization tasks for reference. Not actually usable.
 ./pyproject.toml:
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell editors where to find tools in the checkout needed to verify the code:

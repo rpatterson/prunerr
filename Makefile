@@ -450,7 +450,7 @@ clean:
 	$(MAKE) "$(HOME)/.npmrc"
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
-$(HOME)/.npmrc: $(HOME)/.local/var/log/project-structure-host-install.log
+$(HOME)/.npmrc: $(STATE_DIR)/log/host-install.log
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
@@ -531,7 +531,7 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 define expand_template=
 if ! which envsubst
 then
-    mkdir -pv "$(HOME)/.local/var/log/"
+    mkdir -pv "$(STATE_DIR)/log/"
     ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]

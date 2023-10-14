@@ -22,6 +22,8 @@ __pycache__
 .Python
 env/
 build/
+dist
+sdist/
 downloads/
 develop-eggs/
 eggs/
@@ -29,8 +31,6 @@ eggs/
 lib/
 lib64/
 parts/
-dist
-sdist/
 var/
 /var-*
 /node_modules

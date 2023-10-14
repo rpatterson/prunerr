@@ -293,7 +293,7 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(STATE_DIR)/bin/tox
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(STATE_DIR)/bin/tox \
 		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
 	then

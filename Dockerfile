@@ -105,8 +105,6 @@ CMD tox -e "${PYTHON_ENV}"
 # development in the image:
 COPY [ "./build-host/requirements.txt.in", "${HOME}/.local/state/${PROJECT_NAME}/lib/" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
-    date >>"${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log" && \
     python3 -m venv "${HOME}/.local/state/${PROJECT_NAME}/" && \
     "${HOME}/.local/state/${PROJECT_NAME}/bin/pip" install --force-reinstall -r \
         "${HOME}/.local/state/${PROJECT_NAME}/lib/requirements.txt.in"

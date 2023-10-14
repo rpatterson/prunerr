@@ -385,7 +385,7 @@ build-docker-tags:
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(STATE_DIR)/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
@@ -416,7 +416,8 @@ endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
-build-docker-build: ./Dockerfile \
+build-docker-build: ./Dockerfile $(STATE_DIR)/log/host-install.log \
+		$(STATE_DIR)/bin/tox \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
@@ -471,9 +472,8 @@ test-local: $(STATE_DIR)/bin/tox
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(STATE_DIR)/log/host-install.log \
-		./var/log/npm-install.log $(STATE_DIR)/bin/tox build-docs \
-		test-lint-prose
+test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
+		./var/log/npm-install.log build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -527,7 +527,7 @@ $(PYTHON_MINORS:%=test-docker-%):
 
 .PHONY: test-docker-pyminor
 ### Run the full suite of tests inside a docker container for this Python version.
-test-docker-pyminor: build-docker-$(PYTHON_MINOR)
+test-docker-pyminor: $(STATE_DIR)/log/host-install.log build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -544,7 +544,8 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR)
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
+test-docker-lint: $(STATE_DIR)/log/host-install.log ./.env.~out~ \
+		./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -552,7 +553,7 @@ test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
+test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/bin/tox \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
@@ -574,8 +575,7 @@ test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/b
 	then
 	    exit $$exit_code
 	else
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        $(PROJECT_NAME)-devel $(TOX_EXEC_BUILD_ARGS) -- \
+	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
@@ -601,7 +601,7 @@ release: release-pkgs release-docker
 
 .PHONY: release-pkgs
 ### Publish installable Python packages to PyPI if conventional commits require.
-release-pkgs: $(STATE_DIR)/log/host-install.log ~/.pypirc.~out~
+release-pkgs: $(STATE_DIR)/bin/tox ~/.pypirc.~out~
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -616,7 +616,8 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+release-docker: $(STATE_DIR)/log/host-install.log build-docker \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=release-docker-%)
@@ -654,8 +655,8 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) ./var/log/git-remotes.log \
-		$(STATE_DIR)/log/host-install.log \
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(STATE_DIR)/bin/tox \
+		./var/log/npm-install.log ./var/log/git-remotes.log \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then
@@ -696,13 +697,11 @@ endif
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
 # Assemble the release notes for this next version:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- \
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
 	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
 	git add -- "./package*.json"
@@ -871,11 +870,11 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log): $(STATE_DIR)/bin/tox
 ## Docker real targets:
 
 # Build the development image:
-./var-docker/$(PYTHON_ENV)/log/build-devel.log: $(STATE_DIR)/bin/tox ./Dockerfile \
-		./.dockerignore ./bin/entrypoint \
-		./var-docker/$(PYTHON_ENV)/log/rebuild.log ./pyproject.toml ./setup.cfg \
+./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile \
+		./.dockerignore ./bin/entrypoint ./pyproject.toml ./setup.cfg \
 		./tox.ini ./docker-compose.yml ./docker-compose.override.yml \
-		./.env.~out~ ./bin/host-install.sh
+		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
+		$(STATE_DIR)/log/host-install.log
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -891,17 +890,6 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-# Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
-	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	    $(PROJECT_NAME)-devel mkdir -pv \
-	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/"
-	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
-	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" |
-	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	        $(PROJECT_NAME)-devel tee -a \
-	        "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" \
-	        >"/dev/null"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
 # we may need to re-build the container image again to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
@@ -922,8 +910,6 @@ endif
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
 	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
-# The image installs the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build-user.log=%/host-install.log)"
 
 # Marker file used to trigger the rebuild of the image for just one Python version.
 # Useful to workaround asynchronous timestamp issues when running jobs in parallel:
@@ -931,20 +917,26 @@ endif
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 
+./README.md: README.rst
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	docker compose run --rm "pandoc"
+
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
 ./var/log/npm-install.log: ./package.json
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
 ./package.json:
+	$(MAKE) "$(STATE_DIR)/log/host-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	$(MAKE) "$(HOME)/.npmrc"
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
-$(HOME)/.npmrc: $(STATE_DIR)/log/host-install.log
+$(HOME)/.npmrc:
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
@@ -966,6 +958,7 @@ $(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -997,17 +990,17 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
-	$(MAKE) "./var/log/vale-sync.log"
+	$(MAKE)-e "$(STATE_DIR)/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
-./var/log/vale-sync.log: $(STATE_DIR)/log/host-install.log ./.env.~out~ ./.vale.ini \
-		./styles/code.ini
+./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
@@ -1030,7 +1023,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(call expand_template,$(<),$(@))
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "./.env.~out~"
+	$(MAKE) "$(STATE_DIR)/log/host-install.log" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then

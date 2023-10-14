@@ -16,6 +16,7 @@ __pycache__/
 # Distribution / packaging
 env/
 build/
+dist
 var/
 /var-*
 /node_modules
@@ -52,5 +53,8 @@ docs/_build/
 /.dir-locals.el
 
 # `${HOME}/**` artifacts:
+**/.*_history
+**/.*hst
+**/.*hsts
 **/.cache
 **/.local

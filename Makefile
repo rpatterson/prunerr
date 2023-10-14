@@ -254,7 +254,8 @@ endif
 
 .PHONY: build-pkgs
 ### Update the built package for use outside tox.
-build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+build-pkgs: $(STATE_DIR)/bin/tox \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 # Defined as a .PHONY recipe so that more than one target can depend on this as a
 # pre-requisite and it runs one time:
 	rm -vf ./dist/*
@@ -286,7 +287,7 @@ build-docs-%: $(STATE_DIR)/bin/tox
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters.
-test: build test-lint
+test: $(STATE_DIR)/bin/tox build test-lint
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
@@ -451,7 +452,8 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
+devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log \
+		$(STATE_DIR)/bin/tox
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
 	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
@@ -481,8 +483,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(STATE_DIR)/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
-	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "$(STATE_DIR)/log/host-install.log"
+	touch "./setup.cfg" "./requirements/build.txt.in"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
@@ -564,13 +565,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
-	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/bin/tox"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
 # prerequisite for targets that use Tox virtual environments directly and changes to
 # code need to take effect in real-time:
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/bin/tox"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"

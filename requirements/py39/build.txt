@@ -35,7 +35,7 @@ colorama==0.4.6
     # via
     #   commitizen
     #   typer
-commitizen==3.10.0
+commitizen==3.10.1
     # via -r requirements/build.txt.in
 configobj==5.0.8
     # via -r requirements/build.txt.in
@@ -103,7 +103,7 @@ pkginfo==1.9.6
     # via twine
 platformdirs==3.11.0
     # via virtualenv
-pre-commit==3.4.0
+pre-commit==3.5.0
     # via -r requirements/build.txt.in
 prompt-toolkit==3.0.36
     # via questionary

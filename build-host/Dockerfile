@@ -11,6 +11,10 @@ FROM docker:latest
 
 # Least volatile layers first:
 
+# Project constants:
+ARG PROJECT_NAMESPACE=rpatterson
+ARG PROJECT_NAME=project-structure
+
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 LABEL org.opencontainers.image.url="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
 LABEL org.opencontainers.image.documentation="https://gitlab.com/${PROJECT_NAMESPACE}/${PROJECT_NAME}"
@@ -23,10 +27,6 @@ LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/docker:latest"
 # Build-time labels:
 LABEL org.opencontainers.image.version=0.0.1
-
-# Project constants:
-ARG PROJECT_NAMESPACE=rpatterson
-ARG PROJECT_NAME=project-structure
 
 # Find the same home directory even when run as another user, for example `root`:
 ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"

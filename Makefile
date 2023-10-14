@@ -362,7 +362,8 @@ build-docs-%: $(STATE_DIR)/bin/tox
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: $(STATE_DIR)/bin/tox build-pkgs ./var-docker/$(PYTHON_ENV)/log/build-user.log
+build-docker: $(STATE_DIR)/bin/tox build-pkgs \
+		./var-docker/$(PYTHON_ENV)/log/build-user.log
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \

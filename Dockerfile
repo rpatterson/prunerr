@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.base.name="docker.io/library/buildpack-deps"
 
 # Find the same home directory even when run as another user, for example `root`.
 ENV HOME="/home/${PROJECT_NAME}"
-WORKDIR "/home/${PROJECT_NAME}/"
+WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint" ]
 
 # Put the `ENTRYPOINT` on the `$PATH`
@@ -80,9 +80,9 @@ CMD [ "tox" ]
 # development in the image:
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    mkdir -pv "${HOME}/.local/var/log/" && \
+    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
     apt-get install --no-install-recommends -y "python3-pip=23.0.1+dfsg-1" | \
-        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
+        tee -a "${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log"
 
 # TEMPLATE: Add image setup specific to the development for this project type, often at
 # least installing development tools.

@@ -21,7 +21,9 @@ fi
 main() {
     # Signal to `$ make` that the image baked in the host requirements and don't need
     # reinstalling:
-    touch "${HOME}/.local/var/log/project-structure-host-install.log"
+    touch "${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log" \
+        "${HOME}/.local/state/${PROJECT_NAME}/bin/activate" \
+        "${HOME}/.local/state/${PROJECT_NAME}/bin/tox"
 
     # Run as the user from the enironment, adding that user if necessary
     if [ -n "${PUID:-}" ]
@@ -33,7 +35,9 @@ main() {
             false
         fi
 	# Ensure the home directory in the image has the correct permissions:
-	chown -R "${PUID}:${PGID:-${PUID}}" "/home/runner/"
+	chown "${PUID}:${PGID:-${PUID}}" "/home/runner/" "/home/runner/.local/" \
+	    "/home/runner/.local/state/" "/home/runner/.local/state/${PROJECT_NAME}/" \
+	    "/home/runner/.local/state/${PROJECT_NAME}/log/"
         # Add an unprivileged user to cover those use cases and better match local
 	# development:
         if ! getent group "${PGID}" >"/dev/null"

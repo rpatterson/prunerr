@@ -420,8 +420,7 @@ test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/b
 	then
 	    exit $$exit_code
 	else
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        $(PROJECT_NAME)-devel $(TOX_EXEC_BUILD_ARGS) -- \
+	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
@@ -522,13 +521,11 @@ endif
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
 # Assemble the release notes for this next version:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- \
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
 	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
 	git add -- "./package*.json"

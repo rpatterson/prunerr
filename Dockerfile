@@ -77,17 +77,5 @@ ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 CMD [ "tox" ]
 
-# Simulate the parts of the host install process from `./Makefile` needed for
-# development in the image:
-COPY [ "./build-host/requirements.txt.in", "${HOME}/.local/state/${PROJECT_NAME}/lib/" ]
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
-    apt-get install --no-install-recommends -y "python3-venv=3.11.2-1+b1" | \
-        tee -a "${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log" && \
-    python3 -m venv "${HOME}/.local/state/${PROJECT_NAME}/" && \
-    "${HOME}/.local/state/${PROJECT_NAME}/bin/pip" install --force-reinstall -r \
-        "${HOME}/.local/state/${PROJECT_NAME}/lib/requirements.txt.in"
-
 # TEMPLATE: Add image setup specific to the development for this project type, often at
 # least installing development tools.

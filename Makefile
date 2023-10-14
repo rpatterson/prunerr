@@ -542,7 +542,9 @@ test-docker: build-pkgs $(STATE_DIR)/log/host-install.log \
 ifeq ($(GITLAB_CI),true)
 ifneq ($(CODECOV_TOKEN),)
 	$(MAKE) "./var/log/codecov-install.log"
-	codecov --nonZero -t "$(CODECOV_TOKEN)" --file "./build/coverage.xml"
+# TEMPLATE: Write coverage results in Cobertura XML format to `./build/coverage.xml` and
+# un-comment:
+#	codecov --nonZero -t "$(CODECOV_TOKEN)" --file "./build/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: CODECOV_TOKEN missing from ./.env or CI secrets"

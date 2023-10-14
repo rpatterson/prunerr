@@ -29,7 +29,7 @@ LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINO
 
 # Find the same home directory even when run as another user, for example `root`.
 ENV HOME="/home/${PROJECT_NAME}"
-WORKDIR "/home/${PROJECT_NAME}/"
+WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint" ]
 CMD [ "python" ]
 
@@ -96,7 +96,19 @@ ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/src/${PROJECT_NAME}/.tox/bootstrap/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
+ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Have to use the shell form of `CMD` because we need variable substitution:
 # hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
+
+# Simulate the parts of the host install process from `./Makefile` needed for
+# development in the image:
+COPY [ "./build-host/requirements.txt.in", "${HOME}/.local/state/${PROJECT_NAME}/lib/" ]
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
+    date >>"${HOME}/.local/state/${PROJECT_NAME}/log/host-install.log" && \
+    python3 -m venv "${HOME}/.local/state/${PROJECT_NAME}/" && \
+    "${HOME}/.local/state/${PROJECT_NAME}/bin/pip" install --force-reinstall -r \
+        "${HOME}/.local/state/${PROJECT_NAME}/lib/requirements.txt.in"

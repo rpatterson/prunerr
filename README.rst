@@ -124,6 +124,12 @@ support. Report any issues you have or better yet submit a PR with corrections.
 
      The above Docker images with the Python package installed.
 
+   It's important to use one of the preceding branches to merge into your project and
+   *not* the ``develop`` or ``main`` branches from the template. Template developers use
+   those branches to test the release process. They contain bumped versions, release
+   notes, and other release artifacts that real projects shouldn't merge into their code
+   or history.
+
 #. Merge into your project:
 
    If starting a fresh project::

@@ -362,7 +362,7 @@ build-docs-%: $(STATE_DIR)/bin/tox
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: ./.tox/bootstrap/bin/tox build-pkgs ./var-docker/$(PYTHON_ENV)/log/build-user.log
+build-docker: $(STATE_DIR)/bin/tox build-pkgs ./var-docker/$(PYTHON_ENV)/log/build-user.log
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -465,13 +465,13 @@ test: test-docker-lint test-docker
 
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters on the local host.
-test-local: ./.tox/bootstrap/bin/tox
+test-local: $(STATE_DIR)/bin/tox
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
 test-lint: $(STATE_DIR)/log/host-install.log \
-		./var/log/npm-install.log ./.tox/bootstrap/bin/tox build-docs \
+		./var/log/npm-install.log $(STATE_DIR)/bin/tox build-docs \
 		test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
@@ -508,7 +508,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: ./.tox/bootstrap/bin/tox build-pkgs
+test-docker: $(STATE_DIR)/bin/tox build-pkgs
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -624,7 +624,7 @@ release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
 ### Publish the container images for one Python version to all container registries.
 $(PYTHON_MINORS:%=release-docker-%): \
 		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
-		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
+		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # native images built before into the manifests:
@@ -870,7 +870,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log): $(STATE_DIR)/bin/tox
 ## Docker real targets:
 
 # Build the development image:
-./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./.tox/bootstrap/bin/tox ./Dockerfile \
+./var-docker/$(PYTHON_ENV)/log/build-devel.log: $(STATE_DIR)/bin/tox ./Dockerfile \
 		./.dockerignore ./bin/entrypoint \
 		./var-docker/$(PYTHON_ENV)/log/rebuild.log ./pyproject.toml ./setup.cfg \
 		./tox.ini ./docker-compose.yml ./docker-compose.override.yml \

@@ -11,14 +11,14 @@ services:
   # Configuration specific to development:
   project-structure:
     image: "${DOCKER_USER:?}/project-structure\
-      :${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      :${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       target: "user"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
-        PYTHON_ENV: "${PYTHON_ENV:-py310}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
     volumes:
       # Preserve caches between container runs
@@ -29,7 +29,7 @@ services:
   # Container for use by developers:
   project-structure-devel:
     image: "${DOCKER_USER:?}/project-structure\
-      :devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      :devel-${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-devel"
     profiles:
       - "test"
@@ -37,8 +37,8 @@ services:
       context: "${CHECKOUT_DIR:-.}/"
       target: "devel"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
-        PYTHON_ENV: "${PYTHON_ENV:-py310}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
@@ -56,11 +56,11 @@ services:
       - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
       # Avoid any clashes between image variants and the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
         :/usr/local/src/project-structure/var/"
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/.tox/\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/.tox/\
         :/usr/local/src/project-structure/.tox/"
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}\
         /project_structure.egg-info/\
         :/usr/local/src/project-structure/src/project_structure.egg-info/"
 

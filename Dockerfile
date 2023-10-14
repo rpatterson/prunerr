@@ -6,7 +6,7 @@
 ## Image layers shared between all variants.
 
 # Stay as close to an un-customized environment as possible:
-ARG PYTHON_MINOR=3.10
+ARG PYTHON_MINOR=3.11
 FROM python:${PYTHON_MINOR} AS base
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
@@ -49,7 +49,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
 # because this step takes the most time and changes the least frequently.
-ARG PYTHON_ENV=py310
+ARG PYTHON_ENV=py311
 COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
@@ -93,10 +93,9 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
-ENV PATH="${VIRTUAL_ENV}/bin:/usr/local/src/${PROJECT_NAME}/.tox/bootstrap/bin:${PATH}"
+ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
-ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Have to use the shell form of `CMD` because we need variable substitution:
 # hadolint ignore=DL3025

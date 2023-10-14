@@ -32,7 +32,7 @@ ARG PROJECT_NAME=project-structure
 ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
 ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/runner"
-ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${PATH}"
+ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]

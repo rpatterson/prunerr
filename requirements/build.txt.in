@@ -17,7 +17,7 @@ pre-commit
 # integration to enforce conventional commit messages:
 commitizen
 
-# Generate release notes:
+# Generate release notes, also known as changelogs or news:
 towncrier
 
 # Verify reStructuredText documentation:

@@ -30,6 +30,7 @@ LABEL org.opencontainers.image.base.name="docker.io/library/buildpack-deps"
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint" ]
+CMD [ "bash" ]
 
 # Put the `ENTRYPOINT` on the `$PATH`
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
@@ -75,7 +76,6 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 # command to run.
 ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
-CMD [ "tox" ]
 
 # TEMPLATE: Add image setup specific to the development for this project type, often at
 # least installing development tools.

@@ -265,7 +265,7 @@ build-docker-tags:
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(STATE_DIR)/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
@@ -294,7 +294,8 @@ endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
-build-docker-build: ./Dockerfile \
+build-docker-build: ./Dockerfile $(STATE_DIR)/log/host-install.log \
+		$(STATE_DIR)/bin/tox \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
@@ -375,7 +376,7 @@ test-debug:
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs
+test-docker: $(STATE_DIR)/log/host-install.log build-pkgs
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -390,7 +391,8 @@ test-docker: build-pkgs
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
+test-docker-lint: $(STATE_DIR)/log/host-install.log ./.env.~out~ \
+		./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -398,8 +400,8 @@ test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
-		./var-docker/log/build-devel.log ./.env.~out~
+test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/bin/tox ./var-docker/log/build-devel.log \
+		./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -456,7 +458,8 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+release-docker: $(STATE_DIR)/log/host-install.log build-docker \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # native images built before into the manifests:
@@ -626,8 +629,8 @@ clean:
 
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
-		./var-docker/log/rebuild.log ./docker-compose.yml \
-		./docker-compose.override.yml ./.env.~out~ ./bin/host-install.sh
+		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
+		./var-docker/log/rebuild.log $(STATE_DIR)/log/host-install.log
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -640,17 +643,6 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-# Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
-	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	    $(PROJECT_NAME)-devel mkdir -pv \
-	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/"
-	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
-	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" |
-	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	        $(PROJECT_NAME)-devel tee -a \
-	        "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" \
-	        >"/dev/null"
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
@@ -660,8 +652,6 @@ endif
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load" \
 	    build-docker-build >>"$(@)"
-# The image installs the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build-user.log=%/host-install.log)"
 
 # Marker file used to trigger the rebuild of the image.
 
@@ -711,6 +701,7 @@ $(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -751,8 +742,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(MAKE)-e "$(STATE_DIR)/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
-./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
-		./styles/code.ini
+./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
 	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
@@ -767,7 +757,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "./.env.~out~"
+	$(MAKE) "$(STATE_DIR)/log/host-install.log" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then

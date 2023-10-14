@@ -291,8 +291,8 @@ test: build test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log build-docs \
-		test-lint-prose
+test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
+		./var/log/npm-install.log build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -371,7 +371,7 @@ test-clean:
 
 .PHONY: release
 ### Publish installable packages if conventional commits require a release.
-release: $(STATE_DIR)/log/host-install.log ~/.pypirc.~out~
+release: $(STATE_DIR)/bin/tox ~/.pypirc.~out~
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -386,8 +386,8 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		$(STATE_DIR)/log/host-install.log
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(STATE_DIR)/bin/tox
+		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -576,6 +576,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	    pip3 install -e "./" |& tee -a "$(@)"
 
 ./README.md: README.rst
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
@@ -583,15 +584,17 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(call expand_template,$(<),$(@))
 
 ./var/log/npm-install.log: ./package.json
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
 ./package.json:
+	$(MAKE) "$(STATE_DIR)/log/host-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	$(MAKE) "$(HOME)/.npmrc"
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
-$(HOME)/.npmrc: $(STATE_DIR)/log/host-install.log
+$(HOME)/.npmrc:
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
@@ -629,17 +632,18 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
-	$(MAKE) "./var/log/vale-sync.log"
+	$(MAKE)-e "$(STATE_DIR)/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
-./var/log/vale-sync.log: $(STATE_DIR)/log/host-install.log ./.env.~out~ ./.vale.ini \
+./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
 		./styles/code.ini
+	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 

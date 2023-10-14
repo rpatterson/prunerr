@@ -19,7 +19,7 @@ export TEMPLATE_IGNORE_EXISTING=false
 # TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
 NPM_SCOPE=rpattersonnet
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_SUPPORTED_MINORS=3.10 3.12 3.11 3.9 3.8
+PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 
 
 ## "Private" Variables:

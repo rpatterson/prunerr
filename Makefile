@@ -482,7 +482,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 ### Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(STATE_DIR)/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	    "$(STATE_DIR)/log/host-install.log"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
@@ -564,13 +564,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
 # prerequisite for targets that use Tox virtual environments directly and changes to
 # code need to take effect in real-time:
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"
@@ -645,7 +645,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 # Capture any project initialization tasks for reference. Not actually usable.
 ./pyproject.toml:
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
 	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell editors where to find tools in the checkout needed to verify the code:

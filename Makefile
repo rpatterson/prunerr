@@ -575,7 +575,7 @@ test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/b
 	    exit $$exit_code
 	else
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        $(PROJECT_NAME)-devel $(TOX_EXEC_ARGS) -- \
+	        $(PROJECT_NAME)-devel $(TOX_EXEC_BUILD_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 

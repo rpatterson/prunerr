@@ -46,7 +46,11 @@ allows
 yaml
 kill
 [Gg]it
+HEAD
+head
 via
+junit
+failure
 [Cc]odecov
 gh
 GPG

@@ -95,27 +95,29 @@ jobs:
           name: "test-suite-reports"
           path: |
             ./build/*test*
+      # TEMPLATE: Write coverage results in Cobertura XML format to
+      # `./build/coverage.xml` in the project root and un-comment:
       # https://github.com/marketplace/actions/test-reporter#example
-      - name: "Publish test suite report"
-        uses: "dorny/test-reporter@main"
-        # run this step even if preceding step failed
-        if: >-
-          (success() || failure())
-          && (
-            (! github.event.pull_request)
-            || ! (
-              (github.repository_owner == '${PROJECT_NAMESPACE}')
-              && (
-                github.event.pull_request.head.repo.owner.login
-                != '${PROJECT_NAMESPACE}'
-              )
-            )
-          )
-        with:
-          name: "Test Suite Reports"
-          path: >-
-            ./build/*test-junit.xml
-          reporter: "java-junit"
+      # - name: "Publish test suite report"
+      #   uses: "dorny/test-reporter@main"
+      #   # run this step even if preceding step failed
+      #   if: >-
+      #     (success() || failure())
+      #     && (
+      #       (! github.event.pull_request)
+      #       || ! (
+      #         (github.repository_owner == '${PROJECT_NAMESPACE}')
+      #         && (
+      #           github.event.pull_request.head.repo.owner.login
+      #           != '${PROJECT_NAMESPACE}'
+      #         )
+      #       )
+      #     )
+      #   with:
+      #     name: "Test Suite Reports"
+      #     path: >-
+      #       ./build/*test-junit.xml
+      #     reporter: "java-junit"
       - name: "Archive code coverage reports"
         uses: "actions/upload-artifact@master"
         with:

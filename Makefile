@@ -35,7 +35,6 @@ NPM_SCOPE=rpattersonnet
 SHELL:=bash
 .ONESHELL:
 .SHELLFLAGS:=-eu -o pipefail -c
-export BASH_ENV=./.bash_env.sh
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -176,6 +175,9 @@ endif
 # command-line:
 include $(wildcard .env)
 
+# Finished with `$(shell)`, echo recipe commands going forward
+.SHELLFLAGS+= -x
+
 # <!--alex disable hooks-->
 
 
@@ -233,7 +235,7 @@ test-lint: $(STATE_DIR)/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.
 # Lint copyright and licensing:
 	docker compose run --rm -T "reuse"
 # Run linters implemented in JavaScript:
-	npm run lint
+	~/.nvm/nvm-exec npm run lint
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
@@ -363,7 +365,7 @@ endif
 	git add -- "./NEWS-VERSION.rst"
 	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
-	npm --no-git-tag-version version "$${next_version}"
+	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
 	git add -- "./package*.json"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
@@ -399,7 +401,7 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 	    docker compose run --rm -T "reuse" annotate --skip-unrecognised \
 	        --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT"
 # Run source code formatting tools implemented in JavaScript:
-	npm run format
+	~/.nvm/nvm-exec npm run format
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
@@ -468,19 +470,19 @@ clean:
 ./var/log/npm-install.log: ./package.json
 	$(MAKE) "./var/log/nvm-install.log"
 	mkdir -pv "$(dir $(@))"
-	npm install | tee -a "$(@)"
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
 ./package.json:
 	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	npm init --yes --scope="@$(NPM_SCOPE)"
+	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
 $(HOME)/.npmrc:
 	$(MAKE) "./var/log/nvm-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	npm set init-author-email "$(USER_EMAIL)"
-	npm set init-author-name "$(USER_FULL_NAME)"
-	npm set init-license "MIT"
+	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
+	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
+	~/.nvm/nvm-exec npm set init-license "MIT"
 
 ./var/log/nvm-install.log: ./.nvmrc
 	$(MAKE) "$(HOME)/.nvm/nvm.sh"

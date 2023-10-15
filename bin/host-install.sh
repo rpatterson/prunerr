@@ -40,7 +40,7 @@ main() {
     fi
 # Manage JavaScript/TypeScript packages:
 # https://github.com/nvm-sh/nvm#install--update-script
-    if ! which nvm
+    if ! command -v "nvm"
     then
         wget -qO- \
             "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" \

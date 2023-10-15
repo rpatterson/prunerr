@@ -441,21 +441,35 @@ clean:
 	$(call expand_template,$(<),$(@))
 
 ./var/log/npm-install.log: ./package.json
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "./var/log/nvm-install.log"
 	mkdir -pv "$(dir $(@))"
 	npm install | tee -a "$(@)"
 
 ./package.json:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log" "$(HOME)/.npmrc"
+	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
 	npm init --yes --scope="@$(NPM_SCOPE)"
 
 $(HOME)/.npmrc:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "./var/log/nvm-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	npm set init-author-email "$(USER_EMAIL)"
 	npm set init-author-name "$(USER_FULL_NAME)"
 	npm set init-license "MIT"
+
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
+	mkdir -pv "$(dir $(@))"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh"
+	nvm install | tee -a "$(@)"
+
+# Manage JavaScript/TypeScript packages:
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
 
 # Bootstrap the right version of Tox for this checkout:
 $(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate

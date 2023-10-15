@@ -38,21 +38,6 @@ main() {
         # TODO: Add OS-X/Darwin support.
         false
     fi
-# Manage JavaScript/TypeScript packages:
-# https://github.com/nvm-sh/nvm#install--update-script
-    if ! command -v "nvm"
-    then
-        wget -qO- \
-            "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" \
-            | bash
-        set +x
-        . ~/.nvm/nvm.sh || true
-    fi
-# The `./.nvmrc` is using latest stable version:
-# https://github.com/nodejs/release#release-schedule
-    set +x
-    nvm install
-    set -x
 }
 
 

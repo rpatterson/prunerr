@@ -49,23 +49,23 @@ HOST_PREFIX=/usr
 HOST_PKG_CMD_PREFIX=sudo
 HOST_PKG_BIN=apt-get
 HOST_PKG_INSTALL_ARGS=install -y
-HOST_PKG_NAME_ENVSUBST=gettext-base
-HOST_PKG_NAME_PIP=python3-pip
-HOST_PKG_NAME_DOCKER=docker-compose-plugin
+HOST_PKG_NAMES_ENVSUBST=gettext-base
+HOST_PKG_NAMES_PIP=python3-pip
+HOST_PKG_NAMES_DOCKER=docker-ce-cli docker-compose-plugin
 ifneq ($(shell which "brew"),)
 HOST_PREFIX=/usr/local
 HOST_PKG_CMD_PREFIX=
 HOST_PKG_BIN=brew
 HOST_PKG_INSTALL_ARGS=install
-HOST_PKG_NAME_ENVSUBST=gettext
-HOST_PKG_NAME_PIP=python
-HOST_PKG_NAME_DOCKER=docker-compose
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=python
+HOST_PKG_NAMES_DOCKER=docker docker-compose
 else ifneq ($(shell which "apk"),)
 HOST_PKG_BIN=apk
 HOST_PKG_INSTALL_ARGS=add
-HOST_PKG_NAME_ENVSUBST=gettext
-HOST_PKG_NAME_PIP=py3-pip
-HOST_PKG_NAME_DOCKER=docker-cli-compose
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=py3-pip
+HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
 
@@ -508,10 +508,17 @@ $(STATE_DIR)/bin/activate: $(HOST_PREFIX)/bin/pip3
 # requirements, use a target specific to this project:
 $(HOST_PREFIX)/bin/pip3:
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAME_PIP)"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
 $(HOST_PREFIX)/bin/docker:
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAME_DOCKER)"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
 $(STATE_DIR)/log/host-update.log:
 	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
 	then
@@ -584,7 +591,7 @@ define expand_template=
 if ! which envsubst
 then
     $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
-    $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAME_ENVSUBST)"
+    $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_ENVSUBST)"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

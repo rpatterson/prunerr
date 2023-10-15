@@ -569,7 +569,7 @@ test-docker: $(HOST_TARGET_DOCKER) build-pkgs build-docker
 # Upload any build or test artifacts to CI/CD providers
 ifeq ($(GITLAB_CI),true)
 ifneq ($(CODECOV_TOKEN),)
-	$(MAKE) "./var/log/codecov-install.log"
+	$(MAKE) "$(HOME)/.local/bin/codecov"
 # TEMPLATE: Write coverage results in Cobertura XML format to `./build/coverage.xml` and
 # un-comment:
 #	codecov --nonZero -t "$(CODECOV_TOKEN)" --file "./build/coverage.xml"
@@ -1019,13 +1019,12 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	    ) |& tee -a "$(@)"
 	fi
 
-./var/log/codecov-install.log:
-	mkdir -pv "$(dir $(@))"
+$(HOME)/.local/bin/codecov:
 # Install the code test coverage publishing tool:
 	(
 	    if ! which codecov
 	    then
-	        mkdir -pv ~/.local/bin/
+		mkdir -pv "$(dir $(@))"
 # https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
 	        if which brew
 	        then
@@ -1043,12 +1042,6 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	                "https://uploader.codecov.io/latest/linux/codecov"
 	        fi
 	        chmod +x ~/.local/bin/codecov
-	    fi
-	    if ! which codecov
-	    then
-	        set +x
-	        echo "ERROR: CodeCov command-line tool still not on PATH"
-	        false
 	    fi
 	) | tee -a "$(@)"
 

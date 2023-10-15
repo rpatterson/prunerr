@@ -52,14 +52,21 @@ HOST_PKG_INSTALL_ARGS=install -y
 HOST_PKG_NAME_ENVSUBST=gettext-base
 HOST_PKG_NAME_PIP=python3-pip
 HOST_PKG_NAME_DOCKER=docker-compose-plugin
-ifneq ($(shell which "apk"),)
+ifneq ($(shell which "brew"),)
+HOST_PREFIX=/usr/local
+HOST_PKG_CMD_PREFIX=
+HOST_PKG_BIN=brew
+HOST_PKG_INSTALL_ARGS=install
+HOST_PKG_NAME_ENVSUBST=gettext
+HOST_PKG_NAME_PIP=python
+HOST_PKG_NAME_DOCKER=docker-compose
+else ifneq ($(shell which "apk"),)
 HOST_PKG_BIN=apk
 HOST_PKG_INSTALL_ARGS=add
 HOST_PKG_NAME_ENVSUBST=gettext
 HOST_PKG_NAME_PIP=py3-pip
 HOST_PKG_NAME_DOCKER=docker-cli-compose
 endif
-# TODO: Add OS-X/Darwin support.
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
 
 # Values derived from the environment:

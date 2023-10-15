@@ -68,6 +68,11 @@ HOST_PKG_NAMES_PIP=py3-pip
 HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
+# Detect Docker command-line baked into the build-host image:
+HOST_TARGET_DOCKER:=$(shell which docker)
+ifeq ($(HOST_TARGET_DOCKER),)
+HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
+endif
 
 # Values derived from the environment:
 USER_NAME:=$(shell id -u -n)
@@ -247,7 +252,7 @@ run: build-docker ./.env.~out~
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
+build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker
 
 .PHONY: build-pkgs
@@ -289,7 +294,7 @@ build-docker-tags:
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(STATE_DIR)/bin/tox
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(HOME)/.local/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
@@ -318,8 +323,7 @@ endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
-build-docker-build: ./Dockerfile $(STATE_DIR)/log/host-install.log \
-		$(STATE_DIR)/bin/tox \
+build-docker-build: ./Dockerfile $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
@@ -363,7 +367,7 @@ test-local:
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
+test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
 		build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
@@ -374,7 +378,7 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-instal
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
+test-lint-prose: $(HOST_TARGET_DOCKER) ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
@@ -400,7 +404,7 @@ test-debug:
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: $(STATE_DIR)/log/host-install.log build-pkgs
+test-docker: $(HOST_TARGET_DOCKER) build-pkgs
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -415,8 +419,7 @@ test-docker: $(STATE_DIR)/log/host-install.log build-pkgs
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: $(STATE_DIR)/log/host-install.log ./.env.~out~ \
-		./var/log/docker-login-DOCKER.log
+test-docker-lint: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -482,7 +485,7 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: $(STATE_DIR)/log/host-install.log build-docker \
+release-docker: $(HOST_TARGET_DOCKER) build-docker \
 		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
@@ -572,7 +575,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
+devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
@@ -654,7 +657,7 @@ clean:
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
 		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
-		./var-docker/log/rebuild.log $(STATE_DIR)/log/host-install.log
+		./var-docker/log/rebuild.log $(HOST_TARGET_DOCKER)
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -685,7 +688,7 @@ endif
 	date >>"$(@)"
 
 ./README.md: README.rst
-	$(MAKE) "$(HOST_PREFIX)/bin/docker"
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
@@ -741,7 +744,7 @@ $(HOME)/.local/bin/pipx:
 $(HOST_PREFIX)/bin/pip3:
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
 	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
-$(HOST_PREFIX)/bin/docker:
+$(HOST_TARGET_DOCKER):
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
 	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
 	docker info
@@ -762,7 +765,7 @@ $(STATE_DIR)/log/host-update.log:
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -804,7 +807,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
-	$(MAKE) "$(HOST_PREFIX)/bin/docker"
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
@@ -818,7 +821,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log" "./.env.~out~"
+	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then

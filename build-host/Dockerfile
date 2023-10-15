@@ -58,11 +58,13 @@ RUN \
 
 # Reflect that the container image already has all build dependencies installed and
 # install tox locally:
+COPY [ "./bin/install-codecov.sh", "${HOME}/.local/bin/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install --user "pipx==1.2.0" && \
     python3 -m "pipx" ensurepath && \
     pipx install "tox==4.11.3" && \
-    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
+    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
+    ${HOME}/.local/bin/install-codecov.sh
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

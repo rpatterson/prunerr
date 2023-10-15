@@ -1019,31 +1019,9 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	    ) |& tee -a "$(@)"
 	fi
 
-$(HOME)/.local/bin/codecov:
 # Install the code test coverage publishing tool:
-	(
-	    if ! which codecov
-	    then
-		mkdir -pv "$(dir $(@))"
-# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
-	        if which brew
-	        then
-# macOS:
-	            curl --output-dir ~/.local/bin/ -Os \
-	                "https://uploader.codecov.io/latest/macos/codecov"
-	        elif which apk
-	        then
-# Alpine:
-	            wget --directory-prefix ~/.local/bin/ \
-	                "https://uploader.codecov.io/latest/alpine/codecov"
-	        else
-# Other Linux distributions:
-	            curl --output-dir ~/.local/bin/ -Os \
-	                "https://uploader.codecov.io/latest/linux/codecov"
-	        fi
-	        chmod +x ~/.local/bin/codecov
-	    fi
-	) | tee -a "$(@)"
+$(HOME)/.local/bin/codecov: ./build-host/bin/install-codecov.sh
+	"$(<)" | tee -a "$(@)"
 
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD

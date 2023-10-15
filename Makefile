@@ -44,6 +44,24 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
+# Values used to install host operating system packages:
+HOST_PREFIX=/usr
+HOST_PKG_CMD_PREFIX=sudo
+HOST_PKG_BIN=apt-get
+HOST_PKG_INSTALL_ARGS=install -y
+HOST_PKG_NAME_ENVSUBST=gettext-base
+HOST_PKG_NAME_PIP=python3-pip
+HOST_PKG_NAME_DOCKER=docker-compose-plugin
+ifneq ($(shell which "apk"),)
+HOST_PKG_BIN=apk
+HOST_PKG_INSTALL_ARGS=add
+HOST_PKG_NAME_ENVSUBST=gettext
+HOST_PKG_NAME_PIP=py3-pip
+HOST_PKG_NAME_DOCKER=docker-cli-compose
+endif
+# TODO: Add OS-X/Darwin support.
+HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
+
 # Values derived from the environment:
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME:=$(shell \
@@ -167,7 +185,7 @@ all: build
 
 .PHONY: build
 ### Perform any necessary local set-up common to most operations.
-build: ./.git/hooks/pre-commit ./.env.~out~ $(STATE_DIR)/log/host-install.log \
+build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
 		$(STATE_DIR)/bin/tox ./var/log/npm-install.log
 
 .PHONY: build-pkgs
@@ -201,8 +219,8 @@ test: test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
-		./var/log/npm-install.log build-docs test-lint-prose
+test-lint: $(STATE_DIR)/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
+		build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -212,7 +230,7 @@ test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(STATE_DIR)/log/host-install.log ./var/log/vale-sync.log ./.vale.ini \
+test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
@@ -356,7 +374,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
+devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
@@ -433,7 +451,7 @@ clean:
 # Recipes that make actual changes and create and update files for the target.
 
 ./README.md: README.rst
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "$(HOST_PREFIX)/bin/docker"
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
@@ -474,16 +492,27 @@ $(HOME)/.nvm/nvm.sh:
 # Bootstrap the right version of Tox for this checkout:
 $(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate
 	"$(STATE_DIR)/bin/pip" install --force-reinstall -r "$(<)"
-$(STATE_DIR)/bin/activate: $(STATE_DIR)/log/host-install.log
+$(STATE_DIR)/bin/activate: $(HOST_PREFIX)/bin/pip3
 	python3 -m venv "$(@:%/bin/activate=%/)"
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
-	mkdir -pv "$(dir $(@))"
-	"$(<)" |& tee -a "$(@)"
+$(HOST_PREFIX)/bin/pip3:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAME_PIP)"
+$(HOST_PREFIX)/bin/docker:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAME_DOCKER)"
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
+	then
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
+	    false
+	fi
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
@@ -514,7 +543,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
 		./styles/code.ini
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "$(HOST_PREFIX)/bin/docker"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
@@ -547,8 +576,8 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 define expand_template=
 if ! which envsubst
 then
-    mkdir -pv "$(STATE_DIR)/log/"
-    ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
+    $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
+    $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAME_ENVSUBST)"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

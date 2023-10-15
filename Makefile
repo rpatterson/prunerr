@@ -155,7 +155,6 @@ endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
-export PATH:=$(STATE_DIR)/bin:$(PATH)
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
@@ -195,7 +194,7 @@ all: build
 .PHONY: build
 ### Perform any necessary local set-up common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
-		$(STATE_DIR)/bin/tox ./var/log/npm-install.log
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log
 
 .PHONY: build-pkgs
 ### Update the built package for use outside tox.
@@ -208,11 +207,11 @@ build-docs: build-docs-html
 
 .PHONY: build-docs-watch
 ### Serve the Sphinx documentation with live updates
-build-docs-watch: $(STATE_DIR)/bin/tox
+build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
-build-docs-%: $(STATE_DIR)/bin/tox
+build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
@@ -228,7 +227,7 @@ test: test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(STATE_DIR)/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
+test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
 		build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
@@ -265,7 +264,7 @@ test-debug:
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/bin/tox
+test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -318,7 +317,7 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(STATE_DIR)/bin/tox \
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
 	then
@@ -405,7 +404,7 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: $(STATE_DIR)/bin/tox
+devel-upgrade: $(HOME)/.local/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
@@ -498,11 +497,16 @@ $(HOME)/.nvm/nvm.sh:
 	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
 	    | bash
 
-# Bootstrap the right version of Tox for this checkout:
-$(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate
-	"$(STATE_DIR)/bin/pip" install --force-reinstall -r "$(<)"
-$(STATE_DIR)/bin/activate: $(HOST_PREFIX)/bin/pip3
-	python3 -m venv "$(@:%/bin/activate=%/)"
+# Install the meta tool for managing Python tools:
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
@@ -548,13 +552,13 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(STATE_DIR)/bin/tox"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
-	$(MAKE)-e "$(STATE_DIR)/bin/tox" "./var/log/vale-sync.log"
+	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \

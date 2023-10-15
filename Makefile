@@ -35,6 +35,7 @@ NPM_SCOPE=rpattersonnet
 SHELL:=bash
 .ONESHELL:
 .SHELLFLAGS:=-eu -o pipefail -c
+export BASH_ENV=./.bash_env.sh
 .SILENT:
 .DELETE_ON_ERROR:
 MAKEFLAGS+=--warn-undefined-variables
@@ -150,9 +151,6 @@ endif
 # command-line:
 include $(wildcard .env)
 
-# Finished with `$(shell)`, echo recipe commands going forward
-.SHELLFLAGS+= -x
-
 # <!--alex disable hooks-->
 
 
@@ -210,7 +208,7 @@ test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
 # Lint copyright and licensing:
 	docker compose run --rm -T "reuse"
 # Run linters implemented in JavaScript:
-	~/.nvm/nvm-exec npm run lint
+	npm run lint
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
@@ -340,7 +338,7 @@ endif
 	git add -- "./NEWS-VERSION.rst"
 	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
-	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
+	npm --no-git-tag-version version "$${next_version}"
 	git add -- "./package*.json"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
@@ -376,7 +374,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 	    docker compose run --rm -T "reuse" annotate --skip-unrecognised \
 	        --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT"
 # Run source code formatting tools implemented in JavaScript:
-	~/.nvm/nvm-exec npm run format
+	npm run format
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
@@ -445,19 +443,19 @@ clean:
 ./var/log/npm-install.log: ./package.json
 	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install | tee -a "$(@)"
+	npm install | tee -a "$(@)"
 
 ./package.json:
 	$(MAKE) "$(STATE_DIR)/log/host-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+	npm init --yes --scope="@$(NPM_SCOPE)"
 
 $(HOME)/.npmrc:
 	$(MAKE) "$(STATE_DIR)/log/host-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
-	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
-	~/.nvm/nvm-exec npm set init-license "MIT"
+	npm set init-author-email "$(USER_EMAIL)"
+	npm set init-author-name "$(USER_FULL_NAME)"
+	npm set init-license "MIT"
 
 # Bootstrap the right version of Tox for this checkout:
 $(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate

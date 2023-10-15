@@ -45,6 +45,31 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
+# Values used to install host operating system packages:
+HOST_PREFIX=/usr
+HOST_PKG_CMD_PREFIX=sudo
+HOST_PKG_BIN=apt-get
+HOST_PKG_INSTALL_ARGS=install -y
+HOST_PKG_NAMES_ENVSUBST=gettext-base
+HOST_PKG_NAMES_PIP=python3-pip
+HOST_PKG_NAMES_DOCKER=docker-ce-cli docker-compose-plugin
+ifneq ($(shell which "brew"),)
+HOST_PREFIX=/usr/local
+HOST_PKG_CMD_PREFIX=
+HOST_PKG_BIN=brew
+HOST_PKG_INSTALL_ARGS=install
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=python
+HOST_PKG_NAMES_DOCKER=docker docker-compose
+else ifneq ($(shell which "apk"),)
+HOST_PKG_BIN=apk
+HOST_PKG_INSTALL_ARGS=add
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=py3-pip
+HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
+endif
+HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
+
 # Values derived from the environment:
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME:=$(shell \
@@ -165,7 +190,6 @@ endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
-export PATH:=$(STATE_DIR)/bin:$(PATH)
 # Values used to run Tox:
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
 TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
@@ -223,8 +247,9 @@ all: build
 
 .PHONY: build
 ### Perform any necessary local set-up common to most operations.
-build: ./.git/hooks/pre-commit ./.env.~out~ $(STATE_DIR)/log/host-install.log \
-		./var/log/npm-install.log $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
+build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log \
+		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
@@ -272,11 +297,11 @@ build-docs: build-docs-html
 
 .PHONY: build-docs-watch
 ### Serve the Sphinx documentation with live updates
-build-docs-watch: $(STATE_DIR)/bin/tox
+build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
-build-docs-%: $(STATE_DIR)/bin/tox
+build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
@@ -292,8 +317,8 @@ test: $(STATE_DIR)/bin/tox build test-lint
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
-		./var/log/npm-install.log build-docs test-lint-prose
+test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
+		build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -303,7 +328,7 @@ test-lint: $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(STATE_DIR)/log/host-install.log ./var/log/vale-sync.log ./.vale.ini \
+test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
@@ -329,7 +354,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/bin/tox
+test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -387,7 +412,7 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(STATE_DIR)/bin/tox
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
 	then
@@ -452,8 +477,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log \
-		$(STATE_DIR)/bin/tox
+devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
 	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
@@ -482,7 +506,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log \
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: $(STATE_DIR)/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
+devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	touch "./setup.cfg" "./requirements/build.txt.in"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS integration from remotes to the most recent tag:
@@ -577,7 +601,7 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	    pip3 install -e "./" |& tee -a "$(@)"
 
 ./README.md: README.rst
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "$(HOST_PREFIX)/bin/docker"
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
@@ -585,35 +609,72 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 	$(call expand_template,$(<),$(@))
 
 ./var/log/npm-install.log: ./package.json
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "./var/log/nvm-install.log"
 	mkdir -pv "$(dir $(@))"
 	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
 ./package.json:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log" "$(HOME)/.npmrc"
+	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
 $(HOME)/.npmrc:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "./var/log/nvm-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
-# Bootstrap the right version of Tox for this checkout:
-$(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate
-	"$(STATE_DIR)/bin/pip" install --force-reinstall -r "$(<)"
-$(STATE_DIR)/bin/activate: $(STATE_DIR)/log/host-install.log
-	python3 -m venv "$(@:%/bin/activate=%/)"
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
+	mkdir -pv "$(dir $(@))"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh"
+	nvm install | tee -a "$(@)"
+
+# Manage JavaScript/TypeScript packages:
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
+
+# Install the meta tool for managing Python tools:
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
-	mkdir -pv "$(dir $(@))"
-	"$(<)" |& tee -a "$(@)"
+$(HOST_PREFIX)/bin/pip3:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
+$(HOST_PREFIX)/bin/docker:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
+	then
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
+	    false
+	fi
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
@@ -633,24 +694,24 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(STATE_DIR)/bin/tox"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
-	$(MAKE)-e "$(STATE_DIR)/bin/tox" "./var/log/vale-sync.log"
+	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
 		./styles/code.ini
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "$(HOST_PREFIX)/bin/docker"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
 # Capture any project initialization tasks for reference. Not actually usable.
 ./pyproject.toml:
-	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Tell editors where to find tools in the checkout needed to verify the code:
@@ -686,8 +747,8 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 define expand_template=
 if ! which envsubst
 then
-    mkdir -pv "$(STATE_DIR)/log/"
-    ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
+    $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
+    $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_ENVSUBST)"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then

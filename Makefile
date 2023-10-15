@@ -46,6 +46,36 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
+# Values used to install host operating system packages:
+HOST_PREFIX=/usr
+HOST_PKG_CMD_PREFIX=sudo
+HOST_PKG_BIN=apt-get
+HOST_PKG_INSTALL_ARGS=install -y
+HOST_PKG_NAMES_ENVSUBST=gettext-base
+HOST_PKG_NAMES_PIP=python3-pip
+HOST_PKG_NAMES_DOCKER=docker-ce-cli docker-compose-plugin
+ifneq ($(shell which "brew"),)
+HOST_PREFIX=/usr/local
+HOST_PKG_CMD_PREFIX=
+HOST_PKG_BIN=brew
+HOST_PKG_INSTALL_ARGS=install
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=python
+HOST_PKG_NAMES_DOCKER=docker docker-compose
+else ifneq ($(shell which "apk"),)
+HOST_PKG_BIN=apk
+HOST_PKG_INSTALL_ARGS=add
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=py3-pip
+HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
+endif
+HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
+# Detect Docker command-line baked into the build-host image:
+HOST_TARGET_DOCKER:=$(shell which docker)
+ifeq ($(HOST_TARGET_DOCKER),)
+HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
+endif
+
 # Values derived from the environment:
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME:=$(shell \
@@ -181,7 +211,6 @@ endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
-export PATH:=$(STATE_DIR)/bin:$(PATH)
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 
@@ -350,8 +379,8 @@ run: build-docker ./.env.~out~
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env.~out~ $(STATE_DIR)/log/host-install.log \
-		./var/log/npm-install.log build-docker
+build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker
 
 .PHONY: build-pkgs
 ### Ensure a current built package.
@@ -365,11 +394,11 @@ build-docs: build-docs-html
 
 .PHONY: build-docs-watch
 ### Serve the Sphinx documentation with live updates
-build-docs-watch: $(STATE_DIR)/bin/tox
+build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
-build-docs-%: $(STATE_DIR)/bin/tox
+build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
@@ -392,7 +421,7 @@ build-docker-tags:
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(HOME)/.local/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
@@ -421,7 +450,7 @@ endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
-build-docker-build: ./Dockerfile \
+build-docker-build: ./Dockerfile $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
@@ -488,8 +517,8 @@ test-local:
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log build-docs \
-		test-lint-prose
+test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
+		build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -499,7 +528,7 @@ test-lint: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log build-doc
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(STATE_DIR)/log/host-install.log ./var/log/vale-sync.log ./.vale.ini \
+test-lint-prose: $(HOST_TARGET_DOCKER) ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
@@ -525,8 +554,7 @@ test-debug:
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs $(STATE_DIR)/log/host-install.log \
-		build-docker
+test-docker: $(HOST_TARGET_DOCKER) build-pkgs build-docker
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -554,7 +582,7 @@ endif
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
+test-docker-lint: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -562,8 +590,7 @@ test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
 
 .PHONY: test-push
 ### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) $(STATE_DIR)/log/host-install.log $(STATE_DIR)/bin/tox \
-		./var-docker/log/build-devel.log ./.env.~out~
+test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox ./.env.~out~
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),main)
@@ -590,8 +617,7 @@ endif
 	then
 	    exit $$exit_code
 	else
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        $(PROJECT_NAME)-devel $(TOX_EXEC_BUILD_ARGS) -- \
+	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
@@ -617,8 +643,7 @@ release: release-pkgs release-docker
 
 .PHONY: release-pkgs
 ### Publish installable packages if conventional commits require a release.
-release-pkgs: $(STATE_DIR)/log/host-install.log \
-		./var/log/git-remotes.log \
+release-pkgs: $(HOST_TARGET_DOCKER) ./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
@@ -649,7 +674,8 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+release-docker: $(HOST_TARGET_DOCKER) build-docker \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 # Build other platforms in emulation and rely on the layer cache for bundling the
 # native images built before into the manifests:
@@ -672,9 +698,9 @@ endif
 
 .PHONY: release-bump
 ### Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) ./var/log/git-remotes.log \
-		$(STATE_DIR)/log/host-install.log ./var-docker/log/build-devel.log \
-		./.env.~out~
+release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
+		./var/log/npm-install.log ./var/log/git-remotes.log \
+		./var-docker/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -721,14 +747,11 @@ endif
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
 # Assemble the release notes for this next version:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- \
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-# Build and stage the release notes that `$ cz bump` commits:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
 	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
 	git add -- "./package*.json"
@@ -764,7 +787,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
+devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
@@ -786,7 +809,7 @@ devel-format: $(STATE_DIR)/log/host-install.log ./var/log/npm-install.log
 
 .PHONY: devel-upgrade
 ### Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: $(STATE_DIR)/bin/tox
+devel-upgrade: $(HOME)/.local/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
@@ -873,8 +896,8 @@ clean:
 
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
-		./var-docker/log/rebuild.log ./docker-compose.yml \
-		./docker-compose.override.yml ./.env.~out~ ./bin/host-install.sh
+		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
+		./var-docker/log/rebuild.log $(HOST_TARGET_DOCKER)
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -887,17 +910,6 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-# Reflect in the `${HOME}` bind volume the image bakes the host install into the image:
-	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	    $(PROJECT_NAME)-devel mkdir -pv \
-	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/"
-	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
-	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" |
-	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	        $(PROJECT_NAME)-devel tee -a \
-	        "/home/$(PROJECT_NAME)/.local/state/$(PROJECT_NAME)/log/host-install.log" \
-	        >"/dev/null"
 
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
@@ -907,8 +919,6 @@ endif
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load" \
 	    build-docker-build >>"$(@)"
-# The image installs the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build-user.log=%/host-install.log)"
 
 # Marker file used to trigger the rebuild of the image.
 
@@ -917,41 +927,85 @@ endif
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
 
+./README.md: README.rst
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
+	docker compose run --rm "pandoc"
+
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
 ./var/log/npm-install.log: ./package.json
+	$(MAKE) "./var/log/nvm-install.log"
 	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
 ./package.json:
+	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	$(MAKE) "$(HOME)/.npmrc"
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
-$(HOME)/.npmrc: $(STATE_DIR)/log/host-install.log
+$(HOME)/.npmrc:
+	$(MAKE) "./var/log/nvm-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
 	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
 	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
 	~/.nvm/nvm-exec npm set init-license "MIT"
 
-# Bootstrap the right version of Tox for this checkout:
-$(STATE_DIR)/bin/tox: ./build-host/requirements.txt.in $(STATE_DIR)/bin/activate
-	"$(STATE_DIR)/bin/pip" install --force-reinstall -r "$(<)"
-$(STATE_DIR)/bin/activate: $(STATE_DIR)/log/host-install.log
-	python3 -m venv "$(@:%/bin/activate=%/)"
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
+	mkdir -pv "$(dir $(@))"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh"
+	nvm install | tee -a "$(@)"
+
+# Manage JavaScript/TypeScript packages:
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
+
+# Install the meta tool for managing Python tools:
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
 
 # Install all tools required by recipes installed outside the checkout on the
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(STATE_DIR)/log/host-install.log: ./bin/host-install.sh
-	mkdir -pv "$(dir $(@))"
-	"$(<)" |& tee -a "$(@)"
+$(HOST_PREFIX)/bin/pip3:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
+$(HOST_TARGET_DOCKER):
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
+	then
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
+	    false
+	fi
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -1016,17 +1070,17 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	fi
 
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
-	$(MAKE) "./var/log/vale-sync.log"
+	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
 
-./var/log/vale-sync.log: $(STATE_DIR)/log/host-install.log ./.env.~out~ ./.vale.ini \
-		./styles/code.ini
+./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
@@ -1072,7 +1126,7 @@ endif
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "./.env.~out~"
+	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
@@ -1199,8 +1253,8 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 define expand_template=
 if ! which envsubst
 then
-    mkdir -pv "$(STATE_DIR)/log/"
-    ./bin/host-install.sh >"$(STATE_DIR)/log/host-install.log"
+    $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
+    $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_ENVSUBST)"
 fi
 if [ "$(2:%.~out~=%)" -nt "$(1)" ]
 then
@@ -1318,8 +1372,7 @@ endef
 
 .PHONY: pull-docker
 ### Pull an existing image best to use as a cache for building new images
-pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		$(STATE_DIR)/log/host-install.log
+pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DOCKER)
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	for vcs_branch in $(VCS_BRANCHES)
 	do

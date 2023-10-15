@@ -46,6 +46,7 @@ allows
 yaml
 kill
 [Gg]it
+via
 [Cc]odecov
 gh
 GPG

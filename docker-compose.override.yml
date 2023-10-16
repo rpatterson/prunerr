@@ -19,9 +19,6 @@ services:
       target: "user"
       args:
         VERSION: "${VERSION:-}"
-    volumes:
-      # Preserve caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
 
   ## Contianers used for development and release:
 
@@ -50,8 +47,10 @@ services:
       # Reflect local changes inside the container:
       - "${CHECKOUT_DIR:-.}/bin/entrypoint:/usr/local/bin/entrypoint"
       - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure/"
-      # Preserve caches between container runs:
-      - "${CHECKOUT_DIR:-.}/home/:/home/project-structure/"
+      # Preserve user configuration, data, and caches between containers and variants:
+      - "${CHECKOUT_DIR:-.}/home/.config/:/home/project-structure/.config/"
+      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/project-structure/.local/share/"
+      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/project-structure/.cache/"
       # Avoid any clashes between image variants and the local host at both build and
       # run-time.
       - "${CHECKOUT_DIR:-.}/var-docker/:/usr/local/src/project-structure/var/"

@@ -19,3 +19,8 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
     restart: "unless-stopped"
+    volumes:
+      # Preserve user configuration, data, and caches between containers and variants:
+      - "${CHECKOUT_DIR:-.}/home/.config/:/home/project-structure/.config/"
+      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/project-structure/.local/share/"
+      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/project-structure/.cache/"

@@ -70,6 +70,11 @@ HOST_PKG_NAMES_PIP=py3-pip
 HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
+# Detect Docker command-line baked into the build-host image:
+HOST_TARGET_DOCKER:=$(shell which docker)
+ifeq ($(HOST_TARGET_DOCKER),)
+HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
+endif
 
 # Values derived from the environment:
 USER_NAME:=$(shell id -u -n)
@@ -87,13 +92,13 @@ export CHECKOUT_DIR=$(PWD)
 STATE_DIR=$(HOME)/.local/state/$(PROJECT_NAME)
 TZ=Etc/UTC
 ifneq ("$(wildcard /usr/share/zoneinfo/)","")
-TZ=$(shell \
+TZ:=$(shell \
   realpath --relative-to=/usr/share/zoneinfo/ \
   $(firstword $(realpath /private/etc/localtime /etc/localtime)) \
 )
 endif
 export TZ
-export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
+export DOCKER_GID:=$(shell getent group "docker" | cut -d ":" -f 3)
 
 # Values related to supported Python versions:
 # Use the same Python version tox would as a default.
@@ -310,9 +315,9 @@ run: build-docker ./.env.~out~
 
 .PHONY: build
 ### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
-		$(HOME)/.local/bin/tox ./var/log/npm-install.log \
-		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile) build-docker
+build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker \
+		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
@@ -342,7 +347,7 @@ endif
 
 .PHONY: build-pkgs
 ### Update the built package for use outside tox.
-build-pkgs: $(STATE_DIR)/log/host-install.log \
+build-pkgs: $(HOST_TARGET_DOCKER) \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log
 # Defined as a .PHONY recipe so that more than one target can depend on this as a
@@ -410,7 +415,7 @@ build-docker-tags:
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 ### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(STATE_DIR)/bin/tox
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(HOME)/.local/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
@@ -441,8 +446,7 @@ endif
 
 .PHONY: build-docker-build
 ### Run the actual commands used to build the Docker container image.
-build-docker-build: ./Dockerfile $(STATE_DIR)/log/host-install.log \
-		$(STATE_DIR)/bin/tox \
+build-docker-build: ./Dockerfile $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
@@ -497,7 +501,7 @@ test-local: $(STATE_DIR)/bin/tox
 
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
+test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
 		build-docs test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
@@ -508,7 +512,7 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-instal
 
 .PHONY: test-lint-prose
 ### Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
+test-lint-prose: $(HOST_TARGET_DOCKER) ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
@@ -552,7 +556,7 @@ $(PYTHON_MINORS:%=test-docker-%):
 
 .PHONY: test-docker-pyminor
 ### Run the full suite of tests inside a docker container for this Python version.
-test-docker-pyminor: $(STATE_DIR)/log/host-install.log build-docker-$(PYTHON_MINOR)
+test-docker-pyminor: $(HOST_TARGET_DOCKER) build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -569,8 +573,7 @@ test-docker-pyminor: $(STATE_DIR)/log/host-install.log build-docker-$(PYTHON_MIN
 
 .PHONY: test-docker-lint
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: $(STATE_DIR)/log/host-install.log ./.env.~out~ \
-		./var/log/docker-login-DOCKER.log
+test-docker-lint: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -641,7 +644,7 @@ endif
 
 .PHONY: release-docker
 ### Publish all container images to all container registries.
-release-docker: $(STATE_DIR)/log/host-install.log build-docker \
+release-docker: $(HOST_TARGET_DOCKER) build-docker \
 		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
@@ -752,7 +755,7 @@ endif
 
 .PHONY: devel-format
 ### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local/bin/tox
+devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin/tox
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
@@ -895,11 +898,10 @@ $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
 ## Docker real targets:
 
 # Build the development image:
-./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile \
-		./.dockerignore ./bin/entrypoint ./pyproject.toml ./setup.cfg \
-		./tox.ini ./docker-compose.yml ./docker-compose.override.yml \
+./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
+		./bin/entrypoint ./docker-compose.yml ./docker-compose.override.yml \
 		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
-		$(STATE_DIR)/log/host-install.log
+		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -943,7 +945,7 @@ endif
 	date >>"$(@)"
 
 ./README.md: README.rst
-	$(MAKE) "$(HOST_PREFIX)/bin/docker"
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	docker compose run --rm "pandoc"
 
 # Local environment variables and secrets from a template:
@@ -999,7 +1001,7 @@ $(HOME)/.local/bin/pipx:
 $(HOST_PREFIX)/bin/pip3:
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
 	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
-$(HOST_PREFIX)/bin/docker:
+$(HOST_TARGET_DOCKER):
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
 	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
 	docker info
@@ -1020,7 +1022,7 @@ $(STATE_DIR)/log/host-update.log:
 
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log"
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -1085,7 +1087,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(call expand_template,$(<),$(@))
 
 ./var/log/docker-login-DOCKER.log:
-	$(MAKE) "$(STATE_DIR)/log/host-install.log" "./.env.~out~"
+	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then

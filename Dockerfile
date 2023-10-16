@@ -28,10 +28,19 @@ LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 
 # Find the same home directory even when run as another user, for example `root`.
+ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
+ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint" ]
 CMD [ "python" ]
+
+# Support for a volume to preserve data between runs and share data between variants:
+# TEMPLATE: Add other user `${HOME}/` files to preserved.
+RUN mkdir -pv "${HOME}/.local/share/${PROJECT_NAME}/" && \
+    touch "${HOME}/.local/share/${PROJECT_NAME}/bash_history" && \
+    ln -snv --relative "${HOME}/.local/share/${PROJECT_NAME}/bash_history" \
+        "${HOME}/.bash_history"
 
 # Put the `ENTRYPOINT` on the `$PATH`
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

@@ -28,7 +28,7 @@ name: "Build and Test"
 
 env:
   PUID: "1001"
-  PGID: "123"
+  PGID: "1001"
   # Project specific values:
   PROJECT_NAMESPACE: "rpatterson"
   PROJECT_NAME: "project-structure"

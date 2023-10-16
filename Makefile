@@ -223,8 +223,6 @@ ifneq ($(PYTHON_WHEEL),)
 TOX_RUN_ARGS+= --installpkg "$(PYTHON_WHEEL)"
 endif
 export TOX_RUN_ARGS
-# The options that allow for rapid execution of arbitrary commands in the venvs managed
-# by tox
 # The options that support running arbitrary commands in the venvs managed by tox with
 # the least overhead:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
@@ -361,7 +359,7 @@ build-pkgs: $(HOST_TARGET_DOCKER) \
 # consistency/reproducibility.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    tox run -e "$(PYTHON_ENV)" --pkg-only
-# Copy the wheel to a location accessible to all containers:
+# Copy the wheel to a location available to all containers:
 	cp -lfv "$$(
 	    ls -t ./var-docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
 	)" "./dist/"
@@ -674,8 +672,8 @@ endif
 	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` using the `./README.rst` reStructuredText version using
-# the official/canonical Python version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version
+# using the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
 	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
 	then
@@ -739,8 +737,8 @@ endif
 	git add -- "./package*.json"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
-# Ensure the container image reflects the version bump but we don't need to update the
-# requirements again.
+# Ensure the container image reflects the version bump without updating the requirements
+# again:
 	touch \
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
@@ -922,7 +920,7 @@ endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
-# we may need to re-build the container image again to ensure it's current and correct.
+# the container image might need re-building to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
@@ -942,7 +940,7 @@ endif
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
 	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
 
-# Marker file used to trigger the rebuild of the image for just one Python version.
+# Marker file used to trigger the rebuild of the image for only one Python version.
 # Useful to workaround asynchronous timestamp issues when running jobs in parallel:
 ./var-docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"

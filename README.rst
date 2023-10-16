@@ -58,7 +58,7 @@ projects. It includes:
 - A `Docker`_ container image for end users
 - A Docker image for development, which runs tests
 - A `Makefile`_ for local development, build, test, and maintenance
-- A target that formats all Python code, including using `Black`_ for style
+- A target that formats all Python code, including by using `Black`_ for style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
   Python code checks
 - A `tox.ini`_ configuration for `Tox`_ to run all tests and linters across supported
@@ -122,7 +122,7 @@ support. Report any issues you have or better yet submit a PR with corrections.
 
    - ``py-docker``:
 
-     The above Docker images with the Python package installed.
+     The preceding Docker images with the Python package installed.
 
    It's important to use one of the preceding branches to merge into your project and
    *not* the ``develop`` or ``main`` branches from the template. Template developers use

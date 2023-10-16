@@ -57,7 +57,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
-# because this step takes the most time and changes the least frequently.
+# because this step takes the most time and changes the least often.
 ARG PYTHON_ENV=py311
 COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" ]
 # hadolint ignore=DL3042
@@ -106,7 +106,7 @@ ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.l
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
-# Have to use the shell form of `CMD` because we need variable substitution:
+# Have to use the shell form of `CMD` because it needs variable substitution:
 # hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
 
@@ -114,4 +114,3 @@ CMD tox -e "${PYTHON_ENV}"
 COPY [ "./Makefile", "./" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     make "${HOME}/.local/bin/tox"
-

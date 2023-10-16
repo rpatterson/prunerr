@@ -394,7 +394,7 @@ build-docs-%: $(HOME)/.local/bin/tox
 
 .PHONY: build-docker
 ### Set up for development in Docker containers.
-build-docker: $(STATE_DIR)/bin/tox build-pkgs \
+build-docker: $(HOME)/.local/bin/tox build-pkgs \
 		./var-docker/$(PYTHON_ENV)/log/build-user.log
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
@@ -498,7 +498,7 @@ test: test-lint test-docker
 
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters on the local host.
-test-local: $(STATE_DIR)/bin/tox
+test-local: $(HOME)/.local/bin/tox
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
@@ -540,7 +540,7 @@ test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
 
 .PHONY: test-docker
 ### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: $(STATE_DIR)/bin/tox build-pkgs
+test-docker: $(HOME)/.local/bin/tox build-pkgs
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -631,7 +631,7 @@ release: release-pkgs release-docker
 
 .PHONY: release-pkgs
 ### Publish installable Python packages to PyPI if conventional commits require.
-release-pkgs: $(STATE_DIR)/bin/tox ~/.pypirc.~out~
+release-pkgs: $(HOME)/.local/bin/tox ~/.pypirc.~out~
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
@@ -886,13 +886,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
-	$(MAKE) -e "$(STATE_DIR)/bin/tox"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
 # Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
 # prerequisite for targets that use Tox virtual environments directly and changes to
 # code need to take effect in real-time:
 $(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(STATE_DIR)/bin/tox"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	mkdir -pv "$(dir $(@))"
 	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
 	    pip3 install -e "./" |& tee -a "$(@)"

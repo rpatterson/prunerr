@@ -458,81 +458,24 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-./README.md: README.rst
-	$(MAKE) "$(HOST_PREFIX)/bin/docker"
-	docker compose run --rm "pandoc"
+
+### Development Artifacts:
 
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
-./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
-	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
-./package.json:
-	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
-# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+### Release Artifacts:
 
-$(HOME)/.npmrc:
-	$(MAKE) "./var/log/nvm-install.log"
-# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
-	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
-	~/.nvm/nvm-exec npm set init-license "MIT"
+./README.md: README.rst
+	$(MAKE) "$(HOST_PREFIX)/bin/docker"
+	docker compose run --rm "pandoc"
 
-./var/log/nvm-install.log: ./.nvmrc
-	$(MAKE) "$(HOME)/.nvm/nvm.sh"
-	mkdir -pv "$(dir $(@))"
-	set +x
-	. "$(HOME)/.nvm/nvm.sh" || true
-	nvm install | tee -a "$(@)"
 
-# Manage JavaScript/TypeScript packages:
-# https://github.com/nvm-sh/nvm#install--update-script
-$(HOME)/.nvm/nvm.sh:
-	set +x
-	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
-	    | bash
+### Development Tools:
 
-# Install the meta tool for managing Python tools:
-$(HOME)/.local/bin/tox:
-	$(MAKE) "$(HOME)/.local/bin/pipx"
-# https://tox.wiki/en/latest/installation.html#via-pipx
-	pipx install "tox"
-$(HOME)/.local/bin/pipx:
-	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
-# https://pypa.github.io/pipx/installation/#install-pipx
-	pip3 install --user "pipx"
-	python3 -m pipx ensurepath
-
-# Install all tools required by recipes installed outside the checkout on the
-# system. Use a target file outside this checkout to support more than one
-# checkout. Support other projects that use the same approach but with different
-# requirements, use a target specific to this project:
-$(HOST_PREFIX)/bin/pip3:
-	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
-$(HOST_PREFIX)/bin/docker:
-	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
-	docker info
-ifeq ($(HOST_PKG_BIN),brew)
-# https://formulae.brew.sh/formula/docker-compose#default
-	mkdir -p ~/.docker/cli-plugins
-	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
-	    "~/.docker/cli-plugins/docker-compose"
-endif
-$(STATE_DIR)/log/host-update.log:
-	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
-	then
-	    set +x
-	    echo "ERROR: OS not supported for installing system dependencies"
-	    false
-	fi
-	$(HOST_PKG_CMD) update | tee -a "$(@)"
-
+# VCS configuration and integration:
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
@@ -549,31 +492,91 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
-
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+# Initialize minimal VCS configuration, useful in automation such as CI:
+~/.gitconfig:
+	git config --global user.name "$(USER_FULL_NAME)"
+	git config --global user.email "$(USER_EMAIL)"
 
+# Prose linting:
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
 	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
 		./styles/code.ini
 	$(MAKE) "$(HOST_PREFIX)/bin/docker"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
-# Tell editors where to find tools in the checkout needed to verify the code:
+# Editor and IDE support and integration:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in
 	$(call expand_template,$(<),$(@))
 
-# Initialize minimal VCS configuration, useful in automation such as CI:
-~/.gitconfig:
-	git config --global user.name "$(USER_FULL_NAME)"
-	git config --global user.email "$(USER_EMAIL)"
+# Manage JavaScript tools:
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
+	mkdir -pv "$(dir $(@))"
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
+./package.json:
+	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
+# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
+	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+$(HOME)/.npmrc:
+	$(MAKE) "./var/log/nvm-install.log"
+# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
+	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
+	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
+	~/.nvm/nvm-exec npm set init-license "MIT"
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
+	mkdir -pv "$(dir $(@))"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh" || true
+	nvm install | tee -a "$(@)"
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
+
+# Manage Python tools:
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
+$(HOST_PREFIX)/bin/pip3:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
+
+# Manage tools in containers:
+$(HOST_PREFIX)/bin/docker:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
+
+# Support for installing host operating system packages:
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
+	then
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
+	    false
+	fi
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 
 ### Makefile "functions":

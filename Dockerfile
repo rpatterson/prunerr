@@ -27,6 +27,8 @@ LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/buildpack-deps"
 
 # Find the same home directory even when run as another user, for example `root`.
+ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
+ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint" ]

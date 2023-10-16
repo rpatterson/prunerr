@@ -47,6 +47,8 @@ env:
         ) && 'true'
       ) || 'false'
     }}
+  # Uncomment for debugging output:
+  DEBUG: "true"
 
 on:
   # Run only on branches, not tags:

@@ -70,10 +70,14 @@ HOST_PKG_NAMES_PIP=py3-pip
 HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
-# Detect Docker command-line baked into the build-host image:
+# Detect host binaries baked into base images:
 HOST_TARGET_DOCKER:=$(shell which docker)
 ifeq ($(HOST_TARGET_DOCKER),)
 HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
+endif
+HOST_TARGET_PIP:=$(shell which pip3)
+ifeq ($(HOST_TARGET_PIP),)
+HOST_TARGET_PIP=$(HOST_PREFIX)/bin/pip3
 endif
 
 # Values derived from the environment:
@@ -988,7 +992,7 @@ $(HOME)/.local/bin/tox:
 # https://tox.wiki/en/latest/installation.html#via-pipx
 	pipx install "tox"
 $(HOME)/.local/bin/pipx:
-	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+	$(MAKE) "$(HOST_TARGET_PIP)"
 # https://pypa.github.io/pipx/installation/#install-pipx
 	pip3 install --user "pipx"
 	python3 -m pipx ensurepath
@@ -997,7 +1001,7 @@ $(HOME)/.local/bin/pipx:
 # system. Use a target file outside this checkout to support more than one
 # checkout. Support other projects that use the same approach but with different
 # requirements, use a target specific to this project:
-$(HOST_PREFIX)/bin/pip3:
+$(HOST_TARGET_PIP):
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
 	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
 $(HOST_TARGET_DOCKER):

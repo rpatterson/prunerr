@@ -156,4 +156,4 @@ services:
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR:-.}"
     command: >-
-      make -e build-docker test-docker release
+      make -e test-lint build-docker test-docker release

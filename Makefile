@@ -358,7 +358,7 @@ endif
 
 .PHONY: test
 ### Format the code and run the full suite of tests, coverage checks, and linters.
-test: test-lint test-docker-lint test-docker
+test: test-lint test-docker
 
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters.
@@ -368,7 +368,7 @@ test-local:
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
-		build-docs test-lint-prose
+		build-docs test-lint-docker test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -417,9 +417,9 @@ test-docker: $(HOST_TARGET_DOCKER) build-pkgs
 	docker compose run $${docker_run_args} $(PROJECT_NAME)-devel \
 	    make -e test-local
 
-.PHONY: test-docker-lint
+.PHONY: test-lint-docker
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
+test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \

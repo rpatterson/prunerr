@@ -33,6 +33,11 @@ ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
 ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/runner"
 ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
+# Prevent Node Version Manager (NVM) installing into `/bin/versions/**`:
+ENV NVM_DIR="${HOME}/.nvm"
+# Node.js releases compatible with Alpine Linux based on musl libc:
+# https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
+ENV NVM_NODEJS_ORG_MIRROR="https://unofficial-builds.nodejs.org/download/release"
 
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
@@ -44,11 +49,13 @@ CMD [ "make", "-e", "build-docker" ]
 # hadolint ignore=DL3018
 RUN \
     apk add --no-cache \
+    "coreutils" \
     "make" \
     "bash" \
     "su-exec" \
     "git" \
     "gettext" \
+    "grep" \
     "py3-pip" \
     "gnupg" \
     "curl" \
@@ -56,14 +63,18 @@ RUN \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 
-# Reflect that the container image already has all build dependencies installed and
-# install tox locally:
+# Bake external build dependencies into the image:
 COPY [ "./bin/install-codecov.sh", "${HOME}/.local/bin/" ]
-# hadolint ignore=DL3042
+# hadolint ignore=DL3042,DL4006,SC1091
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install --user "pipx==1.2.0" && \
     python3 -m "pipx" ensurepath && \
     pipx install "tox==4.11.3" && \
+    wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" | \
+        bash && \
+    echo 'nvm_get_arch() { nvm_echo x64-musl; }' >>"${HOME}/.nvm/nvm.sh" && \
+	. "${HOME}/.nvm/nvm.sh" || true && \
+    nvm install "18" && \
     mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
     ${HOME}/.local/bin/install-codecov.sh
 

@@ -8,7 +8,7 @@
 
 set -eu -o pipefail
 shopt -s inherit_errexit
-if [ "${DEBUG:=false}" = "true" ]
+if [ "${DEBUG:=}" = "true" ]
 then
     # Echo commands for easier debugging
     PS4='$0:$LINENO+'

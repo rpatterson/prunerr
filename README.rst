@@ -150,11 +150,11 @@ support. Report any issues you have or better yet submit a PR with corrections.
 
 #. Rename files and directories derived from the project name::
 
-     $ git ls-files | grep -iE 'python.?project.?structure'
+     $ git ls-files | grep -iE 'project.?structure'
 
 #. Rename project name and template creator identity strings::
 
-     $ git grep -iE 'python.?project.?structure|ross|Patterson'
+     $ git grep -iE 'project.?structure|ross|Patterson'
 
 #. Make changes described in ``# TEMPLATE:`` comments:
 
@@ -230,12 +230,15 @@ Releases publish multi-platform images for the following platforms:
 Contributing
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the contributing documentation`_ for more details on how to get started
-with development.
+`GitLab hosts this project`_ and `mirrored on GitHub`_. Use GitLab for reporting
+issues, submitting Pull Requests or Merge Requests, and any other development or
+maintenance activity.
+
+See `the contributing documentation`_ for more details on how to get started with
+development.
 
 
+****************************************************************************************
 Motivation
 ****************************************************************************************
 
@@ -262,8 +265,8 @@ remote, merging structure updates into real projects over their lifetime.
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
-.. _`mirrors it to GitHub`:
-   https://github.com/rpatterson/project-HEAD
+.. _`mirrored on GitHub`:
+   https://github.com/rpatterson/project-structure
 .. _`the contributing documentation`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 

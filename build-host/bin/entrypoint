@@ -52,8 +52,11 @@ main() {
             if ! getent group ${docker_gid} >"/dev/null"
             then
                 addgroup -g "${docker_gid}" "docker"
-                adduser "${user_name}" "docker"
             fi
+	    if ! id -G "${user_name}" | grep -qw "${docker_gid}"
+	    then
+                adduser "${user_name}" "$(stat -c "%G" "/var/run/docker.sock")"
+	    fi
         fi
 	# Run the rest of the command-line arguments as the unprivileged user:
 	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"

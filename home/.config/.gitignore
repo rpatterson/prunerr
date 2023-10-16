@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# Docker bind mount placeholder:
+/*
+!.git*
+
+# Restore backup file ignores reversed by the wildcards above
+*~

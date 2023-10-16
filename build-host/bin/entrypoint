@@ -30,7 +30,8 @@ main() {
         fi
         # Ensure the home directory in the image has the correct permissions:
         chown "${PUID}:${PGID:-${PUID}}" "/home/runner/" "/home/runner/.local/" \
-            "/home/runner/.local/state/" "/home/runner/.local/state/${PROJECT_NAME}/" \
+            "/home/runner/.local/bin/" "/home/runner/.local/state/" \
+            "/home/runner/.local/state/${PROJECT_NAME}/" \
             "/home/runner/.local/state/${PROJECT_NAME}/log/"
         # Add an unprivileged user to cover those use cases and better match local
         # development:

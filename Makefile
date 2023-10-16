@@ -14,7 +14,7 @@
 export PROJECT_NAMESPACE=rpatterson
 export PROJECT_NAME=project-structure
 # TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
-NPM_SCOPE=$(PROJECT_NAMESPACE)
+NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
 
 # Option variables that control behavior:
@@ -357,7 +357,7 @@ endif
 # Recipes that run the test suite.
 
 .PHONY: test
-### Format the code and run the full suite of tests, coverage checks, and linters.
+### Run the full suite of tests, coverage checks, and linters.
 test: test-lint test-docker
 
 .PHONY: test-local

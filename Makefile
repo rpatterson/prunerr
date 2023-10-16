@@ -695,8 +695,7 @@ endif
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
-./var/log/npm-install.log: ./package.json
-	$(MAKE) "./var/log/nvm-install.log"
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
 	mkdir -pv "$(dir $(@))"
 	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
@@ -716,7 +715,7 @@ $(HOME)/.npmrc:
 	$(MAKE) "$(HOME)/.nvm/nvm.sh"
 	mkdir -pv "$(dir $(@))"
 	set +x
-	. "$(HOME)/.nvm/nvm.sh"
+	. "$(HOME)/.nvm/nvm.sh" || true
 	nvm install | tee -a "$(@)"
 
 # Manage JavaScript/TypeScript packages:
@@ -845,9 +844,9 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 # Have to use a placeholder `*.~out~` target instead of the real expanded template
 # because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.
 #
-# Copy and short-circuit the host-install recipe. Don't update expanded templates when
-# `./bin/host-install.sh` changes but expanding a template requires the host-install
-# recipe. The recipe can't use a sub-make because Make updates any expanded template
+# Can't use a target and recipe to install `$ envsubst`. Shouldn't update expanded
+# templates when `/usr/bin/envsubst` changes but expanding a template requires it to be
+# installed. The recipe can't use a sub-make because Make updates any expanded template
 # targets used in `include` directives when reading the `./Makefile`, for example
 # `./.env`, leading to endless recursion:
 define expand_template=

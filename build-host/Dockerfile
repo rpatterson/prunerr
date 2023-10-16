@@ -55,13 +55,16 @@ RUN \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 
-# Reflect that the container image already has all build dependencies installed and
-# install tox locally:
+# Bake external build dependencies into the image:
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install --user "pipx==1.2.0" && \
     python3 -m "pipx" ensurepath && \
     pipx install "tox==4.11.3" && \
+    wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" | \
+        bash && \
+    . "${HOME}/.nvm/nvm.sh" && \
+    nvm install "18" && \
     mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

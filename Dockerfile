@@ -110,10 +110,8 @@ WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
 
-# Simulate the parts of the host install process from `./Makefile` needed for
-# development in the image:
-COPY [ "./build-host/requirements.txt.in", "${HOME}/.local/state/${PROJECT_NAME}/lib/" ]
+# Bake in tools used in the inner loop of the development cycle:
+COPY [ "./Makefile", "./" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    python3 -m venv "${HOME}/.local/state/${PROJECT_NAME}/" && \
-    "${HOME}/.local/state/${PROJECT_NAME}/bin/pip" install --force-reinstall -r \
-        "${HOME}/.local/state/${PROJECT_NAME}/lib/requirements.txt.in"
+    make "${HOME}/.local/bin/tox"
+

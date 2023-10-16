@@ -90,13 +90,13 @@ export CHECKOUT_DIR=$(PWD)
 STATE_DIR=$(HOME)/.local/state/$(PROJECT_NAME)
 TZ=Etc/UTC
 ifneq ("$(wildcard /usr/share/zoneinfo/)","")
-TZ=$(shell \
+TZ:=$(shell \
   realpath --relative-to=/usr/share/zoneinfo/ \
   $(firstword $(realpath /private/etc/localtime /etc/localtime)) \
 )
 endif
 export TZ
-export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
+export DOCKER_GID:=$(shell getent group "docker" | cut -d ":" -f 3)
 
 # Values derived from Version Control Systems (VCS):
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)

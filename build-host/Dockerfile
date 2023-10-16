@@ -35,6 +35,9 @@ ENV HOME="/home/runner"
 ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 # Prevent Node Version Manager (NVM) installing into `/bin/versions/**`:
 ENV NVM_DIR="${HOME}/.nvm"
+# Node.js releases compatible with Alpine Linux based on musl libc:
+# https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
+ENV NVM_NODEJS_ORG_MIRROR="https://unofficial-builds.nodejs.org/download/release"
 
 ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
 CMD [ "make", "-e", "build-docker" ]
@@ -67,7 +70,8 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pipx install "tox==4.11.3" && \
     wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" | \
         bash && \
-    . "${HOME}/.nvm/nvm.sh" || true && \
+    echo 'nvm_get_arch() { nvm_echo x64-musl; }' >>"${HOME}/.nvm/nvm.sh" && \
+	. "${HOME}/.nvm/nvm.sh" || true && \
     nvm install "18" && \
     mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
 

@@ -28,25 +28,25 @@ main() {
             echo "ERROR: Can't create a user when not run as root" 1>&2
             false
         fi
-	# Ensure the home directory in the image has the correct permissions:
-	chown "${PUID}:${PGID:-${PUID}}" "/home/runner/" "/home/runner/.local/" \
-	    "/home/runner/.local/bin/" "/home/runner/.local/state/" \
-	    "/home/runner/.local/state/${PROJECT_NAME}/" \
-	    "/home/runner/.local/state/${PROJECT_NAME}/log/"
+        # Ensure the home directory in the image has the correct permissions:
+        chown "${PUID}:${PGID:-${PUID}}" "/home/runner/" "/home/runner/.local/" \
+            "/home/runner/.local/bin/" "/home/runner/.local/state/" \
+            "/home/runner/.local/state/${PROJECT_NAME}/" \
+            "/home/runner/.local/state/${PROJECT_NAME}/log/"
         # Add an unprivileged user to cover those use cases and better match local
-	# development:
+        # development:
         if ! getent group "${PGID}" >"/dev/null"
         then
             addgroup -g "${PGID}" "runner"
         fi
-	group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
-        if ! getent passwd "${PUID}" >"/dev/null"
+        group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
+        if ! id "${PUID}" >"/dev/null" 2>&1
         then
             adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D \
-		    -s "/bin/bash" "runner"
+                    -s "/bin/bash" "runner"
         fi
-	user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
-	if [ -e "/var/run/docker.sock" ]
+        user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
+        if [ -e "/var/run/docker.sock" ]
         then
             # Ensure the user can talk to `# dockerd`:
             docker_gid=$(stat -c "%g" "/var/run/docker.sock")
@@ -54,13 +54,13 @@ main() {
             then
                 addgroup -g "${docker_gid}" "docker"
             fi
-	    if ! id -G "${user_name}" | grep -qw "${docker_gid}"
-	    then
+            if ! id -G "${user_name}" | grep -qw "${docker_gid}"
+            then
                 adduser "${user_name}" "$(stat -c "%G" "/var/run/docker.sock")"
-	    fi
+            fi
         fi
-	# Run the rest of the command-line arguments as the unprivileged user:
-	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"
+        # Run the rest of the command-line arguments as the unprivileged user:
+        exec su-exec "${PUID}" "${@}"
     fi
 
     # Run un-altered as the user passed in by docker

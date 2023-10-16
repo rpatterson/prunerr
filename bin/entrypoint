@@ -39,7 +39,7 @@ main() {
 	    chown "${PUID}" "${tty_dev}"
 	fi
 	# Delegate the rest to the `CMD`
-	exec gosu "${PUID}:${PGID:-${PUID}}" "${@}"
+	exec gosu "${PUID}" "${@}"
     fi
 
     # Delegate the rest to the `CMD`

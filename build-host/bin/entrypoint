@@ -59,7 +59,7 @@ main() {
 	    fi
         fi
 	# Run the rest of the command-line arguments as the unprivileged user:
-	exec su-exec "${PUID}:${PGID:-${PUID}}" "${@}"
+	exec su-exec "${PUID}" "${@}"
     fi
 
     # Run un-altered as the user passed in by docker

@@ -466,8 +466,7 @@ clean:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
-./var/log/npm-install.log: ./package.json
-	$(MAKE) "./var/log/nvm-install.log"
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
 	mkdir -pv "$(dir $(@))"
 	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
@@ -487,7 +486,7 @@ $(HOME)/.npmrc:
 	$(MAKE) "$(HOME)/.nvm/nvm.sh"
 	mkdir -pv "$(dir $(@))"
 	set +x
-	. "$(HOME)/.nvm/nvm.sh"
+	. "$(HOME)/.nvm/nvm.sh" || true
 	nvm install | tee -a "$(@)"
 
 # Manage JavaScript/TypeScript packages:

@@ -492,7 +492,7 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 
 .PHONY: test
 ### Run the full suite of tests, coverage checks, and linters.
-test: test-docker-lint test-docker
+test: test-lint test-docker
 
 .PHONY: test-local
 ### Run the full suite of tests, coverage checks, and linters on the local host.
@@ -502,7 +502,7 @@ test-local: $(STATE_DIR)/bin/tox
 .PHONY: test-lint
 ### Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
-		build-docs test-lint-prose
+		build-docs test-lint-docker test-lint-prose
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:
@@ -571,9 +571,9 @@ test-docker-pyminor: $(HOST_TARGET_DOCKER) build-docker-$(PYTHON_MINOR)
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
 	        test-local
 
-.PHONY: test-docker-lint
+.PHONY: test-lint-docker
 ### Check the style and content of the `./Dockerfile*` files
-test-docker-lint: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
+test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
@@ -952,8 +952,7 @@ endif
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
-./var/log/npm-install.log: ./package.json
-	$(MAKE) "./var/log/nvm-install.log"
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
 	mkdir -pv "$(dir $(@))"
 	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 
@@ -973,7 +972,7 @@ $(HOME)/.npmrc:
 	$(MAKE) "$(HOME)/.nvm/nvm.sh"
 	mkdir -pv "$(dir $(@))"
 	set +x
-	. "$(HOME)/.nvm/nvm.sh"
+	. "$(HOME)/.nvm/nvm.sh" || true
 	nvm install | tee -a "$(@)"
 
 # Manage JavaScript/TypeScript packages:
@@ -1111,9 +1110,9 @@ current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 # Have to use a placeholder `*.~out~` target instead of the real expanded template
 # because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.
 #
-# Copy and short-circuit the host-install recipe. Don't update expanded templates when
-# `./bin/host-install.sh` changes but expanding a template requires the host-install
-# recipe. The recipe can't use a sub-make because Make updates any expanded template
+# Can't use a target and recipe to install `$ envsubst`. Shouldn't update expanded
+# templates when `/usr/bin/envsubst` changes but expanding a template requires it to be
+# installed. The recipe can't use a sub-make because Make updates any expanded template
 # targets used in `include` directives when reading the `./Makefile`, for example
 # `./.env`, leading to endless recursion:
 define expand_template=

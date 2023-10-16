@@ -22,8 +22,6 @@ __pycache__
 .Python
 env/
 build/
-dist
-sdist/
 downloads/
 develop-eggs/
 eggs/

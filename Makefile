@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Development, build, and maintenance tasks:
+# Development, build, and maintenance tasks:
 #
 # To ease discovery for contributors, place option variables affecting behavior at the
 # top. Skip down to `## Top-level targets:` to find targets intended for use by
@@ -20,7 +20,7 @@ export TEMPLATE_IGNORE_EXISTING=false
 NPM_SCOPE=rpattersonnet
 
 
-## "Private" Variables:
+### "Private" Variables:
 
 # Variables not of concern those running and reading top-level targets. These variables
 # most often derive from the environment or other values. Place variables holding
@@ -30,7 +30,7 @@ NPM_SCOPE=rpattersonnet
 # contrast with references in recipes. As a result, the Makefile can't place these
 # further down for readability and discover.
 
-### Defensive settings for make:
+# Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
@@ -180,33 +180,33 @@ include $(wildcard .env)
 # <!--alex disable hooks-->
 
 
-## Top-level targets:
+### Top-level targets:
 
 .PHONY: all
-### The default target.
+## The default target.
 all: build
 
 
-## Build Targets:
+### Build Targets:
 #
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-### Perform any necessary local set-up common to most operations.
+## Perform any necessary local set-up common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log
 
 .PHONY: build-pkgs
-### Update the built package for use outside tox.
+## Update the built package for use outside tox.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: build-docs
-### Render the static HTML form of the Sphinx documentation
+## Render the static HTML form of the Sphinx documentation
 build-docs: build-docs-html
 
 .PHONY: build-docs-watch
-### Serve the Sphinx documentation with live updates
+## Serve the Sphinx documentation with live updates
 build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
@@ -216,17 +216,17 @@ build-docs-%: $(HOME)/.local/bin/tox
 	    "./docs/" "./build/docs/"
 
 
-## Test Targets:
+### Test Targets:
 #
 # Recipes that run the test suite.
 
 .PHONY: test
-### Run the full suite of tests, coverage checks, and linters.
+## Run the full suite of tests, coverage checks, and linters.
 test: test-lint
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-lint
-### Perform any linter or style checks, including non-code checks.
+## Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
 		build-docs test-lint-prose
 # Run linters implemented in Python:
@@ -237,7 +237,7 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-instal
 	~/.nvm/nvm-exec npm run lint
 
 .PHONY: test-lint-prose
-### Lint prose text for spelling, grammar, and style
+## Lint prose text for spelling, grammar, and style
 test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
@@ -258,12 +258,12 @@ test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 	    done
 
 .PHONY: test-debug
-### Run tests directly on the system and start the debugger on errors or failures.
+## Run tests directly on the system and start the debugger on errors or failures.
 test-debug:
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-push
-### Verify commits before pushing to the remote.
+## Verify commits before pushing to the remote.
 test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
@@ -290,7 +290,7 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	fi
 
 .PHONY: test-clean
-### Confirm that the checkout has no uncommitted VCS changes.
+## Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
 	if [ -n "$$(git status --porcelain)" ]
 	then
@@ -300,13 +300,13 @@ test-clean:
 	fi
 
 
-## Release Targets:
+### Release Targets:
 #
 # Recipes that make an changes needed for releases and publish built artifacts to
 # end-users.
 
 .PHONY: release
-### Publish installable packages if conventional commits require a release.
+## Publish installable packages if conventional commits require a release.
 release:
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
@@ -316,7 +316,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 
 .PHONY: release-bump
-### Bump the package version if conventional commits require a release.
+## Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
@@ -376,12 +376,12 @@ ifeq ($(VCS_BRANCH),main)
 endif
 
 
-## Development Targets:
+### Development Targets:
 #
 # Recipes used by developers to make changes to the code.
 
 .PHONY: devel-format
-### Automatically correct code in this checkout according to linters and style checkers.
+## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
@@ -403,13 +403,13 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 	~/.nvm/nvm-exec npm run format
 
 .PHONY: devel-upgrade
-### Update all locked or frozen dependencies to their most recent available versions.
+## Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(HOME)/.local/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
-### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
+## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
@@ -430,7 +430,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	$(MAKE) -e "test-clean"
 
 .PHONY: devel-merge
-### Merge this branch with a suffix back into its un-suffixed upstream.
+## Merge this branch with a suffix back into its un-suffixed upstream.
 devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
@@ -439,12 +439,12 @@ devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANC
 	    "$${merge_rev}"
 
 
-## Clean Targets:
+### Clean Targets:
 #
 # Recipes used to restore the checkout to initial conditions.
 
 .PHONY: clean
-### Restore the checkout to an initial clone state.
+## Restore the checkout to an initial clone state.
 clean:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
@@ -454,7 +454,7 @@ clean:
 	rm -rfv "./var/log/"
 
 
-## Real Targets:
+### Real Targets:
 #
 # Recipes that make actual changes and create and update files for the target.
 
@@ -576,7 +576,7 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 
-## Makefile "functions":
+### Makefile "functions":
 #
 # Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
@@ -625,7 +625,7 @@ exit 1
 endef
 
 
-## Makefile Development:
+### Makefile Development:
 #
 # Development primarily requires a balance of 2 priorities:
 #

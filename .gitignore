@@ -155,5 +155,3 @@ ENV/
 
 # Rope project settings
 .ropeproject
-
-# `${HOME}/**` artifacts:

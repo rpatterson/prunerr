@@ -17,7 +17,7 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
-# Done with `$(shell ...)`, echo recipe commands going forward
+# Done with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
 DOCKER_IMAGE=merpatterson/project-structure
@@ -32,7 +32,7 @@ all: build
 ### Build the Docker container image
 build: ./Dockerfile
 	docker pull "$(DOCKER_IMAGE):build-host" || true
-	docker buildx build --pull \
+	docker buildx build --pull --load \
 	    --build-arg "BUILDKIT_INLINE_CACHE=1" \
 	    --cache-from "$(DOCKER_IMAGE):build-host" \
 	    --tag "$(DOCKER_IMAGE):build-host" \

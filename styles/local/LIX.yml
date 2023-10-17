@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+extends: metric
+message: "Try to keep the LIX score (%s) below 45."
+link: https://en.wikipedia.org/wiki/Lix_(readability_test)
+level: error
+
+formula: |
+  (words / sentences) + ((long_words * 100) / words)
+
+condition: "> 45"

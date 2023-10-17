@@ -1,0 +1,36 @@
+{
+  "name": "@rpattersonnet/project-structure",
+  "scope": "@rpattersonnet",
+  "version": "0.0.0",
+  "description": "Project structure foundation or template, package metadata",
+  "scripts": {
+    "lint": "npm run lint:prettier && npm run lint:write-good && npm run lint:alex",
+    "lint:prettier": "prettier --check './'",
+    "lint:write-good": "git ls-files -co --exclude-standard -z ':!requirements/**' | grep -Ezv '^LICENSES/' | xargs -r -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
+    "lint:alex": "git ls-files -co --exclude-standard -z ':!.gitignore' ':!**/.gitignore' ':!requirements/**' | grep -Ezv '^(LICENSES|styles/Vocab)/|\\.license$|^docs/conf.py$' | xargs -r -0 -t -- alex",
+    "format": "prettier --write './'"
+  },
+  "keywords": [
+    "template",
+    "structure"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Ross Patterson",
+    "email": "me@rpatterson.net",
+    "url": "https://www.rpatterson.net/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/rpatterson/project-structure.git"
+  },
+  "funding": {
+    "type": "liberapay",
+    "url": "https://liberapay.com/rpatterson/donate"
+  },
+  "devDependencies": {
+    "alex": "^11.0.0",
+    "prettier": "2.8.8",
+    "write-good": "^1.0.8"
+  }
+}

@@ -5,10 +5,10 @@
 # SPDX-License-Identifier: MIT
 
 """
-Return the current version minus any pre-release suffix along with it's type.
+Return the current version minus any pre-release suffix along with its type.
 
-Useful to get the final/stable version when the previous pre-release has been blessed as
-ready for publishing as final.
+Useful to get the final, stable version to bump a earlier pre-release to a final
+release.
 """  # pylint: disable=invalid-name
 
 import sys

@@ -2,12 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Minimal `$ docker compose ...` configuration to demonstrate the requirements for
-# running project-structure in containers.
+# Minimal `$ docker compose` configuration to show the requirements for running
+# project-structure in containers.
 version: "3.8"
 
 services:
-
   ## Container for use by end users:
   project-structure:
     image: "registry.gitlab.com/rpatterson/project-structure"
@@ -20,3 +19,8 @@ services:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
     restart: "unless-stopped"
+    volumes:
+      # Preserve user configuration, data, and caches between containers and variants:
+      - "${CHECKOUT_DIR:-.}/home/.config/:/home/project-structure/.config/"
+      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/project-structure/.local/share/"
+      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/project-structure/.cache/"

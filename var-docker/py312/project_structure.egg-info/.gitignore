@@ -5,4 +5,5 @@
 # Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
 /*
 !.git*
+!/Makefile
 /*~

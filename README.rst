@@ -312,7 +312,6 @@ remote, merging structure updates into real projects over their lifetime.
 .. _`mirrored on GitHub`:
    https://github.com/rpatterson/project-structure
 
-.. _`Docker`: https://docs.docker.com/
 .. _`Docker Compose`: https://docs.docker.com/compose/
 .. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 .. _`the example ./docker-compose.yml file`:
@@ -322,6 +321,3 @@ remote, merging structure updates into real projects over their lifetime.
 
 .. _`the contributing documentation`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
-
-.. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
-.. _`GitHub Actions`: https://docs.github.com/en/actions

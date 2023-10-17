@@ -417,6 +417,7 @@ DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 endif
 endif
+endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
 # Avoid undefined variables warnings when running under local development:
 PYPI_PASSWORD=

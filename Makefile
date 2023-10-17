@@ -458,15 +458,9 @@ clean:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-
-### Development Artifacts:
-
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
-
-
-### Release Artifacts:
 
 ./README.md: README.rst
 	$(MAKE) "$(HOST_PREFIX)/bin/docker"

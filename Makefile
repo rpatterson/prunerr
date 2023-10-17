@@ -54,6 +54,9 @@ HOST_PKG_INSTALL_ARGS=install -y
 HOST_PKG_NAMES_ENVSUBST=gettext-base
 HOST_PKG_NAMES_PIP=python3-pip
 HOST_PKG_NAMES_DOCKER=docker-ce-cli docker-compose-plugin
+HOST_PKG_NAMES_GPG=gnupg
+HOST_PKG_NAMES_GHCLI=gh
+HOST_PKG_NAMES_CURL=curl
 ifneq ($(shell which "brew"),)
 HOST_PREFIX=/usr/local
 HOST_PKG_CMD_PREFIX=
@@ -68,6 +71,7 @@ HOST_PKG_INSTALL_ARGS=add
 HOST_PKG_NAMES_ENVSUBST=gettext
 HOST_PKG_NAMES_PIP=py3-pip
 HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
+HOST_PKG_NAMES_GHCLI=github-cli
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
 # Detect Docker command-line baked into the build-host image:
@@ -652,11 +656,12 @@ release: release-pkgs release-docker
 .PHONY: release-pkgs
 ## Publish installable packages if conventional commits require a release.
 release-pkgs: $(HOST_TARGET_DOCKER) ./var/log/git-remotes.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~ \
+		$(HOST_PREFIX)/bin/gh
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
-	$(MAKE) -e ./var/log/gpg-import.log
+	$(MAKE) -e "./var/log/gpg-import.log"
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # Ensure VCS has captured all the effects of building the release:
@@ -1143,13 +1148,16 @@ $(STATE_DIR)/log/host-update.log:
 	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 # Install the code test coverage publishing tool:
-$(HOME)/.local/bin/codecov: ./build-host/bin/install-codecov.sh
+$(HOME)/.local/bin/codecov: ./build-host/bin/install-codecov.sh $(HOST_PREFIX)/bin/curl
 	"$(<)" | tee -a "$(@)"
+$(HOST_PREFIX)/bin/curl:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_CURL)"
 
 # GNU Privacy Guard (GPG) signing key creation and management in CI:
 export GPG_PASSPHRASE=
 GPG_SIGNING_PRIVATE_KEY=
-./var/ci-cd-signing-subkey.asc:
+./var/ci-cd-signing-subkey.asc: $(HOST_PREFIX)/bin/gpg
 # Signing release commits and artifacts requires a GPG private key in the CI/CD
 # environment. Use a subkey that you can revoke without affecting your main key. This
 # recipe captures what I had to do to export a private signing subkey. It's not widely
@@ -1181,7 +1189,7 @@ GPG_SIGNING_PRIVATE_KEY=
 #	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
-./var/log/gpg-import.log: ~/.gitconfig
+./var/log/gpg-import.log: ~/.gitconfig $(HOST_PREFIX)/bin/gpg
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
 ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
@@ -1202,6 +1210,13 @@ ifneq ($(CI_IS_FORK),true)
 endif
 	date | tee -a "$(@)"
 endif
+$(HOST_PREFIX)/bin/gpg:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_GPG)"
+
+$(HOST_PREFIX)/bin/gh:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_GHCLI)"
 
 # TEMPLATE: Optionally, use the following command to generate a GitLab CI/CD runner
 # configuration, register it with your project, compare it with the template

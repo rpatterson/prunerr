@@ -262,14 +262,6 @@ ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
 endif
 export DOCKER_PASS
-# Find all the bind mount paths that need to exist before creating containers or else
-# `# dockerd` creates them as `root`:
-DOCKER_VOLUME_TARGETS:=$(shell ( \
-    sed -nE -e 's#^      - "\$$\{CHECKOUT_DIR:-\.\}/([^:]+):.+"#\1#p' \
-        ./docker-compose*.yml && \
-    sed -nE -e 's#^      - "[^:]+:/usr/local/src/project-structure/(.+)"#\1#p' \
-        ./docker-compose*.yml \
-    ) | sort | uniq)
 
 # Values derived from or overridden by CI environments:
 CI_UPSTREAM_NAMESPACE=$(PROJECT_NAMESPACE)
@@ -609,6 +601,19 @@ test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCK
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
+# Ensure that any bind mount volume paths exist in VCS so that `# dockerd` doesn't
+# create them as `root`:
+	if test -n "$$(
+	    ./bin/docker-add-volume-paths.sh "$(CHECKOUT_DIR)" \
+	        "/usr/local/src/$(PROJECT_NAME)"
+	)"
+	then
+	    set +x
+	    echo "\
+	ERROR: Docker bind mount paths didn't exist, force added ignore files.
+	       Review ignores above in case they need changes or followup."
+	    false
+	fi
 
 .PHONY: test-push
 ## Verify commits before pushing to the remote.
@@ -919,8 +924,7 @@ clean:
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
 		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
-		./var-docker/log/rebuild.log $(HOST_TARGET_DOCKER) \
-		$(DOCKER_VOLUME_TARGETS)
+		./var-docker/log/rebuild.log $(HOST_TARGET_DOCKER)
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -946,15 +950,6 @@ endif
 ./var-docker/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
-$(DOCKER_VOLUME_TARGETS):
-	mkdir -pv "$(@)"
-	echo "# Docker bind mount placeholder" >"$(@)/.gitignore"
-	git add -f "$(@)/.gitignore"
-	set +x
-	echo "\
-	ERROR: Docker bind mount path didn't exist, force added an ignore file.
-	       Review ignores above in case it needs more adjustments."
-	false
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	$(MAKE) "$(HOST_TARGET_DOCKER)"

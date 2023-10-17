@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Development, build, and maintenance tasks:
+# Development, build, and maintenance tasks:
 #
 # To ease discovery for contributors, place option variables affecting behavior at the
 # top. Skip down to `## Top-level targets:` to find targets intended for use by
@@ -21,7 +21,7 @@ export DOCKER_USER=merpatterson
 export TEMPLATE_IGNORE_EXISTING=false
 
 
-## "Private" Variables:
+### "Private" Variables:
 
 # Variables not of concern those running and reading top-level targets. These variables
 # most often derive from the environment or other values. Place variables holding
@@ -31,7 +31,7 @@ export TEMPLATE_IGNORE_EXISTING=false
 # contrast with references in recipes. As a result, the Makefile can't place these
 # further down for readability and discover.
 
-### Defensive settings for make:
+# Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
@@ -235,46 +235,46 @@ include $(wildcard .env)
 # <!--alex disable hooks-->
 
 
-## Top-level targets:
+### Top-level targets:
 
 .PHONY: all
-### The default target.
+## The default target.
 all: build
 
 .PHONY: start
-### Run the local development end-to-end stack services in the background as daemons.
+## Run the local development end-to-end stack services in the background as daemons.
 start: build-docker ./.env.~out~
 	docker compose down
 	docker compose up -d
 
 .PHONY: run
-### Run the local development end-to-end stack services in the foreground for debugging.
+## Run the local development end-to-end stack services in the foreground for debugging.
 run: build-docker ./.env.~out~
 	docker compose down
 	docker compose up
 
 
-## Build Targets:
+### Build Targets:
 #
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-### Set up everything for development from a checkout, local and in containers.
+## Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker
 
 .PHONY: build-pkgs
-### Ensure the built package is current.
+## Ensure the built package is current.
 build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/log/build-devel.log
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: build-docs
-### Render the static HTML form of the Sphinx documentation
+## Render the static HTML form of the Sphinx documentation
 build-docs: build-docs-html
 
 .PHONY: build-docs-watch
-### Serve the Sphinx documentation with live updates
+## Serve the Sphinx documentation with live updates
 build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
@@ -292,16 +292,16 @@ build-docs-%: $(HOME)/.local/bin/tox
 # possible inside the development container.
 
 .PHONY: build-docker
-### Set up for development in Docker containers.
+## Set up for development in Docker containers.
 build-docker: build-pkgs ./var-docker/log/build-user.log
 
 .PHONY: build-docker-tags
-### Print the list of image tags for the current registry and variant.
+## Print the list of image tags for the current registry and variant.
 build-docker-tags:
 	$(MAKE) -e $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
-### Print the list of image tags for the current registry and variant.
+## Print the list of image tags for the current registry and variant.
 $(DOCKER_REGISTRIES:%=build-docker-tags-%): $(HOME)/.local/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
@@ -330,7 +330,7 @@ endif
 endif
 
 .PHONY: build-docker-build
-### Run the actual commands used to build the Docker container image.
+## Run the actual commands used to build the Docker container image.
 build-docker-build: ./Dockerfile $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
@@ -360,21 +360,21 @@ endif
 	    $${docker_build_args} --file "$(<)" "./"
 
 
-## Test Targets:
+### Test Targets:
 #
 # Recipes that run the test suite.
 
 .PHONY: test
-### Run the full suite of tests, coverage checks, and linters.
+## Run the full suite of tests, coverage checks, and linters.
 test: test-lint test-docker
 
 .PHONY: test-local
-### Run the full suite of tests, coverage checks, and linters.
+## Run the full suite of tests, coverage checks, and linters.
 test-local:
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-lint
-### Perform any linter or style checks, including non-code checks.
+## Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
 		build-docs test-lint-docker test-lint-prose
 # Run linters implemented in Python:
@@ -385,7 +385,7 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.lo
 	~/.nvm/nvm-exec npm run lint
 
 .PHONY: test-lint-prose
-### Lint prose text for spelling, grammar, and style
+## Lint prose text for spelling, grammar, and style
 test-lint-prose: $(HOST_TARGET_DOCKER) ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
@@ -406,12 +406,12 @@ test-lint-prose: $(HOST_TARGET_DOCKER) ./var/log/vale-sync.log ./.vale.ini \
 	    done
 
 .PHONY: test-debug
-### Run tests directly on the system and start the debugger on errors or failures.
+## Run tests directly on the system and start the debugger on errors or failures.
 test-debug:
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-docker
-### Run the full suite of tests, coverage checks, and code linters in containers.
+## Run the full suite of tests, coverage checks, and code linters in containers.
 test-docker: $(HOST_TARGET_DOCKER) build-pkgs
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
@@ -426,7 +426,7 @@ test-docker: $(HOST_TARGET_DOCKER) build-pkgs
 	    make -e test-local
 
 .PHONY: test-lint-docker
-### Check the style and content of the `./Dockerfile*` files
+## Check the style and content of the `./Dockerfile*` files
 test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
@@ -434,9 +434,8 @@ test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCK
 	    hadolint "./build-host/Dockerfile"
 
 .PHONY: test-push
-### Verify commits before pushing to the remote.
-test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox \
-		./var-docker/log/build-devel.log ./.env.~out~
+## Verify commits before pushing to the remote.
+test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
@@ -462,7 +461,7 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 	fi
 
 .PHONY: test-clean
-### Confirm that the checkout has no uncommitted VCS changes.
+## Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
 	if [ -n "$$(git status --porcelain)" ]
 	then
@@ -472,17 +471,17 @@ test-clean:
 	fi
 
 
-## Release Targets:
+### Release Targets:
 #
 # Recipes that make an changes needed for releases and publish built artifacts to
 # end-users.
 
 .PHONY: release
-### Publish installable packages and container images as required by commits.
+## Publish installable packages if conventional commits require a release.
 release: release-pkgs release-docker
 
 .PHONY: release-pkgs
-### Publish installable packages if conventional commits require a release.
+## Publish installable packages if conventional commits require a release.
 release-pkgs:
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
@@ -492,7 +491,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 
 .PHONY: release-docker
-### Publish all container images to all container registries.
+## Publish all container images to all container registries.
 release-docker: $(HOST_TARGET_DOCKER) build-docker \
 		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
 		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
@@ -516,7 +515,7 @@ ifeq ($(VCS_BRANCH),main)
 endif
 
 .PHONY: release-bump
-### Bump the package version if conventional commits require a release.
+## Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log ./var/log/git-remotes.log \
 		./var-docker/log/build-devel.log ./.env.~out~
@@ -577,12 +576,12 @@ ifeq ($(VCS_BRANCH),main)
 endif
 
 
-## Development Targets:
+### Development Targets:
 #
 # Recipes used by developers to make changes to the code.
 
 .PHONY: devel-format
-### Automatically correct code in this checkout according to linters and style checkers.
+## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
@@ -604,13 +603,13 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 	~/.nvm/nvm-exec npm run format
 
 .PHONY: devel-upgrade
-### Update all locked or frozen dependencies to their most recent available versions.
+## Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(HOME)/.local/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
-### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
+## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
@@ -631,7 +630,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	$(MAKE) -e "test-clean"
 
 .PHONY: devel-merge
-### Merge this branch with a suffix back into its un-suffixed upstream.
+## Merge this branch with a suffix back into its un-suffixed upstream.
 devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
@@ -640,12 +639,12 @@ devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANC
 	    "$${merge_rev}"
 
 
-## Clean Targets:
+### Clean Targets:
 #
 # Recipes used to restore the checkout to initial conditions.
 
 .PHONY: clean
-### Restore the checkout to an initial clone state.
+## Restore the checkout to an initial clone state.
 clean:
 	docker compose down --remove-orphans --rmi "all" -v || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
@@ -656,12 +655,11 @@ clean:
 	rm -rfv "./var/log/" "./var-docker/log/"
 
 
-## Real Targets:
+### Real Targets:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-## Docker real targets:
-
+# Build Docker container images.
 # Build the development image:
 ./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
 		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
@@ -679,7 +677,6 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
 		./.dockerignore ./bin/entrypoint ./var-docker/log/rebuild.log
@@ -688,89 +685,11 @@ endif
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load" \
 	    build-docker-build >>"$(@)"
-
 # Marker file used to trigger the rebuild of the image.
-
 # Useful to workaround asynchronous timestamp issues when running jobs in parallel:
 ./var-docker/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
-
-./README.md: README.rst
-	$(MAKE) "$(HOST_TARGET_DOCKER)"
-	docker compose run --rm "pandoc"
-
-# Local environment variables and secrets from a template:
-./.env.~out~: ./.env.in
-	$(call expand_template,$(<),$(@))
-
-./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
-	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install | tee -a "$(@)"
-
-./package.json:
-	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
-# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
-
-$(HOME)/.npmrc:
-	$(MAKE) "./var/log/nvm-install.log"
-# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
-	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
-	~/.nvm/nvm-exec npm set init-license "MIT"
-
-./var/log/nvm-install.log: ./.nvmrc
-	$(MAKE) "$(HOME)/.nvm/nvm.sh"
-	mkdir -pv "$(dir $(@))"
-	set +x
-	. "$(HOME)/.nvm/nvm.sh" || true
-	nvm install | tee -a "$(@)"
-
-# Manage JavaScript/TypeScript packages:
-# https://github.com/nvm-sh/nvm#install--update-script
-$(HOME)/.nvm/nvm.sh:
-	set +x
-	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
-	    | bash
-
-# Install the meta tool for managing Python tools:
-$(HOME)/.local/bin/tox:
-	$(MAKE) "$(HOME)/.local/bin/pipx"
-# https://tox.wiki/en/latest/installation.html#via-pipx
-	pipx install "tox"
-$(HOME)/.local/bin/pipx:
-	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
-# https://pypa.github.io/pipx/installation/#install-pipx
-	pip3 install --user "pipx"
-	python3 -m pipx ensurepath
-
-# Install all tools required by recipes installed outside the checkout on the
-# system. Use a target file outside this checkout to support more than one
-# checkout. Support other projects that use the same approach but with different
-# requirements, use a target specific to this project:
-$(HOST_PREFIX)/bin/pip3:
-	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
-$(HOST_TARGET_DOCKER):
-	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
-	docker info
-ifeq ($(HOST_PKG_BIN),brew)
-# https://formulae.brew.sh/formula/docker-compose#default
-	mkdir -p ~/.docker/cli-plugins
-	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
-	    "~/.docker/cli-plugins/docker-compose"
-endif
-$(STATE_DIR)/log/host-update.log:
-	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
-	then
-	    set +x
-	    echo "ERROR: OS not supported for installing system dependencies"
-	    false
-	fi
-	$(HOST_PKG_CMD) update | tee -a "$(@)"
-
 $(DOCKER_VOLUME_TARGETS):
 	mkdir -pv "$(@)"
 	echo "# Docker bind mount placeholder" >"$(@)/.gitignore"
@@ -795,7 +714,37 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	        docker buildx create --use "multi-platform" || true
 	    ) |& tee -a "$(@)"
 	fi
+./var/log/docker-login-DOCKER.log:
+	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
+	mkdir -pv "$(dir $(@))"
+	if [ -n "$${DOCKER_PASS}" ]
+	then
+	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: DOCKER_PASS missing from ./.env"
+	    false
+	fi
+	date | tee -a "$(@)"
 
+
+### Development Artifacts:
+
+# Local environment variables and secrets from a template:
+./.env.~out~: ./.env.in
+	$(call expand_template,$(<),$(@))
+
+
+### Release Artifacts:
+
+./README.md: README.rst
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
+	docker compose run --rm "pandoc"
+
+
+### Development Tools:
+
+# VCS configuration and integration:
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
@@ -812,46 +761,93 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
-
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
-
-# Set Vale levels for added style rules:
-./.vale.ini ./styles/code.ini:
-	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
-	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-
-./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
-	$(MAKE) "$(HOST_TARGET_DOCKER)"
-	mkdir -pv "$(dir $(@))"
-	docker compose run --rm vale sync | tee -a "$(@)"
-
-# Tell editors where to find tools in the checkout needed to verify the code:
-./.dir-locals.el.~out~: ./.dir-locals.el.in
-	$(call expand_template,$(<),$(@))
-
 # Initialize minimal VCS configuration, useful in automation such as CI:
 ~/.gitconfig:
 	git config --global user.name "$(USER_FULL_NAME)"
 	git config --global user.email "$(USER_EMAIL)"
 
-./var/log/docker-login-DOCKER.log:
-	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
+# Prose linting:
+# Set Vale levels for added style rules:
+./.vale.ini ./styles/code.ini:
+	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
+./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${DOCKER_PASS}" ]
+	docker compose run --rm vale sync | tee -a "$(@)"
+
+# Editor and IDE support and integration:
+./.dir-locals.el.~out~: ./.dir-locals.el.in
+	$(call expand_template,$(<),$(@))
+
+# Manage JavaScript tools:
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
+	mkdir -pv "$(dir $(@))"
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
+./package.json:
+	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
+# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
+	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+$(HOME)/.npmrc:
+	$(MAKE) "./var/log/nvm-install.log"
+# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
+	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
+	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
+	~/.nvm/nvm-exec npm set init-license "MIT"
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
+	mkdir -pv "$(dir $(@))"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh" || true
+	nvm install | tee -a "$(@)"
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
+
+# Manage Python tools:
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
+$(HOST_PREFIX)/bin/pip3:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
+
+# Manage tools in containers:
+$(HOST_TARGET_DOCKER):
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
+
+# Support for installing host operating system packages:
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
 	then
-	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
-	then
-	    echo "ERROR: DOCKER_PASS missing from ./.env"
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
 	    false
 	fi
-	date | tee -a "$(@)"
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 
-## Makefile "functions":
+### Makefile "functions":
 #
 # Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
@@ -900,7 +896,7 @@ exit 1
 endef
 
 
-## Makefile Development:
+### Makefile Development:
 #
 # Development primarily requires a balance of 2 priorities:
 #
@@ -980,7 +976,7 @@ endef
 # case for them but avoid them if possible.
 
 
-## Maintainer targets:
+### Maintainer targets:
 #
 # Recipes not used during the usual course of development.
 
@@ -989,7 +985,7 @@ endef
 # environment variables to set or login to those container registries manually and `$
 # touch` these targets.
 .PHONY: bootstrap-project
-### Run any tasks needed a single time for a given project by a maintainer.
+## Run any tasks needed a single time for a given project by a maintainer.
 bootstrap-project: ./var/log/docker-login-DOCKER.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 	$(MAKE) -e -C "./build-host/" release

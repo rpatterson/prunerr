@@ -727,15 +727,9 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	fi
 	date | tee -a "$(@)"
 
-
-### Development Artifacts:
-
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
-
-
-### Release Artifacts:
 
 ./README.md: README.rst
 	$(MAKE) "$(HOST_TARGET_DOCKER)"

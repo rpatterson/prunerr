@@ -412,7 +412,7 @@ test-debug:
 
 .PHONY: test-docker
 ## Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: $(HOST_TARGET_DOCKER) build-pkgs
+test-docker: $(HOST_TARGET_DOCKER) build-docker
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then

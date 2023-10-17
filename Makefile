@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Development, build, and maintenance tasks:
+# Development, build, and maintenance tasks:
 #
 # To ease discovery for contributors, place option variables affecting behavior at the
 # top. Skip down to `## Top-level targets:` to find targets intended for use by
@@ -22,7 +22,7 @@ NPM_SCOPE=rpattersonnet
 PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 
 
-## "Private" Variables:
+### "Private" Variables:
 
 # Variables not of concern those running and reading top-level targets. These variables
 # most often derive from the environment or other values. Place variables holding
@@ -32,7 +32,7 @@ PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 # contrast with references in recipes. As a result, the Makefile can't place these
 # further down for readability and discover.
 
-### Defensive settings for make:
+# Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
@@ -234,26 +234,26 @@ include $(wildcard .env)
 # <!--alex disable hooks-->
 
 
-## Top-level targets:
+### Top-level targets:
 
 .PHONY: all
-### The default target.
+## The default target.
 all: build
 
 
-## Build Targets:
+### Build Targets:
 #
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-### Perform any necessary local set-up common to most operations.
+## Perform any necessary local set-up common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log \
 		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
-### Compile fixed/pinned dependency versions if necessary.
+## Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
@@ -267,7 +267,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    $(MAKE) -e -j $${targets}
 
 .PHONY: build-requirements-compile
-### Compile the requirements for one Python version and one type/extra.
+## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
 	pip_compile_opts="--resolver backtracking --upgrade"
@@ -278,7 +278,7 @@ endif
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
-### Update the built package for use outside tox.
+## Update the built package for use outside tox.
 build-pkgs: $(HOME)/.local/bin/tox ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 # Defined as a .PHONY recipe so that more than one target can depend on this as a
 # pre-requisite and it runs one time:
@@ -291,11 +291,11 @@ build-pkgs: $(HOME)/.local/bin/tox ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	cp -lfv "$$(ls -t ./.tox/.pkg/dist/*.tar.gz | head -n 1)" "./dist/"
 
 .PHONY: build-docs
-### Render the static HTML form of the Sphinx documentation
+## Render the static HTML form of the Sphinx documentation
 build-docs: build-docs-html
 
 .PHONY: build-docs-watch
-### Serve the Sphinx documentation with live updates
+## Serve the Sphinx documentation with live updates
 build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
@@ -305,17 +305,17 @@ build-docs-%: $(HOME)/.local/bin/tox
 	    "./docs/" "./build/docs/"
 
 
-## Test Targets:
+### Test Targets:
 #
 # Recipes that run the test suite.
 
 .PHONY: test
-### Run the full suite of tests, coverage checks, and linters.
-test: $(HOME)/.local/bin/tox build test-lint
+## Run the full suite of tests, coverage checks, and linters.
+test: $(HOME)/.local/bin/tox test-lint
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
-### Perform any linter or style checks, including non-code checks.
+## Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
 		build-docs test-lint-prose
 # Run linters implemented in Python:
@@ -326,7 +326,7 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-instal
 	~/.nvm/nvm-exec npm run lint
 
 .PHONY: test-lint-prose
-### Lint prose text for spelling, grammar, and style
+## Lint prose text for spelling, grammar, and style
 test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
@@ -347,12 +347,12 @@ test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 	    done
 
 .PHONY: test-debug
-### Run tests directly on the system and start the debugger on errors or failures.
-test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
+## Run tests directly on the system and start the debugger on errors or failures.
+test-debug: $(HOME)/.local/bin/tox ./.tox/$(PYTHON_ENV)/log/editable.log
 	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-push
-### Verify commits before pushing to the remote.
+## Verify commits before pushing to the remote.
 test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
@@ -379,7 +379,7 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	fi
 
 .PHONY: test-clean
-### Confirm that the checkout has no uncommitted VCS changes.
+## Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
 	if [ -n "$$(git status --porcelain)" ]
 	then
@@ -389,13 +389,13 @@ test-clean:
 	fi
 
 
-## Release Targets:
+### Release Targets:
 #
 # Recipes that make an changes needed for releases and publish built artifacts to
 # end-users.
 
 .PHONY: release
-### Publish installable packages if conventional commits require a release.
+## Publish installable packages if conventional commits require a release.
 release: $(HOME)/.local/bin/tox ~/.pypirc.~out~
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
@@ -410,7 +410,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 
 .PHONY: release-bump
-### Bump the package version if conventional commits require a release.
+## Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
@@ -470,12 +470,12 @@ ifeq ($(VCS_BRANCH),main)
 endif
 
 
-## Development Targets:
+### Development Targets:
 #
 # Recipes used by developers to make changes to the code.
 
 .PHONY: devel-format
-### Automatically correct code in this checkout according to linters and style checkers.
+## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z |
@@ -504,7 +504,7 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
-### Update all locked or frozen dependencies to their most recent available versions.
+## Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	touch "./setup.cfg" "./requirements/build.txt.in"
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
@@ -512,7 +512,7 @@ devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
 .PHONY: devel-upgrade-branch
-### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
+## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
@@ -533,7 +533,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	$(MAKE) -e "test-clean"
 
 .PHONY: devel-merge
-### Merge this branch with a suffix back into its un-suffixed upstream.
+## Merge this branch with a suffix back into its un-suffixed upstream.
 devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
@@ -542,12 +542,12 @@ devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANC
 	    "$${merge_rev}"
 
 
-## Clean Targets:
+### Clean Targets:
 #
 # Recipes used to restore the checkout to initial conditions.
 
 .PHONY: clean
-### Restore the checkout to an initial clone state.
+## Restore the checkout to an initial clone state.
 clean:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push" \
@@ -557,7 +557,7 @@ clean:
 	rm -rfv "./var/log/"
 
 
-## Real Targets:
+### Real Targets:
 #
 # Recipes that make actual changes and create and update files for the target.
 
@@ -582,98 +582,23 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
-# Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created so other targets can use them directly to save time on Tox's overhead when
-# they don't need Tox's logic about when to update/recreate them, e.g.:
-#     $ ./.tox/build/bin/cz --help
-# Useful for build/release tools:
-$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
+# Capture any project initialization tasks for reference. Not actually usable.
+./pyproject.toml:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
-# prerequisite for targets that use Tox virtual environments directly and changes to
-# code need to take effect in real-time:
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(HOME)/.local/bin/tox"
-	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
-	    pip3 install -e "./" |& tee -a "$(@)"
-
-./README.md: README.rst
-	$(MAKE) "$(HOST_PREFIX)/bin/docker"
-	docker compose run --rm "pandoc"
+	$(TOX_EXEC_BUILD_ARGS) -- cz init
 
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
 	$(call expand_template,$(<),$(@))
 
-./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
-	mkdir -pv "$(dir $(@))"
-	~/.nvm/nvm-exec npm install | tee -a "$(@)"
+./README.md: README.rst
+	$(MAKE) "$(HOST_PREFIX)/bin/docker"
+	docker compose run --rm "pandoc"
 
-./package.json:
-	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
-# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
-	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
 
-$(HOME)/.npmrc:
-	$(MAKE) "./var/log/nvm-install.log"
-# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
-	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
-	~/.nvm/nvm-exec npm set init-license "MIT"
+### Development Tools:
 
-./var/log/nvm-install.log: ./.nvmrc
-	$(MAKE) "$(HOME)/.nvm/nvm.sh"
-	mkdir -pv "$(dir $(@))"
-	set +x
-	. "$(HOME)/.nvm/nvm.sh" || true
-	nvm install | tee -a "$(@)"
-
-# Manage JavaScript/TypeScript packages:
-# https://github.com/nvm-sh/nvm#install--update-script
-$(HOME)/.nvm/nvm.sh:
-	set +x
-	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
-	    | bash
-
-# Install the meta tool for managing Python tools:
-$(HOME)/.local/bin/tox:
-	$(MAKE) "$(HOME)/.local/bin/pipx"
-# https://tox.wiki/en/latest/installation.html#via-pipx
-	pipx install "tox"
-$(HOME)/.local/bin/pipx:
-	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
-# https://pypa.github.io/pipx/installation/#install-pipx
-	pip3 install --user "pipx"
-	python3 -m pipx ensurepath
-
-# Install all tools required by recipes installed outside the checkout on the
-# system. Use a target file outside this checkout to support more than one
-# checkout. Support other projects that use the same approach but with different
-# requirements, use a target specific to this project:
-$(HOST_PREFIX)/bin/pip3:
-	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
-$(HOST_PREFIX)/bin/docker:
-	$(MAKE) "$(STATE_DIR)/log/host-update.log"
-	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
-	docker info
-ifeq ($(HOST_PKG_BIN),brew)
-# https://formulae.brew.sh/formula/docker-compose#default
-	mkdir -p ~/.docker/cli-plugins
-	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
-	    "~/.docker/cli-plugins/docker-compose"
-endif
-$(STATE_DIR)/log/host-update.log:
-	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
-	then
-	    set +x
-	    echo "ERROR: OS not supported for installing system dependencies"
-	    false
-	fi
-	$(HOST_PKG_CMD) update | tee -a "$(@)"
-
+# VCS configuration and integration:
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
@@ -690,43 +615,114 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
-
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
+# Initialize minimal VCS configuration, useful in automation such as CI:
+~/.gitconfig:
+	git config --global user.name "$(USER_FULL_NAME)"
+	git config --global user.email "$(USER_EMAIL)"
 
+# Prose linting:
 # Set Vale levels for added style rules:
 ./.vale.ini ./styles/code.ini:
 	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
 		./styles/code.ini
 	$(MAKE) "$(HOST_PREFIX)/bin/docker"
 	mkdir -pv "$(dir $(@))"
 	docker compose run --rm vale sync | tee -a "$(@)"
 
-# Capture any project initialization tasks for reference. Not actually usable.
-./pyproject.toml:
-	$(MAKE) -e "$(HOME)/.local/bin/tox"
-	$(TOX_EXEC_BUILD_ARGS) -- cz init
-
-# Tell editors where to find tools in the checkout needed to verify the code:
+# Editor and IDE support and integration:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in
 	$(call expand_template,$(<),$(@))
 
-# Initialize minimal VCS configuration, useful in automation such as CI:
-~/.gitconfig:
-	git config --global user.name "$(USER_FULL_NAME)"
-	git config --global user.email "$(USER_EMAIL)"
+# Manage JavaScript tools:
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
+	mkdir -pv "$(dir $(@))"
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
+./package.json:
+	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
+# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
+	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+$(HOME)/.npmrc:
+	$(MAKE) "./var/log/nvm-install.log"
+# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
+	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
+	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
+	~/.nvm/nvm-exec npm set init-license "MIT"
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
+	mkdir -pv "$(dir $(@))"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh" || true
+	nvm install | tee -a "$(@)"
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
+
+# Manage Python tools:
+# Targets used as pre-requisites to ensure virtual environments managed by tox have been
+# created so other targets can use them directly to save time on Tox's overhead when
+# they don't need Tox's logic about when to update/recreate them, e.g.:
+#     $ ./.tox/build/bin/cz --help
+# Useful for build/release tools:
+$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
+# prerequisite for targets that use Tox virtual environments directly and changes to
+# code need to take effect in real-time:
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	mkdir -pv "$(dir $(@))"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
+	    pip3 install -e "./" |& tee -a "$(@)"
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_PREFIX)/bin/pip3"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
+$(HOST_PREFIX)/bin/pip3:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
+
+# Manage tools in containers:
+$(HOST_PREFIX)/bin/docker:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
+
+# Support for installing host operating system packages:
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
+	then
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
+	    false
+	fi
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
 # Set up release publishing authentication, useful in automation such as CI:
 ~/.pypirc.~out~: ./home/.pypirc.in
 	$(call expand_template,$(<),$(@))
 
 
-## Makefile "functions":
+### Makefile "functions":
 #
 # Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
@@ -775,7 +771,7 @@ exit 1
 endef
 
 
-## Makefile Development:
+### Makefile Development:
 #
 # Development primarily requires a balance of 2 priorities:
 #

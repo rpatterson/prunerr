@@ -85,7 +85,7 @@ build-test:
     # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
     - >-
       entrypoint make -e test-push test-lint build-docker test-docker release-docker
-        test-clean
+      test-clean
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     # Upload build artifacts:

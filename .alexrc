@@ -1,6 +1,7 @@
 {
   "allow": [
     "master",
+    "failure",
     "failures",
     "failed",
     "host-hostess",

@@ -118,7 +118,7 @@ jobs:
       # https://github.com/marketplace/actions/test-reporter#example
       # - name: "Publish test suite report"
       #   uses: "dorny/test-reporter@main"
-      #   # run this step even if previous step failed
+      #   # run this step even if the preceding step failed
       #   if: >-
       #     (success() || failure())
       #     && (

@@ -386,10 +386,10 @@ PYPI_REPO=testpypi
 PYPI_HOSTNAME=test.pypi.org
 # Publish releases from the `main` or `develop` branches:
 ifeq ($(CI),true)
-# Compile requirements on CI/CD as a check to make sure all changes to dependencies have
-# been reflected in the frozen/pinned versions, but don't upgrade packages so that
-# external changes, such as new PyPI releases, don't turn CI/CD red spuriously and
-# unrelated to the contributor's actual changes.
+# Compile requirements on CI/CD as a test to make sure the frozen/pinned versions
+# reflect all changes to dependencies, but don't upgrade packages so that external
+# changes, such as new PyPI releases, don't turn CI/CD red spuriously and unrelated to
+# the contributor's actual changes.
 PIP_COMPILE_ARGS=
 endif
 GITHUB_RELEASE_ARGS=--prerelease
@@ -780,7 +780,7 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 ifeq ($(CI),true)
 ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
-# Don't waste CI time, only check for the canonical version:
+# Don't waste CI time, only continue for the canonical version:
 	exit
 endif
 ifeq ($(VCS_COMPARE_BRANCH),main)
@@ -969,7 +969,7 @@ endif
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-# Build and stage the release notes to be commited by `$ cz bump`:
+# Build and stage the release notes to commit with `$ cz bump`:
 	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
 # Bump the version in the NPM package metadata:
 	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"

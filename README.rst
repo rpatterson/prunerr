@@ -100,8 +100,8 @@ projects. It includes:
 - `Organize source by feature`_, for example ``\./src/foo/(template|view|model)\..*``,
   rather than by source type, for example
   ``\./src/(templates|views|models)/foo\..*``.
-- A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes/targets
-- A `GitHub Actions`_ workflow/pipeline integrating those CI/CD recipes/targets
+- A `GitLab CI/CD`_ pipeline integrating those CI/CD targets and recipes
+- A `GitHub Actions`_ workflow integrating those CI/CD targets and recipes
 
 Add a VCS remote for this repository to a real project. When the template adds structure
 specific to certain types of projects, for example command-line tools, web services, UI

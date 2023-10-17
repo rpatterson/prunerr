@@ -81,10 +81,10 @@ jobs:
       matrix:
         PYTHON_MINORS:
           - "3.11"
+          - "3.12"
           - "3.10"
           - "3.9"
           - "3.8"
-          - "3.7"
     name: "build-test (python${{ matrix.PYTHON_MINORS }})"
     steps:
       # Shared or common set up:

@@ -12,7 +12,7 @@ services:
   project-structure:
     image: "\
       ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
-      /project-structure:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      /project-structure:${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
@@ -28,7 +28,7 @@ services:
   project-structure-devel:
     image: "\
       ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
-      /project-structure:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
+      /project-structure:devel-${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-devel"
     profiles:
       - "test"

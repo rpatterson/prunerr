@@ -59,10 +59,12 @@ RUN \
     "py3-pip" \
     "gnupg" \
     "curl" \
+    "tar" \
     "github-cli" \
     && rm -rf /var/cache/apk/*
 
 # Bake external build dependencies into the image:
+COPY [ "./bin/install-codecov.sh", "${HOME}/.local/bin/" ]
 # hadolint ignore=DL3042,DL4006,SC1091
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install --user "pipx==1.2.0" && \
@@ -73,6 +75,7 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     echo 'nvm_get_arch() { nvm_echo x64-musl; }' >>"${HOME}/.nvm/nvm.sh" && \
 	. "${HOME}/.nvm/nvm.sh" || true && \
     nvm install "18" && \
-    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
+    mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/" && \
+    ${HOME}/.local/bin/install-codecov.sh
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

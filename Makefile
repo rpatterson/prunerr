@@ -57,6 +57,9 @@ HOST_PKG_INSTALL_ARGS=install -y
 HOST_PKG_NAMES_ENVSUBST=gettext-base
 HOST_PKG_NAMES_PIP=python3-pip
 HOST_PKG_NAMES_DOCKER=docker-ce-cli docker-compose-plugin
+HOST_PKG_NAMES_GPG=gnupg
+HOST_PKG_NAMES_GHCLI=gh
+HOST_PKG_NAMES_CURL=curl
 ifneq ($(shell which "brew"),)
 HOST_PREFIX=/usr/local
 HOST_PKG_CMD_PREFIX=
@@ -71,6 +74,7 @@ HOST_PKG_INSTALL_ARGS=add
 HOST_PKG_NAMES_ENVSUBST=gettext
 HOST_PKG_NAMES_PIP=py3-pip
 HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
+HOST_PKG_NAMES_GHCLI=github-cli
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
 # Detect host binaries baked into base images:
@@ -204,7 +208,8 @@ VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
 ifeq ($(VCS_COMPARE_BRANCH),)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 endif
-# Under CI, check commits and release notes against the branch to be merged into:
+# Under CI, verify commits and release notes by comparing this branch with the branch
+# maintainers would merge this branch into:
 CI=false
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),develop)
@@ -240,14 +245,15 @@ endif
 ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
-# Determine the sequence of branches to find closes existing build artifacts, such as
-# docker images:
+# The sequence of branches from which to find closest existing build artifacts, such as
+# container images:
 VCS_BRANCHES=$(VCS_BRANCH)
 ifneq ($(VCS_BRANCH),main)
 ifneq ($(VCS_BRANCH),develop)
 VCS_BRANCHES+=develop
 endif
 VCS_BRANCHES+=main
+endif
 endif
 
 # Run Python tools in isolated environments managed by Tox:
@@ -328,7 +334,7 @@ ifeq ($(CI),true)
 TEMPLATE_IGNORE_EXISTING=true
 endif
 GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
-# Determine if this checkout is a fork of the upstream project:
+# Is this checkout a fork of the upstream project?:
 CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
 USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
@@ -355,7 +361,8 @@ DOCKER_REGISTRIES=GITHUB
 DOCKER_IMAGES+=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
 endif
 endif
-# Take GitHub auth from env under GitHub actions but from secrets on other hosts:
+# Take GitHub auth from the environment under GitHub actions but from secrets on other
+# project hosts:
 GITHUB_TOKEN=
 PROJECT_GITHUB_PAT=
 ifeq ($(GITHUB_TOKEN),)
@@ -711,7 +718,7 @@ test-debug: $(HOME)/.local/bin/tox ./.tox/$(PYTHON_ENV)/log/editable.log
 
 .PHONY: test-docker
 ## Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: $(HOME)/.local/bin/tox build-pkgs
+test-docker: $(HOST_TARGET_DOCKER) build-docker $(HOME)/.local/bin/tox build-pkgs
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
@@ -747,7 +754,7 @@ test-docker-pyminor: $(HOST_TARGET_DOCKER) build-docker-$(PYTHON_MINOR)
 ifeq ($(GITLAB_CI),true)
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 ifneq ($(CODECOV_TOKEN),)
-	$(MAKE) "./var/log/codecov-install.log"
+	$(MAKE) "$(HOME)/.local/bin/codecov"
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \
 	    --file "./build/$(PYTHON_ENV)/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)
@@ -776,7 +783,7 @@ ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 	exit
 endif
 ifeq ($(VCS_COMPARE_BRANCH),main)
-# On `main`, compare with the previous commit on `main`
+# On `main`, compare with the preceding commit on `main`:
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
 endif
 endif
@@ -825,20 +832,19 @@ release: release-pkgs release-docker
 
 .PHONY: release-pkgs
 ## Publish installable Python packages to PyPI if conventional commits require.
-release-pkgs: $(HOME)/.local/bin/tox ~/.pypirc.~out~ ./var/log/git-remotes.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~
+release-pkgs: $(HOME)/.local/bin/tox ~/.pypirc.~out~ $(HOST_TARGET_DOCKER) \
+		./var/log/git-remotes.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~ \
+		$(HOST_PREFIX)/bin/gh
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
-	$(MAKE) -e ./var/log/gpg-import.log
+	$(MAKE) -e "./var/log/gpg-import.log"
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
-# The VCS remote should reflect the release before publishing the release to ensure that
-# a published release is never *not* reflected in VCS. Also ensure the tag is in
-# place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
-# well:
+# Ensure VCS has captured all the effects of building the release:
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/$(PYTHON_PROJECT_GLOB)-*
@@ -900,8 +906,7 @@ endif
 	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version
-# using the official/canonical Python version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version:
 ifeq ($(VCS_BRANCH),main)
 	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
 	then
@@ -987,13 +992,13 @@ endif
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Ensure the tag is available for creating the GitHub release below but push *before* to
-# GitLab to avoid a race with repository mirrorying:
+# Make the tag available for creating the following GitHub release but push to GitHub
+# *before* pushing to GitLab to avoid a race with repository mirroring:
 	git push --no-verify "github" tag "v$${next_version}"
 endif
 endif
 ifeq ($(CI),true)
-# Push just this tag to avoid clashes with any previously failed release:
+# Push only this tag to avoid clashes with any preceding failed release:
 	git push --no-verify "$(VCS_REMOTE)" tag "v$${next_version}"
 # Also push the branch:
 	git push --no-verify "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
@@ -1046,10 +1051,9 @@ devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ \
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 
-.PHONY: devel-upgrade-branch<
-## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
-devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		./var/log/gpg-import.log ./var/log/git-remotes.log
+devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+		./var/log/git-remotes.log
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -1070,7 +1074,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)
-# Don't duplicate the CI run from the push below:
+# Don't duplicate the CI run from the following push:
 	git_push_args+=" --no-verify"
 endif
 	git commit $${git_commit_args} -m \
@@ -1078,9 +1082,9 @@ endif
 # Fail if upgrading left un-tracked files in VCS:
 	$(MAKE) -e "test-clean"
 ifeq ($(CI),true)
-# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
-# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
-# multiple `pushUrl`:
+# Push any upgrades to the remote for review. Specify both the ref and the expected ref
+# for `--force-with-lease=` to support pushing to more than one mirror or remote by
+# using more than one `pushUrl`:
 	git_push_args="--no-verify"
 	if [ "$${remote_branch_exists=true}" == "true" ]
 	then
@@ -1092,8 +1096,8 @@ endif
 
 .PHONY: devel-merge
 ## Merge this branch with a suffix back into its un-suffixed upstream.
-devel-merge: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH) \
-		./var/log/git-remotes.log
+devel-merge: ~/.gitconfig ./var/log/git-remotes.log \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
 	git merge --ff --gpg-sign -m \
@@ -1244,6 +1248,7 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
+	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
 	elif [ "$(CI_IS_FORK)" != "true" ]
 	then
 	    echo "ERROR: DOCKER_PASS missing from ./.env or CI secrets"
@@ -1265,8 +1270,8 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	    false
 	fi
 	date | tee -a "$(@)"
-# TEMPLATE: Connect the GitHub container registry to the repository using the `Connect`
-# button at the bottom of the container registry's web UI.
+# TEMPLATE: Connect the GitHub container registry to the repository by using the
+# `Connect` button at the bottom of the container registry's web UI.
 ./var/log/docker-login-GITHUB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
@@ -1331,7 +1336,7 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Also add a fetch remote for the `$ gh ...` CLI tool to detect:
+# Also add a fetch remote for the `$ gh` command-line tool to detect:
 	if ! git remote get-url "github" >"/dev/null"
 	then
 	    echo "INFO:Adding remote 'github'"
@@ -1346,7 +1351,7 @@ else ifneq ($(CI_IS_FORK),true)
 endif
 endif
 	set -x
-# Fail fast if there's still no push access
+# Fail fast if there's still no push access:
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
 # Prose linting:
@@ -1361,6 +1366,7 @@ endif
 
 # Editor and IDE support and integration:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in
+	$(call expand_template,$(<),$(@))
 
 # Manage JavaScript tools:
 ./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
@@ -1440,62 +1446,37 @@ $(STATE_DIR)/log/host-update.log:
 	fi
 	$(HOST_PKG_CMD) update | tee -a "$(@)"
 
-# Install the code test coverage publishing tool
-./var/log/codecov-install.log:
-	mkdir -pv "$(dir $(@))"
-	(
-	    if ! which codecov
-	    then
-	        mkdir -pv ~/.local/bin/
-# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
-	        if which brew
-	        then
-# Mac OS X
-	            curl --output-dir ~/.local/bin/ -Os \
-	                "https://uploader.codecov.io/latest/macos/codecov"
-	        elif which apk
-	        then
-# Alpine
-	            wget --directory-prefix ~/.local/bin/ \
-	                "https://uploader.codecov.io/latest/alpine/codecov"
-	        else
-# Other Linux distributions
-	            curl --output-dir ~/.local/bin/ -Os \
-	                "https://uploader.codecov.io/latest/linux/codecov"
-	        fi
-	        chmod +x ~/.local/bin/codecov
-	    fi
-	    if ! which codecov
-	    then
-	        set +x
-	        echo "ERROR: CodeCov CLI tool still not on PATH"
-	        false
-	    fi
-	) | tee -a "$(@)"
+# Install the code test coverage publishing tool:
+$(HOME)/.local/bin/codecov: ./build-host/bin/install-codecov.sh $(HOST_PREFIX)/bin/curl
+	"$(<)" | tee -a "$(@)"
+$(HOST_PREFIX)/bin/curl:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_CURL)"
 
-# GPG signing key creation and management in CI
+# GNU Privacy Guard (GPG) signing key creation and management in CI:
 export GPG_PASSPHRASE=
 GPG_SIGNING_PRIVATE_KEY=
-./var/ci-cd-signing-subkey.asc:
-# We need a private key in the CI/CD environment for signing release commits and
-# artifacts.  Use a subkey so that it can be revoked without affecting your main key.
-# This recipe captures what I had to do to export a private signing subkey.  It's not
-# widely tested so it should probably only be used for reference.  It worked for me but
-# the risk is leaking your main private key so double and triple check all your
-# assumptions and results.
-# 1. Create a signing subkey with a NEW, SEPARATE passphrase:
+./var/ci-cd-signing-subkey.asc: $(HOST_PREFIX)/bin/gpg
+# Signing release commits and artifacts requires a GPG private key in the CI/CD
+# environment. Use a subkey that you can revoke without affecting your main key. This
+# recipe captures what I had to do to export a private signing subkey. It's not widely
+# tested so you should probably only use this for reference. It worked for me but this
+# process risks leaking your main private key so confirm all your assumptions and
+# results well.
+#
+# 1. Create a signing subkey with a *new*, *separate* passphrase:
 #    https://wiki.debian.org/Subkeys#How.3F
 # 2. Get the long key ID for that private subkey:
-#	gpg --list-secret-keys --keyid-format "LONG"
-# 3. Export *just* that private subkey and verify that the main secret key packet is the
+#	gpg --list-secret-keys --keyid-format "long"
+# 3. Export *only* that private subkey and verify that the main secret key packet is the
 #    GPG dummy packet and that the only other private key included is the intended
 #    subkey:
 #	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
 #	    gpg --list-packets
 # 4. Export that key as text to a file:
 	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" >"$(@)"
-# 5. Confirm that the exported key can be imported into a temporary GNU PG directory and
-#    that temporary directory can then be used to sign files:
+# 5. Confirm that a temporary GNU PG directory can import the exported key and that it
+#    can sign files:
 #	gnupg_homedir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
 #	printenv 'GPG_PASSPHRASE' >"$${gnupg_homedir}/.passphrase"
 #	gpg --homedir "$${gnupg_homedir}" --batch --import <"$(@)"
@@ -1507,14 +1488,14 @@ GPG_SIGNING_PRIVATE_KEY=
 #	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
-./var/log/gpg-import.log: ~/.gitconfig
+./var/log/gpg-import.log: ~/.gitconfig $(HOST_PREFIX)/bin/gpg
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
 ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
-# "Unlock" the signing key for the remainder of this CI run:
+# "Unlock" the signing key for the rest of this CI run:
 	printenv 'GPG_PASSPHRASE' >"./var/ci-cd-signing-subkey.passphrase"
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
@@ -1528,11 +1509,18 @@ ifneq ($(CI_IS_FORK),true)
 endif
 	date | tee -a "$(@)"
 endif
+$(HOST_PREFIX)/bin/gpg:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_GPG)"
+
+$(HOST_PREFIX)/bin/gh:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_GHCLI)"
 
 # TEMPLATE: Optionally, use the following command to generate a GitLab CI/CD runner
 # configuration, register it with your project, compare it with the template
-# prerequisite, apply the appropriate changes and then  run using `$ docker compose up
-# gitlab-runner`.  Particularly useful to conserve shared runner minutes:
+# prerequisite, apply the appropriate changes and then run by using `$ docker compose up
+# gitlab-runner`. Useful to conserve shared runner minutes:
 ./var/gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
 	docker compose run --rm gitlab-runner register \
 	    --url "https://gitlab.com/" --docker-image "docker" --executor "docker"
@@ -1675,9 +1663,8 @@ endef
 # Recipes not used during the usual course of development.
 
 .PHONY: pull-docker
-### Pull an existing image best to use as a cache for building new images
-pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+## Pull an existing image best to use as a cache for building new images
+pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DOCKER)
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	for vcs_branch in $(VCS_BRANCHES)
 	do

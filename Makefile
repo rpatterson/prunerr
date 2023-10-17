@@ -562,7 +562,7 @@ test-debug:
 
 .PHONY: test-docker
 ## Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: $(HOST_TARGET_DOCKER) build-pkgs build-docker
+test-docker: $(HOST_TARGET_DOCKER) build-docker
 	docker_run_args="--rm"
 	if [ ! -t 0 ]
 	then
@@ -960,13 +960,6 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	mkdir -pv "$(dir $(@))"
 	if [ -n "$${DOCKER_PASS}" ]
 	then
-	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
-	then
-	    echo "ERROR: DOCKER_PASS missing from ./.env"
-	    false
-	fi
-	date | tee -a "$(@)"
 	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
 	elif [ "$(CI_IS_FORK)" != "true" ]
 	then

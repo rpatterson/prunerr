@@ -418,8 +418,11 @@ build-docs-%: $(HOME)/.local/bin/tox
 ## Report and fix any problems with permissions in the checkout.
 build-perms:
 # Change only the files in VCS to avoid time consuming recursion into build artifacts.
-# Anything else that ends up with wrong ownership should be considered a build bug:
+# Consider anything else that ends up with wrong ownership a build bug:
 	git ls-files -z | xargs -0 -- chown -c "$(PUID):$(PGID)"
+# TODO: Fix any existing problems in CI, remove when fully deployed to all projects:
+	find "./" "$(HOME)" -not \( -user "$(PUID)" -group "$(PGID)" \) -print0 |
+	    xargs -0 -- chown -c "$(PUID):$(PGID)"
 
 ## Docker Build Targets:
 #

@@ -252,6 +252,14 @@ ifeq ($(shell tty),not a tty)
 DOCKER_COMPOSE_RUN_ARGS+= -T
 endif
 export DOCKER_PASS
+# Find all the bind mount paths that need to exist before creating containers or else
+# `# dockerd` creates them as `root`:
+DOCKER_VOLUME_TARGETS:=$(shell ( \
+    sed -nE -e 's#^      - "\$$\{CHECKOUT_DIR:-\.\}/([^:]+):.+"#\1#p' \
+        ./docker-compose*.yml && \
+    sed -nE -e 's#^      - "[^:]+:/usr/local/src/project-structure/(.+)"#\1#p' \
+        ./docker-compose*.yml \
+    ) | sort | uniq)
 
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
@@ -348,7 +356,7 @@ endif
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
-## Update the built package for use outside tox.
+## Ensure the built package is current.
 build-pkgs: $(HOST_TARGET_DOCKER) \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log
@@ -874,6 +882,10 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
+# Set up release publishing authentication, useful in automation such as CI:
+~/.pypirc.~out~: ./home/.pypirc.in
+	$(call expand_template,$(<),$(@))
+
 # Capture any project initialization tasks for reference. Not actually usable.
 ./pyproject.toml:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
@@ -881,11 +893,13 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 
 ## Docker real targets:
 
+# Build Docker container images.
 # Build the development image:
 ./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
 		./bin/entrypoint ./docker-compose.yml ./docker-compose.override.yml \
 		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
-		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg ./tox.ini
+		$(HOST_TARGET_DOCKER) $(DOCKER_VOLUME_TARGETS) ./pyproject.toml \
+		./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
@@ -906,7 +920,6 @@ endif
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 	$(MAKE) -e "$(@)"
-
 # Build the end-user image:
 ./var-docker/$(PYTHON_ENV)/log/build-user.log: \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
@@ -921,13 +934,20 @@ endif
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
 	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
-
-# Marker file used to trigger the rebuild of the image for only one Python version.
+# Marker file used to trigger the rebuild of the image.
 # Useful to workaround asynchronous timestamp issues when running jobs in parallel:
 ./var-docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
-
+$(DOCKER_VOLUME_TARGETS):
+	mkdir -pv "$(@)"
+	echo "# Docker bind mount placeholder" >"$(@)/.gitignore"
+	git add -f "$(@)/.gitignore"
+	set +x
+	echo "\
+	ERROR: Docker bind mount path didn't exist, force added an ignore file.
+	       Review ignores above in case it needs more adjustments."
+	false
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
 $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	$(MAKE) "$(HOST_TARGET_DOCKER)"
@@ -943,6 +963,18 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	        docker buildx create --use "multi-platform" || true
 	    ) |& tee -a "$(@)"
 	fi
+./var/log/docker-login-DOCKER.log:
+	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
+	mkdir -pv "$(dir $(@))"
+	if [ -n "$${DOCKER_PASS}" ]
+	then
+	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
+	elif [ "$(CI_IS_FORK)" != "true" ]
+	then
+	    echo "ERROR: DOCKER_PASS missing from ./.env"
+	    false
+	fi
+	date | tee -a "$(@)"
 
 # Local environment variables and secrets from a template:
 ./.env.~out~: ./.env.in
@@ -986,7 +1018,6 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 ./.vale.ini ./styles/code.ini:
 	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
 	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-
 ./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
 	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
@@ -1073,23 +1104,6 @@ $(STATE_DIR)/log/host-update.log:
 	    false
 	fi
 	$(HOST_PKG_CMD) update | tee -a "$(@)"
-
-# Set up release publishing authentication, useful in automation such as CI:
-~/.pypirc.~out~: ./home/.pypirc.in
-	$(call expand_template,$(<),$(@))
-
-./var/log/docker-login-DOCKER.log:
-	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
-	mkdir -pv "$(dir $(@))"
-	if [ -n "$${DOCKER_PASS}" ]
-	then
-	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
-	then
-	    echo "ERROR: DOCKER_PASS missing from ./.env"
-	    false
-	fi
-	date | tee -a "$(@)"
 
 
 ### Makefile "functions":

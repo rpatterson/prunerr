@@ -414,6 +414,13 @@ build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
 
+.PHONY: build-perms
+## Report and fix any problems with permissions in the checkout.
+build-perms:
+# Change only the files in VCS to avoid time consuming recursion into build artifacts.
+# Anything else that ends up with wrong ownership should be considered a build bug:
+	git ls-files -z | xargs -0 -- chown -c "$(PUID):$(PGID)"
+
 ## Docker Build Targets:
 #
 # Strive for as much consistency as possible in development tasks between the local host

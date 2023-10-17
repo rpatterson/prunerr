@@ -51,7 +51,8 @@ default:
   services:
     - "docker:dind"
   before_script:
-    - "chown -R $PUID:$PGID ./"
+    - >-
+      make -e build-perms
   # TODO: Debug stale venv issues and restore cache after fixing.
 
 stages:

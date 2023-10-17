@@ -80,9 +80,10 @@ jobs:
       - name: "Change checkout owner"
         # https://stackoverflow.com/a/58474340/624787
         run: >-
-          chown -R ${PUID}:${PGID} ./ &&
           git config --global --add safe.directory
           /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+          &&
+          make -e build-perms
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Build image and run tests and checks in a container"

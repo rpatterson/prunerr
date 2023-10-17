@@ -87,7 +87,7 @@ jobs:
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Build image and run tests and checks in a container"
         run: >-
-          entrypoint make -e test-push build-docker test test-clean
+          entrypoint make -e test-push test-lint build-docker test-docker test-clean
 
       # Upload build artifacts:
       # https://github.com/actions/upload-artifact#usage

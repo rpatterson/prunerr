@@ -16,7 +16,7 @@ autopep8==2.0.4
     # via project-structure (pyproject.toml)
 bandit==1.7.5
     # via prospector
-black==23.9.1
+black==23.10.0
     # via project-structure (pyproject.toml)
 build==1.0.3
     # via
@@ -67,7 +67,7 @@ mccabe==0.7.0
     #   pylint
 mdurl==0.1.2
     # via markdown-it-py
-mypy==1.6.0
+mypy==1.6.1
     # via prospector
 mypy-extensions==1.0.0
     # via
@@ -94,7 +94,7 @@ platformdirs==3.11.0
     # via
     #   black
     #   pylint
-prospector[with_everything]==1.10.2
+prospector[with_everything]==1.10.3
     # via project-structure (pyproject.toml)
 pycodestyle==2.11.1
     # via
@@ -170,11 +170,11 @@ toml==0.10.2
     #   vulture
 tomlkit==0.12.1
     # via pylint
-trove-classifiers==2023.9.19
+trove-classifiers==2023.10.17
     # via pyroma
 typing-extensions==4.8.0
     # via mypy
-urllib3==2.0.6
+urllib3==2.0.7
     # via requests
 vulture==2.10
     # via prospector

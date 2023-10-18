@@ -9,7 +9,7 @@
 
 set -eu -o pipefail
 shopt -s inherit_errexit
-if [ "${DEBUG:=false}" = "true" ]
+if test "${DEBUG:=false}" = "true"
 then
     # Echo commands for easier debugging
     set -x
@@ -19,7 +19,7 @@ fi
 
 main() {
     # Run as the user from the enironment, adding that user if necessary
-    if [ -n "${PUID:-}" ]
+    if test -n "${PUID:-}"
     then
         if (( $(id -u) != 0 ))
         then

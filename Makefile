@@ -385,8 +385,7 @@ endif
 devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z |
-	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
 	while read -d $$'\0'
 	do
 	    if ! (

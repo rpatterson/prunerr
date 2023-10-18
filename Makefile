@@ -880,7 +880,7 @@ ifeq ($(CI),true)
 # for `--force-with-lease=` to support pushing to more than one mirror or remote by
 # using more than one `pushUrl`:
 	git_push_args="--no-verify"
-	if [ "$${remote_branch_exists=true}" == "true" ]
+	if test "$${remote_branch_exists=true}" = "true"
 	then
 	    git_push_args+=" --force-with-lease=\
 	$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
@@ -984,11 +984,11 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 ./var/log/docker-login-GITLAB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
+	if test -n "$${CI_REGISTRY_PASSWORD}"
 	then
 	    printenv "CI_REGISTRY_PASSWORD" |
 	        docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
-	elif [ "$(CI_IS_FORK)" != "true" ]
+	elif test "$(CI_IS_FORK)" != "true"
 	then
 	    echo "ERROR: CI_REGISTRY_PASSWORD missing from ./.env or CI secrets"
 	    false
@@ -999,11 +999,11 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 ./var/log/docker-login-GITHUB.log:
 	$(MAKE) "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${PROJECT_GITHUB_PAT}" ]
+	if test -n "$${PROJECT_GITHUB_PAT}"
 	then
 	    printenv "PROJECT_GITHUB_PAT" |
 	        docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
-	elif [ "$(CI_IS_FORK)" != "true" ]
+	elif test "$(CI_IS_FORK)" != "true"
 	then
 	    echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
 	    false
@@ -1265,7 +1265,7 @@ if test ! -e "$(2:%.~out~=%)"
 then
     touch -d "@0" "$(2:%.~out~=%)"
 fi
-if [ "$(CI)" != "true" ]
+if test "$(CI)" != "true"
 then
     envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
 fi

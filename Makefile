@@ -755,7 +755,7 @@ endif
 	touch \
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
+	    $(PYTHON_ENVS:%=./requirements/%/test.txt)
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	$(MAKE) VCS_BRANCH="main" VCS_MERGE_BRANCH="develop" \

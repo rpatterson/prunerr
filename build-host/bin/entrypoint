@@ -9,7 +9,7 @@
 
 set -eu -o pipefail
 CHOWN_ARGS="-R"
-if [ "${DEBUG:=false}" = "true" ]
+if test "${DEBUG:=false}" = "true"
 then
     # Echo commands for easier debugging
     set -x
@@ -20,9 +20,9 @@ fi
 
 main() {
     # Run as the user from the enironment, adding that user if necessary
-    if [ -n "${PUID:-}" ]
+    if test -n "${PUID:-}"
     then
-        if [ "$(id -u)" != "0" ]
+        if test "$(id -u)" != "0"
         then
             set +x
             echo "ERROR: Can't create a user when not run as root" 1>&2
@@ -47,7 +47,7 @@ main() {
                     -s "/bin/bash" "runner"
         fi
         user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
-        if [ -e "/var/run/docker.sock" ]
+        if test -e "/var/run/docker.sock"
         then
             # Ensure the user can talk to `# dockerd`:
             docker_gid=$(stat -c "%g" "/var/run/docker.sock")

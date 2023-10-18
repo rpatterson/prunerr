@@ -406,7 +406,7 @@ test-debug:
 ## Run the full suite of tests, coverage checks, and code linters in containers.
 test-docker: $(HOST_TARGET_DOCKER) build-docker
 	docker_run_args="--rm"
-	if [ ! -t 0 ]
+	if test ! -t 0
 	then
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
@@ -712,10 +712,10 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 ./var/log/docker-login-DOCKER.log:
 	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${DOCKER_PASS}" ]
+	if test -n "$${DOCKER_PASS}"
 	then
 	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
+	elif test "$(CI_IS_FORK)" != "true"
 	then
 	    echo "ERROR: DOCKER_PASS missing from ./.env"
 	    false

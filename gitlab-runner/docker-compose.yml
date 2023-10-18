@@ -12,9 +12,9 @@ services:
   gitlab-runner:
     image: "gitlab/gitlab-runner"
     volumes:
-      - "./gitlab-runner/config:/etc/gitlab-runner"
+      - "${CHECKOUT_DIR:-.}/gitlab-runner/config:/etc/gitlab-runner"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./gitlab-runner/cache:/cache"
-      - "./gitlab-runner/certs:/certs"
+      - "${CHECKOUT_DIR:-.}/gitlab-runner/cache:/cache"
+      - "${CHECKOUT_DIR:-.}/gitlab-runner/certs:/certs"
     ports:
       - "8093:8093"

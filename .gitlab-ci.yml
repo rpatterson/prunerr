@@ -57,7 +57,9 @@ default:
   services:
     - "docker:dind"
   before_script:
-    - "chown -R $PUID:$PGID ./"
+    - >-
+      git config --global --add safe.directory "$(realpath "./")" &&
+      make -e build-perms
   # TODO: Debug stale venv issues and restore cache after fixing.
 
 stages:

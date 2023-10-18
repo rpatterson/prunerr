@@ -130,7 +130,7 @@ jobs:
             )
           )
         with:
-          name: "Test Suite Reports"
+          name: "Test Suite Reports (python${{ matrix.PYTHON_MINORS }})"
           path: >-
             ./build/*/*test-junit.xml,
             ./build/*/prospector-xunit.xml

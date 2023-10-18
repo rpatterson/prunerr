@@ -561,7 +561,7 @@ $(PYTHON_MINORS:%=test-docker-%):
 ## Run the full suite of tests inside a docker container for this Python version.
 test-docker-pyminor: $(HOST_TARGET_DOCKER) build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
-	if [ ! -t 0 ]
+	if test ! -t 0
 	then
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
@@ -688,7 +688,7 @@ endif
 # Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version
 # using the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
-	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
+	if TEST "$${PYTHON_ENV}" = "$(PYTHON_HOST_ENV)"
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	    docker compose pull --quiet pandoc docker-pushrm
@@ -962,10 +962,10 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 ./var/log/docker-login-DOCKER.log:
 	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${DOCKER_PASS}" ]
+	if test -n "$${DOCKER_PASS}"
 	then
 	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
+	elif test "$(CI_IS_FORK)" != "true"
 	then
 	    echo "ERROR: DOCKER_PASS missing from ./.env"
 	    false

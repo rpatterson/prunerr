@@ -904,7 +904,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 ./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
 		./bin/entrypoint ./docker-compose.yml ./docker-compose.override.yml \
 		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
-		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg ./tox.ini
+		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)

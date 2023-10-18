@@ -30,7 +30,6 @@ lib/
 lib64/
 parts/
 var/
-/var-*
 /node_modules
 /package-lock.json
 /README.md

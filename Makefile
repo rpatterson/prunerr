@@ -588,9 +588,9 @@ test-docker: $(HOST_TARGET_DOCKER) build-docker
 ifeq ($(GITLAB_CI),true)
 ifneq ($(CODECOV_TOKEN),)
 	$(MAKE) "$(HOME)/.local/bin/codecov"
-# TEMPLATE: Write coverage results in Cobertura XML format to `./build/coverage.xml` and
-# un-comment:
-#	codecov --nonZero -t "$(CODECOV_TOKEN)" --file "./build/coverage.xml"
+# TEMPLATE: Write coverage results in Cobertura XML format to
+# `./build/reports/coverage.xml` and un-comment:
+#	codecov --nonZero -t "$(CODECOV_TOKEN)" --file "./build/reports/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: CODECOV_TOKEN missing from ./.env or CI secrets"

@@ -93,15 +93,13 @@ build-test:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "./build/*test*"
-      - "./build/coverage*"
-      - "./build/*lint*"
+      - "./build/reports/"
     reports:
       junit:
-        - "./build/*test-junit.xml"
+        - "./build/reports/*unit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./build/coverage.xml"
+        path: "./build/reports/*cov*.xml"
 
 release:
   stage: "release"

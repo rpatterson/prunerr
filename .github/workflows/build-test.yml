@@ -92,12 +92,12 @@ jobs:
 
       # Upload build artifacts:
       # https://github.com/actions/upload-artifact#usage
-      - name: "Archive test suite reports"
+      - name: "Archive test, coverage, and lint reports"
         uses: "actions/upload-artifact@master"
         with:
-          name: "test-suite-reports"
+          name: "test-coverage-lint-reports"
           path: |
-            ./build/*test*
+            ./build/reports/
       # TEMPLATE: Write coverage results in Cobertura XML format to
       # `./build/coverage.xml` in the project root and un-comment:
       # https://github.com/marketplace/actions/test-reporter#example
@@ -119,19 +119,5 @@ jobs:
       #   with:
       #     name: "Test Suite Reports"
       #     path: >-
-      #       ./build/*test-junit.xml
+      #       ./build/reports/*unit.xml
       #     reporter: "java-junit"
-      - name: "Archive code coverage reports"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "code-coverage-reports"
-          path: |
-            ./build/*/.coverage*
-            ./build/*/coverage*
-            ./build/*/htmlcov*
-      - name: "Archive linter reports"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "linter-reports"
-          path: |
-            ./build/*/*lint*

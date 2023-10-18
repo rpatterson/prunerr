@@ -132,7 +132,7 @@ pylint-plugin-utils==0.7
     #   pylint-flask
 pyproject-hooks==1.0.0
     # via build
-pyright==1.1.331
+pyright==1.1.332
     # via prospector
 pyroma==4.2
     # via prospector
@@ -179,7 +179,7 @@ tomli==2.0.1
     #   pyproject-hooks
 tomlkit==0.12.1
     # via pylint
-trove-classifiers==2023.10.17
+trove-classifiers==2023.10.18
     # via pyroma
 typing-extensions==4.8.0
     # via

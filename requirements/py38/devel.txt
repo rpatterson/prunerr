@@ -30,8 +30,6 @@ click==8.1.7
     # via black
 colorama==0.4.6
     # via radon
-coverage==7.3.2
-    # via project-structure (pyproject.toml)
 dill==0.3.7
     # via pylint
 docutils==0.20.1
@@ -46,7 +44,7 @@ flake8-polyfill==1.0.2
     # via pep8-naming
 gitdb==4.0.10
     # via gitpython
-gitpython==3.1.37
+gitpython==3.1.38
     # via
     #   bandit
     #   prospector

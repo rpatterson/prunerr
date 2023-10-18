@@ -8,6 +8,8 @@ build==1.0.3
     # via pip-tools
 click==8.1.7
     # via pip-tools
+coverage==7.3.2
+    # via project-structure (pyproject.toml)
 iniconfig==2.0.0
     # via pytest
 packaging==23.2

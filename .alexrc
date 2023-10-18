@@ -1,0 +1,14 @@
+{
+  "allow": [
+    "master",
+    "failure",
+    "failures",
+    "failed",
+    "host-hostess",
+    "hostesses-hosts",
+    "kill",
+    "black",
+    "blacks",
+    "dummy"
+  ]
+}

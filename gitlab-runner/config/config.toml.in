@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Set to 2 times the number of parallel matrix jobs as a default.
-# Alternatively, set to the number of CPUs/cores or some multiple:
+# Set to 2 times the number of parallel matrix jobs as a default.  Or set to the number
+# of CPU cores:
 concurrent = 10
 # Pick up jobs as soon as possible:
 check_interval = 1

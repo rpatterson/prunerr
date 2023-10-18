@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
+/*
+!.git*
+!/Makefile
+/*~

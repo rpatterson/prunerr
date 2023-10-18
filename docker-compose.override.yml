@@ -2,29 +2,25 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Override `$ docker compose ...` configuration for development or testing here in this
-# repo checkout.  Everything that may be used outside this checkout should be in
+# Override `$ docker compose` configuration for development or testing here in this
+# repository checkout. Put everything used outside this checkout in
 # `./docker-compose.yml`.
 version: "3.8"
 
 services:
-
   # Configuration specific to development:
   project-structure:
     image: "\
       ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
-      /${PROJECT_NAME:?}:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
-    container_name: "${PROJECT_NAME:?}-checkout"
+      /project-structure:${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "project-structure-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       target: "user"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
-        PYTHON_ENV: "${PYTHON_ENV:-py310}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
-    volumes:
-      # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/${PROJECT_NAME:?}/"
 
   ## Contianers used for development and release:
 
@@ -32,40 +28,42 @@ services:
   project-structure-devel:
     image: "\
       ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
-      /${PROJECT_NAME:?}:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
-    container_name: "${PROJECT_NAME:?}-devel"
+      /project-structure:devel-${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "project-structure-devel"
     profiles:
       - "test"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       target: "devel"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
-        PYTHON_ENV: "${PYTHON_ENV:-py310}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
       # Make the run-time user configurable in `./.env`
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
-      # Variables from the environment we want to be passed through into the container:
+      # Variables from the environment to pass through into the container:
       CI: "${CI:-false}"
       # DEBUG: "true"
     volumes:
-      # Ensure local changes are reflected inside the container.
+      # Reflect local changes inside the container:
       - "${CHECKOUT_DIR:-.}/bin/entrypoint:/usr/local/bin/entrypoint"
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:?}/"
-      # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/${PROJECT_NAME:?}/"
-      # Avoid any clashes between image variants and/or the local host at both build and
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure/"
+      # Preserve user configuration, data, and caches between containers and variants:
+      - "${CHECKOUT_DIR:-.}/home/.config/:/home/project-structure/.config/"
+      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/project-structure/.local/share/"
+      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/project-structure/.cache/"
+      # Avoid any clashes between image variants and the local host at both build and
       # run-time.
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/\
-        :/usr/local/src/${PROJECT_NAME:?}/var/"
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/.tox/\
-        :/usr/local/src/${PROJECT_NAME:?}/.tox/"
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}\
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
+        :/usr/local/src/project-structure/var/"
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/.tox/\
+        :/usr/local/src/project-structure/.tox/"
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}\
         /project_structure.egg-info/\
-        :/usr/local/src/${PROJECT_NAME:?}/src/project_structure.egg-info/"
+        :/usr/local/src/project-structure/src/project_structure.egg-info/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -75,24 +73,47 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-}/"
-    working_dir: "/usr/local/src/${PROJECT_NAME:-}/"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure/"
+    working_dir: "/usr/local/src/project-structure/"
     command: >-
       hadolint "./Dockerfile"
 
-  pandoc:
-    image: "pandoc/core"
+  reuse:
+    image: "docker.io/fsfe/reuse:latest-debian"
     profiles:
-      - "release"
+      - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
+    command: >-
+      lint
+
+  vale:
+    image: "docker.io/jdkato/vale:v2.28.1"
+    profiles:
+      - "lint"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-project-structure}"
+    working_dir: "/usr/local/src/${PROJECT_NAME:-project-structure}"
+    command: >-
+      .
+
+  pandoc:
+    image: "docker.io/pandoc/core"
+    profiles:
+      - "release"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/data/"
     entrypoint: "ash"
     # Strip reStructuredText directives unsupported in Markdown before converting and
-    # converted Markdown that isn't widely supported, e.g. table of contents and tables
-    # respectively:
+    # converted Markdown that isn't widely supported, for example table of contents and
+    # tables respectively:
     command: >-
       -xeu -c '
         grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
@@ -113,9 +134,9 @@ services:
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
-      --file "/data/README.md"
+      --file "/data/var/README.md"
       --short "Project structure foundation or template"
-      --debug "${DOCKER_USER:-}/${PROJECT_NAME:-}"
+      --debug "${DOCKER_USER:-}/project-structure"
 
   gitlab-release-cli:
     image: "${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/gitlab-org/release-cli:latest"
@@ -124,15 +145,15 @@ services:
     environment:
       CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
     volumes:
-      - "./:/usr/local/src/${PROJECT_NAME:-}/"
-    working_dir: "/usr/local/src/${PROJECT_NAME:-}/"
+      - "./:/usr/local/src/project-structure/"
+    working_dir: "/usr/local/src/project-structure/"
 
   ## Containers related to CI/CD:
 
-  # The container in which CI/CD is run:
+  # The container that runs CI/CD:
   build-host:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/${PROJECT_NAME:-}\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/project-structure\
       :build-host"
     profiles:
       - "ci"
@@ -152,7 +173,7 @@ services:
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR:-.}"
     command: >-
-      make -e build-docker test-docker release
+      make -e test-lint build-docker test-docker release
 
   gitlab-runner:
     profiles:

@@ -5,11 +5,11 @@
 # SPDX-License-Identifier: MIT
 
 #
-# Perform any required volatile run-time initialization
+# Perform any required volatile run time initialization
 
 set -eu -o pipefail
 shopt -s inherit_errexit
-if [ "${DEBUG:=false}" = "true" ]
+if test "${DEBUG:=false}" = "true"
 then
     # Echo commands for easier debugging
     set -x
@@ -18,32 +18,40 @@ fi
 
 
 main() {
-    if [ -n "${PUID:-}" ]
+    # Run as the user from the enironment, adding that user if necessary
+    if test -n "${PUID:-}"
     then
-	if (( $(id -u) != 0 ))
-	then
-	    set +x
-	    echo "ERROR: Can't create a user when not run as root" 1>&2
-	    false
-	fi
-	if ! id "${PUID}" >"/dev/null" 2>&1
-	then
-	    # Add a user to the `passwd` DB so that the `~project-structure/`
-	    # HOME directory can be looked up.
-	    adduser --uid "${PUID}" --disabled-password \
-	        --gecos "Project Structure,,," "project-structure" >"/dev/null"
-	fi
-	# Fix the TTY ownership if the session is interactive
-	if tty_dev=$(tty)
-	then
-	    chown "${PUID}" "${tty_dev}"
-	fi
-	# Delegate the rest to the `CMD`
-	exec gosu "${PUID}:${PGID:-${PUID}}" "${@}"
+        if (( $(id -u) != 0 ))
+        then
+            set +x
+            echo "ERROR: Can't create a user when not run as root" 1>&2
+            false
+        fi
+        # Add an unprivileged user:
+        if ! getent group "${PGID}" >"/dev/null"
+        then
+            addgroup --gid "${PGID}" "${PROJECT_NAME}"
+        fi
+        group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
+        if ! id "${PUID}" >"/dev/null" 2>&1
+        then
+            # Add a user to the `passwd` DB to support looking up the
+            # `~project-structure/` HOME directory:
+            adduser --uid "${PUID}" --gid "${PGID}" --disabled-password \
+                --gecos "Project Structure,,," "${PROJECT_NAME}" >"/dev/null"
+        fi
+        if tty_dev=$(tty)
+        then
+            # Fix interactive session terminal ownership:
+            chown "${PUID}" "${tty_dev}"
+        fi
+        # Run the rest of the command-line arguments as the unprivileged user:
+        exec gosu "${PUID}" "${@}"
     fi
 
-    # Delegate the rest to the `CMD`
+    # Run un-altered as the user passed in by docker:
     exec "$@"
 }
+
 
 main "$@"

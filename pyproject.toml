@@ -8,28 +8,56 @@ requires = ["setuptools>=45", "wheel", "setuptools_scm>=6.2"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-# Use VCS tags as the sole authority on versions.  Dynamically determine the current
-# version from VCS tags:
+# Use VCS tags as the sole authority on versions. Get the current version from VCS tags:
 # https://github.com/pypa/setuptools_scm#pyprojecttoml-usage
 write_to = "src/projectstructure/version.py"
 # Uncomment to test uploading to PyPI locally
 # local_scheme = "no-local-version"
 
-[tool.pylint.MASTER]
-# Ensure `duplicate-code` and any other errors that depend on not runnining in parallel
-# are reported:
+[tool.pylint.main]
+# The `duplicate-code` and other checks depend on not running in parallel:
 jobs = 1
-enable-all-extensions = true
 output-format = "colorized"
 ignore-paths = [
-# Managed by tools, best to use `# pylint: disable=...` inline comments for any other
-# ignores.
+# Managed by tools, best to use `# pylint: disable=` inline comments for any other
+# ignores:
     "src/.+/version.py",
     ".*/src/.+/version.py",
 ]
 # Extend linting to usage of trusted extension packages
 extension-pkg-allow-list = ["lxml"]
-[tool.pylint.TYPECHECK]
+# Update the list of extensions or plugins with:
+#     $ pylint --list-extensions
+load-plugins = [
+    "pylint.extensions.confusing_elif",
+    "pylint.extensions.dict_init_mutate",
+    "pylint.extensions.eq_without_hash",
+    "pylint.extensions.typing",
+    "pylint.extensions.consider_refactoring_into_while_condition",
+    "pylint.extensions.no_self_use",
+    "pylint.extensions.bad_builtin",
+    "pylint.extensions.set_membership",
+    "pylint.extensions.emptystring",
+    "pylint.extensions.comparison_placement",
+    "pylint.extensions.magic_value",
+    "pylint.extensions.code_style",
+    "pylint.extensions.redefined_loop_name",
+    "pylint.extensions.private_import",
+    "pylint.extensions.while_used",
+    "pylint.extensions.check_elif",
+    "pylint.extensions.mccabe",
+    "pylint.extensions.consider_ternary_expression",
+    "pylint.extensions.comparetozero",
+    "pylint.extensions.docparams",
+    "pylint.extensions.docstyle",
+    "pylint.extensions.broad_try_clause",
+    "pylint.extensions.redefined_variable_type",
+    "pylint.extensions.for_any_all",
+    "pylint.extensions.dunder",
+    "pylint.extensions.empty_comment",
+    "pylint.extensions.overlapping_exceptions",
+]
+[tool.pylint.typecheck]
 # Ignore false negatives from external packages
 ignored-classes = ["lxml.etree.QName.localname"]
 # Match Black's defaults
@@ -37,12 +65,17 @@ ignored-classes = ["lxml.etree.QName.localname"]
 [tool.pylint.format]
 max-line-length = "88"
 [tool.pylint."messages control"]
-# Workaround Prospector bug with PyLint:
+# Workaround Prospector bug with Pylint:
 # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
-disable = ["relative-beyond-top-level"]
-[[tool.mypy.overrides]]
-module = ["argcomplete"]
-ignore_missing_imports = true
+disable = [
+    "relative-beyond-top-level",
+    "docstring-first-line-empty",
+]
+[tool.pylint.parameter_documentation]
+accept-no-param-doc = false
+accept-no-raise-doc = false
+accept-no-return-doc = false
+accept-no-yields-doc = false
 
 [tool.vulture]
 # https://github.com/jendrikseipp/vulture#ignoring-files

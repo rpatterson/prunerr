@@ -1156,7 +1156,7 @@ $(STATE_DIR)/log/host-update.log:
 
 # Install the code test coverage publishing tool:
 $(HOME)/.local/bin/codecov: ./build-host/bin/install-codecov.sh $(HOST_PREFIX)/bin/curl
-	"$(<)" | tee -a "$(@)"
+	"$(<)"
 $(HOST_PREFIX)/bin/curl:
 	$(MAKE) "$(STATE_DIR)/log/host-update.log"
 	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_CURL)"

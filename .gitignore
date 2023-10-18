@@ -17,16 +17,17 @@ __pycache__/
 .Python
 env/
 build/
-develop-eggs/
-dist/
+dist
+sdist/
 downloads/
+develop-eggs/
 eggs/
 .eggs/
 lib/
 lib64/
 parts/
-sdist/
 var/
+/var-*
 /node_modules
 /package-lock.json
 /README.md
@@ -88,9 +89,10 @@ celerybeat-schedule
 # dotenv
 /.env
 
-# Linters
+# Linters:
 .tox
 .mypy_cache
+
 # Ignore downloaded styles:
 /styles/Vale
 /styles/Microsoft
@@ -114,3 +116,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# `${HOME}/**` artifacts:
+**/.*_history
+**/.*hst
+**/.*hsts
+**/.cache
+**/.local

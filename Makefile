@@ -572,7 +572,7 @@ test-debug:
 ## Run the full suite of tests, coverage checks, and code linters in containers.
 test-docker: $(HOST_TARGET_DOCKER) build-docker
 	docker_run_args="--rm"
-	if [ ! -t 0 ]
+	if test ! -t 0
 	then
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
@@ -653,7 +653,7 @@ endif
 .PHONY: test-clean
 ## Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
-	if [ -n "$$(git status --porcelain)" ]
+	if test -n "$$(git status --porcelain)"
 	then
 	    set +x
 	    echo "Checkout is not clean"
@@ -740,7 +740,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 # Update the local branch to the forthcoming version bump commit:
 	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 	exit_code=0
-	if [ "$(VCS_BRANCH)" = "main" ] &&
+	if test "$(VCS_BRANCH)" = "main" &&
 	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version.py $$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	    )
@@ -970,10 +970,10 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 ./var/log/docker-login-DOCKER.log:
 	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${DOCKER_PASS}" ]
+	if test -n "$${DOCKER_PASS}"
 	then
 	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
+	elif test "$(CI_IS_FORK)" != "true"
 	then
 	    echo "ERROR: DOCKER_PASS missing from ./.env or CI secrets"
 	    false
@@ -1025,7 +1025,7 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	if test "$$(git rev-parse --is-shallow-repository)" = "true"
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
@@ -1256,12 +1256,12 @@ then
     $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
     $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_ENVSUBST)"
 fi
-if [ "$(2:%.~out~=%)" -nt "$(1)" ]
+if test "$(2:%.~out~=%)" -nt "$(1)"
 then
     envsubst <"$(1)" >"$(2)"
     exit
 fi
-if [ ! -e "$(2:%.~out~=%)" ]
+if test ! -e "$(2:%.~out~=%)"
 then
     touch -d "@0" "$(2:%.~out~=%)"
 fi
@@ -1272,12 +1272,12 @@ fi
 set +x
 echo "WARNING:Template $(1) changed, reconcile and \`$$ touch $(2:%.~out~=%)\`."
 set -x
-if [ ! -s "$(2:%.~out~=%)" ]
+if test ! -s "$(2:%.~out~=%)"
 then
     envsubst <"$(1)" >"$(2:%.~out~=%)"
     touch -d "@0" "$(2:%.~out~=%)"
 fi
-if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ]
+if test "$(TEMPLATE_IGNORE_EXISTING)" = "true"
 then
     envsubst <"$(1)" >"$(2)"
     exit

@@ -411,11 +411,13 @@ build-docs-%: $(HOME)/.local/bin/tox
 build-perms:
 # Change only the files in VCS to avoid time consuming recursion into build artifacts.
 # Consider anything else that ends up with wrong ownership a build bug:
+	set +x
 	git ls-files -z | while read -d $$'\0' git_file
 	do
 	    echo -ne "$$(dirname "$${git_file}")"'\0'
 	    echo -ne "$${git_file}"'\0'
 	done | xargs -0 -- chown "$(PUID):$(PGID)"
+	set -x
 	chown -R "$(PUID):$(PGID)" "$$(git rev-parse --git-dir)"
 
 ## Docker Build Targets:

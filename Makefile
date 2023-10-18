@@ -206,6 +206,7 @@ PIP_COMPILE_EXTRA=
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
+PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Publish releases from the `main` or `develop` branches:
@@ -270,7 +271,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking --upgrade"
+	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif

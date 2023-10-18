@@ -70,12 +70,18 @@ max-line-length = "88"
 disable = [
     "relative-beyond-top-level",
     "docstring-first-line-empty",
+    # BBB: Python 3.8 compatibility:
+    "consider-alternative-union-syntax",
 ]
 [tool.pylint.parameter_documentation]
 accept-no-param-doc = false
 accept-no-raise-doc = false
 accept-no-return-doc = false
 accept-no-yields-doc = false
+
+[[tool.mypy.overrides]]
+module = ["argcomplete"]
+ignore_missing_imports = true
 
 [tool.vulture]
 # https://github.com/jendrikseipp/vulture#ignoring-files

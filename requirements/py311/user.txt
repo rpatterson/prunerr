@@ -4,5 +4,5 @@
 #
 #    pip-compile --output-file=requirements/py311/user.txt pyproject.toml
 #
-argcomplete==3.0.8
+argcomplete==3.1.2
     # via project-structure (pyproject.toml)

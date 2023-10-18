@@ -4,6 +4,8 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py312/devel.txt pyproject.toml
 #
+argcomplete==3.1.2
+    # via project-structure (pyproject.toml)
 astroid==2.15.8
     # via
     #   pylint

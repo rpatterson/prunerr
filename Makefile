@@ -242,7 +242,7 @@ test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
 		./styles/code.ini
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
-	git ls-files -co --exclude-standard -z |
+	git ls-files -co --exclude-standard -z ':!NEWS*.rst' |
 	    xargs -r -0 -t -- docker compose run --rm -T vale
 # Lint all source code files tracked in VCS with Vale:
 	git ls-files -co --exclude-standard -z |

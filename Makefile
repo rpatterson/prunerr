@@ -534,11 +534,13 @@ build-docs-%: $(HOME)/.local/bin/tox
 build-perms:
 # Change only the files in VCS to avoid time consuming recursion into build artifacts.
 # Consider anything else that ends up with wrong ownership a build bug:
+	set +x
 	git ls-files -z | while read -d $$'\0' git_file
 	do
 	    echo -ne "$$(dirname "$${git_file}")"'\0'
 	    echo -ne "$${git_file}"'\0'
 	done | xargs -0 -- chown "$(PUID):$(PGID)"
+	set -x
 	chown -R "$(PUID):$(PGID)" "$$(git rev-parse --git-dir)"
 
 ## Docker Build Targets:
@@ -760,7 +762,7 @@ ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 ifneq ($(CODECOV_TOKEN),)
 	$(MAKE) "$(HOME)/.local/bin/codecov"
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \
-	    --file "./build/$(PYTHON_ENV)/coverage.xml"
+	    --file "./build/reports/$(PYTHON_ENV)/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: CODECOV_TOKEN missing from ./.env or CI secrets"

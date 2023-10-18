@@ -108,15 +108,15 @@ jobs:
 
       # Upload build artifacts:
       # https://github.com/actions/upload-artifact#usage
-      - name: "Archive test suite reports"
+      - name: "Archive test, coverage, and lint reports"
         uses: "actions/upload-artifact@master"
         with:
-          name: "test-suite-reports"
+          name: "test-coverage-lint-reports"
           path: |
-            ./build/*test*
+            ./build/reports/
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
-        # run this step even if the preceding step failed
+        # run this step even if preceding step failed
         if: >-
           (success() || failure())
           && (
@@ -132,21 +132,5 @@ jobs:
         with:
           name: "Test Suite Reports (python${{ matrix.PYTHON_MINORS }})"
           path: >-
-            ./build/*/*test-junit.xml,
-            ./build/*/prospector-xunit.xml
+            ./build/reports/*/*unit.xml
           reporter: "java-junit"
-      - name: "Archive code coverage reports"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "code-coverage-reports"
-          path: |
-            ./build/*/.coverage*
-            ./build/*/coverage*
-            ./build/*/htmlcov*
-      - name: "Archive linter reports"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "linter-reports"
-          path: |
-            ./build/*/*lint*
-            ./build/*/prospector*

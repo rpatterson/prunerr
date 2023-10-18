@@ -109,19 +109,13 @@ build-test:
     # Upload build artifacts:
     # https://docs.gitlab.com/ee/ci/pipelines/job_artifacts.html
     paths:
-      - "./build/py*/pytest*"
-      - "./build/py*/.coverage*"
-      - "./build/py*/coverage*"
-      - "./build/py*/htmlcov"
-      - "./build/py*/prospector*"
-      - "./build/py*/pylint*"
+      - "./build/reports/"
     reports:
       junit:
-        - "./build/py*/pytest-junit.xml"
-        - "./build/py*/prospector-xunit.xml"
+        - "./build/reports/*/*unit.xml"
       coverage_report:
         coverage_format: "cobertura"
-        path: "./build/py*/coverage.xml"
+        path: "./build/reports/*/*cov*.xml"
 
 release:
   stage: "release"

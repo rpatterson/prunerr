@@ -256,6 +256,7 @@ export DOCKER_PASS
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
+PIP_COMPILE_ARGS=--upgrade
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Publish releases from the `main` or `develop` branches:
@@ -340,7 +341,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking --upgrade"
+	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif
@@ -624,7 +625,7 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 .PHONY: test-clean
 ## Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
-	if [ -n "$$(git status --porcelain)" ]
+	if test -n "$$(git status --porcelain)"
 	then
 	    set +x
 	    echo "Checkout is not clean"
@@ -709,7 +710,7 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 # Update the local branch to the forthcoming version bump commit:
 	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
 	exit_code=0
-	if [ "$(VCS_BRANCH)" = "main" ] &&
+	if test "$(VCS_BRANCH)" = "main" &&
 	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version.py $$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	    )
@@ -986,7 +987,7 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 # Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	if test "$$(git rev-parse --is-shallow-repository)" = "true"
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
@@ -1123,12 +1124,12 @@ then
     $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
     $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_ENVSUBST)"
 fi
-if [ "$(2:%.~out~=%)" -nt "$(1)" ]
+if test "$(2:%.~out~=%)" -nt "$(1)"
 then
     envsubst <"$(1)" >"$(2)"
     exit
 fi
-if [ ! -e "$(2:%.~out~=%)" ]
+if test ! -e "$(2:%.~out~=%)"
 then
     touch -d "@0" "$(2:%.~out~=%)"
 fi
@@ -1136,12 +1137,12 @@ envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
 set +x
 echo "WARNING:Template $(1) changed, reconcile and \`$$ touch $(2:%.~out~=%)\`."
 set -x
-if [ ! -s "$(2:%.~out~=%)" ]
+if test ! -s "$(2:%.~out~=%)"
 then
     envsubst <"$(1)" >"$(2:%.~out~=%)"
     touch -d "@0" "$(2:%.~out~=%)"
 fi
-if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ]
+if test "$(TEMPLATE_IGNORE_EXISTING)" = "true"
 then
     envsubst <"$(1)" >"$(2)"
     exit

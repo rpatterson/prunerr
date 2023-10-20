@@ -192,7 +192,7 @@ all: build
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-## Perform any necessary local set-up common to most operations.
+## Perform any necessary local setup common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log
 
@@ -238,14 +238,14 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-instal
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
-		./styles/code.ini
+test-lint-prose: $(HOST_PREFIX)/bin/docker
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z ':!NEWS*.rst' |
 	    xargs -r -0 -t -- docker compose run --rm -T vale
 # Lint all source code files tracked in VCS with Vale:
-	git ls-files -co --exclude-standard -z |
+	git ls-files -co --exclude-standard -z \
+	    ':!styles/*/meta.json' ':!styles/*/*.yml' |
 	    xargs -r -0 -t -- \
 	    docker compose run --rm -T vale --config="./styles/code.ini"
 # Lint source code files tracked in VCS but without extensions with Vale:
@@ -406,6 +406,9 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log
 devel-upgrade: $(HOME)/.local/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
+# Update the Vale style rule definitions:
+	touch "./.vale.ini" "./styles/code.ini"
+	$(MAKE) "./var/log/vale-rule-levels.log"
 
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
@@ -496,14 +499,18 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 
 # Prose linting:
 # Set Vale levels for added style rules:
-./.vale.ini ./styles/code.ini:
-	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
-	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
-		./styles/code.ini
+# Must be it's own target because Vale sync takes the sets of styles from the
+# configuration and the configuration needs the styles to set rule levels:
+./var/log/vale-rule-levels.log: ./styles/RedHat/meta.json
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py \
+	    --input="./styles/code.ini"
+# Update style rule definitions from the remotes:
+./styles/RedHat/meta.json: ./.vale.ini ./styles/code.ini ./.env.~out~
 	$(MAKE) "$(HOST_PREFIX)/bin/docker"
-	mkdir -pv "$(dir $(@))"
-	docker compose run --rm vale sync | tee -a "$(@)"
+	docker compose run --rm vale sync
+	docker compose run --rm -T vale sync --config="./styles/code.ini"
 
 # Editor and IDE support and integration:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in

@@ -211,9 +211,15 @@ build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
+# Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
+
+.PHONY: build-date
+# A prerequisite that always triggers it's target.
+build-date:
+	date
 
 
 ### Test Targets:
@@ -488,6 +494,15 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
+# A target whose `mtime` reflects files added to or removed from VCS:
+./var/log/git-ls-files.log: build-date
+	mkdir -pv "$(dir $(@))"
+	git ls-files >"$(@).~new~"
+	if diff -u "$(@)" "$(@).~new~"
+	then
+	    exit
+	fi
+	mv -v "$(@).~new~" "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
@@ -498,6 +513,11 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 # Prose linting:
+# Map formats unknown by Vale to a common default format:
+./var/log/vale-map-formats.log: ./bin/vale-map-formats.py ./.vale.ini \
+		./var/log/git-ls-files.log
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python "$(<)" "./styles/code.ini" "./.vale.ini"
 # Set Vale levels for added style rules:
 # Must be it's own target because Vale sync takes the sets of styles from the
 # configuration and the configuration needs the styles to set rule levels:

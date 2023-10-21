@@ -34,6 +34,8 @@ main() {
     sphinx-build -M "linkcheck" "./docs/" "./build/docs/"
     git ls-files -z '*.rst' | xargs -r -0 -- sphinx-lint -e "all" -d "line-too-long"
     git ls-files -z '*.rst' | xargs -r -0 -- doc8
+    git ls-files -z '*.rst' ':!docs/index.rst' |
+	xargs -r -0 -- restructuredtext-lint --level "debug"
 }
 
 

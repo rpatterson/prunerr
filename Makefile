@@ -690,7 +690,7 @@ endef
 # none of the modification times of produced artifacts reflect when any downstream
 # targets need updating:
 #
-#     ./var/log/bar.log:
+#     ./var/log/some-work.log:
 #         mkdir -pv "$(dir $(@))"
 #         echo "Do some work here" | tee -a "$(@)"
 #

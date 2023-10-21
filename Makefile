@@ -196,8 +196,8 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
-# The options that support running arbitrary commands in the venvs managed by tox with
-# the least overhead:
+# The options that support running arbitrary commands in the venvs managed by tox
+# without Tox's startup time:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
@@ -338,7 +338,7 @@ test-lint-prose: $(HOST_PREFIX)/bin/docker
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \
-	    ':!NEWS*.rst' ':!LICENSES' ':!styles/Vocab/*.txt' |
+	    ':!NEWS*.rst' ':!LICENSES' ':!styles/Vocab/*.txt' ':!requirements/**' |
 	    xargs -r -0 -t -- docker compose run --rm -T vale
 # Lint all source code files tracked in VCS with Vale:
 	git ls-files -co --exclude-standard -z \
@@ -695,8 +695,8 @@ $(HOME)/.nvm/nvm.sh:
 
 # Manage Python tools:
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created so other targets can use them directly to save time on Tox's overhead when
-# they don't need Tox's logic about when to update/recreate them, e.g.:
+# created so other targets can use them directly to save Tox's startup time when they
+# don't need Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
@@ -840,9 +840,9 @@ endef
 # none of the modification times of produced artifacts reflect when any downstream
 # targets need updating:
 #
-#     ./var/log/bar.log:
+#     ./var/log/some-work.log:
 #         mkdir -pv "$(dir $(@))"
-#         ./.tox/build/bin/python "./bin/foo.py" | tee -a "$(@)"
+#         ./.tox/build/bin/python "./bin/do-some-work.py" | tee -a "$(@)"
 #
 # If the recipe produces no output, the recipe can create arbitrary output:
 #

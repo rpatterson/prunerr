@@ -6,8 +6,8 @@
   "scripts": {
     "lint": "npm run lint:prettier && npm run lint:write-good && npm run lint:alex",
     "lint:prettier": "prettier --check './'",
-    "lint:write-good": "git ls-files -co --exclude-standard -z ':!requirements/**' | grep -Ezv '^LICENSES/' | xargs -r -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
-    "lint:alex": "git ls-files -co --exclude-standard -z ':!.gitignore' ':!**/.gitignore' ':!requirements/**' | grep -Ezv '^(LICENSES|styles/Vocab)/|\\.license$|^docs/conf.py$' | xargs -r -0 -t -- alex",
+    "lint:write-good": "git ls-files -co --exclude-standard -z ':!LICENSES' ':!styles/*/meta.json' ':!styles/*/*.yml' ':!requirements/**' | xargs -r -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
+    "lint:alex": "git ls-files -co --exclude-standard -z ':!.gitignore' ':!**/.gitignore' ':!LICENSES' ':!styles/*/meta.json' ':!styles/*/*.yml' ':!styles/Vocab' ':!*.license' ':!docs/conf.py' ':!requirements/**' | xargs -r -0 -t -- alex",
     "format": "prettier --write './'"
   },
   "keywords": [

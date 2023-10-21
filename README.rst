@@ -54,7 +54,7 @@ variants. Real projects can also merge those changes.
 .. _`Version Control System (VCS) hooks`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org
-.. _`Towncrier`: https://towncrier.readthedocs.io
+.. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/
 .. _`Organize source by feature`:
    https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 

@@ -79,10 +79,10 @@ of the `Makefile`_ for guidance.
 .. _`issue or ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
 .. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
 .. _`news fragment`:
-   https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
+   https://towncrier.readthedocs.io/en/stable/tutorial.html#creating-news-fragments
 .. _`Reuse`: https://reuse.software/tutorial/#step-2
-.. _`Software Package Data Exchange (SPDX) header`:
-   https://spdx.dev/specifications/#current-version
-.. _`reuse-tool`: https://github.com/fsfe/reuse-tool#usage
-.. _Makefile: ./Makefile
-.. _`the TODO file`: ./todo.rst
+.. _`Software Package Data Exchange (SPDX) header`: https://spdx.dev/use/specifications/
+.. _`reuse-tool`: https://reuse.software/dev/#tool
+.. _Makefile: https://gitlab.com/rpatterson/project-structure/-/blob/main/Makefile
+.. _`the TODO file`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/todo.rst

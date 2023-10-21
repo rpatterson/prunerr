@@ -213,7 +213,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
 .PHONY: build-date
@@ -234,7 +234,7 @@ test: test-lint
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
 test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
-		build-docs test-lint-prose
+		build-docs test-lint-prose build-docs-linkcheck
 # Run linters implemented in Python:
 	tox run -e "build"
 # Lint copyright and licensing:

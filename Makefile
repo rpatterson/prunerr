@@ -628,7 +628,7 @@ devel-upgrade: $(HOME)/.local/bin/tox
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
-	$(MAKE) -e devel-upgrade
+	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit signaling success but push nothing:
@@ -869,9 +869,6 @@ $(STATE_DIR)/log/host-update.log:
 #
 # Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
-
-# Return the most recent built package:
-current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
 # Have to use a placeholder `*.~out~` target instead of the real expanded template
 # because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.

@@ -42,8 +42,7 @@ Project Structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This repository provides a minimal, yet opinionated baseline for software projects. It
-includes:
+This is a minimal, yet opinionated baseline for software projects. It includes:
 
 - A `Makefile`_ for local development, build, test, and maintenance
 - A `Docker`_ container image for end users
@@ -82,9 +81,9 @@ variants. Real projects can also merge those changes.
 Template usage
 ****************************************************************************************
 
-These steps offer a rough guide for how to use this template in your project. They
-haven't been widely tested. Such tests are meta and wasteful to create and
-support. Report any issues you have or better yet submit a PR with corrections.
+This is a rough guide for how to use this template in your project. This isn't widely
+tested. Such tests are meta and wasteful to create and support. Report any issues you
+have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
@@ -237,9 +236,19 @@ remote, merging structure updates into real projects over their lifetime.
 .. vale on
 
 
+****************************************************************************************
+Contributing
+****************************************************************************************
+
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
+
+
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
-.. _`mirrored on GitHub`:
+.. _`mirrors it to GitHub`:
    https://github.com/rpatterson/project-structure
 
 .. _`Docker`: https://docs.docker.com/

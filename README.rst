@@ -81,7 +81,7 @@ This repository provides a minimal, yet opinionated baseline for `Python`_ softw
 projects. It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- Command-line console script with sub-command boilerplate
+- Command-line console script with subcommand boilerplate
 - A `Docker`_ container image for end users
 - A Docker image for development, which runs tests
 - A `Makefile`_ for local development, build, test, and maintenance

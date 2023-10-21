@@ -196,8 +196,8 @@ TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
 ifeq ($(words $(PYTHON_MINORS)),1)
 TOX_RUN_ARGS=run
 endif
-# The options that support running arbitrary commands in the venvs managed by tox with
-# the least overhead:
+# The options that support running arbitrary commands in the venvs managed by tox
+# without Tox's startup time:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
@@ -247,7 +247,7 @@ all: build
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-## Perform any necessary local set-up common to most operations.
+## Perform any necessary local setup common to most operations.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_PREFIX)/bin/docker \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log \
 		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
@@ -301,9 +301,15 @@ build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
+# Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
+
+.PHONY: build-date
+# A prerequisite that always triggers it's target.
+build-date:
+	date
 
 
 ### Test Targets:
@@ -328,14 +334,15 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-instal
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_PREFIX)/bin/docker ./var/log/vale-sync.log ./.vale.ini \
-		./styles/code.ini
+test-lint-prose: $(HOST_PREFIX)/bin/docker
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
-	git ls-files -co --exclude-standard -z ':!NEWS*.rst' |
+	git ls-files -co --exclude-standard -z \
+	    ':!NEWS*.rst' ':!LICENSES' ':!styles/Vocab/*.txt' ':!requirements/**' |
 	    xargs -r -0 -t -- docker compose run --rm -T vale
 # Lint all source code files tracked in VCS with Vale:
-	git ls-files -co --exclude-standard -z |
+	git ls-files -co --exclude-standard -z \
+	    ':!styles/*/meta.json' ':!styles/*/*.yml' |
 	    xargs -r -0 -t -- \
 	    docker compose run --rm -T vale --config="./styles/code.ini"
 # Lint source code files tracked in VCS but without extensions with Vale:
@@ -479,8 +486,7 @@ endif
 ## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z |
-	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -511,6 +517,9 @@ devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
+# Update the Vale style rule definitions:
+	touch "./.vale.ini" "./styles/code.ini"
+	$(MAKE) "./var/log/vale-rule-levels.log"
 
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
@@ -616,6 +625,15 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
+# A target whose `mtime` reflects files added to or removed from VCS:
+./var/log/git-ls-files.log: build-date
+	mkdir -pv "$(dir $(@))"
+	git ls-files >"$(@).~new~"
+	if diff -u "$(@)" "$(@).~new~"
+	then
+	    exit
+	fi
+	mv -v "$(@).~new~" "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
@@ -626,15 +644,24 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git config --global user.email "$(USER_EMAIL)"
 
 # Prose linting:
+# Map formats unknown by Vale to a common default format:
+./var/log/vale-map-formats.log: ./bin/vale-map-formats.py ./.vale.ini \
+		./var/log/git-ls-files.log
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python "$(<)" "./styles/code.ini" "./.vale.ini"
 # Set Vale levels for added style rules:
-./.vale.ini ./styles/code.ini:
-	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
-	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini \
-		./styles/code.ini
+# Must be it's own target because Vale sync takes the sets of styles from the
+# configuration and the configuration needs the styles to set rule levels:
+./var/log/vale-rule-levels.log: ./styles/RedHat/meta.json
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py \
+	    --input="./styles/code.ini"
+# Update style rule definitions from the remotes:
+./styles/RedHat/meta.json: ./.vale.ini ./styles/code.ini ./.env.~out~
 	$(MAKE) "$(HOST_PREFIX)/bin/docker"
-	mkdir -pv "$(dir $(@))"
-	docker compose run --rm vale sync | tee -a "$(@)"
+	docker compose run --rm vale sync
+	docker compose run --rm -T vale sync --config="./styles/code.ini"
 
 # Editor and IDE support and integration:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in
@@ -668,8 +695,8 @@ $(HOME)/.nvm/nvm.sh:
 
 # Manage Python tools:
 # Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created so other targets can use them directly to save time on Tox's overhead when
-# they don't need Tox's logic about when to update/recreate them, e.g.:
+# created so other targets can use them directly to save Tox's startup time when they
+# don't need Tox's logic about when to update/recreate them, e.g.:
 #     $ ./.tox/build/bin/cz --help
 # Useful for build/release tools:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
@@ -813,9 +840,9 @@ endef
 # none of the modification times of produced artifacts reflect when any downstream
 # targets need updating:
 #
-#     ./var/log/bar.log:
+#     ./var/log/some-work.log:
 #         mkdir -pv "$(dir $(@))"
-#         ./.tox/build/bin/python "./bin/foo.py" | tee -a "$(@)"
+#         ./.tox/build/bin/python "./bin/do-some-work.py" | tee -a "$(@)"
 #
 # If the recipe produces no output, the recipe can create arbitrary output:
 #

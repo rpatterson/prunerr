@@ -14,11 +14,11 @@ import sys
 import pathlib
 import argparse
 
+import yaml
 import configobj
 
 arg_parser = argparse.ArgumentParser(
     description=__doc__.strip(),
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 arg_parser.add_argument(
     "--input",
@@ -26,19 +26,19 @@ arg_parser.add_argument(
     dest="input_",
     type=argparse.FileType(),
     default=".vale.ini",
-    help="The source Vale configuration file.",
+    help="The source Vale configuration file. (default: `./.vale.ini`)",
 )
 arg_parser.add_argument(
     "--output",
     "-o",
-    help="The target Vale configuration file. (default: same as --input)",
+    help="The target Vale configuration file. (default: same as `--input`)",
 )
 arg_parser.add_argument(
     "--level",
     "-l",
     choices=["suggestion", "warning", "error"],
     default="error",
-    help="Alert level to set for unset rules.",
+    help="Alert level to set for unset rules. (default: `error`)",
 )
 
 
@@ -56,8 +56,13 @@ def main(args=None):  # pylint: disable=missing-function-docstring
         for style in styles_value.split(","):
             style = style.strip()
             for rule_path in (styles_dir / style).glob("*.[yY][mM][lL]"):
+                with rule_path.open(encoding="utf-8") as rule_config_opened:
+                    rule_config = yaml.safe_load(rule_config_opened)
                 style_rule = f"{style}.{rule_path.stem}"
-                if style_rule not in format_settings:
+                if (
+                    style_rule not in format_settings
+                    and rule_config.get("level", "warning") != parsed_args.level
+                ):
                     format_settings[style_rule] = parsed_args.level
 
     output = parsed_args.output

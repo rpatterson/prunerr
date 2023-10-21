@@ -29,7 +29,8 @@ Project Structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This is a minimal, yet opinionated baseline for software projects. It includes:
+This repository provides a minimal, yet opinionated baseline for software projects. It
+includes:
 
 - A `Makefile`_ for local development, build, test, and maintenance
 - A target that formats all source, including for style
@@ -147,6 +148,16 @@ Install by using any tool for installing packages for the project language::
 
 
 ****************************************************************************************
+Contributing
+****************************************************************************************
+
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
+
+
+****************************************************************************************
 Motivation
 ****************************************************************************************
 
@@ -169,16 +180,6 @@ up to date over time. As such, the primary motivation is providing a template up
 remote, merging structure updates into real projects over their lifetime.
 
 .. vale on
-
-
-****************************************************************************************
-Contributing
-****************************************************************************************
-
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the contributing documentation`_ for more details on how to get started
-with development.
 
 
 .. _`GitLab hosts this project`:

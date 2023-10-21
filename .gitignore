@@ -4,6 +4,11 @@
 
 # Backup files
 *~
+**/*~
+
+# C extensions
+*.so
+**/.so
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -16,7 +21,11 @@ __pycache__/
 # Distribution / packaging
 env/
 build/
+downloads/
+lib/
+lib64/
 dist
+sdist/
 var/
 /var-*
 /node_modules
@@ -26,7 +35,9 @@ var/
 
 # Translations
 *.mo
+**/.mo
 *.pot
+**/.pot
 
 # Sphinx documentation
 docs/_build/

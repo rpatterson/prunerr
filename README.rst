@@ -182,9 +182,16 @@ remote, merging structure updates into real projects over their lifetime.
 .. vale on
 
 
+****************************************************************************************
+References
+****************************************************************************************
+
+.. target-notes::
+
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
+
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
 .. _`mirrors it to GitHub`:
    https://github.com/rpatterson/project-structure
-.. _`the contributing documentation`:
-   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst

@@ -76,6 +76,7 @@ capture in a machine runnable form in the `Makefile`_. See the commentary at the
 of the `Makefile`_ for guidance.
 
 .. _`Docker`: https://docs.docker.com/engine/install/#supported-platforms
+.. _`issue or ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
 .. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/#philosophy
 .. _`news fragment`:
    https://towncrier.readthedocs.io/en/stable/quickstart.html#creating-news-fragments
@@ -83,8 +84,5 @@ of the `Makefile`_ for guidance.
 .. _`Software Package Data Exchange (SPDX) header`:
    https://spdx.dev/specifications/#current-version
 .. _`reuse-tool`: https://github.com/fsfe/reuse-tool#usage
-
-.. _`issue or ticket`: https://gitlab.com/rpatterson/project-structure/-/issues
-
 .. _Makefile: ./Makefile
 .. _`the TODO file`: ./todo.rst

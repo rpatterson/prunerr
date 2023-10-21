@@ -213,7 +213,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" -W \
+	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
 .PHONY: build-date

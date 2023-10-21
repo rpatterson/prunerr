@@ -14,6 +14,7 @@ import sys
 import pathlib
 import argparse
 
+import yaml
 import configobj
 
 arg_parser = argparse.ArgumentParser(
@@ -55,8 +56,13 @@ def main(args=None):  # pylint: disable=missing-function-docstring
         for style in styles_value.split(","):
             style = style.strip()
             for rule_path in (styles_dir / style).glob("*.[yY][mM][lL]"):
+                with rule_path.open(encoding="utf-8") as rule_config_opened:
+                    rule_config = yaml.safe_load(rule_config_opened)
                 style_rule = f"{style}.{rule_path.stem}"
-                if style_rule not in format_settings:
+                if (
+                    style_rule not in format_settings
+                    and rule_config.get("level", "warning") != parsed_args.level
+                ):
                     format_settings[style_rule] = parsed_args.level
 
     output = parsed_args.output

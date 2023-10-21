@@ -22,6 +22,8 @@ main() {
     sphinx_buildername="${1:-html}"
     shift || true
 
+    # TODO: Audit what checks all tools perform and remove redundant tools.
+
     # Verify reStructuredText syntax. Exclude `./docs/index.rst` because its use of the
     # `.. include:: ../README.rst` directive breaks `$ rstcheck`:
     # `CRITICAL:rstcheck_core.checker:An `AttributeError` error occured.`
@@ -31,6 +33,7 @@ main() {
     sphinx-build -M "${sphinx_buildername}" "./docs/" "./build/docs/"
     sphinx-build -M "linkcheck" "./docs/" "./build/docs/"
     git ls-files -z '*.rst' | xargs -r -0 -- sphinx-lint -e "all" -d "line-too-long"
+    git ls-files -z '*.rst' | xargs -r -0 -- doc8
 }
 
 

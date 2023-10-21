@@ -26,6 +26,8 @@ sphinx
 sphinx-watch
 # https://github.com/sphinx-contrib/sphinx-lint
 sphinx-lint
+# https://docs.restructuredtext.net/articles/linter#supported-linters
+doc8
 
 # Workaround Vale prose linter limitations:
 pyyaml

@@ -382,7 +382,7 @@ run: build-docker ./.env.~out~
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-## Set up everything for development from a checkout, local and in containers.
+## Setup everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker
 
@@ -402,6 +402,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
 
 .PHONY: build-docs-%
+# Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
 	    "./docs/" "./build/docs/"
@@ -419,6 +420,12 @@ build-perms:
 	done | xargs -0 -- chown "$(PUID):$(PGID)"
 	set -x
 	chown -R "$(PUID):$(PGID)" "$$(git rev-parse --git-dir)"
+
+.PHONY: build-date
+# A prerequisite that always triggers it's target.
+build-date:
+	date
+
 
 ## Docker Build Targets:
 #
@@ -546,14 +553,15 @@ test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.lo
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_TARGET_DOCKER) ./var/log/vale-sync.log ./.vale.ini \
-		./styles/code.ini
+test-lint-prose: $(HOST_TARGET_DOCKER)
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
-	git ls-files -co --exclude-standard -z ':!NEWS*.rst' |
+	git ls-files -co --exclude-standard -z \
+	    ':!NEWS*.rst' ':!LICENSES' ':!styles/Vocab/*.txt' |
 	    xargs -r -0 -t -- docker compose run --rm -T vale
 # Lint all source code files tracked in VCS with Vale:
-	git ls-files -co --exclude-standard -z |
+	git ls-files -co --exclude-standard -z \
+	    ':!styles/*/meta.json' ':!styles/*/*.yml' |
 	    xargs -r -0 -t -- \
 	    docker compose run --rm -T vale --config="./styles/code.ini"
 # Lint source code files tracked in VCS but without extensions with Vale:
@@ -822,8 +830,7 @@ endif
 devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z |
-	grep -Ezv '\.license$$|^(\.reuse|LICENSES)/' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -844,6 +851,9 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 devel-upgrade: $(HOME)/.local/bin/tox
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
+# Update the Vale style rule definitions:
+	touch "./.vale.ini" "./styles/code.ini"
+	$(MAKE) "./var/log/vale-rule-levels.log"
 
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
@@ -1040,6 +1050,15 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
+# A target whose `mtime` reflects files added to or removed from VCS:
+./var/log/git-ls-files.log: build-date
+	mkdir -pv "$(dir $(@))"
+	git ls-files >"$(@).~new~"
+	if diff -u "$(@)" "$(@).~new~"
+	then
+	    exit
+	fi
+	mv -v "$(@).~new~" "$(@)"
 ./.git/hooks/pre-commit:
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
@@ -1081,14 +1100,24 @@ endif
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
 # Prose linting:
+# Map formats unknown by Vale to a common default format:
+./var/log/vale-map-formats.log: ./bin/vale-map-formats.py ./.vale.ini \
+		./var/log/git-ls-files.log
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python "$(<)" "./styles/code.ini" "./.vale.ini"
 # Set Vale levels for added style rules:
-./.vale.ini ./styles/code.ini:
-	$(MAKE)-e "$(HOME)/.local/bin/tox" "./var/log/vale-sync.log"
-	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py --input="$(@)"
-./var/log/vale-sync.log: ./.env.~out~ ./.vale.ini ./styles/code.ini
+# Must be it's own target because Vale sync takes the sets of styles from the
+# configuration and the configuration needs the styles to set rule levels:
+./var/log/vale-rule-levels.log: ./styles/RedHat/meta.json
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py \
+	    --input="./styles/code.ini"
+# Update style rule definitions from the remotes:
+./styles/RedHat/meta.json: ./.vale.ini ./styles/code.ini ./.env.~out~
 	$(MAKE) "$(HOST_TARGET_DOCKER)"
-	mkdir -pv "$(dir $(@))"
-	docker compose run --rm vale sync | tee -a "$(@)"
+	docker compose run --rm vale sync
+	docker compose run --rm -T vale sync --config="./styles/code.ini"
 
 # Editor and IDE support and integration:
 ./.dir-locals.el.~out~: ./.dir-locals.el.in

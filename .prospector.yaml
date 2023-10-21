@@ -29,7 +29,7 @@ pylint:
 #   run: true
 # FIXME: I confirmed installing the package but couldn't get to work:
 #     Can't run tool pyroma as support wasn't installed.
-#     Please install by running 'pip3 install prospector[with_pyroma]'
+#     Install by running 'pip3 install prospector[with_pyroma]'
 # pyroma:
 #   run: true
 

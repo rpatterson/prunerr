@@ -118,6 +118,7 @@ pygments==2.16.1
     #   sphinx
 pyyaml==6.0.1
     # via
+    #   -r requirements/build.txt.in
     #   commitizen
     #   pre-commit
 questionary==2.0.1

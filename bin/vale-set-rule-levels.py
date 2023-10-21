@@ -18,7 +18,6 @@ import configobj
 
 arg_parser = argparse.ArgumentParser(
     description=__doc__.strip(),
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 arg_parser.add_argument(
     "--input",
@@ -26,19 +25,19 @@ arg_parser.add_argument(
     dest="input_",
     type=argparse.FileType(),
     default=".vale.ini",
-    help="The source Vale configuration file.",
+    help="The source Vale configuration file. (default: `./.vale.ini`)",
 )
 arg_parser.add_argument(
     "--output",
     "-o",
-    help="The target Vale configuration file. (default: same as --input)",
+    help="The target Vale configuration file. (default: same as `--input`)",
 )
 arg_parser.add_argument(
     "--level",
     "-l",
     choices=["suggestion", "warning", "error"],
     default="error",
-    help="Alert level to set for unset rules.",
+    help="Alert level to set for unset rules. (default: `error`)",
 )
 
 

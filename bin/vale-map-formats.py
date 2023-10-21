@@ -20,13 +20,12 @@ FORMATS_GLOB_RE = re.compile(r"^\*\.\{(?P<suffixes>[A-Za-z0-9,]+)\}$")
 
 arg_parser = argparse.ArgumentParser(
     description=__doc__.strip(),
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 arg_parser.add_argument(
     "--format",
     "-f",
     default="pl",
-    help="Map unknown formats to this format.",
+    help="Map unknown formats to this format. (default: `pl`)",
 )
 arg_parser.add_argument(
     "--files",
@@ -35,7 +34,7 @@ arg_parser.add_argument(
     default=sys.stdin,
     help=(
         "A file listing file paths one per line, such as from `$ git ls-files`. "
-        "Check the extensions of these paths for unknown formats."
+        "Check the extensions of these paths for unknown formats. (default: `stdin`)"
     ),
 )
 arg_parser.add_argument(
@@ -47,7 +46,7 @@ arg_parser.add_argument(
     "configs",
     type=argparse.FileType(),
     nargs="*",
-    help="Get known formats from the output file and these Vale configuration files.",
+    help="Get known formats from the `output` file and these Vale configuration files.",
 )
 
 

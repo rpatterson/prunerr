@@ -30,6 +30,7 @@ main() {
     # Verify Sphinx usage:
     sphinx-build -M "${sphinx_buildername}" "./docs/" "./build/docs/"
     sphinx-build -M "linkcheck" "./docs/" "./build/docs/"
+    git ls-files -z '*.rst' | xargs -r -0 -- sphinx-lint -e "all" -d "line-too-long"
 }
 
 

@@ -24,6 +24,8 @@ rstcheck
 # Rich, full documentation site:
 sphinx
 sphinx-watch
+# https://github.com/sphinx-contrib/sphinx-lint
+sphinx-lint
 
 # Workaround Vale prose linter limitations:
 pyyaml

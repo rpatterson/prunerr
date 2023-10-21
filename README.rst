@@ -42,7 +42,7 @@ This is a minimal, yet opinionated baseline for `Python`_ software projects. It
 includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- A `Makefile`_ for local development build, test and maintenance tasks
+- A `Makefile`_ for local development, build, test, and maintenance
 - A target that formats all source, including `Black`_ for Python code style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
   Python code checks
@@ -126,11 +126,11 @@ have or better yet submit a PR with corrections.
 
 #. Rename files and directories derived from the project name::
 
-     $ git ls-files | grep -iE 'python.?project.?structure'
+     $ git ls-files | grep -iE 'project.?structure'
 
 #. Rename project name and template creator identity strings::
 
-     $ git grep -iE 'python.?project.?structure|ross|Patterson'
+     $ git grep -iE 'project.?structure|ross|Patterson'
 
 #. Make changes described in ``# TEMPLATE:`` comments:
 
@@ -208,6 +208,6 @@ with development.
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
 .. _`mirrors it to GitHub`:
-   https://github.com/rpatterson/project-HEAD
+   https://github.com/rpatterson/project-structure
 .. _`the contributing documentation`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst

@@ -349,7 +349,7 @@ endif
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
-## Ensure the built package is current.
+## Update the built package for use outside tox.
 build-pkgs: $(HOST_TARGET_DOCKER) \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log
@@ -720,7 +720,7 @@ endif
 .PHONY: release-bump
 ## Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
-		./var/log/npm-install.log ./var/log/git-remotes.log \
+		./var/log/npm-install.log \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then

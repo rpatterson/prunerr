@@ -330,8 +330,8 @@ release:
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
-	true "TEMPLATE: Always specific to the project type"
 	$(MAKE) -e test-clean
+	true "TEMPLATE: Always specific to the project type"
 endif
 
 .PHONY: release-bump

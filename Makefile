@@ -13,11 +13,11 @@
 # Project specific values:
 export PROJECT_NAMESPACE=rpatterson
 export PROJECT_NAME=project-structure
+# TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
+NPM_SCOPE=rpattersonnet
 
 # Option variables that control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
-# TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
-NPM_SCOPE=rpattersonnet
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 

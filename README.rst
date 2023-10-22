@@ -81,7 +81,7 @@ includes:
   push
 - Targets that automate releases
 - Targets that automate dependency upgrades
-- `Makefile`_ recipes and targets used for both local development and on CI/CD platforms
+- Targets used for both local development and on CI/CD platforms
 - A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes and targets
 - A `GitHub Actions`_ workflow integrating those CI/CD recipes and targets
 - `Organize source by feature`_, for example ``\./src/foo/(template|view|model)\..*``,
@@ -209,8 +209,8 @@ Use a package manager for the project language to install locally::
 Docker Container Image
 ========================================================================================
 
-`Docker Compose`_ is the recommended way to use the container image. See `the example
-./docker-compose.yml file`_. Write your configuration and run the container::
+The recommended way to use the container image is by using `Docker Compose`_. See `the
+example ./docker-compose.yml file`_. Write your configuration and run the container::
 
   $ docker compose up
 

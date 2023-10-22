@@ -70,7 +70,7 @@ HOST_PKG_NAMES_PIP=py3-pip
 HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
-# Detect host binaries baked into base images:
+# Detect Docker command-line baked into the build-host image:
 HOST_TARGET_DOCKER:=$(shell which docker)
 ifeq ($(HOST_TARGET_DOCKER),)
 HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
@@ -819,8 +819,7 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin
 
 .PHONY: devel-upgrade
 ## Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ \
-		build-docker
+devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel

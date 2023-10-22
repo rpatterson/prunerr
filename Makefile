@@ -318,7 +318,7 @@ build-date:
 
 .PHONY: test
 ## Run the full suite of tests, coverage checks, and linters.
-test: $(HOME)/.local/bin/tox test-lint
+test: $(HOME)/.local/bin/tox test-lint $(PYTHON_ENVS:%=build-requirements-%)
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
@@ -335,14 +335,14 @@ test-lint-code: ./var/log/npm-install.log
 
 .PHONY: test-lint-docs
 ## Lint documentation for errors, broken links, and other issues.
-test-lint-docs: $(HOME)/.local/bin/tox
+test-lint-docs: $(HOME)/.local/bin/tox ./requirements/$(PYTHON_HOST_ENV)/build.txt
 # Run linters implemented in Python:
 	tox -e build -x 'testenv:build.commands=bin/test-lint-docs.sh'
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
 test-lint-prose: $(HOST_PREFIX)/bin/docker $(HOME)/.local/bin/tox \
-		./var/log/npm-install.log
+		./requirements/$(PYTHON_HOST_ENV)/build.txt ./var/log/npm-install.log
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \

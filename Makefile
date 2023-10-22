@@ -355,8 +355,7 @@ endif
 	    --build-arg BUILDKIT_INLINE_CACHE="1" \
 	    --build-arg VERSION="$$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
-	    )" \
-	    $${docker_build_args} --file "$(<)" "./"
+	    )" $${docker_build_args} --file "$(<)" "./"
 
 
 ### Test Targets:
@@ -368,7 +367,7 @@ endif
 test: test-lint test-docker
 
 .PHONY: test-local
-## Run the full suite of tests, coverage checks, and linters.
+## Run the full suite of tests, coverage checks, and linters on the local host.
 test-local:
 	true "TEMPLATE: Always specific to the project type"
 
@@ -533,7 +532,7 @@ endif
 	$(MAKE) -e build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` using the `./README.rst` reStructuredText version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version:
 ifeq ($(VCS_BRANCH),main)
 	$(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	docker compose pull --quiet pandoc docker-pushrm

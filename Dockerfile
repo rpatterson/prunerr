@@ -83,7 +83,7 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
-ENV PATH="${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
+ENV PATH="${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 
 # TEMPLATE: Add image setup specific to the development for this project type, often at

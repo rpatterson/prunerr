@@ -121,7 +121,7 @@ services:
       - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
       --file "/data/var/README.md"
-      --short "project structure foundation or template"
+      --short "Project structure foundation or template"
       --debug "${DOCKER_USER:-}/project-structure"
 
   gitlab-release-cli:

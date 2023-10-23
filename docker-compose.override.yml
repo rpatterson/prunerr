@@ -39,7 +39,7 @@ services:
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      # Make the run-time user configurable in `./.env`
+      # Make the runtime user configurable in `./.env`:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
       # Variables from the environment to pass through into the container:
@@ -54,7 +54,7 @@ services:
       - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/project-structure/.local/share/"
       - "${CHECKOUT_DIR:-.}/home/.cache/:/home/project-structure/.cache/"
       # Avoid any clashes between image variants and the local host at both build and
-      # run-time.
+      # runtime:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
         :/usr/local/src/project-structure/var/"
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/.tox/\
@@ -109,9 +109,9 @@ services:
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     entrypoint: "ash"
-    # Strip reStructuredText directives unsupported in Markdown before converting and
-    # converted Markdown that isn't widely supported, for example table of contents and
-    # tables respectively:
+    # Strip reStructuredText directives unsupported in Markdown before converting, for
+    # example table of contents, and converted Markdown that isn't widely supported, for
+    # example tables:
     command: >-
       -xeu -c '
         grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |

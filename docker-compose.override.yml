@@ -139,7 +139,7 @@ services:
       --debug "${DOCKER_USER:-}/project-structure"
 
   gitlab-release-cli:
-    image: "${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/gitlab-org/release-cli:latest"
+    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
     profiles:
       - "release"
     environment:

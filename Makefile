@@ -664,8 +664,7 @@ endif
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
-	    )" \
-	    $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
+	    )" $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ## Pull container images and compile fixed/pinned dependency versions if necessary.
@@ -686,6 +685,8 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 .PHONY: test
 ## Run the full suite of tests, coverage checks, and linters.
 test: test-lint test-docker
+# Lint copyright and licensing:
+	docker compose run --rm -T "reuse"
 
 .PHONY: test-local
 ## Run the full suite of tests, coverage checks, and linters on the local host.
@@ -694,10 +695,8 @@ test-local: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) test-lint-code \
-		test-lint-docker test-lint-docs test-lint-prose
-# Lint copyright and licensing:
-	docker compose run --rm -T "reuse"
+test-lint: $(HOST_TARGET_DOCKER) test-lint-code test-lint-docker test-lint-docs \
+		test-lint-prose
 
 .PHONY: test-lint-code
 ## Lint source code for errors, style, and other issues.
@@ -1102,7 +1101,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	fi
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
-	$(MAKE) -e devel-upgrade
+	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit signaling success but push nothing:
@@ -1580,9 +1579,6 @@ $(HOST_PREFIX)/bin/gh:
 #
 # Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
-
-# Return the most recent built package:
-current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
 # Have to use a placeholder `*.~out~` target instead of the real expanded template
 # because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.

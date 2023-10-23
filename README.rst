@@ -94,14 +94,12 @@ projects. It includes:
   push
 - Targets that automate releases
 - Targets that automate dependency upgrades
-- `Makefile`_ recipes and targets used for both local development and on CI/CD platforms
+- Targets used for both local development and on CI/CD platforms
 - A `GitLab CI/CD`_ pipeline integrating those CI/CD recipes and targets
 - A `GitHub Actions`_ workflow integrating those CI/CD recipes and targets
 - `Organize source by feature`_, for example ``\./src/foo/(template|view|model)\..*``,
   rather than by source type, for example
   ``\./src/(templates|views|models)/foo\..*``.
-- A `GitLab CI/CD`_ pipeline integrating those CI/CD targets and recipes
-- A `GitHub Actions`_ workflow integrating those CI/CD targets and recipes
 
 Add a VCS remote for this repository to a real project. When the template adds structure
 specific to certain types of projects, for example command-line tools, web services, UI
@@ -123,10 +121,10 @@ variants. Real projects can also merge those changes.
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org
 .. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/
-.. _`Organize source by feature`:
-   https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 .. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
 .. _`GitHub Actions`: https://docs.github.com/en/actions
+.. _`Organize source by feature`:
+   https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 
 .. include-end-before
 .. contents:: Table of Contents
@@ -137,9 +135,9 @@ variants. Real projects can also merge those changes.
 Template usage
 ****************************************************************************************
 
-These steps offer a rough guide for how to use this template in your project. Template
-developers don't test this process widely. Such tests are meta and wasteful to create
-and support. Report any issues you have or better yet submit a PR with corrections.
+This is a rough guide for how to use this template in your project. This isn't widely
+tested. Such tests are meta and wasteful to create and support. Report any issues you
+have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
@@ -241,8 +239,8 @@ Install by using any tool for installing standard Python 3 distributions such as
 Docker Container Image
 ========================================================================================
 
-`Docker Compose`_ is the recommended way to use the container image. See `the example
-./docker-compose.yml file`_. Write your configuration and run the container::
+The recommended way to use the container image is by using `Docker Compose`_. See `the
+example ./docker-compose.yml file`_. Write your configuration and run the container::
 
   $ docker compose up
 

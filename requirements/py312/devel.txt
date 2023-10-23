@@ -24,7 +24,7 @@ build==1.0.3
     #   pyroma
 certifi==2023.7.22
     # via requests
-charset-normalizer==3.3.0
+charset-normalizer==3.3.1
     # via requests
 click==8.1.7
     # via black
@@ -42,9 +42,9 @@ flake8==2.3.0
     #   prospector
 flake8-polyfill==1.0.2
     # via pep8-naming
-gitdb==4.0.10
+gitdb==4.0.11
     # via gitpython
-gitpython==3.1.38
+gitpython==3.1.40
     # via
     #   bandit
     #   prospector
@@ -130,7 +130,7 @@ pylint-plugin-utils==0.7
     #   pylint-flask
 pyproject-hooks==1.0.0
     # via build
-pyright==1.1.331
+pyright==1.1.332
     # via prospector
 pyroma==4.2
     # via prospector
@@ -168,7 +168,7 @@ toml==0.10.2
     #   vulture
 tomlkit==0.12.1
     # via pylint
-trove-classifiers==2023.10.17
+trove-classifiers==2023.10.18
     # via pyroma
 typing-extensions==4.8.0
     # via mypy

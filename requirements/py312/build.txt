@@ -18,7 +18,7 @@ cffi==1.16.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-charset-normalizer==3.3.0
+charset-normalizer==3.3.1
     # via
     #   commitizen
     #   requests
@@ -45,9 +45,13 @@ decli==0.6.1
     # via commitizen
 distlib==0.3.7
     # via virtualenv
+doc8==1.1.1
+    # via -r requirements/build.txt.in
 docutils==0.20.1
     # via
+    #   doc8
     #   readme-renderer
+    #   restructuredtext-lint
     #   rstcheck-core
     #   sphinx
 filelock==3.12.4
@@ -95,10 +99,14 @@ packaging==23.2
     # via
     #   commitizen
     #   sphinx
+pbr==5.11.1
+    # via stevedore
 pkginfo==1.9.6
     # via twine
 platformdirs==3.11.0
     # via virtualenv
+polib==1.2.0
+    # via sphinx-lint
 pre-commit==3.5.0
     # via -r requirements/build.txt.in
 prompt-toolkit==3.0.36
@@ -113,17 +121,21 @@ pydantic-core==2.10.1
     # via pydantic
 pygments==2.16.1
     # via
+    #   doc8
     #   readme-renderer
     #   rich
     #   sphinx
 pyyaml==6.0.1
     # via
+    #   -r requirements/build.txt.in
     #   commitizen
     #   pre-commit
 questionary==2.0.1
     # via commitizen
 readme-renderer==42.0
     # via twine
+regex==2023.10.3
+    # via sphinx-lint
 requests==2.31.0
     # via
     #   requests-toolbelt
@@ -131,6 +143,10 @@ requests==2.31.0
     #   twine
 requests-toolbelt==1.0.0
     # via twine
+restructuredtext-lint==1.4.0
+    # via
+    #   -r requirements/build.txt.in
+    #   doc8
 rfc3986==2.0.0
     # via twine
 rich==13.6.0
@@ -160,6 +176,8 @@ sphinx==7.2.6
     #   sphinxcontrib-htmlhelp
     #   sphinxcontrib-qthelp
     #   sphinxcontrib-serializinghtml
+sphinx-lint==0.8.1
+    # via -r requirements/build.txt.in
 sphinx-watch==0.1.2
     # via -r requirements/build.txt.in
 sphinxcontrib-applehelp==1.0.7
@@ -174,6 +192,8 @@ sphinxcontrib-qthelp==1.0.6
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.9
     # via sphinx
+stevedore==5.1.0
+    # via doc8
 termcolor==2.3.0
     # via commitizen
 tomlkit==0.12.1

@@ -6,6 +6,10 @@
 *~
 **/*~
 
+# C extensions
+*.so
+**/.so
+
 # Byte-compiled / optimized / DLL files
 __pycache__
 **/__pycache__
@@ -14,22 +18,21 @@ __pycache__
 *$py.class
 **/*$py.class
 
-# C extensions
-*.so
-**/.so
-
 # Distribution / packaging
 .Python
-env/
-build/
-downloads/
-develop-eggs/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-var/
+env
+build
+downloads
+lib
+lib64
+dist
+sdist
+var
+develop-eggs
+eggs
+.eggs
+parts
+/var-*
 /node_modules
 /package-lock.json
 /README.md
@@ -53,7 +56,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-htmlcov/
+htmlcov
 .tox
 **/.tox
 .coverage
@@ -63,7 +66,7 @@ htmlcov/
 nosetests.xml
 *,cover
 **/,cover
-.hypothesis/
+.hypothesis
 .mypy_cache
 **/.mypy_cache
 
@@ -85,22 +88,11 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Django stuff:
-*.log
-local_settings.py
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
 # Sphinx documentation
-docs/_build/
+docs/_build
 
 # PyBuilder
-target/
+target
 
 # IPython Notebook
 .ipynb_checkpoints
@@ -118,16 +110,18 @@ celerybeat-schedule
 .tox
 .mypy_cache
 
-# Ignore downloaded styles:
-/styles/Vale
-/styles/Microsoft
-/styles/Google
-/styles/RedHat
-/styles/proselint
-/styles/write-good
-/styles/alex
-/styles/Readability
-/styles/Joblint
+# virtualenv
+venv
+ENV
+
+# Spyder project settings
+.spyderproject
+
+# Rope project settings
+.ropeproject
+
+# Exclude downloaded styles from formatting and linting but include in VCS:
+/styles/*/*
 
 # Emacs editor settings
 /.dir-locals.el
@@ -137,20 +131,9 @@ celerybeat-schedule
 **/.*hst
 **/.*hsts
 **/.cache
-**/.local
 
 # Explicit ignores for the Docker build context.
 .local
 **/.local
 .gnupg
 **/.gnupg
-
-# virtualenv
-venv/
-ENV/
-
-# Spyder project settings
-.spyderproject
-
-# Rope project settings
-.ropeproject

@@ -105,6 +105,7 @@ ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
 ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
+ENV PATH="${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Have to use the shell form of `CMD` because it needs variable substitution:
 # hadolint ignore=DL3025

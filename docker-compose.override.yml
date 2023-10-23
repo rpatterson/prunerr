@@ -41,7 +41,7 @@ services:
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      # Make the runtime user configurable in `./.env`
+      # Make the runtime user configurable in `./.env`:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
       # Variables from the environment to pass through into the container:
@@ -56,7 +56,7 @@ services:
       - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/project-structure/.local/share/"
       - "${CHECKOUT_DIR:-.}/home/.cache/:/home/project-structure/.cache/"
       # Avoid any clashes between image variants and the local host at both build and
-      # runtime.
+      # runtime:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
         :/usr/local/src/project-structure/var/"
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/.tox/\

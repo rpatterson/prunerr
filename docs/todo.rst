@@ -66,11 +66,11 @@ Nice to have
    - `js-beautify <https://www.npmjs.com/package/js-beautify>`_
 
 #. `Docker image build-time labels
-   <https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys>`_::
+   <https://specs.opencontainers.org/image-spec/annotations/?v=v1.0.1>`_::
 
-     org.opencontainers.image.revision Source control revision identifier for the packaged software.
-     org.opencontainers.image.ref.name Name of the reference for a target (string).
-     org.opencontainers.image.base.digest Digest of the base image of this image (string).
+     org.opencontainers.image.revision
+     org.opencontainers.image.ref.name
+     org.opencontainers.image.base.digest
 
 #. Container image variants, for example ``*:slim`` or ``*:alpine``:
 
@@ -104,9 +104,9 @@ Nice to have
    manifest digest and then use that to retrieve the digests for each platform's image
    and then use those digests in ``./docker-compose*.yml``. Or output the multi-platform
    image to one of the local filesystem formats, figure how to import from there and do
-   a similar dance to retrieve and use the digests. This would be very fragile and would
-   take a lot of work that is likely wasted effort when Docker or someone else provides
-   a better way. IOW, these options would mean wastefully fighting tools and frameworks.
+   a similar dance to retrieve and use the digests. This would be fragile and would take
+   a lot of work that is likely wasted effort when Docker or someone else provides a
+   better way. IOW, these options would mean wastefully fighting tools and frameworks.
 
    As such, this probably isn't worth the effort until users report significant
    platform-specific bugs.

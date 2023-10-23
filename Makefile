@@ -404,7 +404,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
 .PHONY: build-perms
@@ -523,8 +523,7 @@ endif
 	    --build-arg BUILDKIT_INLINE_CACHE="1" \
 	    --build-arg VERSION="$$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
-	    )" \
-	    $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
+	    )" $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
 
 
 ### Test Targets:
@@ -536,24 +535,33 @@ endif
 test: test-lint test-docker
 
 .PHONY: test-local
-## Run the full suite of tests, coverage checks, and linters.
+## Run the full suite of tests, coverage checks, and linters on the local host.
 test-local:
 	true "TEMPLATE: Always specific to the project type"
 
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
-		build-docs test-lint-docker test-lint-prose
-# Run linters implemented in Python:
-	tox run -e "build"
+test-lint: $(HOST_TARGET_DOCKER) test-lint-code test-lint-docker test-lint-docs \
+		test-lint-prose
 # Lint copyright and licensing:
 	docker compose run --rm -T "reuse"
+
+.PHONY: test-lint-code
+## Lint source code for errors, style, and other issues.
+test-lint-code: ./var/log/npm-install.log
 # Run linters implemented in JavaScript:
-	~/.nvm/nvm-exec npm run lint
+	~/.nvm/nvm-exec npm run lint:code
+
+.PHONY: test-lint-docs
+## Lint documentation for errors, broken links, and other issues.
+test-lint-docs: $(HOME)/.local/bin/tox
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-docs.sh'
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_TARGET_DOCKER)
+test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
+		./var/log/npm-install.log
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \
@@ -572,6 +580,10 @@ test-lint-prose: $(HOST_TARGET_DOCKER)
 	            docker compose run --rm -T vale --config="./styles/code.ini" \
 	                --ext=".pl"
 	    done
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint:prose
 
 .PHONY: test-debug
 ## Run tests directly on the system and start the debugger on errors or failures.
@@ -867,7 +879,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	fi
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
-	$(MAKE) -e devel-upgrade
+	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit signaling success but push nothing:
@@ -1270,9 +1282,6 @@ $(HOST_PREFIX)/bin/gh:
 # Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
-# Return the most recent built package:
-current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
-
 # Have to use a placeholder `*.~out~` target instead of the real expanded template
 # because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.
 #
@@ -1358,7 +1367,7 @@ endef
 # none of the modification times of produced artifacts reflect when any downstream
 # targets need updating:
 #
-#     ./var/log/bar.log:
+#     ./var/log/some-work.log:
 #         mkdir -pv "$(dir $(@))"
 #         echo "Do some work here" | tee -a "$(@)"
 #

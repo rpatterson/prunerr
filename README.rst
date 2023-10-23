@@ -16,30 +16,30 @@ Project Structure foundation or template
           :target: https://api.reuse.software/info/gitlab.com/rpatterson/project-structure
 
      - .. figure:: https://gitlab.com/rpatterson/project-structure/-/badges/release.svg
-	  :alt: GitLab latest release
-	  :target: https://gitlab.com/rpatterson/project-structure/-/releases
+          :alt: GitLab latest release
+          :target: https://gitlab.com/rpatterson/project-structure/-/releases
        .. figure:: https://gitlab.com/rpatterson/project-structure/badges/main/pipeline.svg
           :alt: GitLab CI/CD pipeline status
           :target: https://gitlab.com/rpatterson/project-structure/-/commits/main
        .. figure:: https://gitlab.com/rpatterson/project-structure/badges/main/coverage.svg
           :alt: GitLab coverage report
-	  :target: https://gitlab.com/rpatterson/project-structure/-/commits/main
+          :target: https://gitlab.com/rpatterson/project-structure/-/commits/main
        .. figure:: https://img.shields.io/gitlab/stars/rpatterson/project-structure?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
-	  :alt: GitLab repository stars
-	  :target: https://gitlab.com/rpatterson/project-structure
+          :alt: GitLab repository stars
+          :target: https://gitlab.com/rpatterson/project-structure
 
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/project-structure?logo=github
-	  :alt: GitHub release (latest SemVer)
-	  :target: https://github.com/rpatterson/project-structure/releases
+          :alt: GitHub release (latest SemVer)
+          :target: https://github.com/rpatterson/project-structure/releases
        .. figure:: https://github.com/rpatterson/project-structure/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/project-structure/actions/workflows/build-test.yml
        .. figure:: https://codecov.io/github/rpatterson/project-structure/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
-	  :target: https://app.codecov.io/github/rpatterson/project-structure
+          :target: https://app.codecov.io/github/rpatterson/project-structure
        .. figure:: https://img.shields.io/github/stars/rpatterson/project-structure?logo=github
-	  :alt: GitHub repository stars
-	  :target: https://github.com/rpatterson/project-structure/
+          :alt: GitHub repository stars
+          :target: https://github.com/rpatterson/project-structure/
 
      - .. figure:: https://img.shields.io/docker/v/merpatterson/project-structure?sort=semver&logo=docker
           :alt: Docker Hub image version
@@ -48,10 +48,10 @@ Project Structure foundation or template
           :alt: Docker Hub image pulls count
           :target: https://hub.docker.com/r/merpatterson/project-structure
        .. figure:: https://img.shields.io/docker/stars/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub stars
+          :alt: Docker Hub stars
           :target: https://hub.docker.com/r/merpatterson/project-structure
        .. figure:: https://img.shields.io/docker/image-size/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub image size
+          :alt: Docker Hub image size
           :target: https://hub.docker.com/r/merpatterson/project-structure
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
@@ -95,10 +95,13 @@ structure common to different variants it can merge those changes into those
 variants. Real projects can also merge those changes.
 
 .. _Makefile: https://gitlab.com/rpatterson/project-structure/-/blob/main/Makefile
+.. _`Docker`: https://docs.docker.com/
 .. _`Version Control System (VCS) hooks`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org
-.. _`Towncrier`: https://towncrier.readthedocs.io
+.. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/
+.. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
+.. _`GitHub Actions`: https://docs.github.com/en/actions
 .. _`Organize source by feature`:
    https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 
@@ -111,9 +114,9 @@ variants. Real projects can also merge those changes.
 Template usage
 ****************************************************************************************
 
-These steps offer a rough guide for how to use this template in your project. Template
-developers don't test this process widely. Such tests are meta and wasteful to create
-and support. Report any issues you have or better yet submit a PR with corrections.
+This is a rough guide for how to use this template in your project. This isn't widely
+tested. Such tests are meta and wasteful to create and support. Report any issues you
+have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
@@ -238,12 +241,10 @@ Releases publish multi-platform images for the following platforms:
 Contributing
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrored on GitHub`_. Use GitLab for reporting
-issues, submitting Pull Requests or Merge Requests, and any other development or
-maintenance activity.
-
-See `the contributing documentation`_ for more details on how to get started with
-development.
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
 
 
 ****************************************************************************************
@@ -271,18 +272,21 @@ remote, merging structure updates into real projects over their lifetime.
 .. vale on
 
 
-.. _`GitLab hosts this project`:
-   https://gitlab.com/rpatterson/project-structure
-.. _`mirrored on GitHub`:
-   https://github.com/rpatterson/project-structure
+****************************************************************************************
+References
+****************************************************************************************
 
-.. _`Docker`: https://docs.docker.com/
-.. _`Docker Compose`: https://docs.docker.com/compose/
-.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
-.. _`the example ./docker-compose.yml file`: ./docker-compose.yml
+.. target-notes::
 
 .. _`the contributing documentation`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
-.. _`GitLab CI/CD`: https://docs.gitlab.com/ee/ci/
-.. _`GitHub Actions`: https://docs.github.com/en/actions
+.. _`Docker Compose`: https://docs.docker.com/compose/
+.. _`the example ./docker-compose.yml file`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docker-compose.yml
+.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
+
+.. _`GitLab hosts this project`:
+   https://gitlab.com/rpatterson/project-structure
+.. _`mirrors it to GitHub`:
+   https://github.com/rpatterson/project-structure

@@ -60,4 +60,9 @@ docs/_build
 **/.*hst
 **/.*hsts
 **/.cache
+
+# Explicit ignores for the Docker build context.
+.local
 **/.local
+.gnupg
+**/.gnupg

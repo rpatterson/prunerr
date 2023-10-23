@@ -25,7 +25,6 @@ build
 downloads
 lib
 lib64
-dist
 sdist
 var
 develop-eggs

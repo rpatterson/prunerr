@@ -18,7 +18,7 @@ fi
 
 main() {
     set -x
-    proselint --config "./.proselintrc.json" "./README.rst" "./docs/" "./newsfragments/"
+    git ls-files -z '*.rst' | xargs -r -0 -- proselint --config "./.proselintrc.json"
 }
 
 

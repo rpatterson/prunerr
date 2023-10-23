@@ -303,7 +303,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
 .PHONY: build-date
@@ -323,18 +323,26 @@ test: $(HOME)/.local/bin/tox test-lint
 
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
-		build-docs test-lint-prose
-# Run linters implemented in Python:
-	tox run -e "build"
+test-lint: $(HOST_PREFIX)/bin/docker test-lint-code test-lint-docs test-lint-prose
 # Lint copyright and licensing:
 	docker compose run --rm -T "reuse"
+
+.PHONY: test-lint-code
+## Lint source code for errors, style, and other issues.
+test-lint-code: ./var/log/npm-install.log
 # Run linters implemented in JavaScript:
-	~/.nvm/nvm-exec npm run lint
+	~/.nvm/nvm-exec npm run lint:code
+
+.PHONY: test-lint-docs
+## Lint documentation for errors, broken links, and other issues.
+test-lint-docs: $(HOME)/.local/bin/tox
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-docs.sh'
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_PREFIX)/bin/docker
+test-lint-prose: $(HOST_PREFIX)/bin/docker $(HOME)/.local/bin/tox \
+		./var/log/npm-install.log
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \
@@ -353,6 +361,10 @@ test-lint-prose: $(HOST_PREFIX)/bin/docker
 	            docker compose run --rm -T vale --config="./styles/code.ini" \
 	                --ext=".pl"
 	    done
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint:prose
 
 .PHONY: test-debug
 ## Run tests directly on the system and start the debugger on errors or failures.

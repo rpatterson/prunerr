@@ -38,8 +38,8 @@ Project Structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This is a minimal, yet opinionated baseline for `Python`_ software projects. It
-includes:
+This repository provides a minimal, yet opinionated baseline for `Python`_ software
+projects. It includes:
 
 - Basic `Python "distribution"/project`_ metadata
 - A `Makefile`_ for local development, build, test, and maintenance
@@ -67,14 +67,15 @@ variants. Real projects can also merge those changes.
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _Makefile: https://gitlab.com/rpatterson/project-structure/-/blob/main/Makefile
 .. _`Black`: https://github.com/psf/black
-.. _`kitchen sink linter configuration`: ./.prospector.yaml
+.. _`kitchen sink linter configuration`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/.prospector.yaml
 .. _`Prospector`: https://prospector.landscape.io
-.. _`tox.ini`: ./tox.ini
+.. _`tox.ini`: https://gitlab.com/rpatterson/project-structure/-/blob/main/tox.ini
 .. _`Tox`: https://tox.wiki
 .. _`Version Control System (VCS) hooks`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org
-.. _`Towncrier`: https://towncrier.readthedocs.io
+.. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/
 .. _`Organize source by feature`:
    https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 
@@ -169,6 +170,16 @@ Install by using any tool for installing standard Python 3 distributions such as
 
 
 ****************************************************************************************
+Contributing
+****************************************************************************************
+
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
+
+
+****************************************************************************************
 Motivation
 ****************************************************************************************
 
@@ -194,14 +205,13 @@ remote, merging structure updates into real projects over their lifetime.
 
 
 ****************************************************************************************
-Contributing
+References
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the contributing documentation`_ for more details on how to get started
-with development.
+.. target-notes::
 
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
 .. _pip: https://pip.pypa.io/en/stable/installation/
 
@@ -209,5 +219,3 @@ with development.
    https://gitlab.com/rpatterson/project-structure
 .. _`mirrors it to GitHub`:
    https://github.com/rpatterson/project-structure
-.. _`the contributing documentation`:
-   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst

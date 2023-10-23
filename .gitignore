@@ -4,9 +4,14 @@
 
 # Backup files
 *~
+**/*~
+
+# C extensions
+*.so
+**/.so
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+__pycache__
 *.py[cod]
 *$py.class
 
@@ -15,23 +20,23 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-env/
-build/
+env
+build
+downloads
+lib
+lib64
 dist
-sdist/
-downloads/
-develop-eggs/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-var/
+sdist
+var
+develop-eggs
+eggs
+.eggs
+parts
 /var-*
 /node_modules
 /package-lock.json
 /README.md
-*.egg-info/
+*.egg-info
 .installed.cfg
 *.egg
 /src/*/version.py
@@ -47,35 +52,37 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-htmlcov/
-.tox/
+htmlcov
+.tox
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 *,cover
-.hypothesis/
+.hypothesis
 
 # Translations
 *.mo
+**/.mo
 *.pot
+**/.pot
 
 # Django stuff:
 *.log
 local_settings.py
 
 # Flask stuff:
-instance/
+instance
 .webassets-cache
 
 # Scrapy stuff:
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/_build
 
 # PyBuilder
-target/
+target
 
 # IPython Notebook
 .ipynb_checkpoints
@@ -93,21 +100,21 @@ celerybeat-schedule
 .tox
 .mypy_cache
 
-# Exclude downloaded styles from formatting and linting but include in VCS:
-/styles/*/*
-
-# Emacs editor settings
-/.dir-locals.el
-
 # virtualenv
-venv/
-ENV/
+venv
+ENV
 
 # Spyder project settings
 .spyderproject
 
 # Rope project settings
 .ropeproject
+
+# Exclude downloaded styles from formatting and linting but include in VCS:
+/styles/*/*
+
+# Emacs editor settings
+/.dir-locals.el
 
 # `${HOME}/**` artifacts:
 **/.*_history

@@ -22,10 +22,10 @@ Project Structure foundation or template
           :alt: Docker Hub image pulls count
           :target: https://hub.docker.com/r/merpatterson/project-structure
        .. figure:: https://img.shields.io/docker/stars/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub stars
+          :alt: Docker Hub stars
           :target: https://hub.docker.com/r/merpatterson/project-structure
        .. figure:: https://img.shields.io/docker/image-size/merpatterson/project-structure?logo=docker
-	  :alt: Docker Hub image size
+          :alt: Docker Hub image size
           :target: https://hub.docker.com/r/merpatterson/project-structure
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
@@ -42,7 +42,8 @@ Project Structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This is a minimal, yet opinionated baseline for software projects. It includes:
+This repository provides a minimal, yet opinionated baseline for software projects. It
+includes:
 
 - A `Makefile`_ for local development, build, test, and maintenance
 - A `Docker`_ container image for end users
@@ -65,10 +66,11 @@ structure common to different variants it can merge those changes into those
 variants. Real projects can also merge those changes.
 
 .. _Makefile: https://gitlab.com/rpatterson/project-structure/-/blob/main/Makefile
+.. _`Docker`: https://docs.docker.com/
 .. _`Version Control System (VCS) hooks`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org
-.. _`Towncrier`: https://towncrier.readthedocs.io
+.. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/
 .. _`Organize source by feature`:
    https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 
@@ -203,12 +205,10 @@ Releases publish multi-platform images for the following platforms:
 Contributing
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrored on GitHub`_. Use GitLab for reporting
-issues, submitting Pull Requests or Merge Requests, and any other development or
-maintenance activity.
-
-See `the contributing documentation`_ for more details on how to get started with
-development.
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
 
 
 ****************************************************************************************
@@ -237,24 +237,20 @@ remote, merging structure updates into real projects over their lifetime.
 
 
 ****************************************************************************************
-Contributing
+References
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the contributing documentation`_ for more details on how to get started
-with development.
+.. target-notes::
 
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
+
+.. _`Docker Compose`: https://docs.docker.com/compose/
+.. _`the example ./docker-compose.yml file`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docker-compose.yml
+.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
 .. _`mirrors it to GitHub`:
    https://github.com/rpatterson/project-structure
-
-.. _`Docker`: https://docs.docker.com/
-.. _`Docker Compose`: https://docs.docker.com/compose/
-.. _the Docker image: https://hub.docker.com/r/merpatterson/project-structure
-.. _`the example ./docker-compose.yml file`: ./docker-compose.yml
-
-.. _`the contributing documentation`:
-   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst

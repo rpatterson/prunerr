@@ -32,3 +32,7 @@ exclude_patterns = []
 
 html_theme = 'alabaster'
 html_static_path = ['_static']
+
+# Linter options:
+# Disallow redirects:
+linkcheck_allowed_redirects = {}

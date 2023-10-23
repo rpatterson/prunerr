@@ -69,9 +69,9 @@ variants. Real projects can also merge those changes.
 .. _`Black`: https://github.com/psf/black
 .. _`kitchen sink linter configuration`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.prospector.yaml
-.. _`Prospector`: https://prospector.landscape.io
+.. _`Prospector`: https://prospector.landscape.io/en/master/
 .. _`tox.ini`: https://gitlab.com/rpatterson/project-structure/-/blob/main/tox.ini
-.. _`Tox`: https://tox.wiki
+.. _`Tox`: https://tox.wiki/en/stable/
 .. _`Version Control System (VCS) hooks`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org

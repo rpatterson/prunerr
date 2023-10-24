@@ -844,8 +844,9 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    exit
 	fi
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the most recent versions as of $${now}." \
+	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
+	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \

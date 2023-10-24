@@ -39,6 +39,7 @@ filters:
   - "[dD]eclaratively"
   - "[dD]ecompiler"
   - "[dD]eserialization"
+  - "[dD]eserialize"
   - "[dD]eserialized"
   - "[dD]esynchronize"
   - "[dD]esynchronized"
@@ -155,6 +156,7 @@ filters:
   - "[rR]ebased"
   - "[rR]ecertification"
   - "[rR]ecertifications"
+  - "[rR]eentrant"
   - "[rR]eshard"
   - "[rR]esharding"
   - "[rR]eshards"
@@ -485,6 +487,7 @@ filters:
   - Webpack
   - WebSocket
   - WebView
+  - wifi
   - Wildfly
   - Woopra
   - Wordpress

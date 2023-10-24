@@ -172,7 +172,7 @@ Install by using any tool for installing standard Python 3 distributions such as
 
   $ pip3 install --user project-structure
 
-Optional shell tab completion is available via `argcomplete`_.
+Optional shell prompt tab completion is available by using `argcomplete`_.
 
 
 ****************************************************************************************

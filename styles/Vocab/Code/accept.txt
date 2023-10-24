@@ -48,6 +48,8 @@ yaml
 kill
 [Gg]it
 via
+INFO
+NEWS
 noqa
 nosec
 pragma

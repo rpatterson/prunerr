@@ -439,7 +439,6 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 	    echo "ERROR: Can't upgrade with uncommitted changes."
 	    exit 1
 	fi
-	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
 	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
@@ -447,6 +446,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 # No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
+	git switch -C "$(VCS_BRANCH)-upgrade"
 # Only add changes upgrade-related changes:
 	git add --update "./.pre-commit-config.yaml" "./.vale.ini" "./styles/"
 # Commit the upgrade changes

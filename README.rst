@@ -104,9 +104,9 @@ variants. Real projects can also merge those changes.
 Template usage
 ****************************************************************************************
 
-These steps offer a rough guide for how to use this template in your project. They
-haven't been widely tested. Such tests are meta and wasteful to create and
-support. Report any issues you have or better yet submit a PR with corrections.
+This is a rough guide for how to use this template in your project. This isn't widely
+tested. Such tests are meta and wasteful to create and support. Report any issues you
+have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 

@@ -4,5 +4,8 @@
 
 # Ignore everything but files managed by VCS:
 /*
-!/.git*
+!.git*
 !/*.in
+
+# Restore backup file ignores reversed by the wildcards above
+*~

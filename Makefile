@@ -13,11 +13,11 @@
 # Project specific values:
 export PROJECT_NAMESPACE=rpatterson
 export PROJECT_NAME=project-structure
+# TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
+NPM_SCOPE=rpattersonnet
 
 # Option variables that control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
-# TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
-NPM_SCOPE=rpattersonnet
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 
@@ -206,7 +206,7 @@ PIP_COMPILE_EXTRA=
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
-PIP_COMPILE_ARGS=--upgrade
+export PIP_COMPILE_ARGS=
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Publish releases from the `main` or `develop` branches:
@@ -271,7 +271,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
+	pip_compile_opts="--resolver backtracking --strip-extras $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif
@@ -303,7 +303,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
 .PHONY: build-date
@@ -318,23 +318,31 @@ build-date:
 
 .PHONY: test
 ## Run the full suite of tests, coverage checks, and linters.
-test: $(HOME)/.local/bin/tox test-lint
+test: $(HOME)/.local/bin/tox test-lint $(PYTHON_ENVS:%=build-requirements-%)
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log \
-		build-docs test-lint-prose
-# Run linters implemented in Python:
-	tox run -e "build"
+test-lint: $(HOST_PREFIX)/bin/docker test-lint-code test-lint-docs test-lint-prose
 # Lint copyright and licensing:
 	docker compose run --rm -T "reuse"
+
+.PHONY: test-lint-code
+## Lint source code for errors, style, and other issues.
+test-lint-code: ./var/log/npm-install.log
 # Run linters implemented in JavaScript:
-	~/.nvm/nvm-exec npm run lint
+	~/.nvm/nvm-exec npm run lint:code
+
+.PHONY: test-lint-docs
+## Lint documentation for errors, broken links, and other issues.
+test-lint-docs: $(HOME)/.local/bin/tox ./requirements/$(PYTHON_HOST_ENV)/build.txt
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-docs.sh'
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_PREFIX)/bin/docker
+test-lint-prose: $(HOST_PREFIX)/bin/docker $(HOME)/.local/bin/tox \
+		./requirements/$(PYTHON_HOST_ENV)/build.txt ./var/log/npm-install.log
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \
@@ -353,6 +361,10 @@ test-lint-prose: $(HOST_PREFIX)/bin/docker
 	            docker compose run --rm -T vale --config="./styles/code.ini" \
 	                --ext=".pl"
 	    done
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint:prose
 
 .PHONY: test-debug
 ## Run tests directly on the system and start the debugger on errors or failures.
@@ -391,8 +403,9 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 test-clean:
 	if test -n "$$(git status --porcelain)"
 	then
+	    git status -vv
 	    set +x
-	    echo "Checkout is not clean"
+	    echo "WARNING: Checkout is not clean."
 	    false
 	fi
 
@@ -514,7 +527,8 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local
 ## Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	touch "./setup.cfg" "./requirements/build.txt.in"
-	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
+	$(MAKE) -e -j  PIP_COMPILE_ARGS="--upgrade" \
+	    $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 # Update the Vale style rule definitions:
@@ -524,6 +538,12 @@ devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+	if ! $(MAKE) -e "test-clean"
+	then
+	    set +x
+	    echo "ERROR: Can't upgrade with uncommitted changes."
+	    exit 1
+	fi
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
 	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
@@ -532,10 +552,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 # No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
+# Only add changes upgrade-related changes:
+	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
+	    "./.vale.ini" "./styles/"
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the most recent versions as of $${now}." \
+	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml"
+	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade to most recent versions"

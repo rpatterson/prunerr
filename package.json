@@ -4,8 +4,10 @@
   "version": "0.0.0",
   "description": "Project structure foundation or template, package metadata",
   "scripts": {
-    "lint": "npm run lint:prettier && npm run lint:write-good && npm run lint:alex",
+    "lint": "npm run lint:code && npm run lint:prose",
+    "lint:code": "npm run lint:prettier",
     "lint:prettier": "prettier --check './'",
+    "lint:prose": "npm run lint:write-good && npm run lint:alex",
     "lint:write-good": "git ls-files -co --exclude-standard -z ':!LICENSES' ':!styles/*/meta.json' ':!styles/*/*.yml' ':!requirements/**' | xargs -r -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
     "lint:alex": "git ls-files -co --exclude-standard -z ':!.gitignore' ':!**/.gitignore' ':!LICENSES' ':!styles/*/meta.json' ':!styles/*/*.yml' ':!styles/Vocab' ':!*.license' ':!docs/conf.py' ':!requirements/**' | xargs -r -0 -t -- alex",
     "format": "prettier --write './'"

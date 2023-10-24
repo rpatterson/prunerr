@@ -38,11 +38,11 @@ Project Structure foundation or template
           :target: https://liberapay.com/rpatterson/donate
 
 
-This is a minimal, yet opinionated baseline for `Python`_ software projects. It
-includes:
+This repository provides a minimal, yet opinionated baseline for `Python`_ software
+projects. It includes:
 
 - Basic `Python "distribution"/project`_ metadata
-- A `Makefile`_ for local development build, test and maintenance tasks
+- A `Makefile`_ for local development, build, test, and maintenance
 - A target that formats all source, including `Black`_ for Python code style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
   Python code checks
@@ -67,14 +67,15 @@ variants. Real projects can also merge those changes.
 .. _Python "distribution"/project: https://docs.python.org/3/distributing/index.html
 .. _Makefile: https://gitlab.com/rpatterson/project-structure/-/blob/main/Makefile
 .. _`Black`: https://github.com/psf/black
-.. _`kitchen sink linter configuration`: ./.prospector.yaml
-.. _`Prospector`: https://prospector.landscape.io
-.. _`tox.ini`: ./tox.ini
-.. _`Tox`: https://tox.wiki
+.. _`kitchen sink linter configuration`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/.prospector.yaml
+.. _`Prospector`: https://prospector.landscape.io/en/master/
+.. _`tox.ini`: https://gitlab.com/rpatterson/project-structure/-/blob/main/tox.ini
+.. _`Tox`: https://tox.wiki/en/stable/
 .. _`Version Control System (VCS) hooks`:
    https://gitlab.com/rpatterson/project-structure/-/blob/main/.pre-commit-config.yaml
 .. _`conventional commits`: https://www.conventionalcommits.org
-.. _`Towncrier`: https://towncrier.readthedocs.io
+.. _`Towncrier`: https://towncrier.readthedocs.io/en/stable/
 .. _`Organize source by feature`:
    https://www.seancdavis.com/posts/organize-components-by-keeping-related-files-close/
 
@@ -113,8 +114,8 @@ have or better yet submit a PR with corrections.
      $ git clone --origin "template" --branch "${TEMPLATE_BRANCH:?}" \
      "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
-     $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
+     $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git switch -C "main" --track "origin/main"
 
    If merging into an existing project::
@@ -126,11 +127,11 @@ have or better yet submit a PR with corrections.
 
 #. Rename files and directories derived from the project name::
 
-     $ git ls-files | grep -iE 'python.?project.?structure'
+     $ git ls-files | grep -iE 'project.?structure'
 
 #. Rename project name and template creator identity strings::
 
-     $ git grep -iE 'python.?project.?structure|ross|Patterson'
+     $ git grep -iE 'project.?structure|ross|Patterson'
 
 #. Make changes described in ``# TEMPLATE:`` comments:
 
@@ -169,6 +170,16 @@ Install by using any tool for installing standard Python 3 distributions such as
 
 
 ****************************************************************************************
+Contributing
+****************************************************************************************
+
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
+
+
+****************************************************************************************
 Motivation
 ****************************************************************************************
 
@@ -194,20 +205,17 @@ remote, merging structure updates into real projects over their lifetime.
 
 
 ****************************************************************************************
-Contributing
+References
 ****************************************************************************************
 
-`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
-issues, submitting pull or merge requests and any other development or maintenance
-activity. See `the contributing documentation`_ for more details on how to get started
-with development.
+.. target-notes::
 
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
 .. _pip: https://pip.pypa.io/en/stable/installation/
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure
 .. _`mirrors it to GitHub`:
-   https://github.com/rpatterson/project-HEAD
-.. _`the contributing documentation`:
-   https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
+   https://github.com/rpatterson/project-structure

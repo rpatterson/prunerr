@@ -42,6 +42,7 @@ This repository provides a minimal, yet opinionated baseline for `Python`_ softw
 projects. It includes:
 
 - Basic `Python "distribution"/project`_ metadata
+- Command-line console script with subcommand boilerplate
 - A `Makefile`_ for local development, build, test, and maintenance
 - A target that formats all source, including `Black`_ for Python code style
 - A `kitchen sink linter configuration`_ for `Prospector`_ that runs all available
@@ -94,12 +95,15 @@ have or better yet submit a PR with corrections.
 
 #. Pick the branch to use:
 
-   Is your project a command-line tool? A web app? Which programming language? Which
-   project hosting provider or CI platform? Pick the branch for your project:
+   Pick the branch for your project type:
 
    - ``py``:
 
      Basic Python distribution metadata and packaging.
+
+   - ``py-cli``:
+
+     The preceding plus boilerplate for a command-line console script with subcommand.
 
    It's important to use one of the preceding branches to merge into your project and
    *not* the ``develop`` or ``main`` branches from the template. Template developers use
@@ -168,6 +172,23 @@ Install by using any tool for installing standard Python 3 distributions such as
 
   $ pip3 install --user project-structure
 
+Optional shell tab completion is available via `argcomplete`_.
+
+
+****************************************************************************************
+Usage
+****************************************************************************************
+
+See the command-line help for details on options and arguments::
+
+  $ project-structure --help
+  usage: project-structure [-h]
+
+  Project structure foundation or template, top-level package.
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
 
 ****************************************************************************************
 Contributing
@@ -214,6 +235,7 @@ References
    https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
 .. _pip: https://pip.pypa.io/en/stable/installation/
+.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/project-structure

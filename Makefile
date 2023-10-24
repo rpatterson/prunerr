@@ -416,15 +416,14 @@ test-clean:
 # end-users.
 
 .PHONY: release
-## Publish installable packages if conventional commits require a release.
 release: $(HOME)/.local/bin/tox ~/.pypirc.~out~
+## Publish PyPI packages and Docker images if conventional commits require a release.
 # Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
-# The VCS remote should reflect the release before publishing the release to ensure that
-# a published release is never *not* reflected in VCS.
+# Ensure VCS has captured all the effects of building the release:
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/$(PYTHON_PROJECT_GLOB)-*

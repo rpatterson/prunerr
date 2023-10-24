@@ -12,11 +12,11 @@
 
 # Byte-compiled / optimized / DLL files
 __pycache__
+**/__pycache__
 *.py[cod]
+**/*.py[cod]
 *$py.class
-
-# C extensions
-*.so
+**/*$py.class
 
 # Distribution / packaging
 .Python
@@ -37,15 +37,19 @@ parts
 /package-lock.json
 /README.md
 *.egg-info
+**/*.egg-info
 .installed.cfg
 *.egg
+**/.egg
 /src/*/version.py
 
 # PyInstaller
 #  Usually a python script writes these files from a template before PyInstaller builds
 #  the exe to inject date/other infos into it:
 *.manifest
+**/.manifest
 *.spec
+**/.spec
 
 # Installer logs
 pip-log.txt
@@ -54,12 +58,17 @@ pip-delete-this-directory.txt
 # Unit test / coverage reports
 htmlcov
 .tox
+**/.tox
 .coverage
 .coverage.*
 .cache
+**/.cache
 nosetests.xml
 *,cover
+**/,cover
 .hypothesis
+.mypy_cache
+**/.mypy_cache
 
 # Translations
 *.mo
@@ -69,6 +78,7 @@ nosetests.xml
 
 # Django stuff:
 *.log
+**/.log
 local_settings.py
 
 # Flask stuff:

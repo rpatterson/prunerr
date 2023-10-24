@@ -256,7 +256,7 @@ export DOCKER_PASS
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
-PIP_COMPILE_ARGS=--upgrade
+export PIP_COMPILE_ARGS=
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Publish releases from the `main` or `develop` branches:
@@ -341,7 +341,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
+	pip_compile_opts="--resolver backtracking --strip-extras $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif
@@ -648,8 +648,9 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 test-clean:
 	if test -n "$$(git status --porcelain)"
 	then
+	    git status -vv
 	    set +x
-	    echo "Checkout is not clean"
+	    echo "WARNING: Checkout is not clean."
 	    false
 	fi
 
@@ -835,6 +836,12 @@ devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ build-d
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+	if ! $(MAKE) -e "test-clean"
+	then
+	    set +x
+	    echo "ERROR: Can't upgrade with uncommitted changes."
+	    exit 1
+	fi
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
 	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
@@ -843,11 +850,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BR
 # No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
+# Only add changes upgrade-related changes:
+	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
+	    "./.vale.ini" "./styles/"
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
 	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git commit --all --gpg-sign -m \
 	    "fix(deps): Upgrade to most recent versions"

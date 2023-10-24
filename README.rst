@@ -167,6 +167,10 @@ have or better yet submit a PR with corrections.
 
    - ``py-ci``:
 
+     The ``py-docker`` and ``ci`` branches merged together.
+
+   - ``py-ci-cli``:
+
      All the preceding combined together.
 
    It's important to use one of the preceding branches to merge into your project and
@@ -234,6 +238,7 @@ Installation
 Install locally or use the Docker container image:
 
 Local Installation
+========================================================================================
 
 Install by using any tool for installing standard Python 3 distributions such as
 `pip`_::
@@ -280,6 +285,16 @@ Usage
 See the command-line help for details on options and arguments::
 
   $ project-structure --help
+  usage: project-structure [-h]
+
+  Project structure foundation or template, top-level package.
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
+The Docker container image can run the command-line script as well::
+
+  $ docker compose run "project-structure" project-structure --help
   usage: project-structure [-h]
 
   Project structure foundation or template, top-level package.

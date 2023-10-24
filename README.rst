@@ -114,8 +114,8 @@ have or better yet submit a PR with corrections.
      $ git clone --origin "template" --branch "${TEMPLATE_BRANCH:?}" \
      "https://gitlab.com/rpatterson/project-structure.git" "./foo-project"
      $ cd "./foo-project"
-     $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git config remote.template.tagOpt --no-tags
+     $ git remote add "origin" "git@gitlab.com:foo-username/foo-project.git"
      $ git switch -C "main" --track "origin/main"
 
    If merging into an existing project::

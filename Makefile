@@ -271,7 +271,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
+	pip_compile_opts="--resolver backtracking --strip-extras $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif

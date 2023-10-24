@@ -10,3 +10,4 @@ UTC
 May
 Codecov
 Pylint
+argcomplete

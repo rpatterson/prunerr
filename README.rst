@@ -148,6 +148,10 @@ have or better yet submit a PR with corrections.
 
      Basic Python distribution metadata and packaging.
 
+   - ``py-cli``:
+
+     The preceding plus boilerplate for a command-line console script with subcommand.
+
    - ``docker``:
 
      Docker images for development and end-users or deployments.
@@ -230,12 +234,13 @@ Installation
 Install locally or use the Docker container image:
 
 Local Installation
-========================================================================================
 
 Install by using any tool for installing standard Python 3 distributions such as
 `pip`_::
 
   $ pip3 install --user project-structure
+
+Optional shell prompt tab completion is available by using `argcomplete`_.
 
 Docker Container Image
 ========================================================================================
@@ -328,6 +333,7 @@ References
    https://gitlab.com/rpatterson/project-structure/-/blob/main/docs/contributing.rst
 
 .. _pip: https://pip.pypa.io/en/stable/installation/
+.. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
 .. _`Docker Compose`: https://docs.docker.com/compose/
 .. _`the example ./docker-compose.yml file`:

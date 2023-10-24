@@ -17,7 +17,7 @@ export PROJECT_NAME=project-structure
 NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
 
-# Variables used as options to control behavior:
+# Option variables that control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
@@ -77,7 +77,7 @@ HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
 HOST_PKG_NAMES_GHCLI=github-cli
 endif
 HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
-# Detect host binaries baked into base images:
+# Detect Docker command-line baked into the build-host image:
 HOST_TARGET_DOCKER:=$(shell which docker)
 ifeq ($(HOST_TARGET_DOCKER),)
 HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
@@ -381,7 +381,7 @@ ifeq ($(CI),true)
 # reflect all changes to dependencies, but don't upgrade packages so that external
 # changes, such as new PyPI releases, don't turn CI/CD red spuriously and unrelated to
 # the contributor's actual changes.
-PIP_COMPILE_ARGS=
+export PIP_COMPILE_ARGS=
 endif
 GITHUB_RELEASE_ARGS=--prerelease
 # Only publish releases from the `main` or `develop` branches and only under the
@@ -461,9 +461,9 @@ run: build-docker-$(PYTHON_MINOR) ./.env.~out~
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-## Setup everything for development from a checkout, local and in containers.
+## Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
-		$(HOME)/.local/bin/tox ./var/log/npm-install.log \
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker \
 		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
@@ -485,7 +485,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
+	pip_compile_opts="--resolver backtracking --strip-extras $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif
@@ -493,7 +493,7 @@ endif
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
-## Ensure the built package is current.
+## Update the built package for use outside tox.
 build-pkgs: $(HOST_TARGET_DOCKER) \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log
@@ -527,7 +527,7 @@ build-docs-watch: $(HOME)/.local/bin/tox
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
 build-docs-%: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-build -M "$(@:build-docs-%=%)" \
+	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
 .PHONY: build-perms
@@ -664,8 +664,7 @@ endif
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
-	    )" \
-	    $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
+	    )" $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
 ## Pull container images and compile fixed/pinned dependency versions if necessary.
@@ -689,23 +688,32 @@ test: test-lint test-docker
 
 .PHONY: test-local
 ## Run the full suite of tests, coverage checks, and linters on the local host.
-test-local: $(HOME)/.local/bin/tox
+test-local: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=build-requirements-%)
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./var/log/npm-install.log \
-		build-docs test-lint-docker test-lint-prose
-# Run linters implemented in Python:
-	tox run -e "build"
+test-lint: $(HOST_TARGET_DOCKER) test-lint-code test-lint-docker test-lint-docs \
+		test-lint-prose
 # Lint copyright and licensing:
 	docker compose run --rm -T "reuse"
+
+.PHONY: test-lint-code
+## Lint source code for errors, style, and other issues.
+test-lint-code: ./var/log/npm-install.log
 # Run linters implemented in JavaScript:
-	~/.nvm/nvm-exec npm run lint
+	~/.nvm/nvm-exec npm run lint:code
+
+.PHONY: test-lint-docs
+## Lint documentation for errors, broken links, and other issues.
+test-lint-docs: $(HOME)/.local/bin/tox ./requirements/$(PYTHON_HOST_ENV)/build.txt
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-docs.sh'
 
 .PHONY: test-lint-prose
 ## Lint prose text for spelling, grammar, and style
-test-lint-prose: $(HOST_TARGET_DOCKER)
+test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
+		./requirements/$(PYTHON_HOST_ENV)/build.txt ./var/log/npm-install.log
 # Lint all markup files tracked in VCS with Vale:
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \
@@ -724,6 +732,10 @@ test-lint-prose: $(HOST_TARGET_DOCKER)
 	            docker compose run --rm -T vale --config="./styles/code.ini" \
 	                --ext=".pl"
 	    done
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint:prose
 
 .PHONY: test-debug
 ## Run tests directly on the system and start the debugger on errors or failures.
@@ -844,8 +856,9 @@ endif
 test-clean:
 	if test -n "$$(git status --porcelain)"
 	then
+	    git status -vv
 	    set +x
-	    echo "Checkout is not clean"
+	    echo "WARNING: Checkout is not clean."
 	    false
 	fi
 
@@ -935,7 +948,8 @@ endif
 	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version
+# using the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
 	if TEST "$${PYTHON_ENV}" = "$(PYTHON_HOST_ENV)"
 	then
@@ -948,7 +962,7 @@ endif
 .PHONY: release-bump
 ## Bump the package version if conventional commits require a release.
 release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
-		./var/log/npm-install.log ./var/log/git-remotes.log \
+		./var/log/npm-install.log \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then
@@ -1009,7 +1023,7 @@ endif
 	touch \
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
+	    $(PYTHON_ENVS:%=./requirements/%/test.txt)
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	$(MAKE) VCS_BRANCH="main" VCS_MERGE_BRANCH="develop" \
@@ -1068,8 +1082,7 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin
 
 .PHONY: devel-upgrade
 ## Update all locked or frozen dependencies to their most recent available versions.
-devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ \
-		build-docker
+devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ build-docker
 	touch "./setup.cfg" "./requirements/build.txt.in"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel
@@ -1085,6 +1098,12 @@ devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ \
 devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log
+	if ! $(MAKE) -e "test-clean"
+	then
+	    set +x
+	    echo "ERROR: Can't upgrade with uncommitted changes."
+	    exit 1
+	fi
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -1092,16 +1111,19 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	fi
 	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
-	$(MAKE) -e devel-upgrade
+	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
 # No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
+# Only add changes upgrade-related changes:
+	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
+	    "./.vale.ini" "./styles/"
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the most recent versions as of $${now}." \
+	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml"
+	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)
@@ -1203,7 +1225,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 ./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
 		./bin/entrypoint ./docker-compose.yml ./docker-compose.override.yml \
 		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
-		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg ./tox.ini
+		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)

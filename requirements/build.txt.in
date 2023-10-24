@@ -17,7 +17,7 @@ pre-commit
 # integration to enforce conventional commit messages:
 commitizen
 
-# Generate release notes, also known as changelogs or news:
+# Generate release notes:
 towncrier
 
 # Verify reStructuredText documentation:
@@ -25,6 +25,11 @@ rstcheck
 # Rich, full documentation site:
 sphinx
 sphinx-watch
+# https://github.com/sphinx-contrib/sphinx-lint
+sphinx-lint
+# https://docs.restructuredtext.net/articles/linter#supported-linters
+doc8
+restructuredtext-lint
 
 # Workaround Vale prose linter limitations:
 pyyaml

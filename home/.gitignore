@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Default to ignoring.  Only track the directories and files we specify:
+# Ignore everything but files managed by VCS:
 /*
 !.git*
 

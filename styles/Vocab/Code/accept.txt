@@ -49,6 +49,8 @@ kill
 HEAD
 head
 via
+INFO
+NEWS
 junit
 failure
 [Cc]odecov

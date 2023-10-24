@@ -854,8 +854,9 @@ endif
 test-clean:
 	if test -n "$$(git status --porcelain)"
 	then
+	    git status -vv
 	    set +x
-	    echo "Checkout is not clean"
+	    echo "WARNING: Checkout is not clean."
 	    false
 	fi
 
@@ -1094,6 +1095,12 @@ devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ build-d
 devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log
+	if ! $(MAKE) -e "test-clean"
+	then
+	    set +x
+	    echo "ERROR: Can't upgrade with uncommitted changes."
+	    exit 1
+	fi
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
@@ -1107,10 +1114,13 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 # No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
+# Only add changes upgrade-related changes:
+	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
+		"./.vale.ini" "./styles/"
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the most recent versions as of $${now}." \
+	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml"
+	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)

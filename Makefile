@@ -313,6 +313,7 @@ test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 test-clean:
 	if test -n "$$(git status --porcelain)"
 	then
+	    git status -vv
 	    set +x
 	    echo "Checkout is not clean"
 	    false

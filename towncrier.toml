@@ -5,6 +5,6 @@
 [tool.towncrier]
 # https://towncrier.readthedocs.io/en/stable/#quick-start
 name = "project-structure"
-directory = "./newsfragments"
 package = "projectstructure"
 package_dir = "src"
+directory = "./newsfragments"

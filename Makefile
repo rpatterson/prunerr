@@ -381,7 +381,7 @@ ifeq ($(CI),true)
 # reflect all changes to dependencies, but don't upgrade packages so that external
 # changes, such as new PyPI releases, don't turn CI/CD red spuriously and unrelated to
 # the contributor's actual changes.
-PIP_COMPILE_ARGS=
+export PIP_COMPILE_ARGS=
 endif
 GITHUB_RELEASE_ARGS=--prerelease
 # Only publish releases from the `main` or `develop` branches and only under the
@@ -463,7 +463,7 @@ run: build-docker-$(PYTHON_MINOR) ./.env.~out~
 .PHONY: build
 ## Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
-		$(HOME)/.local/bin/tox ./var/log/npm-install.log \
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker \
 		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
@@ -485,7 +485,7 @@ $(PYTHON_ENVS:%=build-requirements-%):
 ## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking $(PIP_COMPILE_ARGS)"
+	pip_compile_opts="--resolver backtracking --strip-extras $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif
@@ -685,8 +685,6 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 .PHONY: test
 ## Run the full suite of tests, coverage checks, and linters.
 test: test-lint test-docker
-# Lint copyright and licensing:
-	docker compose run --rm -T "reuse"
 
 .PHONY: test-local
 ## Run the full suite of tests, coverage checks, and linters on the local host.
@@ -697,6 +695,8 @@ test-local: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=build-requirements-%)
 ## Perform any linter or style checks, including non-code checks.
 test-lint: $(HOST_TARGET_DOCKER) test-lint-code test-lint-docker test-lint-docs \
 		test-lint-prose
+# Lint copyright and licensing:
+	docker compose run --rm -T "reuse"
 
 .PHONY: test-lint-code
 ## Lint source code for errors, style, and other issues.
@@ -946,7 +946,8 @@ endif
 	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version
+# using the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
 	if TEST "$${PYTHON_ENV}" = "$(PYTHON_HOST_ENV)"
 	then
@@ -1116,7 +1117,7 @@ devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
 	fi
 # Only add changes upgrade-related changes:
 	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
-		"./.vale.ini" "./styles/"
+	    "./.vale.ini" "./styles/"
 # Commit the upgrade changes
 	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"

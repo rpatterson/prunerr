@@ -206,7 +206,7 @@ PIP_COMPILE_EXTRA=
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
-PIP_COMPILE_ARGS=--upgrade
+export PIP_COMPILE_ARGS=
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Publish releases from the `main` or `develop` branches:
@@ -527,7 +527,8 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local
 ## Update all locked or frozen dependencies to their most recent available versions.
 devel-upgrade: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
 	touch "./setup.cfg" "./requirements/build.txt.in"
-	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
+	$(MAKE) -e -j  PIP_COMPILE_ARGS="--upgrade" \
+	    $(PYTHON_ENVS:%=build-requirements-%)
 # Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
 # Update the Vale style rule definitions:

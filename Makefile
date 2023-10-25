@@ -337,7 +337,7 @@ endif
 
 .PHONY: release-bump
 ## Bump the package version if conventional commits require a release.
-release-bump: $(HOME)/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
+release-bump: $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log
 	if ! git diff --cached --exit-code
 	then
@@ -432,7 +432,7 @@ devel-upgrade: $(HOME)/.local/bin/tox
 
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
-devel-upgrade-branch: $(HOME)/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+devel-upgrade-branch: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	if ! $(MAKE) -e "test-clean"
 	then
 	    set +x
@@ -461,7 +461,7 @@ devel-upgrade-branch: $(HOME)/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(
 
 .PHONY: devel-merge
 ## Merge this branch with a suffix back into its un-suffixed upstream.
-devel-merge: $(HOME)/.gitconfig ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
+devel-merge: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
 	git merge --ff --gpg-sign -m \
@@ -529,10 +529,6 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
-# Initialize minimal VCS configuration, useful in automation such as CI:
-$(HOME)/.gitconfig:
-	git config --global user.name "$(USER_FULL_NAME)"
-	git config --global user.email "$(USER_EMAIL)"
 
 # Prose linting:
 # Map formats unknown by Vale to a common default format:
@@ -563,15 +559,9 @@ $(HOME)/.gitconfig:
 	mkdir -pv "$(dir $(@))"
 	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 ./package.json:
-	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
+	$(MAKE) "./var/log/nvm-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
-$(HOME)/.npmrc:
-	$(MAKE) "./var/log/nvm-install.log"
-# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
-	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
-	~/.nvm/nvm-exec npm set init-license "MIT"
 ./var/log/nvm-install.log: ./.nvmrc
 	$(MAKE) "$(HOME)/.nvm/nvm.sh"
 	mkdir -pv "$(dir $(@))"

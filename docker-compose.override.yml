@@ -145,6 +145,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${CHECKOUT_DIR:-.}/:${CHECKOUT_DIR:-.}"
+      - "${CHECKOUT_DIR:-.}/build-host/bin/init-job.sh:/usr/local/bin/init-job.sh"
       - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       # Share local SSH authentication to repository remotes
       - "~/.ssh/:/home/runner/.ssh/"

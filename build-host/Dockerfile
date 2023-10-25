@@ -80,4 +80,4 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     "runner@build-host.${PROJECT_NAMESPACE:-rpatterson}.localhost" && \
     mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
 
-COPY [ "./bin/entrypoint.sh", "/usr/local/bin/" ]
+COPY [ "./bin/init-job.sh",  "./bin/entrypoint.sh", "/usr/local/bin/" ]

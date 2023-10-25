@@ -49,9 +49,9 @@ main() {
                     git config -f "/home/runner/.gitconfig" "user.email"
                 )" -D -s "/bin/bash" "runner"
         fi
+        user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
 
         # Ensure the user can talk to `# dockerd`:
-        user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
         if test -e "/var/run/docker.sock"
         then
             docker_gid=$(stat -c "%g" "/var/run/docker.sock")
@@ -64,6 +64,31 @@ main() {
                 adduser "${user_name}" "$(stat -c "%G" "/var/run/docker.sock")"
             fi
         fi
+
+	# Ensure the checkout and `${GIT_DIR}` have the right permissions but avoid time
+	# consuming recursion into build artifacts, for example `./node_modules/` or
+	# `./.tox/`.  Test only the top-level directory and a file in it to see if any
+	# changes are necessary.  If so, change the owner only for paths known to
+	# require ownership by `${PUID}`, the `${GIT_DIR}` and files tracked in VCS:
+	if test -d  "./.git/"
+	then
+	    for owner_path in "./" "./.gitignore" "./.git/" "./.git/HEAD"
+	    do
+		if test -e "${owner_path}" && \
+			test "$(stat -c "%u" "${owner_path}")" != "${PUID}"
+		then
+		    chown ${CHOWN_ARGS} "${PUID}:${PGID:-${PUID}}" "./"
+		    chown -R ${CHOWN_ARGS} "${PUID}:${PGID:-${PUID}}" "./.git/"
+		    su "${user_name}" - -c 'git ls-files -z' |
+			xargs -0 -- chown ${CHOWN_ARGS} "${PUID}:${PGID:-${PUID}}"
+		    # Also parent directories:
+		    su "${user_name}" - -c 'git ls-files' |
+			sed -nE 's|(.*/)[^/]+|\1|p' | uniq |
+			xargs -- chown ${CHOWN_ARGS} "${PUID}:${PGID:-${PUID}}"
+		    break
+		fi
+	    done
+	fi
     fi
 
     # Delegate to the rest of `argv`:

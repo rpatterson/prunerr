@@ -407,20 +407,6 @@ build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
-.PHONY: build-perms
-## Report and fix any problems with permissions in the checkout.
-build-perms:
-# Change only the files in VCS to avoid time consuming recursion into build artifacts.
-# Consider anything else that ends up with wrong ownership a build bug:
-	set +x
-	git ls-files -z | while read -d $$'\0' git_file
-	do
-	    echo -ne "$$(dirname "$${git_file}")"'\0'
-	    echo -ne "$${git_file}"'\0'
-	done | xargs -0 -- chown "$(PUID):$(PGID)"
-	set -x
-	chown -R "$(PUID):$(PGID)" "$$(git rev-parse --git-dir)"
-
 .PHONY: build-date
 # A prerequisite that always triggers it's target.
 build-date:

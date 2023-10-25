@@ -77,18 +77,12 @@ jobs:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
       # TODO: Debug stale venv issues and restore cache after fixing.
-      - name: "Change checkout owner"
-        # https://stackoverflow.com/a/58474340/624787
-        run: >-
-          git config --global --add safe.directory
-          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
-          &&
-          make -e build-perms
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Build image and run tests and checks in a container"
         run: >-
-          entrypoint make -e test-push test-lint build-docker test-docker test-clean
+          init-job.sh entrypoint.sh make -e
+          test-push test-lint build-docker test-docker test-clean
 
       # Upload build artifacts:
       # https://github.com/actions/upload-artifact#usage

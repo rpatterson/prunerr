@@ -41,7 +41,7 @@ ENV NVM_DIR="${HOME}/.nvm"
 # https://github.com/nvm-sh/nvm/issues/1102#issuecomment-550572252
 ENV NVM_NODEJS_ORG_MIRROR="https://unofficial-builds.nodejs.org/download/release"
 
-ENTRYPOINT [ "docker-entrypoint.sh", "entrypoint" ]
+ENTRYPOINT [ "docker-entrypoint.sh", "init-job.sh", "entrypoint.sh" ]
 CMD [ "make", "-e", "build-docker" ]
 
 # More volatile layers and layers with longer build times last:
@@ -80,4 +80,4 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     "runner@build-host.${PROJECT_NAMESPACE:-rpatterson}.localhost" && \
     mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
 
-COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
+COPY [ "./bin/entrypoint.sh", "/usr/local/bin/" ]

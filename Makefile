@@ -697,7 +697,7 @@ clean:
 
 # Build Docker container images.
 # Build the development image:
-./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
+./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint.sh \
 		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
 		./var-docker/log/rebuild.log $(HOST_TARGET_DOCKER)
 	true DEBUG Updated prereqs: $(?)
@@ -714,7 +714,7 @@ endif
 	    build-docker-build | tee -a "$(@)"
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
-		./.dockerignore ./bin/entrypoint ./var-docker/log/rebuild.log
+		./.dockerignore ./bin/entrypoint.sh ./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Build the user image after building all required artifacts:
 	mkdir -pv "$(dir $(@))"

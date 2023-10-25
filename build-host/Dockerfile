@@ -73,6 +73,9 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     echo 'nvm_get_arch() { nvm_echo x64-musl; }' >>"${HOME}/.nvm/nvm.sh" && \
 	. "${HOME}/.nvm/nvm.sh" || true && \
     nvm install "18" && \
+    git config -f "${HOME}/.gitconfig" "user.name" "CI Runner" && \
+    git config -f "${HOME}/.gitconfig" "user.email" \
+    "runner@build-host.${PROJECT_NAMESPACE:-rpatterson}.localhost" && \
     mkdir -pv "${HOME}/.local/state/${PROJECT_NAME}/log/"
 
 COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]

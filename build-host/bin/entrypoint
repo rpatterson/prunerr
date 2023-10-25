@@ -20,6 +20,8 @@ fi
 
 main() {
     # Run as the user from the enironment, adding that user if necessary
+    git config -f "/home/runner/.gitconfig" \
+	"safe.directory" "$(realpath "${CHECKOUT_DIR:-.}")"
     if test -n "${PUID:-}"
     then
         if test "$(id -u)" != "0"
@@ -43,8 +45,10 @@ main() {
         group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
         if ! id "${PUID}" >"/dev/null" 2>&1
         then
-            adduser -u "${PUID}" -G "${group_name}" -g "CI Runner,,," -D \
-                    -s "/bin/bash" "runner"
+            adduser -u "${PUID}" -G "${group_name}" -g \
+                "CI Runner,,,$(
+                    git config -f "/home/runner/.gitconfig" "user.email"
+                )" -D -s "/bin/bash" "runner"
         fi
         user_name=$(getent passwd "${PUID}" | cut -d ":" -f 1)
         if test -e "/var/run/docker.sock"

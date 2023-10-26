@@ -32,7 +32,7 @@ ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
 ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "${HOME}"
-ENTRYPOINT [ "entrypoint" ]
+ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "python" ]
 
 # Support for a volume to preserve data between runs and share data between variants:
@@ -43,7 +43,7 @@ RUN mkdir -pv "${HOME}/.local/share/${PROJECT_NAME}/" && \
         "${HOME}/.bash_history"
 
 # Put the `ENTRYPOINT` on the `$PATH`
-COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
+COPY [ "./bin/entrypoint.sh", "/usr/local/bin/" ]
 
 # Install operating system packages needed for the image `ENDPOINT`:
 RUN \
@@ -102,7 +102,7 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
-ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
+ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
 ENV PATH="${HOME}/.local/bin:${PATH}"

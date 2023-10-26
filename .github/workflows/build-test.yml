@@ -95,6 +95,9 @@ jobs:
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Build image and run tests and checks in a container"
         run: >-
+          git config --global --add safe.directory
+          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+          &&
           init-job.sh entrypoint.sh make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
           test-push test-lint build-docker-${{ matrix.PYTHON_MINORS }}
           test-docker-${{ matrix.PYTHON_MINORS }} test-clean

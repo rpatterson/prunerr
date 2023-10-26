@@ -33,7 +33,7 @@ services:
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      # Make the runtime user configurable in `./.env`
+      # Make the runtime user configurable in `./.env`:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
       # Variables from the environment to pass through into the container:

@@ -251,7 +251,7 @@ run: build-docker ./.env.~out~
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-## Setup everything for development from a checkout, local and in containers.
+## Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker
 

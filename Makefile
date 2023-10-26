@@ -530,20 +530,6 @@ build-docs-%: $(HOME)/.local/bin/tox
 	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
 	    "./docs/" "./build/docs/"
 
-.PHONY: build-perms
-## Report and fix any problems with permissions in the checkout.
-build-perms:
-# Change only the files in VCS to avoid time consuming recursion into build artifacts.
-# Consider anything else that ends up with wrong ownership a build bug:
-	set +x
-	git ls-files -z | while read -d $$'\0' git_file
-	do
-	    echo -ne "$$(dirname "$${git_file}")"'\0'
-	    echo -ne "$${git_file}"'\0'
-	done | xargs -0 -- chown "$(PUID):$(PGID)"
-	set -x
-	chown -R "$(PUID):$(PGID)" "$$(git rev-parse --git-dir)"
-
 .PHONY: build-date
 # A prerequisite that always triggers it's target.
 build-date:
@@ -1094,10 +1080,10 @@ devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ build-d
 	$(MAKE) "./var/log/vale-rule-levels.log"
 
 .PHONY: devel-upgrade-branch
+## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
 devel-upgrade-branch: ./var/log/gpg-import.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log
-devel-upgrade-branch: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 	if ! $(MAKE) -e "test-clean"
 	then
 	    set +x
@@ -1541,7 +1527,7 @@ GPG_SIGNING_PRIVATE_KEY=
 #	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
-./var/log/gpg-import.log: ~/.gitconfig $(HOST_PREFIX)/bin/gpg
+./var/log/gpg-import.log: $(HOST_PREFIX)/bin/gpg
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
 ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)

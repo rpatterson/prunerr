@@ -4,7 +4,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-#
 # Perform any required volatile run time initialization
 
 set -eu -o pipefail

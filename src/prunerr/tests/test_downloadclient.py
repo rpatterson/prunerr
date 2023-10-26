@@ -32,7 +32,7 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
 
     SERVARR_DOWNLOAD_CLIENT_URLS = (
         # The usual case
-        "http://transmission:secret@localhost:9091/transmission/",
+        "http://transmission@localhost:9091/transmission/",
         # Simulate a Servarr instance with multiple download clients
         # Simulate a Servarr instance not using authentication
         "http://transmission@192.168.1.1:9091/transmission/",

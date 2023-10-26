@@ -54,6 +54,11 @@ class PrunerrDownloadClient:
         Update configuration, connect the RPC client, and update the list of items.
         """
         self.config = config
+        self.config.setdefault(
+            "password",
+            urllib.parse.urlsplit(self.config["url"]).password,
+        )
+        self.config["url"] = utils.normalize_url(self.config["url"])
 
         # Configuration specific to Prunerr, IOW not taken from the download client
         self.config["min-free-space"] = calc_free_space_margin(self.runner.config)
@@ -82,7 +87,7 @@ class PrunerrDownloadClient:
             port=port,
             path=split_url.path,
             username=split_url.username,
-            password=split_url.password,
+            password=self.config["password"],
         )
 
         # Update any Servarr references or data that depends on the download client

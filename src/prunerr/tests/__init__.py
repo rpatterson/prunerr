@@ -24,6 +24,7 @@ import yaml
 import requests_mock
 
 import prunerr
+from .. import utils
 from ..utils import pathlib
 
 
@@ -60,7 +61,7 @@ class PrunerrTestCase(
 
     # The set of request responses to mock
     RESPONSES_DIR = pathlib.Path(__file__).parent / "responses" / "default"
-    DOWNLOAD_CLIENT_URL = "http://transmission:secret@localhost:9091/transmission/"
+    DOWNLOAD_CLIENT_URL = "http://transmission@localhost:9091/transmission/"
 
     # Download client path elements
     STORAGE_RELATIVE = pathlib.PurePath("media", "Library")
@@ -208,13 +209,14 @@ class PrunerrTestCase(
         Copy example files into place to represent download item files.
         """
         download_client_url = urllib.parse.urlsplit(download_client_url)
+        netloc = download_client_url.netloc
         if not download_client_url.port:
-            return
+            netloc = f"{netloc}:{80 if download_client_url.scheme == 'http' else 443}"
         torrent_list_mocks = sorted(
             (
                 self.RESPONSES_DIR
                 / download_client_url.scheme
-                / urllib.parse.quote(download_client_url.netloc)
+                / urllib.parse.quote(netloc)
                 / urllib.parse.quote(download_client_url.path.lstrip(os.path.sep))
                 / "rpc"
                 / "POST"
@@ -224,10 +226,10 @@ class PrunerrTestCase(
             torrent_list_mocks[0] / "response.json"
         ).open() as download_client_items_response:
             self.download_client_items_responses[
-                download_client_url.geturl()
+                utils.normalize_url(download_client_url.geturl())
             ] = json.load(download_client_items_response)
             for download_item in self.download_client_items_responses[
-                download_client_url.geturl()
+                utils.normalize_url(download_client_url.geturl())
             ]["arguments"]["torrents"]:
                 if download_item["status"] == 6:
                     download_item_dir = self.tmp_path / download_item[

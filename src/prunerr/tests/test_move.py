@@ -15,6 +15,7 @@ from unittest import mock
 
 import prunerr.servarr
 
+from .. import utils
 from .. import tests
 
 
@@ -398,18 +399,22 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             "Servarr move results missing from `exec` sub-command results",
         )
         self.assertIn(
-            self.download_client_urls[0],
+            utils.normalize_url(self.download_client_urls[0]),
             exec_results["move"][self.servarr_urls[0]],
             "Download client move results missing from `exec` sub-command results",
         )
         self.assertIsInstance(
-            exec_results["move"][self.servarr_urls[0]][self.download_client_urls[0]],
+            exec_results["move"][self.servarr_urls[0]][
+                utils.normalize_url(self.download_client_urls[0])
+            ],
             list,
             "Download client move results wrong type from `exec` sub-command results",
         )
         self.assertEqual(
             len(
-                exec_results["move"][self.servarr_urls[0]][self.download_client_urls[0]]
+                exec_results["move"][self.servarr_urls[0]][
+                    utils.normalize_url(self.download_client_urls[0])
+                ]
             ),
             1,
             "Download client move results wrong number of items",

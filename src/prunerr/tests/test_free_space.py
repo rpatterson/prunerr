@@ -14,6 +14,7 @@ from unittest import mock
 
 import prunerr.downloadclient
 
+from .. import utils
 from .. import tests
 
 
@@ -190,17 +191,23 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             "Free Space results missing from `exec` sub-command results",
         )
         self.assertIn(
-            self.download_client_urls[0],
+            utils.normalize_url(self.download_client_urls[0]),
             exec_results["free-space"],
             "Download client free space results missing from `exec` results",
         )
         self.assertIsInstance(
-            exec_results["free-space"][self.download_client_urls[0]],
+            exec_results["free-space"][
+                utils.normalize_url(self.download_client_urls[0])
+            ],
             list,
             "Download client free space results wrong type from `exec` results",
         )
         self.assertEqual(
-            len(exec_results["free-space"][self.download_client_urls[0]]),
+            len(
+                exec_results["free-space"][
+                    utils.normalize_url(self.download_client_urls[0])
+                ]
+            ),
             1,
             "Download client free space results wrong number of items",
         )
@@ -219,17 +226,19 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         unregistered_results = runner.free_space()
         self.assert_request_mocks(unregistered_request_mocks)
         self.assertIn(
-            self.download_client_urls[0],
+            utils.normalize_url(self.download_client_urls[0]),
             unregistered_results,
             "Download client free space results missing from unregistered item results",
         )
         self.assertIsInstance(
-            unregistered_results[self.download_client_urls[0]],
+            unregistered_results[utils.normalize_url(self.download_client_urls[0])],
             list,
             "Download client free space results wrong unregistered item results type",
         )
         self.assertEqual(
-            len(unregistered_results[self.download_client_urls[0]]),
+            len(
+                unregistered_results[utils.normalize_url(self.download_client_urls[0])]
+            ),
             1,
             "Free space unregistered item results wrong number of items",
         )
@@ -250,17 +259,17 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         orphans_results = runner.free_space()
         self.assert_request_mocks(orphans_request_mocks)
         self.assertIn(
-            self.download_client_urls[0],
+            utils.normalize_url(self.download_client_urls[0]),
             orphans_results,
             "Download client free space results missing from orphan results",
         )
         self.assertIsInstance(
-            orphans_results[self.download_client_urls[0]],
+            orphans_results[utils.normalize_url(self.download_client_urls[0])],
             list,
             "Download client free space results wrong orphan results type",
         )
         self.assertEqual(
-            len(orphans_results[self.download_client_urls[0]]),
+            len(orphans_results[utils.normalize_url(self.download_client_urls[0])]),
             1,
             "Free space orphan results wrong number of items",
         )

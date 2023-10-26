@@ -16,6 +16,7 @@ import arrapi.apis.base
 
 import prunerr.downloadclient
 import prunerr.downloaditem
+from . import utils
 from .utils import pathlib
 
 logger = logging.getLogger(__name__)
@@ -103,6 +104,7 @@ class PrunerrServarrInstance:
         the prunerr representations.
         """
         self.config = config
+        self.config["url"] = utils.normalize_url(self.config["url"])
 
         logger.debug(
             "Connecting to %s",
@@ -131,12 +133,9 @@ class PrunerrServarrInstance:
                 download_client_config,
             )
             # Instantiate newly defined download clients
-            download_clients[
-                download_client_config["url"]
-            ] = PrunerrServarrDownloadClient(self)
-            download_clients[download_client_config["url"]].update(
-                download_client_config
-            )
+            download_client_url = utils.normalize_url(download_client_config["url"])
+            download_clients[download_client_url] = PrunerrServarrDownloadClient(self)
+            download_clients[download_client_url].update(download_client_config)
         self.download_clients = download_clients
 
         # Update any data in instance state that should *not* be cached across updates
@@ -303,9 +302,7 @@ def deserialize_servarr_download_client(download_client_config):
         if "value" in download_client_config_field
     }
     netloc = f"{download_client_config['fieldValues']['host']}"
-    if download_client_config["fieldValues"].get("port") and int(
-        download_client_config["fieldValues"]["port"]
-    ) != (443 if download_client_config["fieldValues"]["useSsl"] else 80):
+    if download_client_config["fieldValues"].get("port") is not None:
         netloc = f"{netloc}:{download_client_config['fieldValues']['port']}"
     if download_client_config["fieldValues"].get("username"):
         if download_client_config["fieldValues"].get("password"):
@@ -320,7 +317,7 @@ def deserialize_servarr_download_client(download_client_config):
         "http" if not download_client_config["fieldValues"]["useSsl"] else "https",
         netloc,
         download_client_config["fieldValues"]["urlBase"],
-        None,
-        None,
+        "",
+        "",
     ).geturl()
     return download_client_config

@@ -43,7 +43,12 @@ class PrunerrDownloadItemTests(tests.PrunerrTestCase):
 
         # Collect a download client item
         self.mock_responses()
-        self.download_client.update({"url": self.DOWNLOAD_CLIENT_URL})
+        self.download_client.update(
+            {
+                "url": self.DOWNLOAD_CLIENT_URL,
+                "password": "secret",
+            }
+        )
         self.item = self.download_client.items[1]
 
     def test_operation_invalid_executor(self):

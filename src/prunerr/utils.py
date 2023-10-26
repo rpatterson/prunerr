@@ -11,6 +11,7 @@ Particularly useful to avoid circular imports.
 import os
 import socket
 import json
+import urllib.parse
 import logging
 
 import transmission_rpc
@@ -48,6 +49,25 @@ RETRY_EXC_TYPES = (
     ValueError,
     json.JSONDecodeError,
 )
+
+
+def normalize_url(url):
+    """
+    Return the given URL in the same form regardless of port or authentication.
+
+    - Do *not* include a port if the port matches the scheme.
+    - Strip the authentication password or passphrase.
+    """
+    url = urllib.parse.urlsplit(url)
+    netloc = url.hostname
+    if url.port and (
+        (url.scheme == "http" and url.port != 80)
+        or (url.scheme == "https" and url.port != 443)
+    ):
+        netloc = f"{netloc}:{url.port}"
+    if url.username:
+        netloc = f"{url.username}@{netloc}"
+    return url._replace(netloc=netloc).geturl()
 
 
 class DaemonOnceFilter(logging.Filter):  # pylint: disable=too-few-public-methods

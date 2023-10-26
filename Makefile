@@ -543,8 +543,8 @@ endif
 .PHONY: release-bump
 ## Bump the package version if conventional commits require a release.
 release-bump: $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
-		./var/log/npm-install.log ./var/log/git-remotes.log \
-		./var-docker/log/build-devel.log ./.env.~out~
+		./var/log/npm-install.log ./var-docker/log/build-devel.log \
+		./.env.~out~
 	if ! git diff --cached --exit-code
 	then
 	    set +x

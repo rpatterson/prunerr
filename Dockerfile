@@ -102,7 +102,7 @@ LABEL org.opencontainers.image.description="Project structure foundation or temp
 
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
-ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/state/${PROJECT_NAME}/bin:${HOME}/.local/bin:${PATH}"
+ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
 ENV PATH="${HOME}/.local/bin:${PATH}"

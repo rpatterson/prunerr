@@ -132,7 +132,7 @@ pylint-plugin-utils==0.7
     #   pylint-flask
 pyproject-hooks==1.0.0
     # via build
-pyright==1.1.332
+pyright==1.1.333
     # via prospector
 pyroma==4.2
     # via prospector

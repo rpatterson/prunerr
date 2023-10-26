@@ -751,7 +751,7 @@ endif
 
 .PHONY: release-bump
 ## Bump the package version if conventional commits require a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
+release-bump: $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
 		./var/log/npm-install.log ./var/log/git-remotes.log \
 		./var-docker/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
@@ -870,7 +870,7 @@ devel-upgrade: $(HOME)/.local/bin/tox
 
 .PHONY: devel-upgrade-branch
 ## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
-devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
+devel-upgrade-branch: ./var/log/gpg-import.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log
 	if ! $(MAKE) -e "test-clean"
@@ -923,7 +923,7 @@ endif
 
 .PHONY: devel-merge
 ## Merge this branch with a suffix back into its un-suffixed upstream.
-devel-merge: ~/.gitconfig ./var/log/git-remotes.log \
+devel-merge: ./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
@@ -957,7 +957,7 @@ clean:
 
 # Build Docker container images.
 # Build the development image:
-./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint \
+./var-docker/log/build-devel.log: ./Dockerfile ./.dockerignore ./bin/entrypoint.sh \
 		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
 		./var-docker/log/rebuild.log $(HOST_TARGET_DOCKER)
 	true DEBUG Updated prereqs: $(?)
@@ -974,7 +974,7 @@ endif
 	    build-docker-build | tee -a "$(@)"
 # Build the end-user image:
 ./var-docker/log/build-user.log: ./var-docker/log/build-devel.log ./Dockerfile \
-		./.dockerignore ./bin/entrypoint ./var-docker/log/rebuild.log
+		./.dockerignore ./bin/entrypoint.sh ./var-docker/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 # Build the user image after building all required artifacts:
 	mkdir -pv "$(dir $(@))"
@@ -1085,9 +1085,6 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
 # Initialize minimal VCS configuration, useful in automation such as CI:
-~/.gitconfig:
-	git config --global user.name "$(USER_FULL_NAME)"
-	git config --global user.email "$(USER_EMAIL)"
 ./var/log/git-remotes.log:
 	mkdir -pv "$(dir $(@))"
 	set +x
@@ -1149,15 +1146,9 @@ endif
 	mkdir -pv "$(dir $(@))"
 	~/.nvm/nvm-exec npm install | tee -a "$(@)"
 ./package.json:
-	$(MAKE) "./var/log/nvm-install.log" "$(HOME)/.npmrc"
+	$(MAKE) "./var/log/nvm-install.log"
 # https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
 	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
-$(HOME)/.npmrc:
-	$(MAKE) "./var/log/nvm-install.log"
-# https://docs.npmjs.com/creating-a-package-json-file#setting-config-options-for-the-init-command
-	~/.nvm/nvm-exec npm set init-author-email "$(USER_EMAIL)"
-	~/.nvm/nvm-exec npm set init-author-name "$(USER_FULL_NAME)"
-	~/.nvm/nvm-exec npm set init-license "MIT"
 ./var/log/nvm-install.log: ./.nvmrc
 	$(MAKE) "$(HOME)/.nvm/nvm.sh"
 	mkdir -pv "$(dir $(@))"
@@ -1248,7 +1239,7 @@ GPG_SIGNING_PRIVATE_KEY=
 #	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
-./var/log/gpg-import.log: ~/.gitconfig $(HOST_PREFIX)/bin/gpg
+./var/log/gpg-import.log: $(HOST_PREFIX)/bin/gpg
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
 ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
@@ -1440,12 +1431,13 @@ pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DO
 	echo "ERROR: Could not pull any existing docker image"
 	false
 
-# TEMPLATE: Run this a single time for your project or when the `./build-host/` image
-# changes. See the `./var/log/docker-login*.log` targets for the authentication
+# TEMPLATE: Only necessary if you customize the `./build-host/` image.  Different
+# projects can use the same image, even across individuals and organizations.  If you do
+# need to customize the image, then run this a single time for each customized
+# image. See the `./var/log/docker-login*.log` targets for the authentication
 # environment variables to set or login to those container registries manually and `$
 # touch` these targets.
 .PHONY: bootstrap-project
-## Run any tasks needed a single time for a given project by a maintainer.
 bootstrap-project: \
 		./var/log/docker-login-GITLAB.log \
 		./var/log/docker-login-GITHUB.log

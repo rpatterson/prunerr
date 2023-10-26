@@ -45,7 +45,7 @@ services:
       # DEBUG: "true"
     volumes:
       # Reflect local changes inside the container:
-      - "${CHECKOUT_DIR:-.}/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR:-.}/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure/"
       # Preserve user configuration, data, and caches between containers and variants:
       - "${CHECKOUT_DIR:-.}/home/.config/:/home/project-structure/.config/"
@@ -152,7 +152,8 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${CHECKOUT_DIR:-.}/:${CHECKOUT_DIR:-.}"
-      - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR:-.}/build-host/bin/init-job.sh:/usr/local/bin/init-job.sh"
+      - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       # Share local SSH authentication to repository remotes
       - "~/.ssh/:/home/runner/.ssh/"
     env_file: "./.env"

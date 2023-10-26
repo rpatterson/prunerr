@@ -31,7 +31,7 @@ ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
 ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "${HOME}"
-ENTRYPOINT [ "entrypoint" ]
+ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "bash" ]
 
 # Support for a volume to preserve data between runs and share data between variants:
@@ -42,7 +42,7 @@ RUN mkdir -pv "${HOME}/.local/share/${PROJECT_NAME}/" && \
         "${HOME}/.bash_history"
 
 # Put the `ENTRYPOINT` on the `$PATH`
-COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
+COPY [ "./bin/entrypoint.sh", "/usr/local/bin/" ]
 
 # Install operating system packages needed for the image `ENDPOINT`:
 RUN \

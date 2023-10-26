@@ -78,7 +78,6 @@ class PrunerrServarrInstance:
     }
     MAX_PAGE_SIZE = 250
 
-    config = None
     client = None
     queue = None
 
@@ -87,13 +86,14 @@ class PrunerrServarrInstance:
         Capture a references to the runner and individual Servarr configuration.
         """
         self.runner = runner
+        self.config = {}
         self.download_clients = {}
 
     def __repr__(self):
         """
         Readable, informative, and specific representation to ease debugging.
         """
-        return f"<{type(self).__name__} {self.config['name']!r}>"
+        return f"<{type(self).__name__} {self.config.get('name')!r}>"
 
     def update(self, config):
         """
@@ -186,7 +186,6 @@ class PrunerrServarrDownloadClient:
     A specific Servar instance's individual specific download client.
     """
 
-    config = None
     download_client = None
     download_dir = None
     seeding_dir = None
@@ -196,14 +195,15 @@ class PrunerrServarrDownloadClient:
         Capture a references to the servarr instance and download client.
         """
         self.servarr = servarr
+        self.config = {}
 
     def __repr__(self):
         """
         Readable, informative, and specific representation to ease debugging.
         """
         return (
-            f"<{type(self).__name__} {self.servarr.config['name']!r}"
-            f"->{self.download_client.config['url']!r}>"
+            f"<{type(self).__name__} {self.servarr.config.get('name')!r}"
+            f"->{self.config.get('url')!r}>"
         )
 
     def update(self, config):

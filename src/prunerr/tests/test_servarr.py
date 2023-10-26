@@ -39,7 +39,7 @@ class PrunerrServarrTests(
         servarr_download_client.download_client = (
             prunerr.downloadclient.PrunerrDownloadClient(runner)
         )
-        servarr_download_client.download_client.config = {
+        servarr_download_client.config = {
             "url": self.download_client_urls[0],
         }
         self.assertIn(

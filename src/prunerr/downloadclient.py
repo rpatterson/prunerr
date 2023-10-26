@@ -30,7 +30,6 @@ class PrunerrDownloadClient:
     SEEDING_DIR_BASENAME = "seeding"
     UNREGISTERED_ERROR_RE = re.compile(r".*(not |un)registered.*")
 
-    config = None
     client = None
     items = None
     operations = None
@@ -40,6 +39,7 @@ class PrunerrDownloadClient:
         Capture a references to the runner and individual download client configuration.
         """
         self.runner = runner
+        self.config = {}
         self.servarrs = {}
         self.verifying_items = {}
 
@@ -47,7 +47,7 @@ class PrunerrDownloadClient:
         """
         Readable, informative, and specific representation to ease debugging.
         """
-        return f"<{type(self).__name__} at {self.config['url']!r}>"
+        return f"<{type(self).__name__} at {self.config.get('url')!r}>"
 
     def update(self, config):
         """

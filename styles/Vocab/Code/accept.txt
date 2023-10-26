@@ -49,6 +49,7 @@ kill
 via
 INFO
 NEWS
+PUID
 noqa
 nosec
 pragma

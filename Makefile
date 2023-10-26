@@ -934,7 +934,7 @@ $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 # Build Docker container images.
 # Build the development image:
 ./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
-		./bin/entrypoint ./docker-compose.yml ./docker-compose.override.yml \
+		./bin/entrypoint.sh ./docker-compose.yml ./docker-compose.override.yml \
 		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
 		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg
 	true DEBUG Updated prereqs: $(?)
@@ -960,7 +960,7 @@ endif
 # Build the end-user image:
 ./var-docker/$(PYTHON_ENV)/log/build-user.log: \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
-		./.dockerignore ./bin/entrypoint \
+		./.dockerignore ./bin/entrypoint.sh \
 		./var-docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 ifeq ($(PYTHON_WHEEL),)
@@ -1273,12 +1273,13 @@ endef
 #
 # Recipes not used during the usual course of development.
 
-# TEMPLATE: Run this a single time for your project or when the `./build-host/` image
-# changes. See the `./var/log/docker-login*.log` targets for the authentication
+# TEMPLATE: Only necessary if you customize the `./build-host/` image.  Different
+# projects can use the same image, even across individuals and organizations.  If you do
+# need to customize the image, then run this a single time for each customized
+# image. See the `./var/log/docker-login*.log` targets for the authentication
 # environment variables to set or login to those container registries manually and `$
 # touch` these targets.
 .PHONY: bootstrap-project
-## Run any tasks needed a single time for a given project by a maintainer.
 bootstrap-project: ./var/log/docker-login-DOCKER.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 	$(MAKE) -e -C "./build-host/" release

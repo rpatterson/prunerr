@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Build and publish an image in which to build, test, and release the project
+## Build and publish an image in which to build, test, and release projects.
 
 ### Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
@@ -20,6 +20,8 @@ COMMA=,
 # Done with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
+# TEMPLATE: Only change this if you customize this image.  Otherwise use the version of
+# this image from the project template in your CI/CD.
 DOCKER_IMAGE=merpatterson/project-structure
 
 ## Top-level targets
@@ -29,7 +31,7 @@ DOCKER_IMAGE=merpatterson/project-structure
 all: build
 
 .PHONY: build
-### Build the Docker container image
+### Build the Docker `build-host` container image.
 build: ./Dockerfile
 	docker pull "$(DOCKER_IMAGE):build-host" || true
 	docker buildx build --pull --load \
@@ -39,6 +41,6 @@ build: ./Dockerfile
 	    "./"
 
 .PHONY: release
-### Publish the image to this specific CI/CD platform for future caching
+### Publish the image to this specific CI/CD platform for future caching.
 release: build
 	docker push "$(DOCKER_IMAGE):build-host"

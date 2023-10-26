@@ -24,7 +24,7 @@ pluggy==1.3.0
     # via pytest
 pyproject-hooks==1.0.0
     # via build
-pytest==7.4.2
+pytest==7.4.3
     # via project-structure (pyproject.toml)
 wheel==0.41.2
     # via pip-tools

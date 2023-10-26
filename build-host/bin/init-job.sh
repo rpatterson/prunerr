@@ -42,7 +42,7 @@ main() {
             addgroup -g "${PGID}" "runner"
         fi
         group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
-        if ! id "${PUID}" >"/dev/null" 2>&1
+        if ! getent passwd "${PUID}" >"/dev/null"
         then
             adduser -u "${PUID}" -G "${group_name}" -g \
                 "CI Runner,,,$(

@@ -239,6 +239,10 @@ def _main(args=None):
     # Remove any meta options and arguments, those used to direct option and argument
     # handling:
     del cli_kwargs["command"]
+    # Use `argparse` to validate that the config file exists and can be read, then pass
+    # the path into the runner.
+    with contextlib.closing(cli_kwargs["config"]):
+        cli_kwargs["config"] = cli_kwargs["config"].name
     # Separate the arguments for the subcommand:
     prunerr_dests = {
         action.dest for action in parser._actions  # pylint: disable=protected-access

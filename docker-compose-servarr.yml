@@ -9,7 +9,6 @@
 version: "3.8"
 
 services:
-
   sonarr:
     image: "ghcr.io/hotio/sonarr"
     container_name: "sonarr"

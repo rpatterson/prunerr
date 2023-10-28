@@ -2,7 +2,7 @@
   "arguments": {
     "torrents": [
       {
-	"activityDate": 0,
+        "activityDate": 0,
         "addedDate": 0,
         "bandwidthPriority": 1,
         "comment": "",
@@ -21,19 +21,19 @@
         "eta": -1,
         "etaIdle": -1,
         "fileStats": [
-	  {
-	    "bytesCompleted": 1072693248,
+          {
+            "bytesCompleted": 1072693248,
             "priority": 0,
             "wanted": true
-	  }
-	],
+          }
+        ],
         "files": [
-	  {
-	    "bytesCompleted": 1072693248,
+          {
+            "bytesCompleted": 1072693248,
             "length": 1073741824,
             "name": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv"
-	  }
-	],
+          }
+        ],
         "hashString": "909C9B954B414A87B1DCF6E2FB09650FCC35DE57",
         "haveUnchecked": 0,
         "haveValid": 1072693248,
@@ -42,7 +42,7 @@
         "isFinished": false,
         "isPrivate": true,
         "isStalled": true,
-	"labels": [],
+        "labels": [],
         "leftUntilDone": 1048576,
         "magnetLink": "magnet:?xt=urn:btih:1FAFED76F4264B14934C13D7A306F94FEA4B3184&dn=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER&tr=https%3A%2F%2Ftracker.private.example.com%2Fa%2F1fafed76f4264b14934c13d7a306f94fea4b3184%2Fannounce",
         "manualAnnounceTime": -1,
@@ -50,17 +50,17 @@
         "metadataPercentComplete": 1,
         "name": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
         "peer-limit": 288,
-	"peers": [],
+        "peers": [],
         "peersConnected": 0,
         "peersFrom": {
-	  "fromCache": 0,
+          "fromCache": 0,
           "fromDht": 0,
           "fromIncoming": 0,
           "fromLpd": 0,
           "fromLtep": 0,
           "fromPex": 0,
           "fromTracker": 0
-	},
+        },
         "peersGettingFromUs": 0,
         "peersSendingToUs": 0,
         "percentDone": 0.09,
@@ -85,8 +85,8 @@
         "torrentFile": "/config/torrents/1FAFED76F4264B14934C13D7A306F94FEA4B3184.torrent",
         "totalSize": 1073741824,
         "trackerStats": [
-	  {
-	    "announce": "udp://tracker.private.example.com:6969/announce",
+          {
+            "announce": "udp://tracker.private.example.com:6969/announce",
             "announceState": 2,
             "downloadCount": -1,
             "hasAnnounced": true,
@@ -112,9 +112,9 @@
             "scrapeState": 2,
             "seederCount": 0,
             "tier": 0
-	  },
+          },
           {
-	    "announce": "udp://tracker.private.example.com:6969/announce",
+            "announce": "udp://tracker.private.example.com:6969/announce",
             "announceState": 0,
             "downloadCount": -1,
             "hasAnnounced": false,
@@ -140,29 +140,29 @@
             "scrapeState": 0,
             "seederCount": -1,
             "tier": 0
-	  }
-	],
+          }
+        ],
         "trackers": [
-	  {
-	    "announce": "udp://tracker.private.example.com:6969/announce",
+          {
+            "announce": "udp://tracker.private.example.com:6969/announce",
             "id": 0,
             "scrape": "udp://tracker.private.example.com:6969/scrape",
             "tier": 0
-	  },
+          },
           {
-	    "announce": "udp://tracker.private.example.com:6969/announce",
+            "announce": "udp://tracker.private.example.com:6969/announce",
             "id": 1,
             "scrape": "udp://tracker.private.example.com:6969/scrape",
             "tier": 0
-	  }
-	],
+          }
+        ],
         "uploadLimit": 10240,
         "uploadLimited": false,
-        "uploadRatio": 1.5000,
+        "uploadRatio": 1.5,
         "uploadedEver": 1073741824,
         "wanted": [1],
         "webseeds": [],
-	"webseedsSendingToUs": 0
+        "webseedsSendingToUs": 0
       }
     ]
   },

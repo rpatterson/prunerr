@@ -110,7 +110,7 @@ indexers:
           equals: 1
           change:
             bandwidthPriority: 1
-    - name: null  # `null` matches all other indexers not specified in `operations`
+    - name: null # `null` matches all other indexers not specified in `operations`
       operations:
         ## Same rules for deleting items as for private indexers above
         - type: "or"
@@ -218,7 +218,7 @@ indexers:
           name: "size_when_done"
     ## Fallback for any download items whose indexer or tracker URLs don't match any
     ## other priorities above.  For example, public torrents.
-    - name: null  # `null` matches all other indexers not specified in `operations`
+    - name: null # `null` matches all other indexers not specified in `operations`
       operations:
         ## Delete download items that are the least imported into Servarr first.
         - type: "files"

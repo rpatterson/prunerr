@@ -11,3 +11,4 @@ May
 Codecov
 Pylint
 argcomplete
+blacklist

@@ -23,7 +23,7 @@ ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
 
 class PrunerrDaemonTestException(BaseException):
     """
-    Special exception used to break the daemon loop.
+    Testing exception used to break the daemon loop.
     """
 
 

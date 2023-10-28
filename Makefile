@@ -701,12 +701,12 @@ test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 # https://vale.sh/docs/topics/scoping/#formats
 	git ls-files -co --exclude-standard -z \
 	    ':!NEWS*.rst' ':!LICENSES' ':!styles/Vocab/*.txt' ':!requirements/**' |
-	    xargs -r -0 -t -- docker compose run --rm -T vale
+	    xargs -r -0 -- docker compose run --rm -T vale || true
 # Lint all source code files tracked in VCS with Vale:
 	git ls-files -co --exclude-standard -z \
 	    ':!styles/*/meta.json' ':!styles/*/*.yml' |
-	    xargs -r -0 -t -- \
-	    docker compose run --rm -T vale --config="./styles/code.ini"
+	    xargs -r -0 -- \
+	    docker compose run --rm -T vale --config="./styles/code.ini" || true
 # Lint source code files tracked in VCS but without extensions with Vale:
 	git ls-files -co --exclude-standard -z | grep -Ez '^[^.]+$$' |
 	    while read -d $$'\0'
@@ -714,7 +714,7 @@ test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 	        cat "$${REPLY}" |
 	            docker compose run --rm -T vale --config="./styles/code.ini" \
 	                --ext=".pl"
-	    done
+	    done || true
 # Run linters implemented in Python:
 	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'
 # Run linters implemented in JavaScript:

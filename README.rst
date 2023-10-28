@@ -110,19 +110,19 @@ Summary
 ****************************************************************************************
 
 Seed Servarr download client torrents/items as long as possible only deleting them as
-necessary as disk space gets low, hence the name based on "to prune".  Which download
-items are considered eligible for deletion is configured by the user.  The common case
-is that download items that are currently imported are not considered for deletion.
+necessary as disk space gets low, hence the name based on "to prune". Which download
+items are considered eligible for deletion is configured by the user. The common case is
+that download items that are currently imported are not considered for deletion.
 Neither are items from private trackers/indexers that have been upgraded or otherwise
-deleted from the library but haven't met the indexers seeding requirements.  The order
-in which download items are deleted is determined according to rules configured by the
-user.  The common case is to delete items from public indexers first and among those to
+deleted from the library but haven't met the indexers seeding requirements. The order in
+which download items are deleted is determined according to rules configured by the
+user. The common case is to delete items from public indexers first and among those to
 delete the items with the highest ratio first to preserve the health of the community by
-seeding less popular items longer.  Next delete items from private indexers by
-configured indexer priority and within the items for a given indexer to delete items in
-an order to maximize ratio and/or seeding rewards.
+seeding less popular items longer. Next delete items from private indexers by configured
+indexer priority and within the items for a given indexer to delete items in an order to
+maximize ratio and/or seeding rewards.
 
-Other configured operations may be applied as well.  For example:
+Other configured operations may be applied as well. For example:
 
 - Verify and resume corrupt items
 - Increase bandwidth priority for items from private indexers
@@ -133,9 +133,9 @@ Other configured operations may be applied as well.  For example:
 - etc.
 
 The ``$ prunerr`` command is intended to serve as a companion to the `Servarr`_ suite of
-applications and services and the `Transmission BitTorrent client`_.  It periodically
+applications and services and the `Transmission BitTorrent client`_. It periodically
 polls the `download clients`_ of `Sonarr`_, `Radarr`_, etc. and applies the configured
-operations to the download items in each of those download clients.  It can also be run
+operations to the download items in each of those download clients. It can also be run
 independently of any Servarr instances to optimize seeding for download items added by
 other means, e.g. `FlexGet`_.
 
@@ -193,13 +193,13 @@ Releases publish multi-platform images for the following platforms:
 Usage
 ****************************************************************************************
 
-Start by writing your ``~/.config/prunerr.yml`` configuration file.  See the comments in
+Start by writing your ``~/.config/prunerr.yml`` configuration file. See the comments in
 `the example configuration`_ for details.
 
 Once configured, you may run individual sub-commands once, run all operations once as
 configured using the ``$ prunerr exec`` sub-command, or run all operations in a polling
-loop using the ``$ prunerr daemon`` sub-command.  See the `Order of Operations`_ section
-for a detailed description of the operations.  Use the CLI help to list the other
+loop using the ``$ prunerr daemon`` sub-command. See the `Order of Operations`_ section
+for a detailed description of the operations. Use the CLI help to list the other
 sub-commands and to get help on the individual sub-commands::
 
   $ prunerr --help
@@ -216,7 +216,7 @@ Order of Operations
 ****************************************************************************************
 
 Note that polling is required because there is no event we can subscribe to that
-reliably determines disk space margin *as* the download clients are downloading.  Every
+reliably determines disk space margin *as* the download clients are downloading. Every
 run of the ``$ prunerr exec`` sub-command or every loop of the ``$ prunerr daemon``
 sub-command performs the following operations.
 
@@ -234,7 +234,7 @@ sub-command performs the following operations.
    ignoring them, deleting them from the queue, etc., Prunerr moves those items from the
    Servarr download client's ``Directory`` to a parallel ``*/seeding/*`` directory.
    Then when deleting download items to free space, Prunerr only considers items under
-   that directory.  This has the added benefit of reflecting which items have been acted
+   that directory. This has the added benefit of reflecting which items have been acted
    on by Servarr in the download client.
 
 #. Delete download items if disk space is low, same as: ``$ prunerr free-space``.
@@ -255,7 +255,7 @@ sub-command performs the following operations.
       IOW, download items that have been acted upon by Servarr and moved to the
       ``*/seeding/*`` directory by the ``$ prunerr move`` sub-command/operation
       excluding those items filtered out according to the ``indexers/priorities``
-      operations with ``filter: true``.  For example, don't delete currently imported
+      operations with ``filter: true``. For example, don't delete currently imported
       items (by hard link count) or items that haven't met private indexer seeding
       requirements.
 
@@ -271,7 +271,7 @@ sub-command performs the following operations.
    #. Otherwise, delete the item.
 
    If there's still not enough disk space after going through all the groups, then stop
-   downloading by setting the download bandwidth limit to ``0``.  IOW, keep seeding, but
+   downloading by setting the download bandwidth limit to ``0``. IOW, keep seeding, but
    no more downloading until a future ``$ prunerr free-space`` run is able to free
    sufficient space.
 
@@ -309,22 +309,22 @@ Motivation
 ****************************************************************************************
 
 I didn't like the available options I could find at the time for maximizing seeding from
-a lovingly managed media library.  Deleting by a ratio threshold doesn't make sense to
-me because that can delete items when there's plenty of disk space.  Also the ratio
+a lovingly managed media library. Deleting by a ratio threshold doesn't make sense to me
+because that can delete items when there's plenty of disk space. Also the ratio
 threshold is a reverse indicator for items from private indexers vs items from public
-indexers.  Items from private indexers with high ratios should be kept around as long as
+indexers. Items from private indexers with high ratios should be kept around as long as
 possible to build user total ratio whereas items from public indexers with low ratios
 should be kept around as long as possible to preserve access in the community/ecosystem.
-Finally, deleting any item still imported in the Servarr just because it hit the ratio
-threshold is the biggest waste since it doesn't free any space.  So I wrote Prunerr to
+Finally, deleting any item still imported in the Servarr only because it hit the ratio
+threshold is the biggest waste since it doesn't free any space. So I wrote Prunerr to
 prune download items in the correct order.
 
-The use case for Prunerr is not tracker ratio racing.  It's goal is to seed as long as
-possible and to seed as much of your library as possible.  This should have some
+The use case for Prunerr is not tracker ratio racing. It's goal is to seed as long as
+possible and to seed as much of your library as possible. This should have some
 secondary benefits to ratio, but that's not the main goal.
 
 Finally, there is a laundry list of other download client management tasks that can be
-automated but aren't by anything I could find.  So I added them to Prunerr as well.
+automated but aren't by anything I could find. So I added them to Prunerr as well.
 
 
 ****************************************************************************************

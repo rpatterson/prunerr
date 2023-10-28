@@ -248,7 +248,7 @@ Bugfixes
 --------
 
 - Workaround incorrect timestamps causing ``ZeroDivisionError`` while reviewing items.
-- Also verify running items with the correct error, not just paused/stopped items.
+- Also verify running items with the correct error, not only paused/stopped items.
 
 
 Misc

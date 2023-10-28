@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 daemon:
-  ## The number of seconds to wait between each execution of the order of operations.
+  ## The number of seconds to wait between each loop of the order of operations.
   ## Default: 60
   # poll: 60
 servarrs:
@@ -52,12 +52,12 @@ indexers:
       - "other.tracker.private.example.com"
   ## Apply per-indexer maintenance operations to all download items, e.g.:
   ## - adjust priorities
-  ## - reject archives
+  ## - remove archives
   ## - etc.
   reviews:
     - name: "ExamplePrivateTracker"
       operations:
-        ## Reject stalled download items whose progress is too slow.
+        ## Remove stalled download items whose progress is too slow.
         ## Strike a balance between giving difficult to find items time to download
         ## while also pruning items that will never be completed.
         - type: "or"
@@ -84,7 +84,7 @@ indexers:
               minimum: 50
           remove: true
           blacklist: true
-        ## Reject download items containing archives to optimize seeding per disk space.
+        ## Remove download items containing archives to optimize seeding per disk space.
         - type: "files"
           patterns:
             - ".+\\.rar$"
@@ -161,7 +161,7 @@ indexers:
         ## *or* seeded for a long enough amount of time.
         - type: "or"
           ## If download items that haven't meet those minimum requirements, exclude
-          ## them from considering for deletion.  As opposed to just sorting those items
+          ## them from considering for deletion.  As opposed to only sorting those items
           ## that haven't met those requirements to be deleted last.
           filter: true
           operations:
@@ -171,7 +171,7 @@ indexers:
               ## the total sum of actively seeding time as seen by the
               ## tracker.  For example:
               ## 1. private tracker torrent is downloaded and seeds all of day 1
-              ## 2. you go on vacation and your client crashes on day 2
+              ## 2. you go on vacation and your client exits on day 2
               ## 3. you return from vacation and restart your client on day 10
               ## Then `seconds_since_done` is 10 days while the private
               ## tracker only sees you as seeding for 1 day.  As such, be sure

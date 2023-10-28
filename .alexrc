@@ -9,6 +9,7 @@
     "kill",
     "black",
     "blacks",
-    "dummy"
+    "dummy",
+    "blacklist"
   ]
 }

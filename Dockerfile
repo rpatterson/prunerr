@@ -5,13 +5,13 @@
 
 ## Image layers shared between all variants.
 
-# Stay as close to a vanilla Python environment as possible
-ARG PYTHON_MINOR=3.10
+# Stay as close to an un-customized environment as possible:
+ARG PYTHON_MINOR=3.11
 FROM python:${PYTHON_MINOR} AS base
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
 
-# Project contstants:
+# Project constants:
 ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=prunerr
 
@@ -27,15 +27,24 @@ LABEL org.opencontainers.image.authors="Ross Patterson <me@rpatterson.net>"
 LABEL org.opencontainers.image.vendor="rpatterson.net"
 LABEL org.opencontainers.image.base.name="docker.io/library/python:${PYTHON_MINOR}"
 
-# Find the same home directory even when run as another user, e.g. `root`.
+# Find the same home directory even when run as another user, for example `root`.
+ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
+ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/${PROJECT_NAME}"
-ENTRYPOINT [ "entrypoint" ]
+WORKDIR "${HOME}"
+ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "${PROJECT_NAME}", "daemon" ]
 
-# Put the `ENTRYPOINT` on the `$PATH`
-COPY [ "./bin/entrypoint", "/usr/local/bin/entrypoint" ]
+# Support for a volume to preserve data between runs and share data between variants:
+RUN mkdir -pv "${HOME}/.local/share/${PROJECT_NAME}/" && \
+    touch "${HOME}/.local/share/${PROJECT_NAME}/bash_history" && \
+    ln -snv --relative "${HOME}/.local/share/${PROJECT_NAME}/bash_history" \
+        "${HOME}/.bash_history"
 
-# Install OS packages needed for the image `ENDPOINT`:
+# Put the `ENTRYPOINT` on the `$PATH`
+COPY [ "./bin/entrypoint.sh", "/usr/local/bin/" ]
+
+# Install operating system packages needed for the image `ENDPOINT`:
 RUN \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
     echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
@@ -43,25 +52,25 @@ RUN \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install --no-install-recommends -y "gosu=1.12-1+b6"
+    apt-get install --no-install-recommends -y "gosu=1.14-1+b6"
 
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Install dependencies with fixed versions in a separate layer to optimize build times
-# because this step takes the most time and changes the least frequently.
-ARG PYTHON_ENV=py310
+# because this step takes the most time and changes the least often.
+ARG PYTHON_ENV=py311
 COPY [ "./requirements/${PYTHON_ENV}/user.txt", "./requirements/${PYTHON_ENV}/" ]
 # hadolint ignore=DL3042
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pip3 install -r "./requirements/${PYTHON_ENV}/user.txt"
 
-# Build-time `LABEL`s
+# Build-time labels:
 ARG VERSION=
 LABEL org.opencontainers.image.version=${VERSION}
 
 
 ## Container image for use by end users.
 
-# Stay as close to a vanilla environment as possible:
+# Stay as close to an un-customized environment as possible:
 FROM base AS user
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
@@ -81,7 +90,7 @@ RUN --mount=type=cache,target=/root/.cache,sharing=locked \
 
 ## Container image for use by developers.
 
-# Stay as close to the end user image as possible for build cache efficiency:
+# Stay as close to the user image as possible for build cache efficiency:
 FROM base AS devel
 # Defensive shell options:
 SHELL ["/bin/bash", "-eu", "-o", "pipefail", "-c"]
@@ -92,33 +101,16 @@ LABEL org.opencontainers.image.description="Remove Servarr download client items
 
 # Activate the Python virtual environment
 ENV VIRTUAL_ENV="/usr/local/src/${PROJECT_NAME}/.tox/${PYTHON_ENV}"
-ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
+ENV PATH="${HOME}/.local/bin:${PATH}"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
-# Have to use the shell form of `CMD` because we need variable substitution:
+# Have to use the shell form of `CMD` because it needs variable substitution:
 # hadolint ignore=DL3025
 CMD tox -e "${PYTHON_ENV}"
 
-# Then add everything that might contribute to efficient development.
-
-# Simulate the parts of the host install process from `./Makefile` needed for
-# development in the image:
-COPY [ "./build-host/requirements.txt.in", "./build-host/" ]
-# hadolint ignore=DL3042
+# Bake in tools used in the inner loop of the development cycle:
+COPY [ "./Makefile", "./" ]
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    mkdir -pv "${HOME}/.local/var/log/" && \
-    pip3 install -r "./build-host/requirements.txt.in" | \
-        tee -a "${HOME}/.local/var/log/${PROJECT_NAME}-host-install.log"
-
-# Match local development tool chain and avoid time consuming redundant package
-# installs.  Initialize the `$ tox -e py3##` Python virtual environment to install this
-# package and all the development tools into the image:
-COPY [ \
-    "./requirements/${PYTHON_ENV}/test.txt", \
-    "./requirements/${PYTHON_ENV}/devel.txt", \
-    "./requirements/${PYTHON_ENV}/" \
-]
-COPY [ "./tox.ini", "./" ]
-RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    tox --no-recreate-pkg --skip-pkg-install --notest -e "${PYTHON_ENV}"
+    make "${HOME}/.local/bin/tox"

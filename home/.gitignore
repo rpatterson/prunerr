@@ -2,9 +2,17 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
-/*
-!/.git*
 # Ignore everything but files managed by VCS:
+/*
+!.git*
+
+# Track templates in VCS:
 !/*.in
-/*~
+
+# Ensure Docker bind mounts exist and that this checkout's owner also owns them:
+!/.cache
+!/.config
+!/.local
+
+# Restore backup file ignores reversed by the wildcards above
+*~

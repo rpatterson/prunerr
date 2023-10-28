@@ -6,6 +6,10 @@
 *~
 **/*~
 
+# C extensions
+*.so
+**/.so
+
 # Byte-compiled / optimized / DLL files
 __pycache__
 **/__pycache__
@@ -14,24 +18,22 @@ __pycache__
 *$py.class
 **/*$py.class
 
-# C extensions
-*.so
-**/.so
-
 # Distribution / packaging
 .Python
-env/
-build/
-develop-eggs/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-/var
-/var-docker
+env
+build
+downloads
+lib
+lib64
+sdist
+var
+develop-eggs
+eggs
+.eggs
+parts
+/var-*
+/node_modules
+/package-lock.json
 /README.md
 *.egg-info
 **/*.egg-info
@@ -41,8 +43,8 @@ sdist/
 /src/*/version.py
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+#  Usually a python script writes these files from a template before PyInstaller builds
+#  the exe to inject date/other infos into it:
 *.manifest
 **/.manifest
 *.spec
@@ -53,7 +55,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-htmlcov/
+htmlcov
 .tox
 **/.tox
 .coverage
@@ -63,7 +65,7 @@ htmlcov/
 nosetests.xml
 *,cover
 **/,cover
-.hypothesis/
+.hypothesis
 .mypy_cache
 **/.mypy_cache
 
@@ -86,10 +88,10 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/_build
 
 # PyBuilder
-target/
+target
 
 # IPython Notebook
 .ipynb_checkpoints
@@ -103,9 +105,13 @@ celerybeat-schedule
 # dotenv
 /.env
 
+# Linters:
+.tox
+.mypy_cache
+
 # virtualenv
-venv/
-ENV/
+venv
+ENV
 
 # Spyder project settings
 .spyderproject
@@ -113,13 +119,17 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Exclude downloaded styles from formatting and linting but include in VCS:
+/styles/*/*
+
 # Emacs editor settings
 /.dir-locals.el
 
-# Project-specific artifacts
-/radarr
-/sonarr
-/transmission
+# `${HOME}/**` artifacts:
+**/.*_history
+**/.*hst
+**/.*hsts
+**/.cache
 
 # Explicit ignores for the Docker build context.
 .local
@@ -130,3 +140,8 @@ ENV/
 # GitLab dedicated project runner artifacts:
 /gitlab-runner/config/config.toml
 /gitlab-runner/config/.runner_system_id
+
+# Project-specific artifacts
+/radarr
+/sonarr
+/transmission

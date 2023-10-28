@@ -2,23 +2,24 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Development, build and maintenance tasks:
+# Development, build, and maintenance tasks:
 #
-# To ease discovery for new contributors, variables that act as options affecting
-# behavior are at the top.  Then skip to `## Top-level targets:` below to find targets
-# intended for use by developers.  The real work, however, is in the recipes for real
-# targets that follow.  If making changes here, please start by reading the philosophy
-# commentary at the bottom of this file.
+# To ease discovery for contributors, place option variables affecting behavior at the
+# top. Skip down to `## Top-level targets:` to find targets intended for use by
+# developers. The recipes for real targets that follow the top-level targets do the real
+# work. If making changes here, start by reading the philosophy commentary at the bottom
+# of this file.
 
 # Project specific values:
 export PROJECT_NAMESPACE=rpatterson
 export PROJECT_NAME=prunerr
+NPM_SCOPE=rpattersonnet
+export DOCKER_USER=merpatterson
 
-# Variables used as options to control behavior:
+# Option variables that control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
-PYTHON_SUPPORTED_MINORS=3.10 3.11 3.9 3.8 3.7
-export DOCKER_USER=merpatterson
+PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 # Project-specific options:
 export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library/
@@ -26,17 +27,17 @@ PRUNERR_CMD=exec
 PRUNERR_ARGS=$(PRUNERR_CMD)
 
 
-## "Private" Variables:
+### "Private" Variables:
 
-# Variables that aren't likely to be of concern those just using and reading top-level
-# targets.  Mostly variables whose values are derived from the environment or other
-# values.  If adding a variable whose value isn't a literal constant or intended for use
-# on the CLI as an option, add it to the appropriate grouping below.  Unfortunately,
-# variables referenced in targets or prerequisites need to be defined above those
-# references (as opposed to references in recipes), which means we can't move these
-# further below for readability and discover.
+# Variables not of concern those running and reading top-level targets. These variables
+# most often derive from the environment or other values. Place variables holding
+# literal constants or option variables intended for use on the command-line towards the
+# top. Otherwise, add variables to the appropriate following grouping. Make requires
+# defining variables referenced in targets or prerequisites before those references, in
+# contrast with references in recipes. As a result, the Makefile can't place these
+# further down for readability and discover.
 
-### Defensive settings for make:
+# Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
 SHELL:=bash
 .ONESHELL:
@@ -49,6 +50,45 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
+# Values used to install host operating system packages:
+HOST_PREFIX=/usr
+HOST_PKG_CMD_PREFIX=sudo
+HOST_PKG_BIN=apt-get
+HOST_PKG_INSTALL_ARGS=install -y
+HOST_PKG_NAMES_ENVSUBST=gettext-base
+HOST_PKG_NAMES_PIP=python3-pip
+HOST_PKG_NAMES_DOCKER=docker-ce-cli docker-compose-plugin
+HOST_PKG_NAMES_GPG=gnupg
+HOST_PKG_NAMES_GHCLI=gh
+HOST_PKG_NAMES_CURL=curl
+HOST_PKG_NAMES_APG=apg
+ifneq ($(shell which "brew"),)
+HOST_PREFIX=/usr/local
+HOST_PKG_CMD_PREFIX=
+HOST_PKG_BIN=brew
+HOST_PKG_INSTALL_ARGS=install
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=python
+HOST_PKG_NAMES_DOCKER=docker docker-compose
+else ifneq ($(shell which "apk"),)
+HOST_PKG_BIN=apk
+HOST_PKG_INSTALL_ARGS=add
+HOST_PKG_NAMES_ENVSUBST=gettext
+HOST_PKG_NAMES_PIP=py3-pip
+HOST_PKG_NAMES_DOCKER=docker-cli docker-cli-compose
+HOST_PKG_NAMES_GHCLI=github-cli
+endif
+HOST_PKG_CMD=$(HOST_PKG_CMD_PREFIX) $(HOST_PKG_BIN)
+# Detect Docker command-line baked into the build-host image:
+HOST_TARGET_DOCKER:=$(shell which docker)
+ifeq ($(HOST_TARGET_DOCKER),)
+HOST_TARGET_DOCKER=$(HOST_PREFIX)/bin/docker
+endif
+HOST_TARGET_PIP:=$(shell which pip3)
+ifeq ($(HOST_TARGET_PIP),)
+HOST_TARGET_PIP=$(HOST_PREFIX)/bin/pip3
+endif
+
 # Values derived from the environment:
 USER_NAME:=$(shell id -u -n)
 USER_FULL_NAME:=$(shell \
@@ -60,23 +100,26 @@ USER_EMAIL:=$(USER_NAME)@$(shell hostname -f)
 export PUID:=$(shell id -u)
 export PGID:=$(shell id -g)
 export CHECKOUT_DIR=$(PWD)
+# Managed user-specific directory out of the checkout:
+# https://specifications.freedesktop.org/basedir-spec/0.8/ar01s03.html
+STATE_DIR=$(HOME)/.local/state/$(PROJECT_NAME)
 TZ=Etc/UTC
 ifneq ("$(wildcard /usr/share/zoneinfo/)","")
-TZ=$(shell \
+TZ:=$(shell \
   realpath --relative-to=/usr/share/zoneinfo/ \
   $(firstword $(realpath /private/etc/localtime /etc/localtime)) \
 )
 endif
 export TZ
-export DOCKER_GID=$(shell getent group "docker" | cut -d ":" -f 3)
+export DOCKER_GID:=$(shell getent group "docker" | cut -d ":" -f 3)
 
-# Values concerning supported Python versions:
+# Values related to supported Python versions:
 # Use the same Python version tox would as a default.
 # https://tox.wiki/en/latest/config.html#base_python
 PYTHON_HOST_MINOR:=$(shell \
     pip3 --version | sed -nE 's|.* \(python ([0-9]+.[0-9]+)\)$$|\1|p;q')
 export PYTHON_HOST_ENV=py$(subst .,,$(PYTHON_HOST_MINOR))
-# Determine the latest installed Python version of the supported versions
+# Find the latest installed Python version of the supported versions:
 PYTHON_BASENAMES=$(PYTHON_SUPPORTED_MINORS:%=python%)
 PYTHON_AVAIL_EXECS:=$(foreach \
     PYTHON_BASENAME,$(PYTHON_BASENAMES),$(shell which $(PYTHON_BASENAME)))
@@ -105,7 +148,7 @@ PYTHON_PROJECT_PACKAGE=$(subst -,,$(PROJECT_NAME))
 PYTHON_PROJECT_GLOB=$(subst -,?,$(PROJECT_NAME))
 export PYTHON_WHEEL=
 
-# Values derived from VCS/git:
+# Values derived from Version Control Systems (VCS):
 VCS_LOCAL_BRANCH:=$(shell git branch --show-current)
 CI_COMMIT_BRANCH=
 GITHUB_REF_TYPE=
@@ -129,14 +172,14 @@ endif
 ifeq ($(VCS_LOCAL_BRANCH),)
 # Guess branch name from tag:
 ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$$'),)
-# Final release, should be from main:
+# Publish final releases from the `main` branch:
 VCS_LOCAL_BRANCH=main
 else ifneq ($(shell echo "$(VCS_TAG)" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+.+$$'),)
-# Pre-release, should be from develop:
+# Publish pre-releases from the `develop` branch:
 VCS_LOCAL_BRANCH=develop
 endif
 endif
-# Reproduce what we need of git's branch and remote configuration and logic:
+# Reproduce Git branch and remote configuration and logic:
 VCS_CLONE_REMOTE:=$(shell git config "clone.defaultRemoteName")
 ifeq ($(VCS_CLONE_REMOTE),)
 VCS_CLONE_REMOTE=origin
@@ -154,11 +197,11 @@ VCS_UPSTREAM_REMOTE:=$(shell git config "checkout.defaultRemote")
 endif
 VCS_UPSTREAM_REF:=$(shell git config "branch.$(VCS_LOCAL_BRANCH).merge")
 VCS_UPSTREAM_BRANCH=$(VCS_UPSTREAM_REF:refs/heads/%=%)
-# Determine the best remote and branch for versioning data, e.g. `v*` tags:
+# Find the remote and branch for `v*` tags versioning data:
 VCS_REMOTE=$(VCS_PUSH_REMOTE)
 VCS_BRANCH=$(VCS_LOCAL_BRANCH)
 export VCS_BRANCH
-# Determine the best remote and branch for release data, e.g. conventional commits:
+# Find the remote and branch for conventional commits release data:
 VCS_COMPARE_REMOTE=$(VCS_UPSTREAM_REMOTE)
 ifeq ($(VCS_COMPARE_REMOTE),)
 VCS_COMPARE_REMOTE=$(VCS_PUSH_REMOTE)
@@ -167,7 +210,8 @@ VCS_COMPARE_BRANCH=$(VCS_UPSTREAM_BRANCH)
 ifeq ($(VCS_COMPARE_BRANCH),)
 VCS_COMPARE_BRANCH=$(VCS_BRANCH)
 endif
-# Under CI, check commits and release notes against the branch to be merged into:
+# Under CI, verify commits and release notes by comparing this branch with the branch
+# maintainers would merge this branch into:
 CI=false
 ifeq ($(CI),true)
 ifeq ($(VCS_COMPARE_BRANCH),develop)
@@ -175,15 +219,18 @@ VCS_COMPARE_BRANCH=main
 else ifneq ($(VCS_BRANCH),main)
 VCS_COMPARE_BRANCH=develop
 endif
-# If pushing to upstream release branches, get release data compared to the previous
+# If pushing to upstream release branches, get release data compared to the preceding
 # release:
 else ifeq ($(VCS_COMPARE_BRANCH),develop)
 VCS_COMPARE_BRANCH=main
 endif
 VCS_BRANCH_SUFFIX=upgrade
 VCS_MERGE_BRANCH=$(VCS_BRANCH:%-$(VCS_BRANCH_SUFFIX)=%)
+# Tolerate detached `HEAD`, such as during a rebase:
+VCS_FETCH_TARGETS=
+ifneq ($(VCS_BRANCH),)
 # Assemble the targets used to avoid redundant fetches during release tasks:
-VCS_FETCH_TARGETS=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
+VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)
 ifneq ($(VCS_REMOTE)/$(VCS_BRANCH),$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)
 endif
@@ -200,8 +247,8 @@ endif
 ifneq ($(VCS_MERGE_BRANCH),$(VCS_BRANCH))
 VCS_FETCH_TARGETS+=./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 endif
-# Determine the sequence of branches to find closes existing build artifacts, such as
-# docker images:
+# The sequence of branches from which to find closest existing build artifacts, such as
+# container images:
 VCS_BRANCHES=$(VCS_BRANCH)
 ifneq ($(VCS_BRANCH),main)
 ifneq ($(VCS_BRANCH),develop)
@@ -209,7 +256,9 @@ VCS_BRANCHES+=develop
 endif
 VCS_BRANCHES+=main
 endif
+endif
 
+# Run Python tools in isolated environments managed by Tox:
 # Values used to run Tox:
 TOX_ENV_LIST=$(subst $(EMPTY) ,$(COMMA),$(PYTHON_ENVS))
 TOX_RUN_ARGS=run-parallel --parallel auto --parallel-live
@@ -220,8 +269,8 @@ ifneq ($(PYTHON_WHEEL),)
 TOX_RUN_ARGS+= --installpkg "$(PYTHON_WHEEL)"
 endif
 export TOX_RUN_ARGS
-# The options that allow for rapid execution of arbitrary commands in the venvs managed
-# by tox
+# The options that support running arbitrary commands in the venvs managed by tox
+# without Tox's startup time:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
@@ -279,7 +328,7 @@ ifeq ($(CI),true)
 TEMPLATE_IGNORE_EXISTING=true
 endif
 GITHUB_REPOSITORY_OWNER=$(CI_UPSTREAM_NAMESPACE)
-# Determine if this checkout is a fork of the upstream project:
+# Is this checkout a fork of the upstream project?:
 CI_IS_FORK=false
 ifeq ($(GITLAB_CI),true)
 USER_EMAIL=$(USER_NAME)@runners-manager.gitlab.com
@@ -306,7 +355,8 @@ DOCKER_REGISTRIES=GITHUB
 DOCKER_IMAGES+=ghcr.io/$(GITHUB_REPOSITORY_OWNER)/$(CI_PROJECT_NAME)
 endif
 endif
-# Take GitHub auth from env under GitHub actions but from secrets on other hosts:
+# Take GitHub auth from the environment under GitHub actions but from secrets on other
+# project hosts:
 GITHUB_TOKEN=
 PROJECT_GITHUB_PAT=
 ifeq ($(GITHUB_TOKEN),)
@@ -320,19 +370,20 @@ export GITHUB_TOKEN
 export PROJECT_GITHUB_PAT
 
 # Values used for publishing releases:
-# Safe defaults for testing the release process without publishing to the final/official
-# hosts/indexes/registries:
-PIP_COMPILE_ARGS=--upgrade
+# Safe defaults for testing the release process without publishing to the official
+# project hosting services, indexes, and registries:
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
+# Safe defaults for testing the release process without publishing to the final/official
+# hosts/indexes/registries:
 PYPI_HOSTNAME=test.pypi.org
-# Only publish releases from the `main` or `develop` branches:
+# Publish releases from the `main` or `develop` branches:
 ifeq ($(CI),true)
-# Compile requirements on CI/CD as a check to make sure all changes to dependencies have
-# been reflected in the frozen/pinned versions, but don't upgrade packages so that
-# external changes, such as new PyPI releases, don't turn CI/CD red spuriously and
-# unrelated to the contributor's actual changes.
-PIP_COMPILE_ARGS=
+# Compile requirements on CI/CD as a test to make sure the frozen/pinned versions
+# reflect all changes to dependencies, but don't upgrade packages so that external
+# changes, such as new PyPI releases, don't turn CI/CD red spuriously and unrelated to
+# the contributor's actual changes.
+export PIP_COMPILE_ARGS=
 endif
 GITHUB_RELEASE_ARGS=--prerelease
 # Only publish releases from the `main` or `develop` branches and only under the
@@ -349,14 +400,14 @@ endif
 ifeq ($(RELEASE_PUBLISH),true)
 PYPI_REPO=pypi
 PYPI_HOSTNAME=pypi.org
-ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 # Only build and publish multi-platform images for the canonical Python version:
+ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 DOCKER_PLATFORMS=linux/amd64 linux/arm64 linux/arm/v7
 endif
 endif
 endif
 CI_REGISTRY_USER=$(CI_PROJECT_NAMESPACE)
-# Address undefined variables warnings when running under local development
+# Avoid undefined variables warnings when running under local development:
 PYPI_PASSWORD=
 export PYPI_PASSWORD
 TEST_PYPI_PASSWORD=
@@ -373,51 +424,54 @@ CI_REGISTRY_PASSWORD=
 export CI_REGISTRY_PASSWORD
 GH_TOKEN=
 
-# Override variable values if present in `./.env` and if not overridden on the CLI:
+# Override variable values if present in `./.env` and if not overridden on the
+# command-line:
 include $(wildcard .env)
 
-# Done with `$(shell ...)`, echo recipe commands going forward
+# Finished with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
+# <!--alex disable hooks-->
 
-## Top-level targets:
+
+### Top-level targets:
 
 .PHONY: all
-### The default target.
+## The default target.
 all: build
 
 .PHONY: start
-### Run the local development end-to-end stack services in the background as daemons.
+## Run the local development end-to-end stack services in the background as daemons.
 start: build-docker-$(PYTHON_MINOR) ./.env.~out~
 	docker compose down
 	docker compose up -d
 
 .PHONY: run
-### Run the local development end-to-end stack services in the foreground for debugging.
+## Run the local development end-to-end stack services in the foreground for debugging.
 run: build-docker-$(PYTHON_MINOR) ./.env.~out~
 	docker compose down
 	docker compose up
 
 
-## Build Targets:
+### Build Targets:
 #
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-### Set up everything for development from a checkout, local and in containers.
-build: ./.git/hooks/pre-commit ./.env.~out~ \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		build-docker
+## Set up everything for development from a checkout, local and in containers.
+build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
+		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker \
+		$(PYTHON_ENVS:%=./.tox/%/bin/pip-compile)
+	$(MAKE) -e -j $(PYTHON_ENVS:%=build-requirements-%)
 
 .PHONY: $(PYTHON_ENVS:%=build-requirements-%)
-### Compile fixed/pinned dependency versions if necessary.
+## Compile fixed/pinned dependency versions if necessary.
 $(PYTHON_ENVS:%=build-requirements-%):
 # Avoid parallel tox recreations stomping on each other
 	$(MAKE) -e "$(@:build-requirements-%=./.tox/%/bin/pip-compile)"
 	targets="./requirements/$(@:build-requirements-%=%)/user.txt \
 	    $(PYTHON_EXTRAS:%=./requirements/$(@:build-requirements-%=%)/%.txt) \
-	    ./requirements/$(@:build-requirements-%=%)/build.txt \
-	    ./build-host/requirements-$(@:build-requirements-%=%).txt"
+	    ./requirements/$(@:build-requirements-%=%)/build.txt"
 # Workaround race conditions in pip's HTTP file cache:
 # https://github.com/pypa/pip/issues/6970#issuecomment-527678672
 	$(MAKE) -e -j $${targets} ||
@@ -425,10 +479,10 @@ $(PYTHON_ENVS:%=build-requirements-%):
 	    $(MAKE) -e -j $${targets}
 
 .PHONY: build-requirements-compile
-### Compile the requirements for one Python version and one type/extra.
+## Compile the requirements for one Python version and one type/extra.
 build-requirements-compile:
 	$(MAKE) -e "./.tox/$(PYTHON_ENV)/bin/pip-compile"
-	pip_compile_opts="--resolver backtracking --upgrade"
+	pip_compile_opts="--resolver backtracking --strip-extras $(PIP_COMPILE_ARGS)"
 ifneq ($(PIP_COMPILE_EXTRA),)
 	pip_compile_opts+=" --extra $(PIP_COMPILE_EXTRA)"
 endif
@@ -436,17 +490,18 @@ endif
 	    --output-file "$(PIP_COMPILE_OUT)" "$(PIP_COMPILE_SRC)"
 
 .PHONY: build-pkgs
-### Ensure the built package is current when used outside of tox.
-build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
+## Update the built package for use outside tox.
+build-pkgs: $(HOST_TARGET_DOCKER) \
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log
-# Defined as a .PHONY recipe so that multiple targets can depend on this as a
-# pre-requisite and it will only be run once per invocation.
+# Defined as a .PHONY recipe so that more than one target can depend on this as a
+# pre-requisite and it runs one time:
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    tox run -e "$(PYTHON_ENV)" --pkg-only
-# Copy the wheel to a location accessible to all containers:
+# Copy the wheel to a location available to all containers:
 	cp -lfv "$$(
 	    ls -t ./var-docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
 	)" "./dist/"
@@ -457,24 +512,46 @@ build-pkgs: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	    ls -t ./var-docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
 	)" "./dist/"
 
+.PHONY: build-docs
+## Render the static HTML form of the Sphinx documentation
+build-docs: build-docs-html
+
+.PHONY: build-docs-watch
+## Serve the Sphinx documentation with live updates
+build-docs-watch: $(HOME)/.local/bin/tox
+	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
+
+.PHONY: build-docs-%
+# Render the documentation into a specific format.
+build-docs-%: $(HOME)/.local/bin/tox
+	tox exec -e "build" -- sphinx-build -b "$(@:build-docs-%=%)" -W \
+	    "./docs/" "./build/docs/"
+
+.PHONY: build-date
+# A prerequisite that always triggers it's target.
+build-date:
+	date
+
+
 ## Docker Build Targets:
 #
 # Strive for as much consistency as possible in development tasks between the local host
-# and inside containers.  To that end, most of the `*-docker` container target recipes
+# and inside containers. To that end, most of the `*-docker` container target recipes
 # should run the corresponding `*-local` local host target recipes inside the
-# development container.  Top level targets, like `test`, should run as much as possible
-# inside the development container.
+# development container. Top level targets, such as `test`, should run as much as
+# possible inside the development container.
 
 .PHONY: build-docker
-### Set up for development in Docker containers.
-build-docker: build-pkgs ./var-docker/$(PYTHON_ENV)/log/build-user.log
+## Set up for development in Docker containers.
+build-docker: $(HOME)/.local/bin/tox build-pkgs \
+		./var-docker/$(PYTHON_ENV)/log/build-user.log
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 	$(MAKE) -e -j PYTHON_WHEEL="$(call current_pkg,.whl)" \
 	    DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --progress plain" \
 	    $(PYTHON_MINORS:%=build-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-%)
-### Set up for development in a Docker container for one Python version.
+## Set up for development in a Docker container for one Python version.
 $(PYTHON_MINORS:%=build-docker-%):
 	$(MAKE) -e \
 	    PYTHON_MINORS="$(@:build-docker-%=%)" \
@@ -483,18 +560,18 @@ $(PYTHON_MINORS:%=build-docker-%):
 	    "./var-docker/py$(subst .,,$(@:build-docker-%=%))/log/build-user.log"
 
 .PHONY: build-docker-tags
-### Print the list of image tags for the current registry and variant.
+## Print the list of image tags for the current registry and variant.
 build-docker-tags:
 	$(MAKE) -e $(DOCKER_REGISTRIES:%=build-docker-tags-%)
 
 .PHONY: $(DOCKER_REGISTRIES:%=build-docker-tags-%)
-### Print the list of image tags for the current registry and variant.
-$(DOCKER_REGISTRIES:%=build-docker-tags-%):
+## Print the list of image tags for the current registry and variant.
+$(DOCKER_REGISTRIES:%=build-docker-tags-%): $(HOME)/.local/bin/tox
 	test -e "./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH)"
 	docker_image=$(DOCKER_IMAGE_$(@:build-docker-tags-%=%))
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
-# Only update tags end users may depend on to be stable from the `main` branch
+# Update tags users depend on to be stable from the `main` branch:
 	VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	major_version=$$(echo $${VERSION} | sed -nE 's|([0-9]+).*|\1|p')
 	minor_version=$$(
@@ -504,8 +581,8 @@ ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)-v$${major_version}
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(PYTHON_ENV)
 endif
-# This variant is the default used for tags such as `latest`
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
+# Use this variant as the default used for tags such as `latest`
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)$(DOCKER_BRANCH_TAG)
 ifeq ($(VCS_BRANCH),main)
 	echo $${docker_image}:$(DOCKER_VARIANT_PREFIX)v$${minor_version}
@@ -519,9 +596,9 @@ endif
 endif
 
 .PHONY: build-docker-build
-### Run the actual commands used to build the Docker container image.
-build-docker-build: ./Dockerfile \
-		$(HOME)/.local/var/log/docker-multi-platform-host-install.log \
+## Run the actual commands used to build the Docker container image.
+build-docker-build: ./Dockerfile $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
+		$(HOME)/.local/state/docker-multi-platform/log/host-install.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/docker-login-DOCKER.log
 # Workaround broken interactive session detection:
@@ -570,11 +647,10 @@ endif
 	    --build-arg PYTHON_ENV="$(PYTHON_ENV)" \
 	    --build-arg VERSION="$$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
-	    )" \
-	    $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
+	    )" $${docker_build_args} $${docker_build_caches} --file "$(<)" "./"
 
 .PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
-### Pull container images and compile fixed/pinned dependency versions if necessary.
+## Pull container images and compile fixed/pinned dependency versions if necessary.
 $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
 	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
@@ -585,34 +661,73 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
 
-## Test Targets:
+### Test Targets:
 #
 # Recipes that run the test suite.
 
 .PHONY: test
-### Format the code and run the full suite of tests, coverage checks, and linters.
-test: test-docker-lint test-docker
+## Run the full suite of tests, coverage checks, and linters.
+test: test-lint test-docker
 
 .PHONY: test-local
-### Run the full suite of tests, coverage checks, and linters on the local host.
-test-local:
+## Run the full suite of tests, coverage checks, and linters on the local host.
+test-local: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=build-requirements-%)
 	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
-### Perform any linter or style checks, including non-code checks.
-test-lint: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
-# Run non-code checks, e.g. documentation:
-	tox run -e "build"
+## Perform any linter or style checks, including non-code checks.
+test-lint: $(HOST_TARGET_DOCKER) test-lint-code test-lint-docker test-lint-docs \
+		test-lint-prose
+# Lint copyright and licensing:
+	docker compose run --rm -T "reuse"
+
+.PHONY: test-lint-code
+## Lint source code for errors, style, and other issues.
+test-lint-code: ./var/log/npm-install.log
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint:code
+
+.PHONY: test-lint-docs
+## Lint documentation for errors, broken links, and other issues.
+test-lint-docs: $(HOME)/.local/bin/tox ./requirements/$(PYTHON_HOST_ENV)/build.txt
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-docs.sh'
+
+.PHONY: test-lint-prose
+## Lint prose text for spelling, grammar, and style
+test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
+		./requirements/$(PYTHON_HOST_ENV)/build.txt ./var/log/npm-install.log
+# Lint all markup files tracked in VCS with Vale:
+# https://vale.sh/docs/topics/scoping/#formats
+	git ls-files -co --exclude-standard -z \
+	    ':!NEWS*.rst' ':!LICENSES' ':!styles/Vocab/*.txt' ':!requirements/**' |
+	    xargs -r -0 -t -- docker compose run --rm -T vale
+# Lint all source code files tracked in VCS with Vale:
+	git ls-files -co --exclude-standard -z \
+	    ':!styles/*/meta.json' ':!styles/*/*.yml' |
+	    xargs -r -0 -t -- \
+	    docker compose run --rm -T vale --config="./styles/code.ini"
+# Lint source code files tracked in VCS but without extensions with Vale:
+	git ls-files -co --exclude-standard -z | grep -Ez '^[^.]+$$' |
+	    while read -d $$'\0'
+	    do
+	        cat "$${REPLY}" |
+	            docker compose run --rm -T vale --config="./styles/code.ini" \
+	                --ext=".pl"
+	    done
+# Run linters implemented in Python:
+	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'
+# Run linters implemented in JavaScript:
+	~/.nvm/nvm-exec npm run lint:prose
 
 .PHONY: test-debug
-### Run tests directly on the host and invoke the debugger on errors/failures.
-test-debug: ./.tox/$(PYTHON_ENV)/log/editable.log
+## Run tests directly on the system and start the debugger on errors or failures.
+test-debug: $(HOME)/.local/bin/tox ./.tox/$(PYTHON_ENV)/log/editable.log
 	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-docker
-### Run the full suite of tests, coverage checks, and code linters in containers.
-test-docker: build-pkgs $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		build-docker
+## Run the full suite of tests, coverage checks, and code linters in containers.
+test-docker: $(HOST_TARGET_DOCKER) build-docker $(HOME)/.local/bin/tox build-pkgs
 	tox run $(TOX_EXEC_OPTS) --notest -e "build"
 # Avoid race condition starting service dependencies:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-daemon true
@@ -622,7 +737,7 @@ test-docker: build-pkgs $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log 
 	    $(PYTHON_MINORS:%=test-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=test-docker-%)
-### Run the full suite of tests inside a docker container for one Python version.
+## Run the full suite of tests inside a docker container for one Python version.
 $(PYTHON_MINORS:%=test-docker-%):
 	$(MAKE) -e \
 	    PYTHON_MINORS="$(@:test-docker-%=%)" \
@@ -631,11 +746,10 @@ $(PYTHON_MINORS:%=test-docker-%):
 	    test-docker-pyminor
 
 .PHONY: test-docker-pyminor
-### Run the full suite of tests inside a docker container for this Python version.
-test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+## Run the full suite of tests inside a docker container for this Python version.
+test-docker-pyminor: $(HOST_TARGET_DOCKER) build-docker-$(PYTHON_MINOR)
 	docker_run_args="--rm"
-	if [ ! -t 0 ]
+	if test ! -t 0
 	then
 # No fancy output when running in parallel
 	    docker_run_args+=" -T"
@@ -645,7 +759,7 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
 	    python -m "$(PYTHON_PROJECT_PACKAGE)" --help
 	docker compose run --no-deps $${docker_run_args} $(PROJECT_NAME)-daemon \
 	    $(PROJECT_NAME) --help
-# Run from the development Docker container for consistency
+# Run from the development Docker container for consistency:
 	docker compose run $${docker_run_args} $(PROJECT_NAME)-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINORS)" PYTHON_WHEEL="$(PYTHON_WHEEL)" \
 	        test-local
@@ -653,9 +767,9 @@ test-docker-pyminor: build-docker-$(PYTHON_MINOR) \
 ifeq ($(GITLAB_CI),true)
 ifeq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
 ifneq ($(CODECOV_TOKEN),)
-	$(MAKE) "./var/log/codecov-install.log"
+	$(MAKE) "$(HOME)/.local/bin/codecov"
 	codecov --nonZero -t "$(CODECOV_TOKEN)" \
-	    --file "./build/$(PYTHON_ENV)/coverage.xml"
+	    --file "./build/reports/$(PYTHON_ENV)/coverage.xml"
 else ifneq ($(CI_IS_FORK),true)
 	set +x
 	echo "ERROR: CODECOV_TOKEN missing from ./.env or CI secrets"
@@ -664,33 +778,44 @@ endif
 endif
 endif
 
-.PHONY: test-docker-lint
-### Check the style and content of the `./Dockerfile*` files.
-test-docker-lint: ./.env.~out~ ./var/log/docker-login-DOCKER.log
+.PHONY: test-lint-docker
+## Check the style and content of the `./Dockerfile*` files
+test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCKER.log
 	docker compose pull --quiet hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
+# Ensure that any bind mount volume paths exist in VCS so that `# dockerd` doesn't
+# create them as `root`:
+	if test -n "$$(
+	    ./bin/docker-add-volume-paths.sh "$(CHECKOUT_DIR)" \
+	        "/usr/local/src/$(PROJECT_NAME)"
+	)"
+	then
+	    set +x
+	    echo "\
+	ERROR: Docker bind mount paths didn't exist, force added ignore files.
+	       Review ignores above in case they need changes or followup."
+	    false
+	fi
 
 .PHONY: test-push
-### Perform any checks that should only be run before pushing.
-test-push: $(VCS_FETCH_TARGETS) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
+## Verify commits before pushing to the remote.
+test-push: $(VCS_FETCH_TARGETS) $(HOME)/.local/bin/tox
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)"
 ifeq ($(CI),true)
 ifneq ($(PYTHON_MINOR),$(PYTHON_HOST_MINOR))
-# Don't waste CI time, only check for the canonical version:
+# Don't waste CI time, only continue for the canonical version:
 	exit
 endif
 ifeq ($(VCS_COMPARE_BRANCH),main)
-# On `main`, compare with the previous commit on `main`
+# On `main`, compare with the preceding commit on `main`:
 	vcs_compare_rev="$(VCS_COMPARE_REMOTE)/$(VCS_COMPARE_BRANCH)^"
 endif
 endif
 	if ! git fetch "$(VCS_COMPARE_REMOTE)" "$(VCS_COMPARE_BRANCH)"
 	then
-# Compare with the pre-release branch if this branch hasn't been pushed yet:
+# For a newly created branch not yet on the remote, compare with the pre-release branch:
 	    vcs_compare_rev="$(VCS_COMPARE_REMOTE)/develop"
 	fi
 	exit_code=0
@@ -698,7 +823,7 @@ endif
 	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        cz check --rev-range "$${vcs_compare_rev}..HEAD" &&
 	    $(TOX_EXEC_BUILD_ARGS) -- \
-	        python ./bin/cz-check-bump --compare-ref "$${vcs_compare_rev}"
+	        python ./bin/cz-check-bump.py --compare-ref "$${vcs_compare_rev}"
 	) || exit_code=$$?
 	if (( $$exit_code == 3 || $$exit_code == 21 ))
 	then
@@ -707,49 +832,46 @@ endif
 	then
 	    exit $$exit_code
 	else
-	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) \
-	        $(PROJECT_NAME)-devel $(TOX_EXEC_ARGS) -- \
+	    $(TOX_EXEC_BUILD_ARGS) -- \
 	        towncrier check --compare-with "$${vcs_compare_rev}"
 	fi
 
 .PHONY: test-clean
-### Confirm that the checkout is free of uncommitted VCS changes.
+## Confirm that the checkout has no uncommitted VCS changes.
 test-clean:
-	if [ -n "$$(git status --porcelain)" ]
+	if test -n "$$(git status --porcelain)"
 	then
+	    git status -vv
 	    set +x
-	    echo "Checkout is not clean"
+	    echo "WARNING: Checkout is not clean."
 	    false
 	fi
 
 
-## Release Targets:
+### Release Targets:
 #
 # Recipes that make an changes needed for releases and publish built artifacts to
 # end-users.
 
 .PHONY: release
-### Publish installable Python packages and container images as required by commits.
+## Publish PyPI packages and Docker images if conventional commits require a release.
 release: release-pkgs release-docker
 
 .PHONY: release-pkgs
-### Publish installable Python packages to PyPI if conventional commits require.
-release-pkgs: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+## Publish installable Python packages to PyPI if conventional commits require.
+release-pkgs: $(HOME)/.local/bin/tox ~/.pypirc.~out~ $(HOST_TARGET_DOCKER) \
 		./var/log/git-remotes.log \
-		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ~/.pypirc.~out~ \
-		./.env.~out~
-# Only release from the `main` or `develop` branches:
+		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) ./.env.~out~ \
+		$(HOST_PREFIX)/bin/gh
+# Don't release unless from the `main` or `develop` branches:
 ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
-	$(MAKE) -e ./var/log/gpg-import.log
+	$(MAKE) -e "./var/log/gpg-import.log"
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
 	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
-# The VCS remote should reflect the release before the release is published to ensure
-# that a published release is never *not* reflected in VCS.  Also ensure the tag is in
-# place on any mirrors, using multiple `pushurl` remotes, for those project hosts as
-# well:
+# Ensure VCS has captured all the effects of building the release:
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
 	    ./dist/$(PYTHON_PROJECT_GLOB)-*
@@ -784,19 +906,21 @@ ifeq ($(RELEASE_PUBLISH),true)
 endif
 
 .PHONY: release-docker
-### Publish all container images to all container registries.
-release-docker: build-docker $(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log)
+## Publish all container images to all container registries.
+release-docker: $(HOST_TARGET_DOCKER) build-docker \
+		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
+		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 	$(MAKE) -e -j DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=release-docker-%)
 
 .PHONY: $(PYTHON_MINORS:%=release-docker-%)
-### Publish the container images for one Python version to all container registries.
+## Publish the container images for one Python version to all container registries.
 $(PYTHON_MINORS:%=release-docker-%): \
 		$(DOCKER_REGISTRIES:%=./var/log/docker-login-%.log) \
-		$(HOME)/.local/var/log/docker-multi-platform-host-install.log
+		$(HOME)/.local/state/docker-multi-platform/log/host-install.log
 	export PYTHON_ENV="py$(subst .,,$(@:release-docker-%=%))"
 # Build other platforms in emulation and rely on the layer cache for bundling the
-# previously built native images into the manifests.
+# native images built before into the manifests:
 	DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --push"
 ifneq ($(DOCKER_PLATFORMS),)
 	DOCKER_BUILD_ARGS+=" --platform $(subst $(EMPTY) ,$(COMMA),$(DOCKER_PLATFORMS))"
@@ -809,10 +933,10 @@ endif
 	    --build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build
 # Push the development manifest and images:
 	$(MAKE) -e DOCKER_VARIANT="devel" build-docker-build
-# Update Docker Hub `README.md` using the `./README.rst` reStructuredText version using
-# the official/canonical Python version:
+# Update Docker Hub `README.md` by using the `./README.rst` reStructuredText version
+# using the official/canonical Python version:
 ifeq ($(VCS_BRANCH),main)
-	if [ "$${PYTHON_ENV}" == "$(PYTHON_HOST_ENV)" ]
+	if TEST "$${PYTHON_ENV}" = "$(PYTHON_HOST_ENV)"
 	then
 	    $(MAKE) -e "./var/log/docker-login-DOCKER.log"
 	    docker compose pull --quiet pandoc docker-pushrm
@@ -821,10 +945,9 @@ ifeq ($(VCS_BRANCH),main)
 endif
 
 .PHONY: release-bump
-### Bump the package version if on a branch that should trigger a release.
-release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
-		./var/log/git-remotes.log \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
+## Bump the package version if conventional commits require a release.
+release-bump: $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
+		./var/log/npm-install.log \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./.env.~out~
 	if ! git diff --cached --exit-code
 	then
@@ -832,21 +955,19 @@ release-bump: ~/.gitconfig $(VCS_RELEASE_FETCH_TARGETS) \
 	    echo "CRITICAL: Cannot bump version with staged changes"
 	    false
 	fi
-# Ensure the local branch is updated to the forthcoming version bump commit:
+# Update the local branch to the forthcoming version bump commit:
 	git switch -C "$(VCS_BRANCH)" "$$(git rev-parse HEAD)"
-# Check if a release is required:
 	exit_code=0
-	if [ "$(VCS_BRANCH)" = "main" ] &&
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- python ./bin/get-base-version $$(
+	if test "$(VCS_BRANCH)" = "main" &&
+	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/get-base-version.py $$(
 	        $(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project
 	    )
 	then
-# Release a previous pre-release as final regardless of whether commits since then
-# require a release:
+# Make a final release from the last pre-release:
 	    true
 	else
-# Is a release required by conventional commits:
-	    $(TOX_EXEC_BUILD_ARGS) -qq -- python ./bin/cz-check-bump || exit_code=$$?
+# Do the conventional commits require a release?:
+	    $(TOX_EXEC_BUILD_ARGS) -- python ./bin/cz-check-bump.py || exit_code=$$?
 	    if (( $$exit_code == 3 || $$exit_code == 21 ))
 	    then
 # No commits require a release:
@@ -866,29 +987,28 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Import the private signing key from CI secrets
 	$(MAKE) -e ./var/log/gpg-import.log
 endif
-# Capture the release notes for *just this* release for creating the GitHub release.
-# Have to run before the real `$ towncrier build` run without the `--draft` option
-# because after that the `newsfragments` will have been deleted.
 	next_version=$$(
 	    $(TOX_EXEC_BUILD_ARGS) -qq -- cz bump $${cz_bump_args} --yes --dry-run |
 	    sed -nE 's|.* ([^ ]+) *→ *([^ ]+).*|\2|p;q'
 	) || true
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_ARGS) -qq -- \
+# Assemble the release notes for this next version:
+	$(TOX_EXEC_BUILD_ARGS) -qq -- \
 	    towncrier build --version "$${next_version}" --draft --yes \
 	    >"./NEWS-VERSION.rst"
 	git add -- "./NEWS-VERSION.rst"
-# Build and stage the release notes to be commited by `$ cz bump`:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    $(TOX_EXEC_ARGS) -- towncrier build --version "$${next_version}" --yes
+# Build and stage the release notes to commit with `$ cz bump`:
+	$(TOX_EXEC_BUILD_ARGS) -- towncrier build --version "$${next_version}" --yes
+# Bump the version in the NPM package metadata:
+	~/.nvm/nvm-exec npm --no-git-tag-version version "$${next_version}"
+	git add -- "./package*.json"
 # Increment the version in VCS
 	$(TOX_EXEC_BUILD_ARGS) -- cz bump $${cz_bump_args}
-# Ensure the container image reflects the version bump but we don't need to update the
-# requirements again.
+# Ensure the container image reflects the version bump without updating the requirements
+# again:
 	touch \
 	    $(PYTHON_ENVS:%=./requirements/%/user.txt) \
 	    $(PYTHON_ENVS:%=./requirements/%/devel.txt) \
-	    $(PYTHON_ENVS:%=./build-host/requirements-%.txt)
+	    $(PYTHON_ENVS:%=./requirements/%/test.txt)
 ifeq ($(VCS_BRANCH),main)
 # Merge the bumped version back into `develop`:
 	$(MAKE) VCS_BRANCH="main" VCS_MERGE_BRANCH="develop" \
@@ -900,26 +1020,43 @@ endif
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Ensure the tag is available for creating the GitHub release below but push *before* to
-# GitLab to avoid a race with repository mirrorying:
+# Make the tag available for creating the following GitHub release but push to GitHub
+# *before* pushing to GitLab to avoid a race with repository mirroring:
 	git push --no-verify "github" tag "v$${next_version}"
 endif
 endif
 ifeq ($(CI),true)
-# Push just this tag to avoid clashes with any previously failed release:
+# Push only this tag to avoid clashes with any preceding failed release:
 	git push --no-verify "$(VCS_REMOTE)" tag "v$${next_version}"
 # Also push the branch:
 	git push --no-verify "$(VCS_REMOTE)" "HEAD:$(VCS_BRANCH)"
 endif
 
 
-## Development Targets:
+### Development Targets:
 #
 # Recipes used by developers to make changes to the code.
 
 .PHONY: devel-format
-### Automatically correct code in this checkout according to linters and style checkers.
-devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+## Automatically correct code in this checkout according to linters and style checkers.
+devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin/tox
+# Add license and copyright header to files missing them:
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
+	while read -d $$'\0'
+	do
+	    if ! (
+	        test -e  "$${REPLY}.license" ||
+	        grep -Eq 'SPDX-License-Identifier:' "$${REPLY}"
+	    )
+	    then
+	        echo "$${REPLY}"
+	    fi
+	done | xargs -r -t -- \
+	    docker compose run --rm -T "reuse" annotate --skip-unrecognised \
+	        --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT"
+# Run source code formatting tools implemented in JavaScript:
+	~/.nvm/nvm-exec npm run format
+# Run source code formatting tools implemented in Python:
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
 		--remove-duplicate-keys --remove-unused-variables \
 		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
@@ -929,59 +1066,67 @@ devel-format: $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
 	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
-### Update all fixed/pinned dependencies to their latest available versions.
-devel-upgrade: ./.env.~out~ $(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log \
-		build-docker
-	touch "./setup.cfg" "./requirements/build.txt.in" \
-	    "./build-host/requirements.txt.in" \
-	    "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+## Update all locked or frozen dependencies to their most recent available versions.
+devel-upgrade: $(HOME)/.local/bin/tox $(HOST_TARGET_DOCKER) ./.env.~out~ build-docker
+	touch "./setup.cfg" "./requirements/build.txt.in"
 # Ensure the network is create first to avoid race conditions
 	docker compose create $(PROJECT_NAME)-devel
 	$(MAKE) -e -j PIP_COMPILE_ARGS="--upgrade" \
 	    DOCKER_COMPOSE_RUN_ARGS="$(DOCKER_COMPOSE_RUN_ARGS) -T" \
 	    $(PYTHON_MINORS:%=build-docker-requirements-%)
-# Update VCS hooks from remotes to the latest tag.
+# Update VCS integration from remotes to the most recent tag:
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit autoupdate
+# Update the Vale style rule definitions:
+	touch "./.vale.ini" "./styles/code.ini"
+	$(MAKE) "./var/log/vale-rule-levels.log"
 
 .PHONY: devel-upgrade-branch
-### Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
-devel-upgrade-branch: ~/.gitconfig ./var/log/gpg-import.log \
+## Reset an upgrade branch, commit upgraded dependencies on it, and push for review.
+devel-upgrade-branch: ./var/log/gpg-import.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 		./var/log/git-remotes.log
+	if ! $(MAKE) -e "test-clean"
+	then
+	    set +x
+	    echo "ERROR: Can't upgrade with uncommitted changes."
+	    exit 1
+	fi
 	remote_branch_exists=false
 	if git fetch "$(VCS_REMOTE)" "$(VCS_BRANCH)-upgrade"
 	then
 	    remote_branch_exists=true
 	fi
-	git switch -C "$(VCS_BRANCH)-upgrade"
 	now=$$(date -u)
-	$(MAKE) -e devel-upgrade
+	$(MAKE) -e TEMPLATE_IGNORE_EXISTING="true" devel-upgrade
 	if $(MAKE) -e "test-clean"
 	then
-# No changes from upgrade, exit successfully but push nothing
+# No changes from upgrade, exit signaling success but push nothing:
 	    exit
 	fi
+	git switch -C "$(VCS_BRANCH)-upgrade"
+# Only add changes upgrade-related changes:
+	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
+	    "./.vale.ini" "./styles/"
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the latest versions as of $${now}." \
+	echo "Upgrade all requirements to the most recent versions as of" \
 	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	git add --update './build-host/requirements-*.txt' './requirements/*/*.txt' \
-	    "./.pre-commit-config.yaml"
+	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)
-# Don't duplicate the CI run from the push below:
+# Don't duplicate the CI run from the following push:
 	git_push_args+=" --no-verify"
 endif
 	git commit $${git_commit_args} -m \
-	    "fix(deps): Upgrade requirements latest versions"
-# Fail if upgrading left untracked files in VCS
+	    "fix(deps): Upgrade to most recent versions"
+# Fail if upgrading left un-tracked files in VCS:
 	$(MAKE) -e "test-clean"
 ifeq ($(CI),true)
-# Push any upgrades to the remote for review.  Specify both the ref and the expected ref
-# for `--force-with-lease=...` to support pushing to multiple mirrors/remotes via
-# multiple `pushUrl`:
+# Push any upgrades to the remote for review. Specify both the ref and the expected ref
+# for `--force-with-lease=` to support pushing to more than one mirror or remote by
+# using more than one `pushUrl`:
 	git_push_args="--no-verify"
-	if [ "$${remote_branch_exists=true}" == "true" ]
+	if test "$${remote_branch_exists=true}" = "true"
 	then
 	    git_push_args+=" --force-with-lease=\
 	$(VCS_BRANCH)-upgrade:$(VCS_REMOTE)/$(VCS_BRANCH)-upgrade"
@@ -990,8 +1135,8 @@ ifeq ($(CI),true)
 endif
 
 .PHONY: devel-merge
-### Merge this branch with a suffix back into it's un-suffixed upstream.
-devel-merge: ~/.gitconfig ./var/log/git-remotes.log \
+## Merge this branch with a suffix back into its un-suffixed upstream.
+devel-merge: ./var/log/git-remotes.log \
 		./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)
 	merge_rev="$$(git rev-parse HEAD)"
 	git switch -C "$(VCS_MERGE_BRANCH)" --track "$(VCS_REMOTE)/$(VCS_MERGE_BRANCH)"
@@ -1003,12 +1148,12 @@ ifeq ($(CI),true)
 endif
 
 
-## Clean Targets:
+### Clean Targets:
 #
 # Recipes used to restore the checkout to initial conditions.
 
 .PHONY: clean
-### Restore the checkout to a state as close to an initial clone as possible.
+## Restore the checkout to an initial clone state.
 clean:
 	docker compose down --remove-orphans --rmi "all" -v || true
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit uninstall \
@@ -1021,11 +1166,11 @@ clean:
 	rm -rfv "./var/log/" ./var-docker/py*/log/
 
 
-## Real Targets:
+### Real Targets:
 #
 # Recipes that make actual changes and create and update files for the target.
 
-# Manage fixed/pinned versions in `./requirements/**.txt` files.  Has to be run for each
+# Manage fixed/pinned versions in `./requirements/**.txt` files. Must run for each
 # python version in the virtual environment for that Python version:
 # https://github.com/jazzband/pip-tools#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile
 python_combine_requirements=$(PYTHON_ENVS:%=./requirements/%/$(1).txt)
@@ -1045,59 +1190,33 @@ $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.i
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
-$(PYTHON_ENVS:%=./build-host/requirements-%.txt): ./build-host/requirements.txt.in
-	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e PYTHON_ENV="$(@:build-host/requirements-%.txt=%)" \
-	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" build-requirements-compile
-# Only update the installed tox version for the latest/host/main/default Python version
-	if [ "$(@:build-host/requirements-%.txt=%)" = "$(PYTHON_ENV)" ]
-	then
-# Don't install tox into one of it's own virtual environments
-	    if [ -n "$${VIRTUAL_ENV:-}" ]
-	    then
-	        pip_bin="$$(which -a pip3 | grep -v "^$${VIRTUAL_ENV}/bin/" | head -n 1)"
-	    else
-	        pip_bin="pip3"
-	    fi
-	    "$${pip_bin}" install -r "$(@)"
-	fi
-	mkdir -pv "./var/log/"
-	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in
 	true DEBUG Updated prereqs: $(?)
 	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/build.txt=%)" PIP_COMPILE_SRC="$(<)" \
 	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
 
-# Targets used as pre-requisites to ensure virtual environments managed by tox have been
-# created and can be used directly to save time on Tox's overhead when we don't need
-# Tox's logic about when to update/recreate them, e.g.:
-#     $ ./.tox/build/bin/cz --help
-# Mostly useful for build/release tools.
-$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
-	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`.  Use as a
-# prerequisite when using Tox-managed virtual environments directly and changes to code
-# need to take effect immediately.
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
-	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:./.tox/%/log/editable.log=%)" -- \
-	    pip3 install -e "./" |& tee -a "$(@)"
+# Set up release publishing authentication, useful in automation such as CI:
+~/.pypirc.~out~: ./home/.pypirc.in
+	$(call expand_template,$(<),$(@))
+
+# Capture any project initialization tasks for reference. Not actually usable.
+./pyproject.toml:
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- cz init
+
 
 ## Docker real targets:
 
+# Build Docker container images.
 # Build the development image:
 ./var-docker/$(PYTHON_ENV)/log/build-devel.log: ./Dockerfile ./.dockerignore \
-		./bin/entrypoint ./build-host/requirements.txt.in \
-		./var-docker/$(PYTHON_ENV)/log/rebuild.log \
-		./pyproject.toml ./setup.cfg ./tox.ini \
-		./docker-compose.yml ./docker-compose.override.yml ./.env.~out~ \
-		./bin/host-install
+		./bin/entrypoint.sh ./docker-compose.yml ./docker-compose.override.yml \
+		./.env.~out~ ./var-docker/$(PYTHON_ENV)/log/rebuild.log \
+		$(HOST_TARGET_DOCKER) ./pyproject.toml ./setup.cfg
 	true DEBUG Updated prereqs: $(?)
 	mkdir -pv "$(dir $(@))"
 ifeq ($(DOCKER_BUILD_PULL),true)
-# Pull the development image and simulate as if it had been built here.
+# Pull the development image and simulate building it here:
 	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
 	    touch "$(@)" "./var-docker/$(PYTHON_ENV)/log/rebuild.log"
@@ -1109,17 +1228,8 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 endif
 	$(MAKE) -e DOCKER_VARIANT="devel" DOCKER_BUILD_ARGS="--load" \
 	    build-docker-build | tee -a "$(@)"
-# Represent that host install is baked into the image in the `${HOME}` bind volume:
-	docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	    $(PROJECT_NAME)-devel mkdir -pv "./.local/var/log/"
-	docker run --rm --workdir "/home/$(PROJECT_NAME)/" --entrypoint "cat" \
-	    "$$(docker compose config --images $(PROJECT_NAME)-devel | head -n 1)" \
-	    "./.local/var/log/$(PROJECT_NAME)-host-install.log" |
-	    docker compose run --rm -T --workdir "/home/$(PROJECT_NAME)/" \
-	        $(PROJECT_NAME)-devel tee -a \
-	        "./.local/var/log/$(PROJECT_NAME)-host-install.log" >"/dev/null"
 # Update the pinned/frozen versions, if needed, using the container.  If changed, then
-# we may need to re-build the container image again to ensure it's current and correct.
+# the container image might need re-building to ensure it's current and correct.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    make -e PYTHON_MINORS="$(PYTHON_MINOR)" build-requirements-$(PYTHON_ENV)
 ifeq ($(CI),true)
@@ -1129,46 +1239,28 @@ ifeq ($(CI),true)
 else
 	$(MAKE) -e "$(@)"
 endif
-
 # Build the end-user image:
 ./var-docker/$(PYTHON_ENV)/log/build-user.log: \
 		./var-docker/$(PYTHON_ENV)/log/build-devel.log ./Dockerfile \
-		./.dockerignore ./bin/entrypoint ./build-host/requirements.txt.in \
+		./.dockerignore ./bin/entrypoint.sh \
 		./var-docker/$(PYTHON_ENV)/log/rebuild.log
 	true DEBUG Updated prereqs: $(?)
 ifeq ($(PYTHON_WHEEL),)
 	$(MAKE) -e "build-pkgs"
 	PYTHON_WHEEL="$$(ls -t ./dist/*.whl | head -n 1)"
 endif
-# Build the end-user image now that all required artifacts are built"
+# Build the user image after building all required artifacts:
 	mkdir -pv "$(dir $(@))"
 	$(MAKE) -e DOCKER_BUILD_ARGS="$(DOCKER_BUILD_ARGS) --load \
 	--build-arg PYTHON_WHEEL=$${PYTHON_WHEEL}" build-docker-build >>"$(@)"
-# The image installs the host requirements, reflect that in the bind mount volumes
-	date >>"$(@:%/build-user.log=%/host-install.log)"
-
-# Marker file used to trigger the rebuild of the image for just one Python version.
-# Useful to workaround async timestamp issues when running jobs in parallel:
+# Marker file used to trigger the rebuild of the image.
+# Useful to workaround asynchronous timestamp issues when running jobs in parallel:
 ./var-docker/$(PYTHON_ENV)/log/rebuild.log:
 	mkdir -pv "$(dir $(@))"
 	date >>"$(@)"
-
-# Local environment variables and secrets from a template:
-./.env.~out~: ./.env.in
-	export TRANSMISSION_PASS="$$(apg -M ncl -n 1)"
-	$(call expand_template,$(<),$(@))
-
-# Install all tools required by recipes that have to be installed externally on the
-# host.  Use a target file outside this checkout to support multiple checkouts.  Use a
-# target specific to this project so that other projects can use the same approach but
-# with different requirements.
-$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log: ./bin/host-install \
-		./build-host/requirements.txt.in
-	mkdir -pv "$(dir $(@))"
-	"$(<)" |& tee -a "$(@)"
-
 # https://docs.docker.com/build/building/multi-platform/#building-multi-platform-images
-$(HOME)/.local/var/log/docker-multi-platform-host-install.log:
+$(HOME)/.local/state/docker-multi-platform/log/host-install.log:
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
 	mkdir -pv "$(dir $(@))"
 	if ! docker context inspect "multi-platform" |& tee -a "$(@)"
 	then
@@ -1181,44 +1273,62 @@ $(HOME)/.local/var/log/docker-multi-platform-host-install.log:
 	        docker buildx create --use "multi-platform" || true
 	    ) |& tee -a "$(@)"
 	fi
-
-./var/log/codecov-install.log:
+./var/log/docker-login-DOCKER.log:
+	$(MAKE) "$(HOST_TARGET_DOCKER)" "./.env.~out~"
 	mkdir -pv "$(dir $(@))"
-# Install the code test coverage publishing tool
-	(
-	    if ! which codecov
-	    then
-	        mkdir -pv ~/.local/bin/
-# https://docs.codecov.com/docs/codecov-uploader#using-the-uploader-with-codecovio-cloud
-	        if which brew
-	        then
-# Mac OS X
-	            curl --output-dir ~/.local/bin/ -Os \
-	                "https://uploader.codecov.io/latest/macos/codecov"
-	        elif which apk
-	        then
-# Alpine
-	            wget --directory-prefix ~/.local/bin/ \
-	                "https://uploader.codecov.io/latest/alpine/codecov"
-	        else
-# Other Linux distributions
-	            curl --output-dir ~/.local/bin/ -Os \
-	                "https://uploader.codecov.io/latest/linux/codecov"
-	        fi
-	        chmod +x ~/.local/bin/codecov
-	    fi
-	    if ! which codecov
-	    then
-	        set +x
-	        echo "ERROR: CodeCov CLI tool still not on PATH"
-	        false
-	    fi
-	) | tee -a "$(@)"
+	if test -n "$${DOCKER_PASS}"
+	then
+	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
+	elif test "$(CI_IS_FORK)" != "true"
+	then
+	    echo "ERROR: DOCKER_PASS missing from ./.env or CI secrets"
+	    false
+	fi
+	date | tee -a "$(@)"
+./var/log/docker-login-GITLAB.log:
+	$(MAKE) "./.env.~out~"
+	mkdir -pv "$(dir $(@))"
+	if test -n "$${CI_REGISTRY_PASSWORD}"
+	then
+	    printenv "CI_REGISTRY_PASSWORD" |
+	        docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
+	elif test "$(CI_IS_FORK)" != "true"
+	then
+	    echo "ERROR: CI_REGISTRY_PASSWORD missing from ./.env or CI secrets"
+	    false
+	fi
+	date | tee -a "$(@)"
+./var/log/docker-login-GITHUB.log:
+	$(MAKE) "./.env.~out~"
+	mkdir -pv "$(dir $(@))"
+	if test -n "$${PROJECT_GITHUB_PAT}"
+	then
+	    printenv "PROJECT_GITHUB_PAT" |
+	        docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
+	elif test "$(CI_IS_FORK)" != "true"
+	then
+	    echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
+	    false
+	fi
+	date | tee -a "$(@)"
 
-# Retrieve VCS data needed for versioning (tags) and release (release notes).
+# Local environment variables and secrets from a template:
+./.env.~out~: ./.env.in
+	export TRANSMISSION_PASS="$$(apg -M ncl -n 1)"
+	$(call expand_template,$(<),$(@))
+
+./README.md: README.rst
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
+	docker compose run --rm "pandoc"
+
+
+### Development Tools:
+
+# VCS configuration and integration:
+# Retrieve VCS data needed for versioning, tags, and releases, release notes:
 $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	git_fetch_args="--tags --prune --prune-tags --force"
-	if [ "$$(git rev-parse --is-shallow-repository)" == "true" ]
+	if test "$$(git rev-parse --is-shallow-repository)" = "true"
 	then
 	    git_fetch_args+=" --unshallow"
 	fi
@@ -1231,26 +1341,20 @@ $(VCS_FETCH_TARGETS): ./.git/logs/HEAD
 	    git fetch $${git_fetch_args} "$${branch_path%%/*}" "develop" |&
 	        tee -a "$(@)"
 	fi
-
+# A target whose `mtime` reflects files added to or removed from VCS:
+./var/log/git-ls-files.log: build-date
+	mkdir -pv "$(dir $(@))"
+	git ls-files >"$(@).~new~"
+	if diff -u "$(@)" "$(@).~new~"
+	then
+	    exit
+	fi
+	mv -v "$(@).~new~" "$(@)"
 ./.git/hooks/pre-commit:
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	$(TOX_EXEC_BUILD_ARGS) -- pre-commit install \
 	    --hook-type "pre-commit" --hook-type "commit-msg" --hook-type "pre-push"
-
-# Capture any project initialization tasks for reference.  Not actually usable.
-./pyproject.toml:
-	$(MAKE) -e "$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
-	$(TOX_EXEC_BUILD_ARGS) -- cz init
-
-# Tell Emacs where to find checkout-local tools needed to check the code.
-./.dir-locals.el.~out~: ./.dir-locals.el.in
-	$(call expand_template,$(<),$(@))
-
-# Ensure minimal VCS configuration, mostly useful in automation such as CI.
-~/.gitconfig:
-	git config --global user.name "$(USER_FULL_NAME)"
-	git config --global user.email "$(USER_EMAIL)"
-
+# Initialize minimal VCS configuration, useful in automation such as CI:
 ./var/log/git-remotes.log:
 	mkdir -pv "$(dir $(@))"
 	set +x
@@ -1265,7 +1369,7 @@ ifneq ($(VCS_REMOTE_PUSH_URL),)
 endif
 ifneq ($(GITHUB_ACTIONS),true)
 ifneq ($(PROJECT_GITHUB_PAT),)
-# Also add a fetch remote for the `$ gh ...` CLI tool to detect:
+# Also add a fetch remote for the `$ gh` command-line tool to detect:
 	if ! git remote get-url "github" >"/dev/null"
 	then
 	    echo "INFO:Adding remote 'github'"
@@ -1280,75 +1384,136 @@ else ifneq ($(CI_IS_FORK),true)
 endif
 endif
 	set -x
-# Fail fast if there's still no push access
+# Fail fast if there's still no push access:
 	git push --no-verify "origin" "HEAD:$(VCS_BRANCH)" | tee -a "$(@)"
 
-# Ensure release publishing authentication, mostly useful in automation such as CI.
-~/.pypirc.~out~: ./home/.pypirc.in
+# Prose linting:
+# Map formats unknown by Vale to a common default format:
+./var/log/vale-map-formats.log: ./bin/vale-map-formats.py ./.vale.ini \
+		./var/log/git-ls-files.log
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python "$(<)" "./styles/code.ini" "./.vale.ini"
+# Set Vale levels for added style rules:
+# Must be it's own target because Vale sync takes the sets of styles from the
+# configuration and the configuration needs the styles to set rule levels:
+./var/log/vale-rule-levels.log: ./styles/RedHat/meta.json
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py
+	$(TOX_EXEC_BUILD_ARGS) -- python ./bin/vale-set-rule-levels.py \
+	    --input="./styles/code.ini"
+# Update style rule definitions from the remotes:
+./styles/RedHat/meta.json: ./.vale.ini ./styles/code.ini ./.env.~out~
+	$(MAKE) "$(HOST_TARGET_DOCKER)"
+	docker compose run --rm vale sync
+	docker compose run --rm -T vale sync --config="./styles/code.ini"
+
+# Editor and IDE support and integration:
+./.dir-locals.el.~out~: ./.dir-locals.el.in
 	$(call expand_template,$(<),$(@))
 
-./var/log/docker-login-DOCKER.log:
-	$(MAKE) "./.env.~out~"
+# Manage JavaScript tools:
+./var/log/npm-install.log: ./package.json ./var/log/nvm-install.log
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${DOCKER_PASS}" ]
-	then
-	    printenv "DOCKER_PASS" | docker login -u "$(DOCKER_USER)" --password-stdin
-	elif [ "$(CI_IS_FORK)" != "true" ]
-	then
-	    echo "ERROR: DOCKER_PASS missing from ./.env or CI secrets"
-	    false
-	fi
-	date | tee -a "$(@)"
-./var/log/docker-login-GITLAB.log:
-	$(MAKE) "./.env.~out~"
+	~/.nvm/nvm-exec npm install | tee -a "$(@)"
+./package.json:
+	$(MAKE) "./var/log/nvm-install.log"
+# https://docs.npmjs.com/creating-a-package-json-file#creating-a-default-packagejson-file
+	~/.nvm/nvm-exec npm init --yes --scope="@$(NPM_SCOPE)"
+./var/log/nvm-install.log: ./.nvmrc
+	$(MAKE) "$(HOME)/.nvm/nvm.sh"
 	mkdir -pv "$(dir $(@))"
-	if [ -n "$${CI_REGISTRY_PASSWORD}" ]
-	then
-	    printenv "CI_REGISTRY_PASSWORD" |
-	        docker login -u "$(CI_REGISTRY_USER)" --password-stdin "$(CI_REGISTRY)"
-	elif [ "$(CI_IS_FORK)" != "true" ]
-	then
-	    echo "ERROR: CI_REGISTRY_PASSWORD missing from ./.env or CI secrets"
-	    false
-	fi
-	date | tee -a "$(@)"
-./var/log/docker-login-GITHUB.log:
-	$(MAKE) "./.env.~out~"
-	mkdir -pv "$(dir $(@))"
-	if [ -n "$${PROJECT_GITHUB_PAT}" ]
-	then
-	    printenv "PROJECT_GITHUB_PAT" |
-	        docker login -u "$(GITHUB_REPOSITORY_OWNER)" --password-stdin "ghcr.io"
-	elif [ "$(CI_IS_FORK)" != "true" ]
-	then
-	    echo "ERROR: PROJECT_GITHUB_PAT missing from ./.env or CI secrets"
-	    false
-	fi
-	date | tee -a "$(@)"
+	set +x
+	. "$(HOME)/.nvm/nvm.sh" || true
+	nvm install | tee -a "$(@)"
+# https://github.com/nvm-sh/nvm#install--update-script
+$(HOME)/.nvm/nvm.sh:
+	set +x
+	wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh"
+	    | bash
 
-# GPG signing key creation and management in CI
+# Manage Python tools:
+# Targets used as pre-requisites to ensure virtual environments managed by tox have been
+# created so other targets can use them directly to save Tox's startup time when they
+# don't need Tox's logic about when to update/recreate them, e.g.:
+#     $ ./.tox/build/bin/cz --help
+# Useful for build/release tools:
+$(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
+# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
+# prerequisite for targets that use Tox virtual environments directly and changes to
+# code need to take effect in real-time:
+$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
+	$(MAKE) -e "$(HOME)/.local/bin/tox"
+	mkdir -pv "$(dir $(@))"
+	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
+	    pip3 install -e "./" |& tee -a "$(@)"
+$(HOME)/.local/bin/tox:
+	$(MAKE) "$(HOME)/.local/bin/pipx"
+# https://tox.wiki/en/latest/installation.html#via-pipx
+	pipx install "tox"
+$(HOME)/.local/bin/pipx:
+	$(MAKE) "$(HOST_TARGET_PIP)"
+# https://pypa.github.io/pipx/installation/#install-pipx
+	pip3 install --user "pipx"
+	python3 -m pipx ensurepath
+$(HOST_TARGET_PIP):
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_PIP)"
+
+# Manage tools in containers:
+$(HOST_TARGET_DOCKER):
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_DOCKER)"
+	docker info
+ifeq ($(HOST_PKG_BIN),brew)
+# https://formulae.brew.sh/formula/docker-compose#default
+	mkdir -p ~/.docker/cli-plugins
+	ln -sfnv "$${HOMEBREW_PREFIX}/opt/docker-compose/bin/docker-compose" \
+	    "~/.docker/cli-plugins/docker-compose"
+endif
+
+# Support for installing host operating system packages:
+$(STATE_DIR)/log/host-update.log:
+	if ! $(HOST_PKG_CMD_PREFIX) which $(HOST_PKG_BIN)
+	then
+	    set +x
+	    echo "ERROR: OS not supported for installing system dependencies"
+	    false
+	fi
+	$(HOST_PKG_CMD) update | tee -a "$(@)"
+
+# Install the code test coverage publishing tool:
+$(HOME)/.local/bin/codecov: ./build-host/bin/install-codecov.sh $(HOST_PREFIX)/bin/curl
+	"$(<)"
+$(HOST_PREFIX)/bin/curl:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_CURL)"
+
+# GNU Privacy Guard (GPG) signing key creation and management in CI:
 export GPG_PASSPHRASE=
 GPG_SIGNING_PRIVATE_KEY=
-./var/ci-cd-signing-subkey.asc:
-# We need a private key in the CI/CD environment for signing release commits and
-# artifacts.  Use a subkey so that it can be revoked without affecting your main key.
-# This recipe captures what I had to do to export a private signing subkey.  It's not
-# widely tested so it should probably only be used for reference.  It worked for me but
-# the risk is leaking your main private key so double and triple check all your
-# assumptions and results.
-# 1. Create a signing subkey with a NEW, SEPARATE passphrase:
+./var/ci-cd-signing-subkey.asc: $(HOST_PREFIX)/bin/gpg
+# Signing release commits and artifacts requires a GPG private key in the CI/CD
+# environment. Use a subkey that you can revoke without affecting your main key. This
+# recipe captures what I had to do to export a private signing subkey. It's not widely
+# tested so you should probably only use this for reference. It worked for me but this
+# process risks leaking your main private key so confirm all your assumptions and
+# results well.
+#
+# 1. Create a signing subkey with a *new*, *separate* passphrase:
 #    https://wiki.debian.org/Subkeys#How.3F
 # 2. Get the long key ID for that private subkey:
-#	gpg --list-secret-keys --keyid-format "LONG"
-# 3. Export *just* that private subkey and verify that the main secret key packet is the
+#	gpg --list-secret-keys --keyid-format "long"
+# 3. Export *only* that private subkey and verify that the main secret key packet is the
 #    GPG dummy packet and that the only other private key included is the intended
 #    subkey:
 #	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" |
 #	    gpg --list-packets
 # 4. Export that key as text to a file:
 	gpg --armor --export-secret-subkeys "$(GPG_SIGNING_KEYID)!" >"$(@)"
-# 5. Confirm that the exported key can be imported into a temporary GNU PG directory and
-#    that temporary directory can then be used to sign files:
+# 5. Confirm that a temporary GNU PG directory can import the exported key and that it
+#    can sign files:
 #	gnupg_homedir=$$(mktemp -d --suffix=".d" "gnupd.XXXXXXXXXX")
 #	printenv 'GPG_PASSPHRASE' >"$${gnupg_homedir}/.passphrase"
 #	gpg --homedir "$${gnupg_homedir}" --batch --import <"$(@)"
@@ -1360,14 +1525,14 @@ GPG_SIGNING_PRIVATE_KEY=
 #	gpg --batch --verify "$${gnupg_homedir}/test-sig.txt.gpg"
 # 6. Add the contents of this target as a `GPG_SIGNING_PRIVATE_KEY` secret in CI and the
 # passphrase for the signing subkey as a `GPG_PASSPHRASE` secret in CI
-./var/log/gpg-import.log: ~/.gitconfig
+./var/log/gpg-import.log: $(HOST_PREFIX)/bin/gpg
 # In each CI run, import the private signing key from the CI secrets
 	mkdir -pv "$(dir $(@))"
 ifneq ($(and $(GPG_SIGNING_PRIVATE_KEY),$(GPG_PASSPHRASE)),)
 	printenv "GPG_SIGNING_PRIVATE_KEY" | gpg --batch --import | tee -a "$(@)"
 	echo 'default-key:0:"$(GPG_SIGNING_KEYID)' | gpgconf —change-options gpg
 	git config --global user.signingkey "$(GPG_SIGNING_KEYID)"
-# "Unlock" the signing key for the remainder of this CI run:
+# "Unlock" the signing key for the rest of this CI run:
 	printenv 'GPG_PASSPHRASE' >"./var/ci-cd-signing-subkey.passphrase"
 	true | gpg --batch --pinentry-mode "loopback" \
 	    --passphrase-file "./var/ci-cd-signing-subkey.passphrase" \
@@ -1381,57 +1546,67 @@ ifneq ($(CI_IS_FORK),true)
 endif
 	date | tee -a "$(@)"
 endif
+$(HOST_PREFIX)/bin/gpg:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_GPG)"
+
+$(HOST_PREFIX)/bin/gh:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_GHCLI)"
 
 ./var/gitlab-runner/config/config.toml: ./gitlab-runner/config/config.toml.in
 	docker compose run --rm gitlab-runner register \
 	    --url "https://gitlab.com/" --docker-image "docker" --executor "docker"
 
+$(HOST_PREFIX)/bin/apg:
+	$(MAKE) "$(STATE_DIR)/log/host-update.log"
+	$(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_APG)"
 
-## Makefile "functions":
+
+### Makefile "functions":
 #
-# Snippets whose output is frequently used including across recipes:
+# Snippets used several times, including in different recipes:
 # https://www.gnu.org/software/make/manual/html_node/Call-Function.html
 
-# Return the most recently built package:
+# Return the most recent built package:
 current_pkg=$(shell ls -t ./dist/*$(1) | head -n 1)
 
-# Have to use a placeholder `*.~out~` as the target instead of the real expanded
-# template because we can't disable `.DELETE_ON_ERROR` on a per-target basis.
+# Have to use a placeholder `*.~out~` target instead of the real expanded template
+# because targets can't disable `.DELETE_ON_ERROR` on a per-target basis.
 #
-# Short-circuit/repeat the host-install recipe here because expanded templates should
-# *not* be updated when `./bin/host-install` is, so we can't use it as a prerequisite,
-# *but* it is required to expand templates.  We can't use a sub-make because any
-# expanded templates we use in `include ...` directives, such as `./.env`, are updated
-# as targets when reading the `./Makefile` leading to endless recursion.
+# Can't use a target and recipe to install `$ envsubst`. Shouldn't update expanded
+# templates when `/usr/bin/envsubst` changes but expanding a template requires it to be
+# installed. The recipe can't use a sub-make because Make updates any expanded template
+# targets used in `include` directives when reading the `./Makefile`, for example
+# `./.env`, leading to endless recursion:
 define expand_template=
 if ! which envsubst
 then
-    mkdir -pv "$(HOME)/.local/var/log/"
-    ./bin/host-install >"$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log"
+    $(HOST_PKG_CMD) update | tee -a "$(STATE_DIR)/log/host-update.log"
+    $(HOST_PKG_CMD) $(HOST_PKG_INSTALL_ARGS) "$(HOST_PKG_NAMES_ENVSUBST)"
 fi
-if [ "$(2:%.~out~=%)" -nt "$(1)" ]
+if test "$(2:%.~out~=%)" -nt "$(1)"
 then
     envsubst <"$(1)" >"$(2)"
     exit
 fi
-if [ ! -e "$(2:%.~out~=%)" ]
+if test ! -e "$(2:%.~out~=%)"
 then
     touch -d "@0" "$(2:%.~out~=%)"
 fi
-if [ "$(CI)" != "true" ]
+if test "$(CI)" != "true"
 then
     envsubst <"$(1)" | diff -u "$(2:%.~out~=%)" "-" || true
 fi
 set +x
-echo "WARNING:Template $(1) has been updated."
-echo "        Reconcile changes and \`$$ touch $(2:%.~out~=%)\`."
+echo "WARNING:Template $(1) changed, reconcile and \`$$ touch $(2:%.~out~=%)\`."
 set -x
-if [ ! -s "$(2:%.~out~=%)" ]
+if test ! -s "$(2:%.~out~=%)"
 then
     envsubst <"$(1)" >"$(2:%.~out~=%)"
     touch -d "@0" "$(2:%.~out~=%)"
 fi
-if [ "$(TEMPLATE_IGNORE_EXISTING)" == "true" ]
+if test "$(TEMPLATE_IGNORE_EXISTING)" = "true"
 then
     envsubst <"$(1)" >"$(2)"
     exit
@@ -1439,93 +1614,94 @@ fi
 exit 1
 endef
 
-## Makefile Development:
+
+### Makefile Development:
 #
 # Development primarily requires a balance of 2 priorities:
 #
-# - Ensure the correctness of the code and build artifacts
-# - Minimize iteration time overhead in the inner loop of development
+# - Correctness of the source code and build artifacts
+# - Reduce iteration time in the inner loop of development
 #
-# This project uses Make to balance those priorities.  Target recipes capture the
-# commands necessary to build artifacts, run tests, and check the code.  Top-level
-# targets assemble those recipes to put it all together and ensure correctness.  Target
-# prerequisites are used to define when build artifacts need to be updated so that
-# time isn't wasted on unnecessary updates in the inner loop of development.
+# This project uses Make to balance those priorities. Target recipes capture the
+# commands necessary to build artifacts, run tests, and verify the code. Top-level
+# targets compose related target recipes for often needed tasks. Targets use
+# prerequisites to define when to update build artifacts prevent time wasted on
+# unnecessary updates in the inner loop of development.
 #
-# The most important Make concept to understand if making changes here is that of real
-# targets and prerequisites, as opposed to "phony" targets.  The target is only updated
-# if any of its prerequisites are newer, IOW have a more recent modification time, than
-# the target.  For example, if a new feature adds library as a new project dependency
-# then correctness requires that the fixed/pinned versions be updated to include the new
-# library.  Most of the time, however, the fixed/pinned versions don't need to be
-# updated and it would waste significant time to always update them in the inner loop of
-# development.  We express this relationship in Make by defining the files containing
-# the fixed/pinned versions as targets and the `./setup.cfg` file where dependencies are
-# defined as a prerequisite:
+# Make provides an important feature to achieve that second priority, a framework for
+# determining when to do work. Targets define build artifact paths. The target's recipe
+# lists the commands that create or update that build artifact. The target's
+# prerequisites define when to update that target. Make runs the recipe when any of the
+# prerequisites have more recent modification times than the target to update the
+# target.
 #
-#    ./requirements.txt: setup.cfg
-#        ./.tox/py310/bin/pip-compile --output-file "$(@)" "$(<)"
+# For example, if a feature adds library to the project's dependencies, correctness
+# requires the project to update the frozen, or locked versions to include the added
+# library. The rest of the time the locked or frozen versions don't need updating and it
+# wastes significant time to always update them in the inner loop of development. To
+# express such relationships in Make, define targets for the files containing the locked
+# or frozen versions and add a prerequisite for the file that defines dependencies:
 #
-# To that end, developers should use real target files whenever possible when adding
-# recipes to this file.
+#    ./build/bar.txt: ./bar.txt.in
+#    	envsubst <"$(<)" >"$(@)"
 #
-# Sometimes the task we need a recipe to accomplish should only be run when certain
-# changes have been made and as such we can use those changed files as prerequisites but
-# the task doesn't produce an artifact appropriate for use as the target for the recipe.
-# In that case, the recipe can write "simulated" artifact such as by piping output to a
-# log file:
+# To that end, use real target and prerequisite files whenever possible when adding
+# recipes to this file. Make calls targets whose name doesn't correspond to a real build
+# artifact `.PHONY:` targets. Use `.PHONY:` targets to compose sets or real targets and
+# define recipes for tasks that don't produce build artifacts, for example, the
+# top-level targets.
+
+# If a recipe doesn't produce an appropriate build artifact, define an arbitrary target
+# the recipe writes to, such as piping output to a log file. Also use this approach when
+# none of the modification times of produced artifacts reflect when any downstream
+# targets need updating:
 #
-#     ./var/log/foo.log:
+#     ./var/log/some-work.log:
 #         mkdir -pv "$(dir $(@))"
-#         ./.tox/build/bin/python "./bin/foo.py" | tee -a "$(@)"
+#         ./.tox/build/bin/python "./bin/do-some-work.py" | tee -a "$(@)"
 #
-# This is also useful when none of the modification times of produced artifacts can be
-# counted on to correctly reflect when any subsequent targets need to be updated when
-# using this target as a pre-requisite in turn.  If no output can be captured, then the
-# recipe can create arbitrary output:
+# If the recipe produces no output, the recipe can create arbitrary output:
 #
-#     ./var/log/foo.log:
-#         ./.tox/build/bin/python "./bin/foo.py"
+#     ./var/log/bar.log:
+#         echo "Do some work here"
 #         mkdir -pv "$(dir $(@))"
 #         date | tee -a "$(@)"
 #
-# If a target is needed by the recipe of another target but should *not* trigger updates
-# when it's newer, such as one-time host install tasks, then use that target in a
-# sub-make instead of as a prerequisite:
+# If the recipe of a target needs another target but updating that other target doesn't
+# mean that this target's recipe needs to re-run, such as one-time system install tasks,
+# use that target in a sub-make instead of a prerequisite:
 #
-#     ./var/log/foo.log:
-#         $(MAKE) "./var/log/bar.log"
+#     ./var/log/bar.log:
+#         $(MAKE) "./var/log/qux.log"
 #
-# We use a few more Make features than these core features and welcome further use of
-# such features:
+# This project uses some more Make features than these core features and welcome further
+# use of such features:
 #
 # - `$(@)`:
-#   The automatic variable containing the file path for the target
+#   The automatic variable containing the path for the target
 #
 # - `$(<)`:
-#   The automatic variable containing the file path for the first prerequisite
+#   The automatic variable containing the path for the first prerequisite
 #
-# - `$(FOO:%=foo-%)`:
+# - `$(VARIABLE_FOO:%=bar-%)`:
 #   Substitution references to generate transformations of space-separated values
 #
-# - `$ make FOO=bar ...`:
-#   Overriding variables on the command-line when invoking make as "options"
+# - `$ make OPTION_FOO=bar`:
+#   Use "option" variables and support overriding on the command-line
 #
-# We want to avoid, however, using many more features of Make, particularly the more
-# "magical" features, to keep it readable, discover-able, and otherwise accessible to
-# developers who may not have significant familiarity with Make.  If there's a good,
-# pragmatic reason to add use of further features feel free to make the case but avoid
-# them if possible.
+# Avoid the more "magical" features of Make, to keep it readable, discover-able, and
+# otherwise approachable to developers who might not have significant familiarity with
+# Make. If you have good, pragmatic reasons to add use of further features, make the
+# case for them but avoid them if possible.
 
 
-## Maintainer targets:
+### Maintainer targets:
 #
-# Recipes not used during the normal course of development.
+# Recipes not used during the usual course of development.
 
 .PHONY: pull-docker
-### Pull an existing image best to use as a cache for building new images
-pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
-		$(HOME)/.local/var/log/$(PROJECT_NAME)-host-install.log
+## Pull an existing image best to use as a cache for building new images
+pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DOCKER)
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 	for vcs_branch in $(VCS_BRANCHES)
 	do
@@ -1544,14 +1720,8 @@ pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) \
 	echo "ERROR: Could not pull any existing docker image"
 	false
 
-# TEMPLATE: Run this once for your project.  See the `./var/log/docker-login*.log`
-# targets for the authentication environment variables that need to be set or just login
-# to those container registries manually and touch these targets.
 .PHONY: bootstrap-project
-### Run any tasks needed to be run once for a given project by a maintainer
-bootstrap-project: \
-		./var/log/docker-login-GITLAB.log \
-		./var/log/docker-login-GITHUB.log
+bootstrap-project: ./var/log/docker-login-GITLAB.log ./var/log/docker-login-GITHUB.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments
 # GitLab CI/CD:
 	$(MAKE) -e -C "./build-host/" DOCKER_IMAGE="$(DOCKER_IMAGE_GITLAB)" release

@@ -2,19 +2,19 @@
 ..
 .. SPDX-License-Identifier: MIT
 
-##################################################
-Project Build Host
-##################################################
-The container image in which this project is built
-**************************************************
+########################################
+Projects build host
+########################################
+The container image that builds projects
+****************************************
 
-This directory is used to build a container image which can be used to build, test and
-release this project.  The image can be used in project host platforms to provide CI/CD
-and can also be used locally to reproduce CI/CD issues locally.
+Use this directory to build a container image that can build, test, and release
+projects. The project host CI/CD platforms run pipeline jobs in this image. Developers
+can also use it to reproduce CI/CD issues locally.
 
-Changes to this image aren't published as a part of the project release process and as
-such project maintainers are responsible for pushing new versions of this image as
-changes are made.  This can be done using the project's ``../Makefile``::
+The release processes of projects don't publish changes to this image. As such,
+maintainers must push new versions of this image as it changes by using the project's
+``../Makefile``::
 
   $ cd ..
   $ make bootstrap-project

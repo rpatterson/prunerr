@@ -5,6 +5,6 @@
 [tool.towncrier]
 # https://towncrier.readthedocs.io/en/stable/#quick-start
 name = "prunerr"
-directory = "./newsfragments"
 package = "prunerr"
 package_dir = "src"
+directory = "./newsfragments"

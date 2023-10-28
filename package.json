@@ -1,0 +1,38 @@
+{
+  "name": "@rpattersonnet/prunerr",
+  "scope": "@rpattersonnet",
+  "version": "0.0.0",
+  "description": "Perma-seed Servarr media libraries",
+  "scripts": {
+    "lint": "npm run lint:code && npm run lint:prose",
+    "lint:code": "npm run lint:prettier",
+    "lint:prettier": "prettier --check './'",
+    "lint:prose": "npm run lint:write-good && npm run lint:alex",
+    "lint:write-good": "git ls-files -co --exclude-standard -z ':!LICENSES' ':!styles/*/meta.json' ':!styles/*/*.yml' ':!requirements/**' | xargs -r -0 -t -- write-good --no-weasel --no-adverb --no-illusion",
+    "lint:alex": "git ls-files -co --exclude-standard -z ':!.gitignore' ':!**/.gitignore' ':!LICENSES' ':!styles/*/meta.json' ':!styles/*/*.yml' ':!styles/Vocab' ':!*.license' ':!docs/conf.py' ':!requirements/**' | xargs -r -0 -t -- alex",
+    "format": "prettier --write './'"
+  },
+  "keywords": [
+    "template",
+    "structure"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Ross Patterson",
+    "email": "me@rpatterson.net",
+    "url": "https://www.rpatterson.net/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/rpatterson/prunerr.git"
+  },
+  "funding": {
+    "type": "liberapay",
+    "url": "https://liberapay.com/rpatterson/donate"
+  },
+  "devDependencies": {
+    "alex": "^11.0.0",
+    "prettier": "2.8.8",
+    "write-good": "^1.0.8"
+  }
+}

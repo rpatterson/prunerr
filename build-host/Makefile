@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-## Build and publish an image in which to build, test, and release the project
+## Build and publish an image in which to build, test, and release projects.
 
 ### Defensive settings for make:
 #     https://tech.davis-hansson.com/p/make/
@@ -17,7 +17,7 @@ PS1?=$$
 EMPTY=
 COMMA=,
 
-# Done with `$(shell ...)`, echo recipe commands going forward
+# Done with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
 DOCKER_IMAGE=merpatterson/prunerr
@@ -29,17 +29,17 @@ DOCKER_IMAGE=merpatterson/prunerr
 all: build
 
 .PHONY: build
-### Build the Docker container image
+### Build the Docker `build-host` container image.
 build: ./Dockerfile
 	docker pull "$(DOCKER_IMAGE):build-host" || true
-	docker buildx build --pull \
+	docker buildx build --pull --load \
 	    --build-arg "BUILDKIT_INLINE_CACHE=1" \
 	    --cache-from "$(DOCKER_IMAGE):build-host" \
 	    --tag "$(DOCKER_IMAGE):build-host" \
 	    "./"
 
 .PHONY: release
-### Publish the image to this specific CI/CD platform for future caching
+### Publish the image to this specific CI/CD platform for future caching.
 release: build
 	docker push "$(DOCKER_IMAGE):build-host"
 

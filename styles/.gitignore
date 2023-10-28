@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# Exclude downloaded styles from formatting and linting but include in VCS:
+!/*/meta.json
+!/*/*.yml
+!/Vocab/*
+!/local/*
+
+# Restore general ignores:
+*~

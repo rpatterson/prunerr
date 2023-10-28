@@ -2,80 +2,80 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Override `$ docker compose ...` configuration for development or testing here in this
-# repo checkout.  Everything that may be used outside this checkout should be in
+# Override `$ docker compose` configuration for development or testing here in this
+# repository checkout. Put everything used outside this checkout in
 # `./docker-compose.yml`.
 version: "3.8"
 
 services:
 
   transmission:
-    container_name: "${PROJECT_NAME:-}-devel-transmission"
+    container_name: "prunerr-devel-transmission"
     volumes:
       # Exit the container if the core `s6-overlay` service fails
       - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
 
   sonarr:
-    container_name: "${PROJECT_NAME:-}-devel-sonarr"
+    container_name: "prunerr-devel-sonarr"
   radarr:
-    container_name: "${PROJECT_NAME:-}-devel-radarr"
+    container_name: "prunerr-devel-radarr"
 
   # Configuration specific to development:
   prunerr-daemon:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
-      /${PROJECT_NAME:?}:${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
-    container_name: "${PROJECT_NAME:?}-daemon-checkout"
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/prunerr\
+      /prunerr:${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "prunerr-daemon-checkout"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       target: "user"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
-        PYTHON_ENV: "${PYTHON_ENV:-py310}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
-    volumes:
-      # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/${PROJECT_NAME:?}/"
 
   ## Contianers used for development and release:
 
   # Container for use by developers:
   prunerr-devel:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
-      /${PROJECT_NAME:?}:devel-${PYTHON_ENV:-py310}-${DOCKER_BRANCH_TAG:-develop}"
-    container_name: "${PROJECT_NAME:?}-devel"
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/prunerr\
+      /prunerr:devel-${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
+    container_name: "prunerr-devel"
     profiles:
       - "test"
     build:
       context: "${CHECKOUT_DIR:-.}/"
       target: "devel"
       args:
-        PYTHON_MINOR: "${PYTHON_MINOR:-3.10}"
-        PYTHON_ENV: "${PYTHON_ENV:-py310}"
+        PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
+        PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      # Make the run-time user configurable in `./.env`
+      # Make the runtime user configurable in `./.env`:
       PUID: "${PUID:-1000}"
       PGID: "${PGID:-${PUID:-1000}}"
-      # Variables from the environment we want to be passed through into the container:
+      # Variables from the environment to pass through into the container:
       CI: "${CI:-false}"
       # DEBUG: "true"
     volumes:
-      # Ensure local changes are reflected inside the container.
-      - "${CHECKOUT_DIR:-.}/bin/entrypoint:/usr/local/bin/entrypoint"
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:?}/"
-      # Preserve caches caches between container runs
-      - "${CHECKOUT_DIR:-.}/home/:/home/${PROJECT_NAME:?}/"
-      # Avoid any clashes between image variants and/or the local host at both build and
-      # run-time.
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/\
-        :/usr/local/src/${PROJECT_NAME:?}/var/"
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/.tox/\
-        :/usr/local/src/${PROJECT_NAME:?}/.tox/"
-      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py310}/prunerr.egg-info/\
-        :/usr/local/src/${PROJECT_NAME:?}/src/prunerr.egg-info/"
+      # Reflect local changes inside the container:
+      - "${CHECKOUT_DIR:-.}/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr/"
+      # Preserve user configuration, data, and caches between containers and variants:
+      - "${CHECKOUT_DIR:-.}/home/.config/:/home/prunerr/.config/"
+      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/prunerr/.local/share/"
+      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/prunerr/.cache/"
+      # Avoid any clashes between image variants and the local host at both build and
+      # runtime:
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
+        :/usr/local/src/prunerr/var/"
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/.tox/\
+        :/usr/local/src/prunerr/.tox/"
+      - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}\
+        /prunerr.egg-info/\
+        :/usr/local/src/prunerr/src/prunerr.egg-info/"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:
@@ -85,24 +85,47 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-}/"
-    working_dir: "/usr/local/src/${PROJECT_NAME:-}/"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr/"
+    working_dir: "/usr/local/src/prunerr/"
     command: >-
       hadolint "./Dockerfile"
 
-  pandoc:
-    image: "pandoc/core"
+  reuse:
+    image: "docker.io/fsfe/reuse:latest-debian"
     profiles:
-      - "release"
+      - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
+    command: >-
+      lint
+
+  vale:
+    image: "docker.io/jdkato/vale:v2.28.1"
+    profiles:
+      - "lint"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr"
+    working_dir: "/usr/local/src/prunerr"
+    command: >-
+      .
+
+  pandoc:
+    image: "docker.io/pandoc/core"
+    profiles:
+      - "release"
+    user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
+    volumes:
+      - "${CHECKOUT_DIR:-.}/:/data/"
     entrypoint: "ash"
-    # Strip reStructuredText directives unsupported in Markdown before converting and
-    # converted Markdown that isn't widely supported, e.g. table of contents and tables
-    # respectively:
+    # Strip reStructuredText directives unsupported in Markdown before converting, for
+    # example table of contents, and converted Markdown that isn't widely supported, for
+    # example tables:
     command: >-
       -xeu -c '
         grep -Ev "^ *\.\. +(contents)::.*" "./README.rst" |
@@ -123,26 +146,26 @@ services:
     volumes:
       - "${CHECKOUT_DIR:-.}/:/data/"
     command: >-
-      --file "/data/README.md"
+      --file "/data/var/README.md"
       --short "Perma-seed Servarr media libraries"
-      --debug "${DOCKER_USER:-}/${PROJECT_NAME:-}"
+      --debug "${DOCKER_USER:-}/prunerr"
 
   gitlab-release-cli:
-    image: "${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/gitlab-org/release-cli:latest"
+    image: "registry.gitlab.com/gitlab-org/release-cli:latest"
     profiles:
       - "release"
     environment:
       CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
     volumes:
-      - "./:/usr/local/src/${PROJECT_NAME:-}/"
-    working_dir: "/usr/local/src/${PROJECT_NAME:-}/"
+      - "./:/usr/local/src/prunerr/"
+    working_dir: "/usr/local/src/prunerr/"
 
   ## Containers related to CI/CD:
 
-  # The container in which CI/CD is run:
+  # The container that runs CI/CD:
   build-host:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/${PROJECT_NAME:-}\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/prunerr\
       :build-host"
     profiles:
       - "ci"
@@ -151,7 +174,8 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - "${CHECKOUT_DIR:-.}/:${CHECKOUT_DIR:-.}"
-      - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint:/usr/local/bin/entrypoint"
+      - "${CHECKOUT_DIR:-.}/build-host/bin/init-job.sh:/usr/local/bin/init-job.sh"
+      - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       # Share local SSH authentication to repository remotes
       - "~/.ssh/:/home/runner/.ssh/"
     env_file: "./.env"
@@ -162,7 +186,7 @@ services:
       # DEBUG: "true"
     working_dir: "${CHECKOUT_DIR:-.}"
     command: >-
-      make -e build-docker test-docker release
+      make -e test-lint build-docker test-docker release
 
   gitlab-runner:
     profiles:

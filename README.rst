@@ -21,50 +21,50 @@ Perma-seed Servarr media libraries
           :alt: Python code style
           :target: https://github.com/psf/black
        .. figure:: https://api.reuse.software/badge/gitlab.com/rpatterson/prunerr
-          :alt: REUSE license status
+          :alt: Reuse license status
           :target: https://api.reuse.software/info/gitlab.com/rpatterson/prunerr
 
      - .. figure:: https://gitlab.com/rpatterson/prunerr/-/badges/release.svg
-	  :alt: GitLab latest release
-	  :target: https://gitlab.com/rpatterson/prunerr/-/releases
+          :alt: GitLab latest release
+          :target: https://gitlab.com/rpatterson/prunerr/-/releases
        .. figure:: https://gitlab.com/rpatterson/prunerr/badges/main/pipeline.svg
           :alt: GitLab CI/CD pipeline status
           :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
        .. figure:: https://gitlab.com/rpatterson/prunerr/badges/main/coverage.svg
           :alt: GitLab coverage report
-	  :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
+          :target: https://gitlab.com/rpatterson/prunerr/-/commits/main
        .. figure:: https://img.shields.io/gitlab/stars/rpatterson/prunerr?gitlab_url=https%3A%2F%2Fgitlab.com&logo=gitlab
-	  :alt: GitLab repo stars
-	  :target: https://gitlab.com/rpatterson/prunerr
+          :alt: GitLab repository stars
+          :target: https://gitlab.com/rpatterson/prunerr
 
      - .. figure:: https://img.shields.io/github/v/release/rpatterson/prunerr?logo=github
-	  :alt: GitHub release (latest SemVer)
-	  :target: https://github.com/rpatterson/prunerr/releases
+          :alt: GitHub release (latest SemVer)
+          :target: https://github.com/rpatterson/prunerr/releases
        .. figure:: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml/badge.svg
           :alt: GitHub Actions status
           :target: https://github.com/rpatterson/prunerr/actions/workflows/build-test.yml
        .. figure:: https://codecov.io/github/rpatterson/prunerr/branch/main/graph/badge.svg?token=GNKVQ8VYOU
           :alt: Codecov test coverage
-	  :target: https://app.codecov.io/github/rpatterson/prunerr
+          :target: https://app.codecov.io/github/rpatterson/prunerr
        .. figure:: https://img.shields.io/github/stars/rpatterson/prunerr?logo=github
-	  :alt: GitHub repo stars
-	  :target: https://github.com/rpatterson/prunerr/
+          :alt: GitHub repository stars
+          :target: https://github.com/rpatterson/prunerr/
 
-     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr/main?sort=semver&logo=docker
-          :alt: Docker Hub image version (latest semver)
+     - .. figure:: https://img.shields.io/docker/v/merpatterson/prunerr?sort=semver&logo=docker
+          :alt: Docker Hub image version
           :target: https://hub.docker.com/r/merpatterson/prunerr
        .. figure:: https://img.shields.io/docker/pulls/merpatterson/prunerr?logo=docker
           :alt: Docker Hub image pulls count
           :target: https://hub.docker.com/r/merpatterson/prunerr
        .. figure:: https://img.shields.io/docker/stars/merpatterson/prunerr?logo=docker
-	  :alt: Docker Hub stars
+          :alt: Docker Hub stars
           :target: https://hub.docker.com/r/merpatterson/prunerr
        .. figure:: https://img.shields.io/docker/image-size/merpatterson/prunerr?logo=docker
-	  :alt: Docker Hub image size (latest semver)
+          :alt: Docker Hub image size
           :target: https://hub.docker.com/r/merpatterson/prunerr
 
      - .. figure:: https://img.shields.io/keybase/pgp/rpatterson?logo=keybase
-          :alt: KeyBase PGP key ID
+          :alt: KeyBase Pretty Good Privacy (PGP) key ID
           :target: https://keybase.io/rpatterson
        .. figure:: https://img.shields.io/github/followers/rpatterson?style=social
           :alt: GitHub followers count
@@ -100,7 +100,10 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
   AKA mark them as failed, in Servarr.
 - And more...
 
+.. include-end-before
 .. contents:: Table of Contents
+.. include-start-after
+
 
 ****************************************************************************************
 Summary
@@ -143,45 +146,43 @@ See the `Usage`_ section below for full details.
 Installation
 ****************************************************************************************
 
-Local/Native Installation
+Install locally or use the Docker container image:
+
+Local Installation
 ========================================================================================
 
-Install using any tool for installing standard Python 3 distributions such as `pip`_::
+Install by using any tool for installing standard Python 3 distributions such as
+`pip`_::
 
   $ pip3 install --user prunerr
 
-Optional shell tab completion is available via `argcomplete`_.
+Optional shell prompt tab completion is available by using `argcomplete`_.
 
-Docker Container Image Installation
+Docker Container Image
 ========================================================================================
 
-The recommended way to use the Docker container image is via `Docker Compose`_.  See
-`the example ./docker-compose.yml file`_ for an example configuration.  Once you have
-your configuration, you can create and run the container::
+The recommended way to use the container image is by using `Docker Compose`_. See `the
+example ./docker-compose.yml file`_. Write your configuration and run the container::
 
   $ docker compose up
 
-Alternatively, you make use the image directly.  Pull `the Docker image`_::
+You can also use the image directly. Pull `the Docker image`_. Use it to create and run
+a container::
 
   $ docker pull "registry.gitlab.com/rpatterson/prunerr"
-
-And then use the image to create and run a container::
-
   $ docker run --rm -it "registry.gitlab.com/rpatterson/prunerr" ...
 
-Images variant tags are published for the Python version, branch, and major/minor
-versions so that users can control when they get new images over time,
-e.g. ``registry.gitlab.com/rpatterson/prunerr:py310-main``.  The canonical
-Python version is 3.10 which is the version used in tags without ``py###``,
-e.g. ``registry.gitlab.com/rpatterson/prunerr:main``.  Pre-releases are from
-``develop`` and final releases are from ``main`` which is also the default for tags
-without a branch, e.g. ``registry.gitlab.com/rpatterson/prunerr:py310``. The
-major/minor version tags are only applied to the final release images and without the
-corresponding ``main`` branch tag,
-e.g. ``registry.gitlab.com/rpatterson/prunerr:py310-v0.8``.
+Use image variant tags to control when the image updates. Releases publish tags for the
+branch and for major and minor versions. For example, to keep up to date with a specific
+branch, use a tag such as
+``registry.gitlab.com/rpatterson/prunerr:main``. Releases from ``develop``
+publish pre-releases. Releases from ``main`` publish final releases. Releases from
+``main`` also publish tags without a branch, for example
+``registry.gitlab.com/rpatterson/prunerr``. Releases from ``main`` also
+publish tags for the major and minor version, for example
+``registry.gitlab.com/rpatterson/prunerr:v0.8``.
 
-Multi-platform Docker images are published containing images for the following
-platforms or architectures in the Python 3.10 ``py310`` variant:
+Releases publish multi-platform images for the following platforms:
 
 - ``linux/amd64``
 - ``linux/arm64``
@@ -282,17 +283,25 @@ sub-command performs the following operations.
    ``indexers/priorities`` indexer order then by the configured operations for that
    item's indexer.
 
+The Docker container image can run the command-line script as well::
+
+  $ docker compose run "prunerr" prunerr --help
+  usage: prunerr [-h]
+
+  prunerr foundation or template, top-level package.
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
 
 ****************************************************************************************
 Contributing
 ****************************************************************************************
 
-NOTE: `This project is hosted on GitLab`_.  There's `a mirror on GitHub`_ but please use
-GitLab for reporting issues, submitting PRs/MRs and any other development or maintenance
-activity.
-
-See `the ./CONTRIBUTING.rst file`_ for more details on how to get started with
-development.
+`GitLab hosts this project`_ and `mirrors it to GitHub`_ but use GitLab for reporting
+issues, submitting pull or merge requests and any other development or maintenance
+activity. See `the contributing documentation`_ for more details on how to get started
+with development.
 
 
 ****************************************************************************************
@@ -318,28 +327,33 @@ Finally, there is a laundry list of other download client management tasks that 
 automated but aren't by anything I could find.  So I added them to Prunerr as well.
 
 
-.. _`Transmission BitTorrent client`: https://transmissionbt.com/
+****************************************************************************************
+References
+****************************************************************************************
+
+.. target-notes::
 
 .. _`Servarr`: https://wiki.servarr.com
-.. _`Radarr`: https://wiki.servarr.com/en/radarr
-.. _`Sonarr`: https://wiki.servarr.com/en/sonarr
+.. _`Transmission BitTorrent client`: https://transmissionbt.com/
 .. _`download clients`: https://wiki.servarr.com/radarr/settings#download-clients
+.. _`Sonarr`: https://wiki.servarr.com/en/sonarr
+.. _`Radarr`: https://wiki.servarr.com/en/radarr
 .. _`FlexGet`: https://flexget.com/
 
 .. _pip: https://pip.pypa.io/en/stable/installation/
 .. _argcomplete: https://kislyuk.github.io/argcomplete/#installation
 
-.. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
 .. _`Docker Compose`: https://docs.docker.com/compose/
-.. _`the example ./docker-compose.yml file`: https://gitlab.com/rpatterson/prunerr/blob/main/docker-compose.yml
+.. _`the example ./docker-compose.yml file`:
+   https://gitlab.com/rpatterson/prunerr/-/blob/main/docker-compose.yml
+.. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
 
 .. _`the example configuration`:
    https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
 
-.. _`This project is hosted on GitLab`:
+.. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/prunerr
-.. _`a mirror on GitHub`:
+.. _`mirrors it to GitHub`:
    https://github.com/rpatterson/prunerr
-
-.. _`the ./CONTRIBUTING.rst file`:
-   https://gitlab.com/rpatterson/prunerr/blob/main/CONTRIBUTING.rst
+.. _`the contributing documentation`:
+   https://gitlab.com/rpatterson/prunerr/-/blob/main/docs/contributing.rst

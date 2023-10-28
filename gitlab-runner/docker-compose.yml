@@ -2,20 +2,19 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Override `$ docker compose ...` configuration for development or testing here in this
-# repo checkout.  Everything that may be used outside this checkout should be in
+# Override `$ docker compose` configuration for development or testing here in this
+# repository checkout. Keep everything used by users outside this checkout in
 # `./docker-compose.yml`.
 version: "3.8"
 
 services:
-
   # Conserve shared runner minutes, run GitLab CI/CD jobs locally:
   gitlab-runner:
     image: "gitlab/gitlab-runner"
     volumes:
-      - "./gitlab-runner/config:/etc/gitlab-runner"
+      - "${CHECKOUT_DIR:-.}/gitlab-runner/config:/etc/gitlab-runner"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./gitlab-runner/cache:/cache"
-      - "./gitlab-runner/certs:/certs"
+      - "${CHECKOUT_DIR:-.}/gitlab-runner/cache:/cache"
+      - "${CHECKOUT_DIR:-.}/gitlab-runner/certs:/certs"
     ports:
       - "8093:8093"

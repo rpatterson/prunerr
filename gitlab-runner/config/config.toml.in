@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Set to 2 times the number of parallel matrix jobs as a default.
-# Alternatively, set to the number of CPUs/cores or some multiple:
+# Set to 2 times the number of parallel matrix jobs as a default.  Or set to the number
+# of CPU cores:
 concurrent = 10
 # Pick up jobs as soon as possible:
 check_interval = 1
@@ -22,8 +22,6 @@ shutdown_timeout = 0
   executor = "docker"
   # https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#use-the-overlayfs-driver
   environment = ["DOCKER_DRIVER=overlay2"]
-  # https://gitlab.com/gitlab-org/gitlab-runner/-/issues/29022#workaround-options
-  pre_get_sources_script = "git config --global --add safe.directory $CI_PROJECT_DIR"
   [runners.cache]
     MaxUploadedArchiveSize = 0
   [runners.docker]

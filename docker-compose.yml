@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Minimal `$ docker compose ...` configuration to demonstrate the requirements for
-# running prunerr in containers.
+# Minimal `$ docker compose` configuration to show the requirements for running prunerr
+# in containers.
 version: "3.8"
 
 services:
@@ -78,7 +78,7 @@ services:
       - "transmission"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      # Make the run-time user configurable in `./.env` to match permissions inside and
+      # Make the runtime user configurable in `./.env` to match permissions inside and
       # outside the container.  Default to the common/standard main/first user and group
       # IDs
       PUID: "${PUID:-1000}"
@@ -86,8 +86,10 @@ services:
       # Un-comment to get more verbose `DEBUG` logging
       # DEBUG: "true"
     volumes:
-      # Use the Prunerr config from the Prunerr checkout
-      - "./home/.config/:/home/prunerr/.config/"
+      # Preserve user configuration, data, and caches between containers and variants:
+      - "${CHECKOUT_DIR:-.}/home/.config/:/home/prunerr/.config/"
+      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/prunerr/.local/share/"
+      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/prunerr/.cache/"
       # The volume on which Transmission's `download-dir` is stored
       - type: bind
         source: "${DOWNLOAD_VOLUME:-/media/Library/}"

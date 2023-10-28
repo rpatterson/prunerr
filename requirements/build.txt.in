@@ -2,17 +2,40 @@
 #
 # SPDX-License-Identifier: MIT
 
-# Build, release and development tools that can operate totally independently and are
-# used outside the Docker container in the developer's localhost environment.
+# Build, release, and development tools that can operate totally independently of the
+# project's code or package and are used outside the Docker container in the developer's
+# localhost environment..
 
-# VCS hooks to enforce passint tests, test coverage, style and linting
+# Version Control System (VCS) integration to enforce passing tests, test coverage,
+# style, and linting:
 pre-commit
 
 # Release libraries and tools.
-# Parse commit messages according to conventional commits to decide wether the next
-# version tag should be a major, minor or patch bump and create the VCS tag.  Also VCS
-# hooks to enforce that commit messages comply with conventional commits
+#
+# Parse commit messages according to conventional commits to decide the next version
+# increment, major, minor or patch, and create the VCS tag. Also supplies VCS
+# integration to enforce conventional commit messages:
 commitizen
 
-# Publish releas artifacts to remotes
+# Generate release notes:
+towncrier
+
+# Verify reStructuredText documentation:
+rstcheck
+# Rich, full documentation site:
+sphinx
+sphinx-watch
+# https://github.com/sphinx-contrib/sphinx-lint
+sphinx-lint
+# https://docs.restructuredtext.net/articles/linter#supported-linters
+doc8
+restructuredtext-lint
+
+# Workaround Vale prose linter limitations:
+pyyaml
+configobj
+# More thorough prose linter:
+proselint
+
+# Publish release artifacts to remotes:
 twine

@@ -5,9 +5,9 @@
 # Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
 /*
 !.git*
-!/py310
 !/py311
+!/py312
+!/py310
 !/py39
 !/py38
-!/py37
 /*~

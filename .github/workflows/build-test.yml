@@ -6,17 +6,14 @@ name: "Build and Test"
 
 env:
   PUID: "1001"
-  PGID: "123"
+  PGID: "1001"
   # Project specific values:
   PROJECT_NAMESPACE: "rpatterson"
   PROJECT_NAME: "prunerr"
-  # Requires the secrets to be added to GitHub either through the web UI or the
-  # GitHub CLI tool:
-  # https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository
   GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
   GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"
   DOCKER_PASS: "${{ secrets.DOCKER_PASS }}"
-  # Enable the GitHub CLI
+  # Enable the GitHub command-line:
   PROJECT_GITHUB_PAT: "${{ secrets.PROJECT_GITHUB_PAT }}"
   # Tell the `./Makefile` about GitHub specific environment details:
   CI_IS_FORK: >-
@@ -28,9 +25,11 @@ env:
         ) && 'true'
       ) || 'false'
     }}
+  # Uncomment for debugging output:
+  DEBUG: "true"
 
 on:
-  # Only run on branches, not tags:
+  # Run only on branches, not tags:
   # https://github.com/orgs/community/discussions/25615#discussioncomment-3397691
   push:
     branches:
@@ -41,7 +40,6 @@ on:
   pull_request: {}
 
 jobs:
-
   build-test:
     runs-on: "ubuntu-latest"
     container:
@@ -55,43 +53,38 @@ jobs:
       matrix:
         PYTHON_MINORS:
           - "3.11"
+          - "3.12"
           - "3.10"
           - "3.9"
           - "3.8"
-          - "3.7"
     name: "build-test (python${{ matrix.PYTHON_MINORS }})"
     steps:
-
-      # Shared/common set up:
+      # Shared or common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
-      # TODO: Debug stale venv issues and restore cache once fixed
-      - name: "Change checkout owner"
-        # https://stackoverflow.com/a/58474340/624787
-        run: >-
-          chown -R ${PUID}:${PGID} ./ &&
-          git config --global --add safe.directory
-          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+      # TODO: Debug stale venv issues and restore cache after fixing.
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:
       - name: "Build image and run tests and checks in a container"
         run: >-
-          entrypoint make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
-          test-push build-docker-${{ matrix.PYTHON_MINORS }}
+          git config --global --add safe.directory
+          /__w/${{ github.event.repository.name }}/${{ github.event.repository.name }}
+          &&
+          init-job.sh entrypoint.sh make -e PYTHON_MINORS=${{ matrix.PYTHON_MINORS }}
+          test-push test-lint build-docker-${{ matrix.PYTHON_MINORS }}
           test-docker-${{ matrix.PYTHON_MINORS }} test-clean
 
       # Upload build artifacts:
       # https://github.com/actions/upload-artifact#usage
-      - name: "Archive test suite reports"
+      - name: "Archive test, coverage, and lint reports"
         uses: "actions/upload-artifact@master"
         with:
-          name: "test-suite-reports"
+          name: "test-coverage-lint-reports"
           path: |
-            ./build/*test*
-      # https://github.com/marketplace/actions/test-reporter#example
+            ./build/reports/
       - name: "Publish test suite report"
         uses: "dorny/test-reporter@main"
-        # run this step even if previous step failed
+        # run this step even if preceding step failed
         if: >-
           (success() || failure())
           && (
@@ -105,23 +98,7 @@ jobs:
             )
           )
         with:
-          name: "Test Suite Reports"
+          name: "Test Suite Reports (python${{ matrix.PYTHON_MINORS }})"
           path: >-
-            ./build/*/*test-junit.xml,
-            ./build/*/prospector-xunit.xml
+            ./build/reports/*/*unit.xml
           reporter: "java-junit"
-      - name: "Archive code coverage reports"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "code-coverage-reports"
-          path: |
-            ./build/*/.coverage*
-            ./build/*/coverage*
-            ./build/*/htmlcov*
-      - name: "Archive linter reports"
-        uses: "actions/upload-artifact@master"
-        with:
-          name: "linter-reports"
-          path: |
-            ./build/*/*lint*
-            ./build/*/prospector*

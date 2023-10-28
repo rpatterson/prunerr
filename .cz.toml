@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: MIT
 
 [tool.commitizen]
-# Parse commit messages according to conventional commits to decide wether the next
-# versin tag should be a major, minor or patch bump and create the VCS tag.  Also
-# provides VCS hooks to enforce that commit messages comply with conventional commits:
+# Parse commit messages according to conventional commits to decide the next version
+# increment, major, minor or patch, and create the Version Control System (VCS)
+# tag. Also supplies a VCS integration to enforce conventional commit messages:
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
 changelog_start_rev = "v0.0.0"

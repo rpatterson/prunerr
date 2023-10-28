@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
 
 """
@@ -24,12 +23,12 @@ from .. import tests
 @mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
 class PrunerrCLITests(tests.PrunerrTestCase):
     """
-    Test the prunerr Command-Line Interface.
+    Test the prunerr command-line interface.
     """
 
     def test_importable(self):
         """
-        The Python package is on `sys.path` and thus importable.
+        The Python package is on `sys.path` and importable.
         """
         import_process = subprocess.run(  # nosec B603
             [sys.executable, "-c", "import prunerr"],
@@ -41,22 +40,25 @@ class PrunerrCLITests(tests.PrunerrTestCase):
             "The Python package not importable",
         )
 
-    def get_cli_error_messages(self, args):
+    def get_cli_error_messages(self, args: list) -> str:
         """
-        Run the CLI script and return any error messages.
+        Run the command-line script and return any error messages.
+
+        :param args: Command-line arguments
+        :return: Output of stderr
         """
         stderr_file = io.StringIO()
-        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
+        with self.assertRaises(SystemExit, msg="Command-line didn't exit"):
             with contextlib.redirect_stderr(stderr_file):
                 prunerr.main(args=args)
         return stderr_file.getvalue()
 
     def test_cli_help(self):
         """
-        The command line script is self-docummenting.
+        The command line script documents itself.
         """
         stdout_file = io.StringIO()
-        with self.assertRaises(SystemExit, msg="CLI didn't exit"):
+        with self.assertRaises(SystemExit, msg="Command-line didn't exit"):
             with contextlib.redirect_stdout(stdout_file):
                 prunerr.main(args=["--help"])
         stdout = stdout_file.getvalue()
@@ -109,7 +111,7 @@ class PrunerrCLITests(tests.PrunerrTestCase):
 
     def test_cli_dash_m_option(self):
         """
-        The package supports execution via Python's `-m` CLI option.
+        The package supports running by using Python's `-m` command-line option.
         """
         module_main_process = subprocess.run(  # nosec B603
             [sys.executable, "-m", "prunerr", "exec", "--help"],
@@ -123,9 +125,12 @@ class PrunerrCLITests(tests.PrunerrTestCase):
 
     def test_cli_module_main(self):
         """
-        The package supports execution via Python's `-m` option.
+        The package exits with the right exception from the command-line.
         """
-        with self.assertRaises(SystemExit, msg="CLI didn't exit") as exc_context:
+        with self.assertRaises(
+            SystemExit,
+            msg="Command-line didn't exit",
+        ) as exc_context:
             runpy.run_module("prunerr")
         self.assertEqual(
             exc_context.exception.code,
@@ -135,14 +140,17 @@ class PrunerrCLITests(tests.PrunerrTestCase):
 
     def test_cli_exit_code(self):
         """
-        The command line script exits with status code zero if there are no exceptions.
+        The command line script exits with status code zero if it raises no exceptions.
+
+        :raises ValueError: Couldn't find script prefix path
         """
         # Find the location of the `console_scripts` for this test environment
-        prefix_path = pathlib.Path(sys.argv[0]).parent
-        while not (prefix_path / "bin").is_dir():
-            prefix_path = prefix_path.parent
-            if prefix_path.parent is list(prefix_path.parents)[-1]:  # pragma: no cover
-                raise ValueError(f"Could not find script prefix path: {sys.argv[0]}")
+        for parent_path in pathlib.Path(sys.argv[0]).parents:
+            if (parent_path / "bin").is_dir():
+                prefix_path = parent_path
+                break
+        else:  # pragma: no cover
+            raise ValueError(f"Couldn't find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(  # nosec B603
             [prefix_path / "bin" / "prunerr", "exec", "--help"],

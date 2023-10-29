@@ -23,9 +23,6 @@ GPG_SIGNING_KEYID=2EFF7CCE6828E359
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
-export DOCKER_USER=merpatterson
-# TEMPLATE: See comments towards the bottom and update.
-GPG_SIGNING_KEYID=2EFF7CCE6828E359
 
 
 ### "Private" Variables:
@@ -372,6 +369,7 @@ export PROJECT_GITHUB_PAT
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
+export PIP_COMPILE_ARGS=
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Safe defaults for testing the release process without publishing to the final/official
@@ -524,7 +522,8 @@ build-docs: build-docs-html
 .PHONY: build-docs-watch
 ## Serve the Sphinx documentation with live updates
 build-docs-watch: $(HOME)/.local/bin/tox
-	tox exec -e "build" -- sphinx-watch "./docs/" "./build/docs/html/" "html" --httpd
+	mkdir -pv "./build/docs/html/"
+	tox exec -e "build" -- sphinx-autobuild -b "html" "./docs/" "./build/docs/html/"
 
 .PHONY: build-docs-%
 # Render the documentation into a specific format.
@@ -665,6 +664,16 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
+.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
+## Pull container images and compile fixed/pinned dependency versions if necessary.
+$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
+	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
+	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
+	$(MAKE) -e "./var-docker/$${PYTHON_ENV}/log/build-devel.log"
+	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
+	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
+	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
+
 
 ### Test Targets:
 #
@@ -788,6 +797,18 @@ test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCK
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
+	$(MAKE) -e -j $(PYTHON_MINORS:%=test-lint-docker-volumes-%)
+.PHONY: $(PYTHON_MINORS:%=test-lint-docker-volumes-%)
+## Prevent Docker volumes owned by `root` for one Python version.
+$(PYTHON_MINORS:%=test-lint-docker-volumes-%):
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:test-lint-docker-volumes-%=%)" \
+	    PYTHON_MINOR="$(@:test-lint-docker-volumes-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:test-lint-docker-volumes-%=%))" \
+	    test-lint-docker-volumes
+.PHONY: test-lint-docker-volumes
+## Prevent Docker volumes owned by `root`.
+test-lint-docker-volumes: $(HOST_TARGET_DOCKER) ./.env.~out~
 # Ensure that any bind mount volume paths exist in VCS so that `# dockerd` doesn't
 # create them as `root`:
 	if test -n "$$(
@@ -1614,7 +1635,7 @@ then
 fi
 if test "$(TEMPLATE_IGNORE_EXISTING)" = "true"
 then
-    envsubst <"$(1)" >"$(2)"
+    envsubst <"$(1)" >"$(2:%.~out~=%)"
     exit
 fi
 exit 1

@@ -382,7 +382,7 @@ run: build-docker ./.env.~out~
 # Recipes that make artifacts needed for by end-users, development tasks, other recipes.
 
 .PHONY: build
-## Setup everything for development from a checkout, local and in containers.
+## Set up everything for development from a checkout, local and in containers.
 build: ./.git/hooks/pre-commit ./.env.~out~ $(HOST_TARGET_DOCKER) \
 		$(HOME)/.local/bin/tox ./var/log/npm-install.log build-docker
 
@@ -738,8 +738,8 @@ endif
 .PHONY: release-bump
 ## Bump the package version if conventional commits require a release.
 release-bump: $(VCS_RELEASE_FETCH_TARGETS) $(HOME)/.local/bin/tox \
-		./var/log/npm-install.log ./var/log/git-remotes.log \
-		./var-docker/log/build-devel.log ./.env.~out~
+		./var/log/npm-install.log ./var-docker/log/build-devel.log \
+		./.env.~out~
 	if ! git diff --cached --exit-code
 	then
 	    set +x
@@ -829,7 +829,9 @@ endif
 devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log
 	true "TEMPLATE: Always specific to the project type"
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' \
+	    ':!newsfragments/*' ':!NEWS*.rst' ':!styles/*/meta.json' \
+	    ':!styles/*/*.yml' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -1419,10 +1421,9 @@ pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DO
 
 # TEMPLATE: Only necessary if you customize the `./build-host/` image.  Different
 # projects can use the same image, even across individuals and organizations.  If you do
-# need to customize the image, then run this a single time for each customized
-# image. See the `./var/log/docker-login*.log` targets for the authentication
-# environment variables to set or login to those container registries manually and `$
-# touch` these targets.
+# need to customize the image, then run this every time the image changes. See the
+# `./var/log/docker-login*.log` targets for the authentication environment variables to
+# set or login to those container registries manually and `$ touch` these targets.
 .PHONY: bootstrap-project
 bootstrap-project: \
 		./var/log/docker-login-GITLAB.log \

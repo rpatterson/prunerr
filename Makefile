@@ -1010,10 +1010,9 @@ endef
 
 # TEMPLATE: Only necessary if you customize the `./build-host/` image.  Different
 # projects can use the same image, even across individuals and organizations.  If you do
-# need to customize the image, then run this a single time for each customized
-# image. See the `./var/log/docker-login*.log` targets for the authentication
-# environment variables to set or login to those container registries manually and `$
-# touch` these targets.
+# need to customize the image, then run this every time the image changes. See the
+# `./var/log/docker-login*.log` targets for the authentication environment variables to
+# set or login to those container registries manually and `$ touch` these targets.
 .PHONY: bootstrap-project
 bootstrap-project: ./var/log/docker-login-DOCKER.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments

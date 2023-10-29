@@ -12,8 +12,6 @@ FROM docker:latest
 # Least volatile layers first:
 
 # Project constants:
-# TEMPLATE: Only change these if you customize this image.  Otherwise use the version of
-# this image from the project template in your CI/CD.
 ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=project-structure
 

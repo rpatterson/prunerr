@@ -1,7 +1,7 @@
 {
   "name": "@rpattersonnet/prunerr",
   "scope": "@rpattersonnet",
-  "version": "2.0.0-b0",
+  "version": "2.0.0-b1",
   "description": "Perma-seed Servarr media libraries",
   "scripts": {
     "lint": "npm run lint:code && npm run lint:prose",

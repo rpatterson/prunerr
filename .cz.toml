@@ -9,7 +9,7 @@
 # https://commitizen-tools.github.io/commitizen/
 name = "cz_conventional_commits"
 changelog_start_rev = "v0.0.0"
-version = "2.0.0b0"
+version = "2.0.0b1"
 tag_format = "v$version"
 annotated_tag = true
 gpg_sign = true

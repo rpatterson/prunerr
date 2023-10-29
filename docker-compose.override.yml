@@ -84,8 +84,8 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-project-structure}"
-    working_dir: "/usr/local/src/${PROJECT_NAME:-project-structure}"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure"
+    working_dir: "/usr/local/src/project-structure"
     command: >-
       .
 

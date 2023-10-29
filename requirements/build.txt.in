@@ -24,7 +24,7 @@ towncrier
 rstcheck
 # Rich, full documentation site:
 sphinx
-sphinx-watch
+sphinx-autobuild
 # https://github.com/sphinx-contrib/sphinx-lint
 sphinx-lint
 # https://docs.restructuredtext.net/articles/linter#supported-linters

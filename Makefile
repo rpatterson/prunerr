@@ -602,6 +602,18 @@ test-lint-docker: $(HOST_TARGET_DOCKER) ./.env.~out~ ./var/log/docker-login-DOCK
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) hadolint \
 	    hadolint "./build-host/Dockerfile"
+	$(MAKE) -e -j $(PYTHON_MINORS:%=test-lint-docker-volumes-%)
+.PHONY: $(PYTHON_MINORS:%=test-lint-docker-volumes-%)
+## Prevent Docker volumes owned by `root` for one Python version.
+$(PYTHON_MINORS:%=test-lint-docker-volumes-%):
+	$(MAKE) -e \
+	    PYTHON_MINORS="$(@:test-lint-docker-volumes-%=%)" \
+	    PYTHON_MINOR="$(@:test-lint-docker-volumes-%=%)" \
+	    PYTHON_ENV="py$(subst .,,$(@:test-lint-docker-volumes-%=%))" \
+	    test-lint-docker-volumes
+.PHONY: test-lint-docker-volumes
+## Prevent Docker volumes owned by `root`.
+test-lint-docker-volumes: $(HOST_TARGET_DOCKER) ./.env.~out~
 # Ensure that any bind mount volume paths exist in VCS so that `# dockerd` doesn't
 # create them as `root`:
 	if test -n "$$(

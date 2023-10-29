@@ -8,7 +8,7 @@
 
 set -eu -o pipefail
 shopt -s inherit_errexit
-if [ "${DEBUG:=false}" = "true" ]
+if test "${DEBUG:=false}" = "true"
 then
     # Echo commands for easier debugging
     set -x

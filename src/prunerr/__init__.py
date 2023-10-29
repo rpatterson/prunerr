@@ -250,17 +250,21 @@ def _main(args=None):
     Inner main command-line handler for outer exception handling.
     """
     # Parse command-line options and positional arguments:
-    parsed_args = parser.parse_args(args=args)
+    parsed_args = argparse.Namespace()
+    try:
+        parsed_args = parser.parse_args(args=args, namespace=parsed_args)
+    finally:
+        # Use `argparse` to validate that the config file exists and can be read, then
+        # pass the path into the runner:
+        if callable(getattr(parsed_args.config, "close", None)):  # pragma: no cover
+            with contextlib.closing(parsed_args.config):
+                parsed_args.config = parsed_args.config.name
     # Avoid noisy boilerplate, functions meant to handle command-line usage should
     # accept kwargs that match the defined option and argument names:
     cli_kwargs = dict(vars(parsed_args))
     # Remove any meta options and arguments, those used to direct option and argument
     # handling:
     del cli_kwargs["command"]
-    # Use `argparse` to validate that the config file exists and can be read, then pass
-    # the path into the runner.
-    with contextlib.closing(cli_kwargs["config"]):
-        cli_kwargs["config"] = cli_kwargs["config"].name
     # Separate the arguments for the subcommand:
     prunerr_dests = {
         action.dest for action in parser._actions  # pylint: disable=protected-access

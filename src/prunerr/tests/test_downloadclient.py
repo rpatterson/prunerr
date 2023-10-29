@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
 
 """
@@ -93,9 +92,17 @@ class PrunerrDownloadClientTests(tests.PrunerrTestCase):
             "Download client's RPC client not re-used across Servarr instances",
         )
 
-    def assert_download_client(self, runner, download_client_url):
+    def assert_download_client(
+        self,
+        runner: prunerr.runner.PrunerrRunner,
+        download_client_url: str,
+    ):
         """
         Confirm that an individual download client is configured correctly.
+
+        :param runner: The ``prunerr.runner.PrunerrRunner`` instance from which to get
+            the download clients
+        :param download_client_url: The URL of a test fixture download client
         """
         self.assertIn(
             download_client_url,

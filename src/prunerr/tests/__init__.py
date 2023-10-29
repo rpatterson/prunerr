@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
+
+# pylint: disable=missing-any-param-doc,missing-return-doc,missing-return-type-doc
+# pylint: disable=magic-value-comparison,missing-param-doc,missing-type-doc
 
 """
 Tests for Prunerr.
@@ -38,6 +40,26 @@ def parse_content_type(content_type):  # pragma: no cover
     message["Content-Type"] = content_type
     major_type, minor_type = message.get_params()[0][0].split("/")
     return major_type, minor_type
+
+
+def mock_get_torrent_response(
+    fields,
+    request=None,
+    context=None,
+    response_mock=None,
+):  # pylint: disable=unused-argument
+    """
+    Simulate a `torrent-get` request but modify the given fields.
+
+    Useful for testing download item properties that can't be represented in static
+    files such as date/time values.
+    """
+    for torrent, torrent_fields in zip(
+        response_mock["from_mock_dir"]["json"]["arguments"]["torrents"],
+        fields,
+    ):
+        torrent.update(torrent_fields)
+    return response_mock["from_mock_dir"]["json"]
 
 
 class PrunerrTestCase(
@@ -120,11 +142,11 @@ class PrunerrTestCase(
                 for servarr_config in self.config["servarrs"].values()
             ]
         for servarr_url in self.servarr_urls:
-            servarr_url = urllib.parse.urlsplit(servarr_url)
+            servarr_url_split = urllib.parse.urlsplit(servarr_url)
             with (
                 self.RESPONSES_DIR
-                / servarr_url.scheme
-                / urllib.parse.quote(servarr_url.netloc)
+                / servarr_url_split.scheme
+                / urllib.parse.quote(servarr_url_split.netloc)
                 / "api"
                 / "v3"
                 / "downloadclient%3Fapikey%3D"
@@ -132,7 +154,7 @@ class PrunerrTestCase(
                 / "0-response"
                 / "response.json"
             ).open() as servarr_download_client_response:
-                self.servarr_download_client_responses[servarr_url.geturl()] = [
+                self.servarr_download_client_responses[servarr_url_split.geturl()] = [
                     prunerr.servarr.deserialize_servarr_download_client(
                         download_client_config,
                     )
@@ -225,12 +247,11 @@ class PrunerrTestCase(
             for download_item in self.download_client_items_responses[
                 utils.normalize_url(download_client_url.geturl())
             ]["arguments"]["torrents"]:
-                if download_item["status"] == 6:
-                    download_item_dir = self.tmp_path / download_item[
-                        "downloadDir"
-                    ].lstrip(os.path.sep)
-                else:
-                    download_item_dir = self.incomplete_dir
+                download_item_dir = (
+                    self.tmp_path / download_item["downloadDir"].lstrip(os.path.sep)
+                    if download_item["status"] == 6
+                    else self.incomplete_dir
+                )
                 if download_item["files"]:
                     download_item_file = (
                         download_item_dir / download_item["files"][0]["name"]
@@ -368,8 +389,7 @@ class PrunerrTestCase(
                         )
 
                 # Patch transmission/Servarr storage paths if the body is JSON
-                response_text = response_path.read_text().strip()
-                if response_text:
+                if response_text := response_path.read_text().strip():
                     response_mock["json"] = self.patch_paths(json.loads(response_text))
 
                 responses[response_path.parent.name] = response_mock
@@ -539,23 +559,3 @@ class PrunerrTestCase(
         """
         imported_item_file = self.imported_item_file
         return imported_item_file.unlink()
-
-    def mock_get_torrent_response(
-        self,
-        fields,
-        request=None,
-        context=None,
-        response_mock=None,
-    ):  # pylint: disable=unused-argument
-        """
-        Simulate a `torrent-get` request but modify the given fields.
-
-        Useful for testing download item properties that can't be represented in static
-        files such as date/time values.
-        """
-        for torrent, torrent_fields in zip(
-            response_mock["from_mock_dir"]["json"]["arguments"]["torrents"],
-            fields,
-        ):
-            torrent.update(torrent_fields)
-        return response_mock["from_mock_dir"]["json"]

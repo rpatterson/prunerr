@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
+
+# pylint: disable=missing-any-param-doc,magic-value-comparison,missing-raises-doc
+# pylint: disable=missing-return-doc,missing-return-type-doc,missing-param-doc
+# pylint: disable=missing-type-doc
 
 """
 Download item metadata operations used in Prunerr configuration.
@@ -14,6 +17,43 @@ import logging
 logger = logging.getLogger(__name__)
 
 missing_value = object()
+
+
+def apply_sort_value(operation_config, include, sort_value):
+    """
+    Apply any restrictions that can apply across different operation types.
+    """
+    sort_bool = None
+    if "equals" in operation_config:
+        sort_bool = sort_value == operation_config["equals"]
+        if "minimum" in operation_config or "maximum" in operation_config:
+            raise ValueError(
+                f"Operation {operation_config['type']!r} "
+                f"includes both `equals` and `minimum` or `maximum`"
+            )
+    else:
+        if "minimum" in operation_config:
+            sort_bool = sort_value >= operation_config["minimum"]
+        if "maximum" in operation_config and (sort_bool is None or sort_bool):
+            sort_bool = sort_value <= operation_config["maximum"]
+    if sort_bool is not None:
+        sort_value = sort_bool
+    # Should the operation value be used to filter this download item?
+    if operation_config.get("filter", False) and include:
+        include = bool(sort_value)
+    # Should the operation value be reversed when ordering the download items?
+    if operation_config.get("reversed", False):
+        if isinstance(sort_value, (bool, int, float)):
+            sort_value = 0 - sort_value
+        elif isinstance(sort_value, (tuple, list, str)):
+            sort_value = reversed(sort_value)
+        else:
+            raise NotImplementedError(
+                f"Indexer priority operation value doesn't support `reversed`:"
+                f"{sort_value!r}"
+            )
+
+    return include, sort_value
 
 
 class PrunerrOperations:
@@ -55,8 +95,7 @@ class PrunerrOperations:
             return cached_results[operations_type]
 
         indexer_configs = self.indexer_operations.get(operations_type, {})
-        indexer_name = item.match_indexer_urls()
-        if indexer_name not in indexer_configs:
+        if (indexer_name := item.match_indexer_urls()) not in indexer_configs:
             indexer_name = None
         indexer_idx = list(indexer_configs.keys()).index(indexer_name)
         indexer_config = indexer_configs[indexer_name]
@@ -80,11 +119,10 @@ class PrunerrOperations:
                     f"{operation_config['type']!r}"
                 )
             # Delegate to the executor to get the operation value for this download item
-            sort_value = executor(operation_config, item)
-            if sort_value is None:
+            if (sort_value := executor(operation_config, item)) is None:
                 # If an executor returns None, all other handling should be skipped
                 return include, tuple(sort_key)
-            include, sort_value = self.apply_sort_value(
+            include, sort_value = apply_sort_value(
                 operation_config,
                 include,
                 sort_value,
@@ -92,43 +130,11 @@ class PrunerrOperations:
             sort_key.append(sort_value)
         return include, tuple(sort_key)
 
-    def apply_sort_value(self, operation_config, include, sort_value):
-        """
-        Apply any restrictions that can apply across different operation types.
-        """
-        sort_bool = None
-        if "equals" in operation_config:
-            sort_bool = sort_value == operation_config["equals"]
-            if "minimum" in operation_config or "maximum" in operation_config:
-                raise ValueError(
-                    f"Operation {operation_config['type']!r} "
-                    f"includes both `equals` and `minimum` or `maximum`"
-                )
-        else:
-            if "minimum" in operation_config:
-                sort_bool = sort_value >= operation_config["minimum"]
-            if "maximum" in operation_config and (sort_bool is None or sort_bool):
-                sort_bool = sort_value <= operation_config["maximum"]
-        if sort_bool is not None:
-            sort_value = sort_bool
-        # Should the operation value be used to filter this download item?
-        if operation_config.get("filter", False) and include:
-            include = bool(sort_value)
-        # Should the operation value be reversed when ordering the download items?
-        if operation_config.get("reversed", False):
-            if isinstance(sort_value, (bool, int, float)):
-                sort_value = 0 - sort_value
-            elif isinstance(sort_value, (tuple, list, str)):
-                sort_value = reversed(sort_value)
-            else:
-                raise NotImplementedError(
-                    f"Indexer priority operation value doesn't support `reversed`:"
-                    f"{sort_value!r}"
-                )
-
-        return include, sort_value
-
-    def exec_operation_value(self, operation_config, item):  # noqa: V105
+    def exec_operation_value(  # noqa: V105, pylint: disable=no-self-use
+        self,
+        operation_config,
+        item,
+    ):
         """
         Return the attribute or key value for the download item.
         """
@@ -182,8 +188,7 @@ class PrunerrOperations:
                 self.seen_empty_files.add(download_item.hashString.upper())
             return False
 
-        patterns = operation_config.get("patterns", [])
-        if patterns:
+        if patterns := operation_config.get("patterns", []):
             matching_files = []
             for pattern in patterns:
                 matching_files.extend(

@@ -15,6 +15,7 @@ import argparse
 import mimetypes
 import json
 import pdb
+import typing
 
 import argcomplete
 
@@ -71,11 +72,16 @@ subparsers = parser.add_subparsers(
 )
 
 
-def verify(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def verify(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> dict:
     runner.update()
-    runner.verify(*args, **kwargs)
+    verify_results = runner.verify(*args, **kwargs)
     # Wait for all verifying torrents to finish when doing a single `verify` run.
-    return runner.resume_verified_items(wait=True)
+    runner.resume_verified_items(wait=True)
+    return verify_results
 
 
 verify.__doc__ = prunerr.runner.PrunerrRunner.verify.__doc__
@@ -87,7 +93,11 @@ parser_verify = subparsers.add_parser(
 parser_verify.set_defaults(command=verify)
 
 
-def move(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def move(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> dict:
     runner.update()
     return runner.move(*args, **kwargs)
 
@@ -101,7 +111,11 @@ parser_move = subparsers.add_parser(
 parser_move.set_defaults(command=move)
 
 
-def review(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def review(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> dict:
     runner.update()
     return runner.review(*args, **kwargs)
 
@@ -117,7 +131,11 @@ parser_review = subparsers.add_parser(
 parser_review.set_defaults(command=review)
 
 
-def free_space(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def free_space(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> dict:
     runner.update()
     return runner.free_space(*args, **kwargs)
 
@@ -131,16 +149,18 @@ parser_free_space = subparsers.add_parser(
 parser_free_space.set_defaults(command=free_space)
 
 
-def exec_(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+def exec_(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> typing.Optional[dict]:
     runner.update()
     results = {}
-    exec_results = runner.exec_(*args, **kwargs)
-    if exec_results is not None:
+    if (exec_results := runner.exec_(*args, **kwargs)) is not None:
         results.update(exec_results)
 
     # Wait for all verifying torrents to finish when doing a single `exec` run.
-    resume_results = runner.resume_verified_items(wait=True)
-    if resume_results:
+    if resume_results := runner.resume_verified_items(wait=True):
         results["verify"] = resume_results
 
     if results:
@@ -158,7 +178,7 @@ parser_exec.set_defaults(command=exec_)
 
 
 def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    return runner.daemon(*args, **kwargs)
+    runner.daemon(*args, **kwargs)
 
 
 daemon.__doc__ = prunerr.runner.PrunerrRunner.daemon.__doc__
@@ -214,8 +234,6 @@ def config_cli_logging(
     # Avoid logging all JSON responses, particularly the very large history responses
     # from Servarr APIs
     logging.getLogger("arrapi.api").setLevel(logging.INFO)
-
-    return log_level
 
 
 def main(args=None):  # pylint: disable=missing-function-docstring

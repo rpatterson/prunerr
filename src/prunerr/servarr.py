@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
+
+# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
+# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
+# pylint: disable=missing-type-doc,missing-yield-doc,missing-yield-type-doc
 
 """
 Prunerr interaction with Servarr instances.
@@ -122,15 +125,15 @@ class PrunerrServarrInstance:
             "Requesting %s download clients settings",
             self.config["name"],
         )
-        for download_client_config in self.client.get("downloadclient"):
+        for servarr_download_client in self.client.get("downloadclient"):
             if (
-                not download_client_config["enable"]
-                or download_client_config["implementation"] != "Transmission"
+                not servarr_download_client["enable"]
+                or servarr_download_client["implementation"] != "Transmission"
             ):  # pragma: no cover
                 # BBB: Why misidentified as not covered under Python 3.9?
                 continue
             download_client_config = deserialize_servarr_download_client(
-                download_client_config,
+                servarr_download_client,
             )
             # Instantiate newly defined download clients
             download_client_url = utils.normalize_url(download_client_config["url"])
@@ -156,7 +159,7 @@ class PrunerrServarrInstance:
         history, but also useful to conveniently get all pages of a smaller data set.
         """
         response = {}
-        while (
+        while (  # pylint: disable=while-used
             # First page, no response yet
             not response
             # Are the pages for this endpoint on this Servarr instance exhausted?
@@ -268,7 +271,7 @@ class PrunerrServarrDownloadClient:
         )
         # Wait for a timeout for items to finish moving before proceeding.
         start = time.time()
-        while next(
+        while next(  # pylint: disable=while-used
             (
                 download_item
                 for download_item in download_items

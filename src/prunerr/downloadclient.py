@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
+
+# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
+# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
+# pylint: disable=missing-type-doc
 
 """
 Prunerr interaction with download clients.
@@ -70,8 +73,7 @@ class PrunerrDownloadClient:
         # Connect to the download client's RPC API, also retrieves session data
         split_url = urllib.parse.urlsplit(self.config["url"])
         # Normalize the port for URLs without one specified:
-        port = split_url.port
-        if not port:
+        if not (port := split_url.port):
             if split_url.scheme == "http":
                 port = 80
             elif split_url.scheme == "https":
@@ -371,7 +373,7 @@ class PrunerrDownloadClient:
             )
             self.client.verify_torrent(list(corrupt_items.keys()))
             self.verifying_items.update(corrupt_items)
-            return corrupt_items
+            return list(corrupt_items.keys())
         return None
 
     def resume_verified_items(self):

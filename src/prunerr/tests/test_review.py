@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
 
 """
@@ -41,7 +40,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                     "POST": {
                         "01-torrent-get": {
                             "json": functools.partial(
-                                self.mock_get_torrent_response,
+                                tests.mock_get_torrent_response,
                                 [
                                     {},
                                     {
@@ -170,7 +169,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                     "POST": {
                         "01-torrent-get": {
                             "json": functools.partial(
-                                self.mock_get_torrent_response,
+                                tests.mock_get_torrent_response,
                                 [
                                     {
                                         "addedDate": (
@@ -249,7 +248,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                     "POST": {
                         "01-torrent-get": {
                             "json": functools.partial(
-                                self.mock_get_torrent_response,
+                                tests.mock_get_torrent_response,
                                 [
                                     {},
                                     {},

@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
-#
 # SPDX-License-Identifier: MIT
+
+# pylint: disable=missing-any-param-doc,missing-param-doc,missing-return-doc
+# pylint: disable=missing-return-type-doc,missing-type-doc
 
 """
 Prunerr interaction with download clients.
@@ -126,8 +128,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 self,
             )
             return None
-        done_date = self._fields["doneDate"].value
-        if not done_date:
+        if not (done_date := self._fields["doneDate"].value):
             if self._fields["startDate"].value:
                 logger.warning(
                     "Missing done date for seconds since done, using start date: %r",
@@ -190,8 +191,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         Determine the total download rate across the whole download time.
         """
-        seconds_downloading = self.seconds_downloading
-        if seconds_downloading <= 0:
+        if (seconds_downloading := self.seconds_downloading) <= 0:
             return None
         return (
             self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
@@ -274,7 +274,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 # Avoid race conditions, perform no further operations on removed items
                 break
 
-            if "change" in operation_config:
+            if "change" in operation_config:  # pylint: disable=magic-value-comparison
                 logger.info(
                     "Changing download item per %r review for %r: %s",
                     operation_config["type"],

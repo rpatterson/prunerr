@@ -1,6 +1,9 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
+# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
+# pylint: disable=missing-return-doc,missing-return-type-doc,missing-type-doc
+
 """
 Utility functions or other shared constants and values.
 
@@ -79,8 +82,7 @@ class DaemonOnceFilter(logging.Filter):  # pylint: disable=too-few-public-method
         """
         Check the record extra attributes to see if the runner has already looped once.
         """
-        runner = getattr(record, "runner", None)
-        if runner is not None:
+        if (runner := getattr(record, "runner", None)) is not None:
             return not runner.quiet
         return True
 

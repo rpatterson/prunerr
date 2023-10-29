@@ -71,6 +71,8 @@ jobs:
   build-test:
     runs-on: "ubuntu-latest"
     container:
+      # TEMPLATE: Only change these if you customize the `./build-host/Dockerfile` image.
+      # Otherwise use the version of this image from the project template in your CI/CD.
       image: "ghcr.io/rpatterson/project-structure:build-host"
       env:
         CHECKOUT_DIR: "${{ github.workspace }}"

@@ -65,9 +65,9 @@ ignored-classes = ["lxml.etree.QName.localname"]
 [tool.pylint.format]
 max-line-length = "88"
 [tool.pylint."messages control"]
-# Workaround Prospector bug with Pylint:
-# https://github.com/PyCQA/prospector/issues/596#issue-1592499675
 disable = [
+    # Workaround Prospector bug with Pylint:
+    # https://github.com/PyCQA/prospector/issues/596#issue-1592499675
     "relative-beyond-top-level",
     "docstring-first-line-empty",
 ]

@@ -11,7 +11,7 @@ services:
   # Configuration specific to development:
   project-structure:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson\
       /project-structure:${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-checkout"
     build:
@@ -27,7 +27,7 @@ services:
   # Container for use by developers:
   project-structure-devel:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${PROJECT_NAMESPACE:?}\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson\
       /project-structure:devel-${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "project-structure-devel"
     profiles:
@@ -98,8 +98,8 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/${PROJECT_NAME:-project-structure}"
-    working_dir: "/usr/local/src/${PROJECT_NAME:-project-structure}"
+      - "${CHECKOUT_DIR:-.}/:/usr/local/src/project-structure"
+    working_dir: "/usr/local/src/project-structure"
     command: >-
       .
 
@@ -153,7 +153,7 @@ services:
   # The container that runs CI/CD:
   build-host:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/project-structure\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/project-structure\
       :build-host"
     profiles:
       - "ci"

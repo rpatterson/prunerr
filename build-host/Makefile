@@ -20,8 +20,6 @@ COMMA=,
 # Done with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
-# TEMPLATE: Only change this if you customize this image.  Otherwise use the version of
-# this image from the project template in your CI/CD.
 DOCKER_IMAGE=merpatterson/project-structure
 
 ## Top-level targets

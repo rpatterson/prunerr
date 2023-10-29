@@ -28,9 +28,9 @@ LABEL org.opencontainers.image.base.name="docker.io/library/docker:latest"
 # Build-time labels:
 LABEL org.opencontainers.image.version=1.0.0
 
-# Find the same home directory even when run as another user, for example `root`:
 ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
 ENV PROJECT_NAME="${PROJECT_NAME}"
+# Find the same home directory even when run as another user, for example `root`:
 ENV HOME="/home/runner"
 ENV PATH="${HOME}/.local/bin:${PATH}"
 # Prevent Node Version Manager (NVM) installing into `/bin/versions/**`:

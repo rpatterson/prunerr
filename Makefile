@@ -209,8 +209,7 @@ build-docs: build-docs-html
 ## Serve the Sphinx documentation with live updates
 build-docs-watch: $(HOME)/.local/bin/tox
 	mkdir -pv "./build/docs/html/"
-	tox exec -e "build" -- \
-	    sphinx-watch --httpd "./docs/" "./build/docs/html/" "html"
+	tox exec -e "build" -- sphinx-autobuild -b "html" "./docs/" "./build/docs/html/"
 
 .PHONY: build-docs-%
 # Render the documentation into a specific format.

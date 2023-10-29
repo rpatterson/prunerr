@@ -499,7 +499,9 @@ endif
 ## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' \
+	    ':!newsfragments/*' ':!NEWS*.rst' ':!styles/*/meta.json' \
+	    ':!styles/*/*.yml' ':!requirements/*/*.txt' |
 	while read -d $$'\0'
 	do
 	    if ! (

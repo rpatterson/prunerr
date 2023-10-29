@@ -25,12 +25,12 @@ charset-normalizer==3.3.1
 click==8.1.7
     # via
     #   proselint
-    #   sphinx-watch
     #   towncrier
     #   typer
 colorama==0.4.6
     # via
     #   commitizen
+    #   sphinx-autobuild
     #   typer
 commitizen==3.12.0
     # via -r requirements/build.txt.in
@@ -80,6 +80,8 @@ jinja2==3.1.2
     #   towncrier
 keyring==24.2.0
     # via twine
+livereload==2.6.3
+    # via sphinx-autobuild
 markdown-it-py==3.0.0
     # via rich
 markupsafe==2.1.3
@@ -161,21 +163,22 @@ shellingham==1.5.4
 six==1.16.0
     # via
     #   configobj
+    #   livereload
     #   proselint
 snowballstemmer==2.2.0
     # via sphinx
 sphinx==7.2.6
     # via
     #   -r requirements/build.txt.in
-    #   sphinx-watch
+    #   sphinx-autobuild
     #   sphinxcontrib-applehelp
     #   sphinxcontrib-devhelp
     #   sphinxcontrib-htmlhelp
     #   sphinxcontrib-qthelp
     #   sphinxcontrib-serializinghtml
-sphinx-lint==0.8.1
+sphinx-autobuild==2021.3.14
     # via -r requirements/build.txt.in
-sphinx-watch==0.1.2
+sphinx-lint==0.8.1
     # via -r requirements/build.txt.in
 sphinxcontrib-applehelp==1.0.7
     # via sphinx
@@ -195,6 +198,8 @@ termcolor==2.3.0
     # via commitizen
 tomlkit==0.12.1
     # via commitizen
+tornado==6.3.3
+    # via livereload
 towncrier==23.10.0
     # via -r requirements/build.txt.in
 twine==4.0.2
@@ -214,8 +219,6 @@ urllib3==2.0.7
     #   twine
 virtualenv==20.24.6
     # via pre-commit
-watchdog==3.0.0
-    # via sphinx-watch
 wcwidth==0.2.8
     # via prompt-toolkit
 zipp==3.17.0

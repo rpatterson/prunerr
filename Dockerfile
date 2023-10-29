@@ -33,7 +33,7 @@ ENV PROJECT_NAME="${PROJECT_NAME}"
 ENV HOME="/home/${PROJECT_NAME}"
 WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint.sh" ]
-CMD [ "project-structure" ]
+CMD [ "${PROJECT_NAME}" ]
 
 # Support for a volume to preserve data between runs and share data between variants:
 # TEMPLATE: Add other user `${HOME}/` files to preserved.

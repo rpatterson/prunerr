@@ -22,7 +22,7 @@ services:
   # Configuration specific to development:
   prunerr-daemon:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/prunerr\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson\
       /prunerr:${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-daemon-checkout"
     build:
@@ -38,7 +38,7 @@ services:
   # Container for use by developers:
   prunerr-devel:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/prunerr\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson\
       /prunerr:devel-${PYTHON_ENV:-py311}-${DOCKER_BRANCH_TAG:-develop}"
     container_name: "prunerr-devel"
     profiles:
@@ -164,7 +164,7 @@ services:
   # The container that runs CI/CD:
   build-host:
     image: "\
-      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/${DOCKER_USER:-}/prunerr\
+      ${DOCKER_REGISTRY_HOST:-registry.gitlab.com}/rpatterson/prunerr\
       :build-host"
     profiles:
       - "ci"

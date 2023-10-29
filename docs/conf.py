@@ -36,3 +36,9 @@ html_static_path = ['_static']
 # Linter options:
 # Disallow redirects:
 linkcheck_allowed_redirects = {}
+linkcheck_anchors_ignore = [
+    # The default from the Sphinx extension:
+    "^!",
+    # Tolerate links to source code lines in VCS provider web UIs:
+    "^L[0-9]+",
+]

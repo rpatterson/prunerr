@@ -794,7 +794,9 @@ endif
 ## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' \
+	    ':!newsfragments/*' ':!NEWS*.rst' ':!styles/*/meta.json' \
+	    ':!styles/*/*.yml' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -1275,10 +1277,9 @@ endef
 
 # TEMPLATE: Only necessary if you customize the `./build-host/` image.  Different
 # projects can use the same image, even across individuals and organizations.  If you do
-# need to customize the image, then run this a single time for each customized
-# image. See the `./var/log/docker-login*.log` targets for the authentication
-# environment variables to set or login to those container registries manually and `$
-# touch` these targets.
+# need to customize the image, then run this every time the image changes. See the
+# `./var/log/docker-login*.log` targets for the authentication environment variables to
+# set or login to those container registries manually and `$ touch` these targets.
 .PHONY: bootstrap-project
 bootstrap-project: ./var/log/docker-login-DOCKER.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments

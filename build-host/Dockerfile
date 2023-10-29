@@ -12,8 +12,6 @@ FROM docker:latest
 # Least volatile layers first:
 
 # Project constants:
-# TEMPLATE: Only change these if you customize this image.  Otherwise use the version of
-# this image from the project template in your CI/CD.
 ARG PROJECT_NAMESPACE=rpatterson
 ARG PROJECT_NAME=project-structure
 
@@ -30,9 +28,9 @@ LABEL org.opencontainers.image.base.name="docker.io/library/docker:latest"
 # Build-time labels:
 LABEL org.opencontainers.image.version=1.0.0
 
-# Find the same home directory even when run as another user, for example `root`:
 ENV PROJECT_NAMESPACE="${PROJECT_NAMESPACE}"
 ENV PROJECT_NAME="${PROJECT_NAME}"
+# Find the same home directory even when run as another user, for example `root`:
 ENV HOME="/home/runner"
 ENV PATH="${HOME}/.local/bin:${PATH}"
 # Prevent Node Version Manager (NVM) installing into `/bin/versions/**`:

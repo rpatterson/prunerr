@@ -656,7 +656,7 @@ then
 fi
 if test "$(TEMPLATE_IGNORE_EXISTING)" = "true"
 then
-    envsubst <"$(1)" >"$(2)"
+    envsubst <"$(1)" >"$(2:%.~out~=%)"
     exit
 fi
 exit 1

@@ -100,8 +100,8 @@ ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
 PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
-PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_DEFAULT_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
+PYTHON_DEFAULT_ENV=py$(subst .,,$(PYTHON_DEFAULT_MINOR))
 PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 ifeq ($(PYTHON_MINOR),)
 PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
@@ -199,7 +199,7 @@ endif
 # The options that support running arbitrary commands in the venvs managed by tox
 # without Tox's startup time:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
-TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_DEFAULT_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 PIP_COMPILE_EXTRA=
 
@@ -498,7 +498,9 @@ endif
 ## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' \
+	    ':!newsfragments/*' ':!NEWS*.rst' ':!styles/*/meta.json' \
+	    ':!styles/*/*.yml' ':!requirements/*/*.txt' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -519,8 +521,6 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local
 		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
-	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
 ## Update all locked or frozen dependencies to their most recent available versions.

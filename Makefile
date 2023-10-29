@@ -16,6 +16,8 @@ export PROJECT_NAME=project-structure
 # TEMPLATE: Create an Node Package Manager (NPM) organization and set its name here:
 NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
+# TEMPLATE: See comments towards the bottom and update.
+GPG_SIGNING_KEYID=2EFF7CCE6828E359
 
 # Option variables that control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
@@ -128,8 +130,8 @@ ifeq ($(PYTHON_MINOR),)
 # Fallback to the latest installed supported Python version
 PYTHON_MINOR=$(PYTHON_LATEST_BASENAME:python%=%)
 endif
-PYTHON_LATEST_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
-PYTHON_LATEST_ENV=py$(subst .,,$(PYTHON_LATEST_MINOR))
+PYTHON_DEFAULT_MINOR=$(firstword $(PYTHON_SUPPORTED_MINORS))
+PYTHON_DEFAULT_ENV=py$(subst .,,$(PYTHON_DEFAULT_MINOR))
 PYTHON_MINORS=$(PYTHON_SUPPORTED_MINORS)
 ifeq ($(PYTHON_MINOR),)
 PYTHON_MINOR=$(firstword $(PYTHON_MINORS))
@@ -270,7 +272,7 @@ export TOX_RUN_ARGS
 # The options that support running arbitrary commands in the venvs managed by tox
 # without Tox's startup time:
 TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
-TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)"
+TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_DEFAULT_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 PIP_COMPILE_EXTRA=
 
@@ -384,9 +386,9 @@ ifeq ($(CI),true)
 export PIP_COMPILE_ARGS=
 endif
 GITHUB_RELEASE_ARGS=--prerelease
+DOCKER_PLATFORMS=
 # Only publish releases from the `main` or `develop` branches and only under the
 # canonical CI/CD platform:
-DOCKER_PLATFORMS=
 ifeq ($(GITLAB_CI),true)
 ifeq ($(VCS_BRANCH),main)
 RELEASE_PUBLISH=true
@@ -1042,7 +1044,9 @@ endif
 ## Automatically correct code in this checkout according to linters and style checkers.
 devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin/tox
 # Add license and copyright header to files missing them:
-	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' |
+	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' \
+	    ':!newsfragments/*' ':!NEWS*.rst' ':!styles/*/meta.json' \
+	    ':!styles/*/*.yml' ':!requirements/*/*.txt' |
 	while read -d $$'\0'
 	do
 	    if ! (
@@ -1063,8 +1067,6 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin
 		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
 	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
-	$(TOX_EXEC_ARGS) -- reuse addheader -r --skip-unrecognised \
-	    --copyright "Ross Patterson <me@rpatterson.net>" --license "MIT" "./"
 
 .PHONY: devel-upgrade
 ## Update all locked or frozen dependencies to their most recent available versions.
@@ -1726,10 +1728,9 @@ pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DO
 
 # TEMPLATE: Only necessary if you customize the `./build-host/` image.  Different
 # projects can use the same image, even across individuals and organizations.  If you do
-# need to customize the image, then run this a single time for each customized
-# image. See the `./var/log/docker-login*.log` targets for the authentication
-# environment variables to set or login to those container registries manually and `$
-# touch` these targets.
+# need to customize the image, then run this every time the image changes. See the
+# `./var/log/docker-login*.log` targets for the authentication environment variables to
+# set or login to those container registries manually and `$ touch` these targets.
 .PHONY: bootstrap-project
 bootstrap-project: ./var/log/docker-login-GITLAB.log ./var/log/docker-login-GITHUB.log
 # Initially seed the build host Docker image to bootstrap CI/CD environments

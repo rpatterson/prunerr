@@ -51,7 +51,9 @@ variables:
 
 default:
   image:
-    name: "$CI_TEMPLATE_REGISTRY_HOST/$PROJECT_NAMESPACE/$CI_PROJECT_NAME:build-host"
+    # TEMPLATE: Only change these if you customize the `./build-host/Dockerfile` image.
+    # Otherwise use the version of this image from the project template in your CI/CD.
+    name: "registry.gitlab.com/rpatterson/project-structure:build-host"
     entrypoint:
       - "docker-entrypoint.sh"
   services:

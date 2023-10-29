@@ -66,8 +66,8 @@ nosetests.xml
 *,cover
 **/,cover
 .hypothesis
-.mypy_cache
-**/.mypy_cache
+.pytest_cache
+**/.pytest_cache
 
 # Translations
 *.mo
@@ -108,6 +108,7 @@ celerybeat-schedule
 # Linters:
 .tox
 .mypy_cache
+**/.mypy_cache
 
 # virtualenv
 venv

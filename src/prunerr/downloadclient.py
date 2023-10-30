@@ -295,10 +295,9 @@ class PrunerrDownloadClient:
         """
         Resume downloading if it's been stopped.
         """
-        speed_limit_down = self.runner.config["download-clients"].get(
-            "max-download-bandwidth",
-            100,
-        )
+        speed_limit_down = self.runner.config["download-clients"][
+            "max-download-bandwidth"
+        ]
         if session.speed_limit_down_enabled and (
             not speed_limit_down or speed_limit_down != session.speed_limit_down
         ):
@@ -424,8 +423,8 @@ def calc_free_space_margin(config):
     """
     return (
         (
-            config["download-clients"].get("max-download-bandwidth", 100)
             # Convert bandwidth bits to bytes
+            config["download-clients"]["max-download-bandwidth"]
             / 8
         )
         * (
@@ -435,7 +434,7 @@ def calc_free_space_margin(config):
         )
         * (
             # Multiply by seconds of download time margin
-            config["download-clients"].get("min-download-time-margin", 3600)
+            config["download-clients"]["min-download-time-margin"]
         )
     )
 

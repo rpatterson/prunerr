@@ -5,7 +5,7 @@
 daemon:
   ## The number of seconds to wait between each loop of the order of operations.
   ## Default: 60
-  # poll: 60
+  poll: 60
 servarrs:
   ## The Servarr application instances, such as Sonarr or Radarr, whose download client
   ## items should be pruned.  At least one Servarr instance must be configured.

@@ -129,7 +129,7 @@ class PrunerrTestCase(
         # Convenient access to the parsed configuration file
         with self.CONFIG.open(encoding="utf-8") as config_opened:
             self.config = yaml.safe_load(config_opened)
-        if "download-clients" in self.config:
+        if "max-download-bandwidth" in self.config.get("download-clients", {}):
             self.min_free_space = prunerr.downloadclient.calc_free_space_margin(
                 self.config,
             )

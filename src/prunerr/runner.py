@@ -50,6 +50,40 @@ class PrunerrRunner:
         self.download_clients = {}
         self.servarrs = {}
 
+    def validate(self) -> dict:
+        """
+        Parse the configuration file and raise meaningful errors for improper values.
+
+        :return: The parsed YAML configuration as a Python mapping
+        :raises PrunerrValidationError: The YAML configuration file has a problem
+        """
+        # Refresh the Prunerr configuration from the file
+        if not self.config_file.is_file():
+            raise PrunerrValidationError(
+                f"Configuration file not found: {self.config_file}"
+            )
+        with self.config_file.open(encoding="utf-8") as config_opened:
+            self.config = yaml.safe_load(config_opened)
+
+        # Raise helpful errors for required values:
+        if not self.config.get("download-clients", {}).get("urls"):
+            raise PrunerrValidationError(
+                "Configuration file must include at least one URL under"
+                f" `download-clients/urls`: {self.config_file}"
+            )
+
+        # Pull defaults from the example configuration:
+        self.config["download-clients"].setdefault(
+            "max-download-bandwidth",
+            self.example_confg["download-clients"]["max-download-bandwidth"],
+        )
+        self.config["download-clients"].setdefault(
+            "min-download-time-margin",
+            self.example_confg["download-clients"]["min-download-time-margin"],
+        )
+
+        return self.config
+
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(utils.RETRY_EXC_TYPES),
         wait=tenacity.wait_fixed(1),
@@ -64,20 +98,8 @@ class PrunerrRunner:
 
         :return: Map download client URLs to
             ``prunerr.downloadclient.PrunerrDownloadClient`` instances
-        :raises PrunerrValidationError: The YAML configuration file has a problem
         """
-        # Refresh the Prunerr configuration from the file
-        if not self.config_file.is_file():
-            raise PrunerrValidationError(
-                f"Configuration file not found: {self.config_file}"
-            )
-        with self.config_file.open(encoding="utf-8") as config_opened:
-            self.config = yaml.safe_load(config_opened)
-        if not self.config.get("download-clients", {}).get("urls"):
-            raise PrunerrValidationError(
-                "Configuration file must include at least one URL under"
-                f" `download-clients/urls`: {self.config_file}"
-            )
+        self.config = self.validate()
 
         # Update Servarr API clients
         servarrs = {}
@@ -334,7 +356,10 @@ class PrunerrRunner:
             logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
 
             # Determine the poll interval before clearing the config
-            poll = self.config.get("daemon", {}).get("poll", 60)
+            poll = self.config.get("daemon", {}).get(
+                "poll",
+                self.example_confg["daemon"]["poll"],
+            )
 
             # Free any memory possible between daemon loops
             self.clear()

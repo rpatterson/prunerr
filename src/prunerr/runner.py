@@ -65,6 +65,15 @@ class PrunerrRunner:
         with self.config_file.open(encoding="utf-8") as config_opened:
             self.config = yaml.safe_load(config_opened)
 
+        # Avoid issues with empty keys having a `None` value in YAML:
+        for top_key in self.example_confg.keys():
+            if top_key in self.config and self.config[top_key] is None:
+                logger.debug(
+                    "Top-level configuration key is empty: %s",
+                    top_key,
+                )
+                self.config[top_key] = {}
+
         # Raise helpful errors for required values:
         if not self.config.get("download-clients", {}).get("urls"):
             raise PrunerrValidationError(
@@ -80,6 +89,10 @@ class PrunerrRunner:
         self.config["download-clients"].setdefault(
             "min-download-time-margin",
             self.example_confg["download-clients"]["min-download-time-margin"],
+        )
+        self.config.setdefault("daemon", {}).setdefault(
+            "poll",
+            self.example_confg["daemon"]["poll"],
         )
 
         return self.config
@@ -356,10 +369,7 @@ class PrunerrRunner:
             logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
 
             # Determine the poll interval before clearing the config
-            poll = self.config.get("daemon", {}).get(
-                "poll",
-                self.example_confg["daemon"]["poll"],
-            )
+            poll = self.config["daemon"]["poll"]
 
             # Free any memory possible between daemon loops
             self.clear()

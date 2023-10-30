@@ -15,7 +15,7 @@ import socket
 
 from unittest import mock
 
-import prunerr.downloadclient
+import prunerr
 
 from .. import tests
 
@@ -64,6 +64,10 @@ def mock_exit_daemon_response(
 
 
 @mock.patch.dict(os.environ, ENV)
+@mock.patch(
+    "prunerr.runner.PrunerrRunner.EXAMPLE_CONFIG",
+    HOME / ".config" / "prunerr-example.yml",
+)
 class PrunerrDaemonTests(tests.PrunerrTestCase):
     """
     Tests covering the Prunerr `daemon` sub-command.

@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+daemon:
+  poll: 1
+servarrs:
+download-clients:
+  max-download-bandwidth: 100
+  min-download-time-margin: 3600
+indexers:

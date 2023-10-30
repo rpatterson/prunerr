@@ -1058,7 +1058,8 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin
 # Add license and copyright header to files missing them:
 	git ls-files -co --exclude-standard -z ':!*.license' ':!.reuse' ':!LICENSES' \
 	    ':!newsfragments/*' ':!NEWS*.rst' ':!styles/*/meta.json' \
-	    ':!styles/*/*.yml' ':!requirements/*/*.txt' |
+	    ':!styles/*/*.yml' ':!requirements/*/*.txt' \
+	    ':!src/prunerr/tests/responses/*' ':!src/prunerr/tests/example-5s.mkv' |
 	while read -d $$'\0'
 	do
 	    if ! (

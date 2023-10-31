@@ -81,7 +81,7 @@ accept-no-yields-doc = false
 
 [[tool.mypy.overrides]]
 module = [
-       # Command-line TAB completion:
+       # Command-line tab completion:
        "argcomplete",
        # Development and build tools:
        "decli", "configobj",

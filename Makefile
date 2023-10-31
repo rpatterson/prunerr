@@ -876,14 +876,16 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) -- twine check ./.tox/.pkg/tmp/dist/*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check \
+	    ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/*
 # Ensure VCS has captured all the effects of building the release:
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
-	    ./.tox/.pkg/tmp/dist/*
+	    ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/*
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 # Create a GitLab release
-	./.tox/build/bin/twine upload -s -r "gitlab" ./.tox/.pkg/tmp/dist/*
+	./.tox/build/bin/twine upload -s -r "gitlab" \
+	    ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/*
 	release_cli_args="--description ./NEWS-VERSION.rst"
 	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\
@@ -907,7 +909,8 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    create $${release_cli_args}
 # Create a GitHub release
 	gh release create "v$${VERSION}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-VERSION.rst" ./.tox/.pkg/tmp/dist/*
+	    --notes-file "./NEWS-VERSION.rst" \
+	    ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/*
 endif
 
 .PHONY: release-docker

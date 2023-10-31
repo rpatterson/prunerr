@@ -80,7 +80,12 @@ accept-no-return-doc = false
 accept-no-yields-doc = false
 
 [[tool.mypy.overrides]]
-module = ["argcomplete"]
+module = [
+       # Command-line tab completion:
+       "argcomplete",
+       # Development and build tools:
+       "decli", "configobj",
+       ]
 ignore_missing_imports = true
 
 [tool.vulture]

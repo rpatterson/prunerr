@@ -11,23 +11,25 @@ import pathlib
 
 from unittest import mock
 
+import prunerrtests
+
 import prunerr.runner
 import prunerr.downloadclient
 
-from .. import tests
 
-
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrDownloadClientTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
     """
     Test the aggregation of download client configurations.
     """
 
     HOME = pathlib.Path(__file__).parent / "home" / "download-clients"
     CONFIG = HOME / ".config" / "prunerr.yml"
-    ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
+    ENV = dict(prunerrtests.PrunerrTestCase.ENV, HOME=str(HOME))
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "download-clients"
+    RESPONSES_DIR = (
+        prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "download-clients"
+    )
 
     SERVARR_DOWNLOAD_CLIENT_URLS = (
         # The usual case

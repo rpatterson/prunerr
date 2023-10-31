@@ -15,13 +15,13 @@ import pathlib
 
 from unittest import mock
 
+import prunerrtests
+
 import prunerr
 
-from .. import tests
 
-
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrCLITests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrCLITests(prunerrtests.PrunerrTestCase):
     """
     Test the prunerr command-line interface.
     """

@@ -15,12 +15,12 @@ import socket
 
 from unittest import mock
 
+import prunerrtests
+
 import prunerr
 
-from .. import tests
-
 HOME = pathlib.Path(__file__).parent / "home" / "daemon"
-ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
+ENV = dict(prunerrtests.PrunerrTestCase.ENV, HOME=str(HOME))
 
 
 class PrunerrDaemonTestException(BaseException):
@@ -68,7 +68,7 @@ def mock_exit_daemon_response(
     "prunerr.runner.PrunerrRunner.EXAMPLE_CONFIG",
     HOME / ".config" / "prunerr-example.yml",
 )
-class PrunerrDaemonTests(tests.PrunerrTestCase):
+class PrunerrDaemonTests(prunerrtests.PrunerrTestCase):
     """
     Tests covering the Prunerr `daemon` sub-command.
     """
@@ -77,7 +77,7 @@ class PrunerrDaemonTests(tests.PrunerrTestCase):
     CONFIG = HOME / ".config" / "prunerr.yml"
     ENV = ENV
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "daemon"
+    RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "daemon"
 
     def test_daemon_command(self):
         """

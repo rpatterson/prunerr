@@ -11,20 +11,20 @@ import logging
 
 from unittest import mock
 
-import prunerr.downloadclient
+import prunerrtests
 
-from .. import utils
-from .. import tests
+import prunerr
 
 
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
     """
     Prunerr removes imported items to free space according to configured rules.
     """
 
     RESPONSES_DIR = (
-        tests.PrunerrTestCase.RESPONSES_DIR.parent / "free-space-imported-sufficient"
+        prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent
+        / "free-space-imported-sufficient"
     )
 
     def test_free_space_workflow(self):
@@ -190,13 +190,13 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
             "Free Space results missing from `exec` sub-command results",
         )
         self.assertIn(
-            utils.normalize_url(self.download_client_urls[0]),
+            prunerr.utils.normalize_url(self.download_client_urls[0]),
             exec_results["free-space"],
             "Download client free space results missing from `exec` results",
         )
         self.assertIsInstance(
             exec_results["free-space"][
-                utils.normalize_url(self.download_client_urls[0])
+                prunerr.utils.normalize_url(self.download_client_urls[0])
             ],
             list,
             "Download client free space results wrong type from `exec` results",
@@ -204,7 +204,7 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         self.assertEqual(
             len(
                 exec_results["free-space"][
-                    utils.normalize_url(self.download_client_urls[0])
+                    prunerr.utils.normalize_url(self.download_client_urls[0])
                 ]
             ),
             1,
@@ -225,18 +225,22 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         unregistered_results = runner.free_space()
         self.assert_request_mocks(unregistered_request_mocks)
         self.assertIn(
-            utils.normalize_url(self.download_client_urls[0]),
+            prunerr.utils.normalize_url(self.download_client_urls[0]),
             unregistered_results,
             "Download client free space results missing from unregistered item results",
         )
         self.assertIsInstance(
-            unregistered_results[utils.normalize_url(self.download_client_urls[0])],
+            unregistered_results[
+                prunerr.utils.normalize_url(self.download_client_urls[0])
+            ],
             list,
             "Download client free space results wrong unregistered item results type",
         )
         self.assertEqual(
             len(
-                unregistered_results[utils.normalize_url(self.download_client_urls[0])]
+                unregistered_results[
+                    prunerr.utils.normalize_url(self.download_client_urls[0])
+                ]
             ),
             1,
             "Free space unregistered item results wrong number of items",
@@ -258,17 +262,21 @@ class PrunerrFreeSpaceTests(tests.PrunerrTestCase):
         orphans_results = runner.free_space()
         self.assert_request_mocks(orphans_request_mocks)
         self.assertIn(
-            utils.normalize_url(self.download_client_urls[0]),
+            prunerr.utils.normalize_url(self.download_client_urls[0]),
             orphans_results,
             "Download client free space results missing from orphan results",
         )
         self.assertIsInstance(
-            orphans_results[utils.normalize_url(self.download_client_urls[0])],
+            orphans_results[prunerr.utils.normalize_url(self.download_client_urls[0])],
             list,
             "Download client free space results wrong orphan results type",
         )
         self.assertEqual(
-            len(orphans_results[utils.normalize_url(self.download_client_urls[0])]),
+            len(
+                orphans_results[
+                    prunerr.utils.normalize_url(self.download_client_urls[0])
+                ]
+            ),
             1,
             "Free space orphan results wrong number of items",
         )

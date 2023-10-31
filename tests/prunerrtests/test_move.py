@@ -12,19 +12,18 @@ import json
 
 from unittest import mock
 
-import prunerr.servarr
+import prunerrtests
 
-from .. import utils
-from .. import tests
+import prunerr
 
 
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrMoveTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
     """
     Test moving download items that Servarr has acted on.
     """
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-ungrabbed"
+    RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-ungrabbed"
 
     def test_move_usual_lifecycle(
         self,
@@ -87,7 +86,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         #    enough to match the item to the correct `dirId`, IOW `seriesId` or
         #    `movieId` so that further history lookups are much more efficient.
         grabbed_request_mocks = self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-grabbed",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-grabbed",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "move"])
         self.assert_request_mocks(grabbed_request_mocks)
@@ -120,7 +119,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         # Ensure the test fixture is correct that the download item has finished
         # downloading in the download client.
         completed_responses_dir = (
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-completed"
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-completed"
         )
         download_items_response_path = (
             completed_responses_dir
@@ -184,7 +183,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         #    no changes.
         self.mock_servarr_import_item()
         completed_request_mocks = self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-completed",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-completed",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "move"])
         self.assert_request_mocks(completed_request_mocks)
@@ -213,7 +212,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         # 5. The import event becomes visible in the Servarr API history.  The item is
         #    moved from `downloads` to `seeding`.
         import_request_mocks = self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
             # Insert a dynamic response mock to handle moving imported download items
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
@@ -257,7 +256,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         #    no changes.
         self.mock_servarr_delete_file()
         imported_request_mocks = self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-imported",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-imported",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "move"])
         self.assert_request_mocks(imported_request_mocks)
@@ -286,7 +285,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         # 7. The delete event becomes visible in the Servarr API history.  Running the
         #    `move` sub-command results in no changes.
         deleted_request_mocks = self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-deleted",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-deleted",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "move"])
         self.assert_request_mocks(deleted_request_mocks)
@@ -323,7 +322,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         self.mock_download_client_complete_item()
         self.mock_servarr_import_item()
         imported_before_request_mocks = self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-imported-before",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-imported-before",
             # Insert a dynamic response mock to handle moving imported download items
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
@@ -373,7 +372,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             / "prunerr.yml",
         )
         self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
             # Insert a dynamic response mock to handle moving imported download items
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {
@@ -398,13 +397,13 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
             "Servarr move results missing from `exec` sub-command results",
         )
         self.assertIn(
-            utils.normalize_url(self.download_client_urls[0]),
+            prunerr.utils.normalize_url(self.download_client_urls[0]),
             exec_results["move"][self.servarr_urls[0]],
             "Download client move results missing from `exec` sub-command results",
         )
         self.assertIsInstance(
             exec_results["move"][self.servarr_urls[0]][
-                utils.normalize_url(self.download_client_urls[0])
+                prunerr.utils.normalize_url(self.download_client_urls[0])
             ],
             list,
             "Download client move results wrong type from `exec` sub-command results",
@@ -412,7 +411,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         self.assertEqual(
             len(
                 exec_results["move"][self.servarr_urls[0]][
-                    utils.normalize_url(self.download_client_urls[0])
+                    prunerr.utils.normalize_url(self.download_client_urls[0])
                 ]
             ),
             1,
@@ -427,7 +426,7 @@ class PrunerrMoveTests(tests.PrunerrTestCase):
         self.mock_servarr_import_item()
         runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses(
-            tests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
+            prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
             # Insert a dynamic response mock to handle moving imported download items
             {
                 "http://transmission:secret@localhost:9091/transmission/rpc": {

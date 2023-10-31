@@ -10,17 +10,18 @@ import logging
 
 from unittest import mock
 
+import prunerrtests
+
 import prunerr.runner
 import prunerr.downloadclient
 import prunerr.downloaditem
 import prunerr.operations
 
-from .. import tests
 from . import test_downloaditem
 
 
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrDownloadItemTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
     """
     Test Prunerr's configurable operations.
     """

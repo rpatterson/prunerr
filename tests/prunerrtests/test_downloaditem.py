@@ -11,22 +11,22 @@ import logging
 
 from unittest import mock
 
-import prunerr.runner
+import prunerrtests
 
-from .. import tests
+import prunerr
 
 
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrDownloadItemTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
     """
     Test the aggregation of download item configurations.
     """
 
     HOME = pathlib.Path(__file__).parent / "home" / "download-items"
     CONFIG = HOME / ".config" / "prunerr.yml"
-    ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
+    ENV = dict(prunerrtests.PrunerrTestCase.ENV, HOME=str(HOME))
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "download-items"
+    RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "download-items"
 
     def test_download_item_missing_files(self):
         """

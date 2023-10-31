@@ -26,8 +26,7 @@ import yaml
 import requests_mock
 
 import prunerr
-from .. import utils
-from ..utils import pathlib
+from prunerr.utils import pathlib
 
 
 def parse_content_type(content_type):  # pragma: no cover
@@ -242,10 +241,10 @@ class PrunerrTestCase(
             torrent_list_mocks[0] / "response.json"
         ).open() as download_client_items_response:
             self.download_client_items_responses[
-                utils.normalize_url(download_client_url.geturl())
+                prunerr.utils.normalize_url(download_client_url.geturl())
             ] = json.load(download_client_items_response)
             for download_item in self.download_client_items_responses[
-                utils.normalize_url(download_client_url.geturl())
+                prunerr.utils.normalize_url(download_client_url.geturl())
             ]["arguments"]["torrents"]:
                 download_item_dir = (
                     self.tmp_path / download_item["downloadDir"].lstrip(os.path.sep)

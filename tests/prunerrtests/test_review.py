@@ -13,18 +13,20 @@ import logging
 
 from unittest import mock
 
-import prunerr.downloadclient
+import prunerrtests
 
-from .. import tests
+import prunerr
 
 
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrReviewTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
     """
     Prunerr performs various configurable action on download items accorging to rules.
     """
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "review-downloading"
+    RESPONSES_DIR = (
+        prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "review-downloading"
+    )
 
     def test_review_bandwidth_priority(self):
         """
@@ -40,7 +42,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                     "POST": {
                         "01-torrent-get": {
                             "json": functools.partial(
-                                tests.mock_get_torrent_response,
+                                prunerrtests.mock_get_torrent_response,
                                 [
                                     {},
                                     {
@@ -169,7 +171,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                     "POST": {
                         "01-torrent-get": {
                             "json": functools.partial(
-                                tests.mock_get_torrent_response,
+                                prunerrtests.mock_get_torrent_response,
                                 [
                                     {
                                         "addedDate": (
@@ -248,7 +250,7 @@ class PrunerrReviewTests(tests.PrunerrTestCase):
                     "POST": {
                         "01-torrent-get": {
                             "json": functools.partial(
-                                tests.mock_get_torrent_response,
+                                prunerrtests.mock_get_torrent_response,
                                 [
                                     {},
                                     {},

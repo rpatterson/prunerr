@@ -10,16 +10,16 @@ import pathlib
 
 from unittest import mock
 
-import prunerr.runner
+import prunerrtests
 
-from .. import tests
+import prunerr
 
 HOME = pathlib.Path(__file__).parent / "home" / "empty"
-ENV = dict(tests.PrunerrTestCase.ENV, HOME=str(HOME))
+ENV = dict(prunerrtests.PrunerrTestCase.ENV, HOME=str(HOME))
 
 
 @mock.patch.dict(os.environ, ENV)
-class PrunerrRunnerTests(tests.PrunerrTestCase):
+class PrunerrRunnerTests(prunerrtests.PrunerrTestCase):
     """
     Tests covering the `prunerr.runner` module.
     """
@@ -28,7 +28,9 @@ class PrunerrRunnerTests(tests.PrunerrTestCase):
     CONFIG = HOME / ".config" / "prunerr.yml"
     ENV = ENV
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "download-client-only"
+    RESPONSES_DIR = (
+        prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "download-client-only"
+    )
 
     def test_runner_empty_config(self):
         """

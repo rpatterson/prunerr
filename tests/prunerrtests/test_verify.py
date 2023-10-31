@@ -9,18 +9,18 @@ import os
 
 from unittest import mock
 
-import prunerr.downloadclient
+import prunerrtests
 
-from .. import tests
+import prunerr
 
 
-@mock.patch.dict(os.environ, tests.PrunerrTestCase.ENV)
-class PrunerrVerifyTests(tests.PrunerrTestCase):
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrVerifyTests(prunerrtests.PrunerrTestCase):
     """
     Prunerr verifies corrupt items and resumes them once verified.
     """
 
-    RESPONSES_DIR = tests.PrunerrTestCase.RESPONSES_DIR.parent / "verify"
+    RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "verify"
 
     def test_verify_workflow(self):
         """

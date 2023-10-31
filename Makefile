@@ -516,10 +516,13 @@ devel-format: $(HOST_PREFIX)/bin/docker ./var/log/npm-install.log $(HOME)/.local
 	~/.nvm/nvm-exec npm run format
 # Run source code formatting tools implemented in Python:
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
-		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
-	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	    --remove-duplicate-keys --remove-unused-variables \
+	    --remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/" \
+	    "./tests/$(PYTHON_PROJECT_PACKAGE)tests/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/" \
+	    "./tests/$(PYTHON_PROJECT_PACKAGE)tests/"
+	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/" \
+	    "./tests/$(PYTHON_PROJECT_PACKAGE)tests/"
 
 .PHONY: devel-upgrade
 ## Update all locked or frozen dependencies to their most recent available versions.

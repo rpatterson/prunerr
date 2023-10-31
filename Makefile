@@ -656,16 +656,6 @@ $(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
 	    PIP_COMPILE_ARGS="$(PIP_COMPILE_ARGS)" \
 	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
 
-.PHONY: $(PYTHON_MINORS:%=build-docker-requirements-%)
-## Pull container images and compile fixed/pinned dependency versions if necessary.
-$(PYTHON_MINORS:%=build-docker-requirements-%): ./.env.~out~
-	export PYTHON_MINOR="$(@:build-docker-requirements-%=%)"
-	export PYTHON_ENV="py$(subst .,,$(@:build-docker-requirements-%=%))"
-	$(MAKE) -e "./var-docker/$${PYTHON_ENV}/log/build-devel.log"
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    make -e PYTHON_MINORS="$(@:build-docker-requirements-%=%)" \
-	    build-requirements-py$(subst .,,$(@:build-docker-requirements-%=%))
-
 
 ### Test Targets:
 #

@@ -2,6 +2,9 @@
 ..
 .. SPDX-License-Identifier: MIT
 
+.. meta::
+   :keywords: template, structure
+
 .. include:: ../README.rst
    :end-before: include-end-before
 

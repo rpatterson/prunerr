@@ -24,6 +24,9 @@ rstcheck
 # Rich, full documentation site:
 sphinx
 sphinx-autobuild
+# https://pradyunsg.me/furo/recommendations/
+sphinx-copybutton
+sphinxext-opengraph
 # https://github.com/sphinx-contrib/sphinx-lint
 sphinx-lint
 # https://docs.restructuredtext.net/articles/linter#supported-linters

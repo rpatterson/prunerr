@@ -676,12 +676,13 @@ release-pkgs: $(HOME)/.local/bin/tox ~/.pypirc.~out~
 ifeq ($(RELEASE_PUBLISH),true)
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) -- twine check ./.tox/.pkg/tmp/dist/*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check \
+	    ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/*
 # The VCS remote should reflect the release before publishing the release to ensure that
 # a published release is never *not* reflected in VCS.
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
-	    ./.tox/.pkg/tmp/dist/*
+	    ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/*
 endif
 
 .PHONY: release-docker

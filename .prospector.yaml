@@ -58,9 +58,25 @@ pep257:
 # exclude directories it should never have to search:
 # https://prospector.landscape.io/en/master/profiles.html#ignoring-paths-and-patterns
 ignore-paths:
-  - ".tox"
-  - "var"
+  # Build artifacts that might contain many files:
+  #     $ find -mindepth 1 -maxdepth 1 -type d | while read top_dir; do \
+  #     > echo "  - \"$(basename "${top_dir}")\""; done
+  - "test"
+  - "docs"
+  - ".mypy_cache"
   - "newsfragments"
+  - "styles"
+  - "node_modules"
+  - ".reuse"
+  - "requirements"
+  - "build"
+  - ".tox"
+  - "home"
+  - "LICENSES"
+  - "var"
+  - "bin"
+  - ".git"
+  - "dist"
 
   # Ignore failures in these artifacts:
   - "src/projectstructure/version.py"

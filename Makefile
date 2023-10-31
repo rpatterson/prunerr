@@ -17,16 +17,14 @@ NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
+export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library/
+PRUNERR_CMD=exec
+PRUNERR_ARGS=$(PRUNERR_CMD)
 
 # Option variables that control behavior:
 export TEMPLATE_IGNORE_EXISTING=false
 # https://devguide.python.org/versions/#supported-versions
 PYTHON_SUPPORTED_MINORS=3.11 3.12 3.10 3.9 3.8
-GPG_SIGNING_KEYID=2EFF7CCE6828E359
-# Project-specific options:
-export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library/
-PRUNERR_CMD=exec
-PRUNERR_ARGS=$(PRUNERR_CMD)
 
 
 ### "Private" Variables:
@@ -374,6 +372,7 @@ export PROJECT_GITHUB_PAT
 # Values used for publishing releases:
 # Safe defaults for testing the release process without publishing to the official
 # project hosting services, indexes, and registries:
+export PIP_COMPILE_ARGS=
 RELEASE_PUBLISH=false
 PYPI_REPO=testpypi
 # Safe defaults for testing the release process without publishing to the final/official
@@ -502,17 +501,9 @@ build-pkgs: $(HOST_TARGET_DOCKER) \
 # Build Python packages/distributions from the development Docker container for
 # consistency/reproducibility.
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    tox run -e "$(PYTHON_ENV)" --pkg-only
-# Copy the wheel to a location available to all containers:
-	cp -lfv "$$(
-	    ls -t ./var-docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.whl | head -n 1
-	)" "./dist/"
-# Also build the source distribution:
-	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
-	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=sdist" --pkg-only
-	cp -lfv "$$(
-	    ls -t ./var-docker/$(PYTHON_ENV)/.tox/.pkg/dist/*.tar.gz | head -n 1
-	)" "./dist/"
+	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=external" --pkg-only
+# Copy to a location available in the Docker build context:
+	cp -lfv ./var-docker/$(PYTHON_ENV)/.tox/.pkg/tmp/dist/* "./dist/"
 
 .PHONY: build-docs
 ## Render the static HTML form of the Sphinx documentation
@@ -675,7 +666,7 @@ test: test-lint test-docker
 .PHONY: test-local
 ## Run the full suite of tests, coverage checks, and linters on the local host.
 test-local: $(HOME)/.local/bin/tox $(PYTHON_ENVS:%=build-requirements-%)
-	tox $(TOX_RUN_ARGS) -e "$(TOX_ENV_LIST)"
+	tox $(TOX_RUN_ARGS) --override "testenv.package=external" -e "$(TOX_ENV_LIST)"
 
 .PHONY: test-lint
 ## Perform any linter or style checks, including non-code checks.
@@ -725,7 +716,7 @@ test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 
 .PHONY: test-debug
 ## Run tests directly on the system and start the debugger on errors or failures.
-test-debug: $(HOME)/.local/bin/tox ./.tox/$(PYTHON_ENV)/log/editable.log
+test-debug: $(HOME)/.local/bin/tox
 	$(TOX_EXEC_ARGS) -- pytest --pdb
 
 .PHONY: test-docker
@@ -885,15 +876,14 @@ ifeq ($(RELEASE_PUBLISH),true)
 # Bump the version and build the final release packages:
 	$(MAKE) -e build-pkgs
 # https://twine.readthedocs.io/en/latest/#using-twine
-	$(TOX_EXEC_BUILD_ARGS) -- twine check ./dist/$(PYTHON_PROJECT_GLOB)-*
+	$(TOX_EXEC_BUILD_ARGS) -- twine check ./.tox/.pkg/tmp/dist/*
 # Ensure VCS has captured all the effects of building the release:
 	$(MAKE) -e test-clean
 	$(TOX_EXEC_BUILD_ARGS) -- twine upload -s -r "$(PYPI_REPO)" \
-	    ./dist/$(PYTHON_PROJECT_GLOB)-*
+	    ./.tox/.pkg/tmp/dist/*
 	export VERSION=$$($(TOX_EXEC_BUILD_ARGS) -qq -- cz version --project)
 # Create a GitLab release:
-	./.tox/build/bin/twine upload -s -r "gitlab" \
-	    ./dist/$(PROJECT_NAME)-*
+	./.tox/build/bin/twine upload -s -r "gitlab" ./.tox/.pkg/tmp/dist/*
 	release_cli_args="--description ./NEWS-VERSION.rst"
 	release_cli_args+=" --tag-name v$${VERSION}"
 	release_cli_args+=" --assets-link {\
@@ -917,7 +907,7 @@ ifeq ($(RELEASE_PUBLISH),true)
 	    create $${release_cli_args}
 # Create a GitHub release
 	gh release create "v$${VERSION}" $(GITHUB_RELEASE_ARGS) \
-	    --notes-file "./NEWS-VERSION.rst" ./dist/$(PROJECT_NAME)-*
+	    --notes-file "./NEWS-VERSION.rst" ./.tox/.pkg/tmp/dist/*
 endif
 
 .PHONY: release-docker
@@ -1076,10 +1066,13 @@ devel-format: $(HOST_TARGET_DOCKER) ./var/log/npm-install.log $(HOME)/.local/bin
 	~/.nvm/nvm-exec npm run format
 # Run source code formatting tools implemented in Python:
 	$(TOX_EXEC_ARGS) -- autoflake -r -i --remove-all-unused-imports \
-		--remove-duplicate-keys --remove-unused-variables \
-		--remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/"
-	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/"
-	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/"
+	    --remove-duplicate-keys --remove-unused-variables \
+	    --remove-unused-variables "./src/$(PYTHON_PROJECT_PACKAGE)/" \
+	    "./tests/$(PYTHON_PROJECT_PACKAGE)tests/"
+	$(TOX_EXEC_ARGS) -- autopep8 -v -i -r "./src/$(PYTHON_PROJECT_PACKAGE)/" \
+	    "./tests/$(PYTHON_PROJECT_PACKAGE)tests/"
+	$(TOX_EXEC_ARGS) -- black "./src/$(PYTHON_PROJECT_PACKAGE)/" \
+	    "./tests/$(PYTHON_PROJECT_PACKAGE)tests/"
 
 .PHONY: devel-upgrade
 ## Update all locked or frozen dependencies to their most recent available versions.
@@ -1456,14 +1449,6 @@ $(HOME)/.nvm/nvm.sh:
 $(PYTHON_ALL_ENVS:%=./.tox/%/bin/pip-compile):
 	$(MAKE) -e "$(HOME)/.local/bin/tox"
 	tox run $(TOX_EXEC_OPTS) -e "$(@:.tox/%/bin/pip-compile=%)" --notest
-# Workaround tox's `usedevelop = true` not working with `./pyproject.toml`. Use as a
-# prerequisite for targets that use Tox virtual environments directly and changes to
-# code need to take effect in real-time:
-$(PYTHON_ENVS:%=./.tox/%/log/editable.log):
-	$(MAKE) -e "$(HOME)/.local/bin/tox"
-	mkdir -pv "$(dir $(@))"
-	tox exec $(TOX_EXEC_OPTS) -e "$(@:.tox/%/log/editable.log=%)" -- \
-	    pip3 install -e "./" |& tee -a "$(@)"
 $(HOME)/.local/bin/tox:
 	$(MAKE) "$(HOME)/.local/bin/pipx"
 # https://tox.wiki/en/latest/installation.html#via-pipx

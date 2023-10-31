@@ -90,7 +90,11 @@ module = [
        # BBB: Compatibility with older Python versions
        "backports.cached_property", "pathlib3x",
        # Direct dependencies
-       "argcomplete", "transmission_rpc", "arrapi.*",
+       "transmission_rpc", "arrapi.*",
+       # Command-line tab completion:
+       "argcomplete",
+       # Development and build tools:
+       "decli", "configobj",
        ]
 ignore_missing_imports = true
 

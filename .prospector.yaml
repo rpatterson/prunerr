@@ -56,16 +56,33 @@ pep257:
     # Redundant with `pylint - missing-function-docstring`
     - "D103"
 
+# Prospector's file finding process seems quite expensive, best to aggressively
+# exclude directories it should never have to search:
 # https://prospector.landscape.io/en/master/profiles.html#ignoring-paths-and-patterns
 ignore-paths:
+  # Build artifacts that might contain many files:
+  #     $ find -mindepth 1 -maxdepth 1 -type d | while read top_dir; do \
+  #     > echo "  - \"$(basename "${top_dir}")\""; done
+  - "test"
+  - "docs"
+  - ".mypy_cache"
+  - "newsfragments"
+  - "styles"
+  - "node_modules"
+  - ".reuse"
+  - "requirements"
+  - "build"
   - ".tox"
+  - "home"
+  - "LICENSES"
   - "var"
+  - "bin"
+  - ".git"
+  - "dist"
+
   # Ignore failures in these artifacts:
   - "src/prunerr/version.py"
 
-  # Prospector's file finding process seems quite expensive, best to aggressively
-  # exclude directories it should never have to check:
-  - "src/prunerr/newsfragments"
-  - "src/prunerr/home"
-  - "src/prunerr/tests/home"
-  - "src/prunerr/tests/responses"
+  # TEMPLATE: Add any paths that never contain Python code under `./src/prunerr/`
+  # or `./tests/prunerrtests/` for your project:
+  #  - "tests/prunerrtests/fixtures"

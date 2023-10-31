@@ -20,12 +20,12 @@ release = '0.0.0'
 
 extensions = [
     'sphinx.ext.duration',
+    'sphinx_copybutton',
+    'sphinxext.opengraph',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -33,7 +33,7 @@ exclude_patterns = []
 html_theme = 'alabaster'
 html_static_path = ['_static']
 
-# Linter options:
+# -- Linter options ----------------------------------------------------------
 # Disallow redirects:
 linkcheck_allowed_redirects = {}
 linkcheck_anchors_ignore = [
@@ -42,3 +42,6 @@ linkcheck_anchors_ignore = [
     # Tolerate links to source code lines in VCS provider web UIs:
     "^L[0-9]+",
 ]
+
+# -- Extension options -------------------------------------------------------
+ogp_site_url = 'http://project-structure.readthedocs.io/'

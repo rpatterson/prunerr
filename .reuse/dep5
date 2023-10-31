@@ -33,8 +33,8 @@ Comment:
  for header annotations/commments.
 
 Files:
- src/prunerr/tests/responses/*
- src/prunerr/tests/example-5s.mkv
+ tests/prunerrtests/responses/*
+ tests/prunerrtests/example-5s.mkv
 Copyright: 2023 Ross Patterson <me@rpatterson.net>
 License: MIT
 Comment:

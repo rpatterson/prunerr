@@ -51,7 +51,7 @@ docutils==0.20.1
     #   restructuredtext-lint
     #   rstcheck-core
     #   sphinx
-filelock==3.13.0
+filelock==3.13.1
     # via virtualenv
 future==0.18.3
     # via proselint
@@ -181,7 +181,11 @@ sphinx==7.1.2
     # via
     #   -r requirements/build.txt.in
     #   sphinx-autobuild
+    #   sphinx-copybutton
+    #   sphinxext-opengraph
 sphinx-autobuild==2021.3.14
+    # via -r requirements/build.txt.in
+sphinx-copybutton==0.5.2
     # via -r requirements/build.txt.in
 sphinx-lint==0.8.1
     # via -r requirements/build.txt.in
@@ -197,6 +201,8 @@ sphinxcontrib-qthelp==1.0.3
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
+sphinxext-opengraph==0.9.0
+    # via -r requirements/build.txt.in
 stevedore==5.1.0
     # via doc8
 termcolor==2.3.0
@@ -232,7 +238,7 @@ urllib3==2.0.7
     #   twine
 virtualenv==20.24.6
     # via pre-commit
-wcwidth==0.2.8
+wcwidth==0.2.9
     # via prompt-toolkit
 zipp==3.17.0
     # via

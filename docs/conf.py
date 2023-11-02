@@ -42,6 +42,7 @@ linkcheck_anchors_ignore = [
     # Tolerate links to source code lines in VCS provider web UIs:
     "^L[0-9]+",
 ]
+linkcheck_ignore = ["https://liberapay.com/.*"]
 
 # -- Extension options -------------------------------------------------------
 ogp_site_url = 'http://project-structure.readthedocs.io/'

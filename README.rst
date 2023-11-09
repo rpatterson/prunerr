@@ -80,23 +80,23 @@ Perma-seed Servarr media libraries
 TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 
 - Delete torrents/items `only as disk space gets low
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L29-42>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L32-45>`_.
 - Don't delete `currently imported items
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L187-196>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L190-199>`_.
   IOW, only delete upgraded items.
 - Don't delete `private items that haven't met seeding requirements
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L159-186>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L162-189>`_.
 - Delete `public items first
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L151-153>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L154-156>`_.
 - Delete private items in `an order to maximize tracker ratio and/or bonuses
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L197-218>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L200-221>`_.
 - Delete `stalled items
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L60-86>`_
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L63-89>`_
   , and `items containing archives such as *.rar
   releases
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L87-106>`_
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L90-109>`_
   and `blacklist them
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L106>`_,
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L109>`_,
   AKA mark them as failed, in Servarr.
 - And more...
 

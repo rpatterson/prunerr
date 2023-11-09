@@ -26,6 +26,9 @@ download-clients:
     ## and `Username`.  Download clients not attached to Servarr instance will still be
     ## managed by Prunerr without the features that require Servarr:
     url: "http://transmission:secret@localhost:9091/transmission/"
+    ## The timeout setting passed into [the Python Transmission RPC
+    ## client](https://transmission-rpc.readthedocs.io/en/stable/client.html#timeouts):
+    timeout: 30
     ## Calculate an appropriate margin of disk space to keep free when deciding whether to
     ## prune download items based the maximum download bandwidth/speed in Mbps and the
     ## amount of time in seconds at that rate for which download clients should be able to

@@ -20,26 +20,26 @@ servarrs:
     api-key: ""
     type: "radarr"
 download-clients:
-  ## Authenticated URLs for all download clients.  These will be reconciled with the
-  ## download clients configured in each Servarr instance by `Host`, `Port`, `Url Base`
-  ## and `Username`.  Download clients not attached to Servarr instance will still be
-  ## managed by Prunerr without the features that require Servarr:
-  urls:
-    - "http://transmission:secret@localhost:9091/transmission/"
-  ## Calculate an appropriate margin of disk space to keep free when deciding whether to
-  ## prune download items based the maximum download bandwidth/speed in Mbps and the
-  ## amount of time in seconds at that rate for which download clients should be able to
-  ## continue downloading without exhausting disk space.
-  ## 100 Mb/s, e.g. dedicated ethernet, default
-  max-download-bandwidth: 100
-  ## 60 seconds * 60 minutes = 1 hour, default
-  # min-download-time-margin: 3600
-  ## 60 seconds * 10 daemon poll margin = 10 minutes
-  min-download-time-margin: 600
-  ## Should the maximum download bandwidth/speed be set in the download client as a
-  ## limit when resuming downloads after previously stopping?  May be useful for QoS to
-  ## optimize real download throughput.
-  # resume-set-download-bandwidth-limit: false
+  Transmission:
+    ## Authenticated URLs for all download clients.  These will be reconciled with the
+    ## download clients configured in each Servarr instance by `Host`, `Port`, `Url Base`
+    ## and `Username`.  Download clients not attached to Servarr instance will still be
+    ## managed by Prunerr without the features that require Servarr:
+    url: "http://transmission:secret@localhost:9091/transmission/"
+    ## Calculate an appropriate margin of disk space to keep free when deciding whether to
+    ## prune download items based the maximum download bandwidth/speed in Mbps and the
+    ## amount of time in seconds at that rate for which download clients should be able to
+    ## continue downloading without exhausting disk space.
+    ## 100 Mb/s, e.g. dedicated ethernet, default
+    max-download-bandwidth: 100
+    ## 60 seconds * 60 minutes = 1 hour, default
+    # min-download-time-margin: 3600
+    ## 60 seconds * 10 daemon poll margin = 10 minutes
+    min-download-time-margin: 600
+    ## Should the maximum download bandwidth/speed be set in the download client as a
+    ## limit when resuming downloads after previously stopping?  May be useful for QoS to
+    ## optimize real download throughput.
+    # resume-set-download-bandwidth-limit: false
 indexers:
   ## Determine the indexer/tracker for download items by matching the hostnames of
   ## tracker announce and scrape URLs.  The matched indexer name,

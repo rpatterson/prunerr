@@ -38,12 +38,12 @@ class PrunerrRunnerTests(prunerrtests.PrunerrTestCase):
         """
         runner = prunerr.runner.PrunerrRunner(self.CONFIG)
         with self.assertRaises(
-            prunerr.runner.PrunerrValidationError,
+            prunerr.utils.PrunerrValidationError,
             msg="Wrong empty config file validation exception type",
         ) as exc_context:
             runner.update()
         self.assertIn(
-            "must include at least one URL",
+            "must include at least one download client configuration",
             str(exc_context.exception),
             "Wrong empty config file validation error message",
         )
@@ -56,7 +56,7 @@ class PrunerrRunnerTests(prunerrtests.PrunerrTestCase):
             self.HOME.parent / "missing" / ".config" / "prunerr.yml",
         )
         with self.assertRaises(
-            prunerr.runner.PrunerrValidationError,
+            prunerr.utils.PrunerrValidationError,
             msg="Wrong missing config file validation exception type",
         ) as exc_context:
             runner.update()

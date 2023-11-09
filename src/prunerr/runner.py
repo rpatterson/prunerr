@@ -24,12 +24,6 @@ from .utils import cached_property
 logger = logging.getLogger(__name__)
 
 
-class PrunerrValidationError(Exception):
-    """
-    Incorrect Prunerr configuration.
-    """
-
-
 class PrunerrRunner:
     """
     Run Prunerr sub-commands across multiple Servarr instances and download clients.
@@ -55,11 +49,11 @@ class PrunerrRunner:
         Parse the configuration file and raise meaningful errors for improper values.
 
         :return: The parsed YAML configuration as a Python mapping
-        :raises PrunerrValidationError: The YAML configuration file has a problem
+        :raises utils.PrunerrValidationError: The YAML configuration file has a problem
         """
         # Refresh the Prunerr configuration from the file
         if not self.config_file.is_file():
-            raise PrunerrValidationError(
+            raise utils.PrunerrValidationError(
                 f"Configuration file not found: {self.config_file}"
             )
         with self.config_file.open(encoding="utf-8") as config_opened:
@@ -75,21 +69,13 @@ class PrunerrRunner:
                 self.config[top_key] = {}
 
         # Raise helpful errors for required values:
-        if not self.config.get("download-clients", {}).get("urls"):
-            raise PrunerrValidationError(
-                "Configuration file must include at least one URL under"
-                f" `download-clients/urls`: {self.config_file}"
+        if not self.config.get("download-clients"):
+            raise utils.PrunerrValidationError(
+                "Configuration file must include at least one download client"
+                f" configuration under  `download-clients`: {self.config_file}"
             )
 
         # Pull defaults from the example configuration:
-        self.config["download-clients"].setdefault(
-            "max-download-bandwidth",
-            self.example_confg["download-clients"]["max-download-bandwidth"],
-        )
-        self.config["download-clients"].setdefault(
-            "min-download-time-margin",
-            self.example_confg["download-clients"]["min-download-time-margin"],
-        )
         self.config.setdefault("daemon", {}).setdefault(
             "poll",
             self.example_confg["daemon"]["poll"],
@@ -126,10 +112,17 @@ class PrunerrRunner:
 
         # Update download client RPC clients
         # Download clients not connected to a Servarr instance
-        download_client_configs = dict(
-            prunerr.downloadclient.config_from_url(download_client_auth_url)
-            for download_client_auth_url in self.config["download-clients"]["urls"]
-        )
+        download_client_configs = {}
+        for download_client_name, download_client_config in self.config[
+            "download-clients"
+        ].items():
+            download_client_config.setdefault("name", download_client_name)
+            download_client_config.update(
+                prunerr.downloadclient.config_from_url(download_client_config["url"]),
+            )
+            download_client_configs[
+                download_client_config["url"]
+            ] = download_client_config
         # Reconcile with download clients defined in Servarr settings
         for servarr in self.servarrs.values():
             for download_client_url in servarr.download_clients.keys():

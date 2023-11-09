@@ -221,9 +221,9 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         """
         runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
-        download_client.config = {"url": self.download_client_urls[0]}
+        download_client.config = {"name": "Transmission"}
         self.assertIn(
-            self.download_client_urls[0],
+            download_client.config["name"],
             repr(download_client),
             "Download client URL missing from Servarr representation",
         )
@@ -240,3 +240,20 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
             msg="Download client URL without port did not raise and error",
         ):
             download_client.update({"url": "foo://transmission.example.com"})
+
+    def test_download_client_missing_url(self):
+        """
+        The download client informs the user with an error if no url is configured.
+        """
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
+        with self.assertRaises(
+            prunerr.utils.PrunerrValidationError,
+            msg="Wrong missing config URL validation exception type",
+        ) as exc_context:
+            download_client.update({})
+        self.assertIn(
+            "must include a URL",
+            str(exc_context.exception),
+            "Wrong missing config URL validation error message",
+        )

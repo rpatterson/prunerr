@@ -6,6 +6,7 @@ daemon:
   poll: 1
 servarrs:
 download-clients:
-  max-download-bandwidth: 100
-  min-download-time-margin: 3600
+  Transmission:
+    max-download-bandwidth: 100
+    min-download-time-margin: 3600
 indexers:

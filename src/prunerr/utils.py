@@ -54,6 +54,12 @@ RETRY_EXC_TYPES = (
 )
 
 
+class PrunerrValidationError(Exception):
+    """
+    Incorrect Prunerr configuration.
+    """
+
+
 def normalize_url(url):
     """
     Return the given URL in the same form regardless of port or authentication.

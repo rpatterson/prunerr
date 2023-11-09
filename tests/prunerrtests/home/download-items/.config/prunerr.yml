@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 
 download-clients:
-  max-download-bandwidth: 100
-  min-download-time-margin: 3600
-  urls:
-    - "http://transmission:secret@localhost:9091/transmission/"
+  Transmission:
+    max-download-bandwidth: 100
+    min-download-time-margin: 3600
+    url: "http://transmission:secret@localhost:9091/transmission/"

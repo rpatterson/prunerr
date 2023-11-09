@@ -50,13 +50,33 @@ class PrunerrDownloadClient:
         """
         Readable, informative, and specific representation to ease debugging.
         """
-        return f"<{type(self).__name__} at {self.config.get('url')!r}>"
+        return f"<{type(self).__name__} at {self.config.get('name')!r}>"
 
     def update(self, config):
         """
         Update configuration, connect the RPC client, and update the list of items.
         """
         self.config = config
+
+        if not self.config.get("url"):
+            raise utils.PrunerrValidationError(
+                "Download client configuration must include a URL under"
+                f" `download-clients/*/url`: {self.runner.config_file}"
+            )
+
+        # Pull defaults from the example configuration:
+        example_confg = next(
+            iter(self.runner.example_confg["download-clients"].values()),
+        )
+        self.config.setdefault(
+            "max-download-bandwidth",
+            example_confg["max-download-bandwidth"],
+        )
+        self.config.setdefault(
+            "min-download-time-margin",
+            example_confg["min-download-time-margin"],
+        )
+
         self.config.setdefault(
             "password",
             urllib.parse.urlsplit(self.config["url"]).password,
@@ -64,7 +84,7 @@ class PrunerrDownloadClient:
         self.config["url"] = utils.normalize_url(self.config["url"])
 
         # Configuration specific to Prunerr, IOW not taken from the download client
-        self.config["min-free-space"] = calc_free_space_margin(self.runner.config)
+        self.config["min-free-space"] = calc_free_space_margin(self.config)
         self.operations = prunerr.operations.PrunerrOperations(
             self,
             self.runner.config.get("indexers", {}),
@@ -93,6 +113,10 @@ class PrunerrDownloadClient:
             path=split_url.path,
             username=split_url.username,
             password=self.config["password"],
+            timeout=self.config.get(
+                "timeout",
+                transmission_rpc.constants.DEFAULT_TIMEOUT,
+            ),
         )
 
         # Update any Servarr references or data that depends on the download client
@@ -295,9 +319,7 @@ class PrunerrDownloadClient:
         """
         Resume downloading if it's been stopped.
         """
-        speed_limit_down = self.runner.config["download-clients"][
-            "max-download-bandwidth"
-        ]
+        speed_limit_down = self.config["max-download-bandwidth"]
         if session.speed_limit_down_enabled and (
             not speed_limit_down or speed_limit_down != session.speed_limit_down
         ):
@@ -409,7 +431,7 @@ def config_from_url(auth_url):
     """
     auth_url_split = urllib.parse.urlsplit(auth_url)
     url = utils.normalize_url(auth_url)
-    return (url, {"url": url, "password": auth_url_split.password})
+    return {"url": url, "password": auth_url_split.password}
 
 
 def calc_free_space_margin(config):
@@ -424,7 +446,7 @@ def calc_free_space_margin(config):
     return (
         (
             # Convert bandwidth bits to bytes
-            config["download-clients"]["max-download-bandwidth"]
+            config["max-download-bandwidth"]
             / 8
         )
         * (
@@ -434,7 +456,7 @@ def calc_free_space_margin(config):
         )
         * (
             # Multiply by seconds of download time margin
-            config["download-clients"]["min-download-time-margin"]
+            config["min-download-time-margin"]
         )
     )
 

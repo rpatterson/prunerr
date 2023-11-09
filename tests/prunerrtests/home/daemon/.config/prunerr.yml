@@ -13,10 +13,10 @@ servarrs:
     api-key: ""
     type: "radarr"
 download-clients:
-  urls:
-    - "http://transmission:secret@localhost:9091/transmission/"
-  max-download-bandwidth: 100
-  min-download-time-margin: 600
+  Transmission:
+    url: "http://transmission:secret@localhost:9091/transmission/"
+    max-download-bandwidth: 100
+    min-download-time-margin: 600
 indexers:
   hostnames:
     ExamplePrivateTracker:

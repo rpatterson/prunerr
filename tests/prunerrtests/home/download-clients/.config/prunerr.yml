@@ -13,14 +13,18 @@ servarrs:
     type: "radarr"
 
 download-clients:
-  urls:
-    - "http://transmission:secret@localhost:9091/transmission/"
-    - "http://transmission@192.168.1.1:9091/transmission/"
-    - "http://192.168.1.2/transmission/"
-    - "https://transmission.example.com"
-    - "https://transmission.foo.example.com"
-  max-download-bandwidth: 100
-  min-download-time-margin: 600
+  Local:
+    url: "http://transmission:secret@localhost:9091/transmission/"
+    max-download-bandwidth: 100
+    min-download-time-margin: 600
+  Foo:
+    url: "http://transmission@192.168.1.1:9091/transmission/"
+  Bar:
+    url: "http://192.168.1.2/transmission/"
+  Example:
+    url: "https://transmission.example.com"
+  FooExample:
+    url: "https://transmission.foo.example.com"
 indexers:
   hostnames:
     ExamplePrivateTracker:

@@ -128,9 +128,14 @@ class PrunerrTestCase(
         # Convenient access to the parsed configuration file
         with self.CONFIG.open(encoding="utf-8") as config_opened:
             self.config = yaml.safe_load(config_opened)
-        if "max-download-bandwidth" in self.config.get("download-clients", {}):
+        if self.config.get("download-clients"):
+            download_client_config = next(
+                iter(
+                    self.config["download-clients"].values(),
+                )
+            )
             self.min_free_space = prunerr.downloadclient.calc_free_space_margin(
-                self.config,
+                download_client_config,
             )
         # Convenient access to parsed mocked API/RPC request responses
         self.servarr_download_client_responses = {}
@@ -162,10 +167,9 @@ class PrunerrTestCase(
                     )
                 ]
         self.download_client_items_responses = {}
-        self.download_client_urls = self.config.get(
-            "download-clients",
-            {},
-        ).get("urls", [])
+        self.download_client_urls = [
+            config["url"] for config in self.config.get("download-clients", {}).values()
+        ]
         for download_client_url in self.download_client_urls:
             self.set_up_download_item_files(download_client_url)
 

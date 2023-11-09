@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: MIT
 
 download-clients:
-  urls:
-    - "http://transmission:secret@localhost:9091/transmission/"
+  Transmission:
+    url: "http://transmission:secret@localhost:9091/transmission/"

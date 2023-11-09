@@ -262,8 +262,8 @@ sub-command performs the following operations.
    For each of these groups in order, loop through each item in the group and:
 
    #. Check disk space against the margin configured by
-      ``download-clients/max-download-bandwidth`` and
-      ``download-clients/min-download-time-margin``
+      ``download-clients/*/max-download-bandwidth`` and
+      ``download-clients/*/min-download-time-margin``
 
    #. If there's sufficient disk space, remove any bandwidth limits set previously and
       continue to the next operation if any.

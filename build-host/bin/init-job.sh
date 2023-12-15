@@ -57,7 +57,7 @@ main() {
             docker_gid=$(stat -c "%g" "/var/run/docker.sock")
             if ! getent group ${docker_gid} >"/dev/null"
             then
-                addgroup -g "${docker_gid}" "docker"
+                addgroup -g "${docker_gid}" "build-host"
             fi
             if ! id -G "${user_name}" | grep -qw "${docker_gid}"
             then

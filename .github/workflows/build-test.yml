@@ -9,6 +9,8 @@ env:
   PGID: "1001"
   # Project specific values:
   PROJECT_NAMESPACE: "rpatterson"
+  # TEMPLATE: Cleanup once fixed entrypoint has been merged from the project template:
+  # fix(docker): Entrypoint user should not change
   PROJECT_NAME: "prunerr"
   GPG_PASSPHRASE: "${{ secrets.GPG_PASSPHRASE }}"
   GPG_SIGNING_PRIVATE_KEY: "${{ secrets.GPG_SIGNING_PRIVATE_KEY }}"

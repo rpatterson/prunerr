@@ -10,6 +10,9 @@ variables:
   PGID: "1001"
   # Project specific values:
   PROJECT_NAMESPACE: "rpatterson"
+  # TEMPLATE: Cleanup once fixed entrypoint has been merged from the project template:
+  # fix(docker): Entrypoint user should not change
+  PROJECT_NAME: "prunerr"
   # Uncomment to get more debugging output:
   # DEBUG: "true"
 

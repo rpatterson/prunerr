@@ -57,6 +57,7 @@ RUN \
     "gettext" \
     "grep" \
     "py3-pip" \
+    "pipx" \
     "gnupg" \
     "curl" \
     "tar" \
@@ -68,8 +69,6 @@ RUN \
 COPY [ "./bin/install-codecov.sh", "${HOME}/.local/bin/" ]
 # hadolint ignore=DL3042,DL4006,SC1091
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
-    pip3 install --user "pipx==1.2.0" && \
-    python3 -m "pipx" ensurepath && \
     pipx install "tox==4.11.3" && \
     wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" | \
         bash && \

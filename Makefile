@@ -1231,7 +1231,9 @@ ifeq ($(DOCKER_BUILD_PULL),true)
 # Pull the development image and simulate building it here:
 	if $(MAKE) -e DOCKER_VARIANT="devel" pull-docker
 	then
-	    touch "$(@)" "./var-docker/$(PYTHON_ENV)/log/rebuild.log"
+	    docker image ls --digests "$(
+	        docker compose config --images $(PROJECT_NAME)-devel | head -n 1
+	    )" | tee -a "$(@)" "./var-docker/$(PYTHON_ENV)/log/rebuild.log"
 # Ensure the virtualenv in the volume is also current:
 	    docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	        tox run $(TOX_EXEC_OPTS) -e "$(PYTHON_ENV)" --notest
@@ -1720,6 +1722,7 @@ pull-docker: ./var/git/refs/remotes/$(VCS_REMOTE)/$(VCS_BRANCH) $(HOST_TARGET_DO
 	    do
 	        if docker pull "$${docker_image}:$${docker_tag}"
 	        then
+		    docker image ls --digests "$${docker_image}:$${docker_tag}"
 	            docker tag "$${docker_image}:$${docker_tag}" \
 	                "$(DOCKER_IMAGE_DOCKER):$${docker_tag}"
 	            exit

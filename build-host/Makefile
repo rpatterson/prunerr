@@ -20,7 +20,7 @@ COMMA=,
 # Done with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
-DOCKER_IMAGE=merpatterson/prunerr
+DOCKER_IMAGE=registry.gitlab.com/rpatterson/prunerr
 
 ## Top-level targets
 

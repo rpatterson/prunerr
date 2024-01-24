@@ -26,7 +26,7 @@ services:
     healthcheck:
       test: >-
         curl -Lv
-        "http://sonarr:8989/api/system/status?apikey=${SONARR_API_KEY:-}" |
+        "http://sonarr:8989/api/v3/system/status?apikey=${SONARR_API_KEY:-}" |
         grep '"appData": *"/config"'
 
   radarr:

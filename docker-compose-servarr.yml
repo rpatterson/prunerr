@@ -26,7 +26,7 @@ services:
     healthcheck:
       test: >-
         curl -Lv
-        "http://sonarr:8989/api/v3/system/status?apikey=${SONARR_API_KEY:-}" |
+        "http://localhost:8989/api/v3/system/status?apikey=${SONARR_API_KEY:-}" |
         grep '"appData": *"/config"'
 
   radarr:
@@ -44,7 +44,7 @@ services:
     healthcheck:
       test: >-
         curl -Lv
-        "http://radarr:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
+        "http://localhost:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
         grep '"appData": *"/config"'
 
   prunerr-daemon:

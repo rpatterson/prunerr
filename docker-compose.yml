@@ -4,8 +4,6 @@
 
 # Minimal `$ docker compose` configuration to show the requirements for running prunerr
 # in containers.
-version: "3.8"
-
 services:
   transmission:
     image: "linuxserver/transmission"

@@ -6,8 +6,6 @@
 #
 # In a separate file because integrating with Servarr is optional.  See the comment
 # above `COMPOSE_FILE` in `./.env.in` for an example of how to add this file.
-version: "3.8"
-
 services:
   sonarr:
     image: "ghcr.io/hotio/sonarr"

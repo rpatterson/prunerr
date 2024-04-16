@@ -5,8 +5,6 @@
 # Override `$ docker compose` configuration for development or testing here in this
 # repository checkout. Put everything used outside this checkout in
 # `./docker-compose.yml`.
-version: "3.8"
-
 services:
   transmission:
     container_name: "prunerr-devel-transmission"

@@ -107,6 +107,19 @@ volumes:
       type: "none"
       o: "bind"
       device: "${DOWNLOAD_VOLUME:-/media/Library/}"
+  # When on of a container's volumes, such as application data on an SSD for fast access
+  # on the `/` root filesystem, is on a separate filesystem than another of a
+  # container's volumes, such as a large RAID5 array for storing large media files in
+  # `/media/Library/`, data damage and/or loss can happen when one of those is mounted
+  # and another is not. In such cases, it's best *not* to bind mount the already mounted
+  # filesystem, but instead to define the volumes in such a way that `# dockerd` will
+  # refuse to even start the container if a volume's filesystem device is not available:
+  # media_library:
+  #   name: "media_library"
+  #   driver: "local"
+  #   driver_opts:
+  #     device: "/dev/mapper/_dev_md127p1"
+  #     type: "ext4"
 
   home_config:
     name: "home_config"

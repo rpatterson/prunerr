@@ -31,12 +31,10 @@ services:
       # - "./s6/etc/s6-overlay/s6-rc.d/svc-transmission/finish:/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
       # Intended for use in the image
       - "./transmission/config/:/config/"
-      # The volume on which Transmission's `download-dir` is stored
-      - type: bind
-        source: "${DOWNLOAD_VOLUME:-/media/Library/}"
+      # The volume on which Transmission's `download-dir` is stored:
+      - type: "volume"
+        source: "media_library"
         target: "${DOWNLOAD_VOLUME:-/media/Library/}"
-        bind:
-          propagation: "shared"
     # Transmission seems to be very poorly behaved when disk space is exhausted: items
     # become corrupted, items lose track of their data/files, etc..  Guard against that,
     # for example if Prunerr stops running for any reason, by shutting it down before
@@ -84,13 +82,50 @@ services:
       # DEBUG: "true"
     volumes:
       # Preserve user configuration, data, and caches between containers and variants:
-      - "${CHECKOUT_DIR:-.}/home/.config/:/home/prunerr/.config/"
-      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/prunerr/.local/share/"
-      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/prunerr/.cache/"
-      # The volume on which Transmission's `download-dir` is stored
-      - type: bind
-        source: "${DOWNLOAD_VOLUME:-/media/Library/}"
+      - type: "volume"
+        source: "home_config"
+        target: "/home/prunerr/.config/"
+      - type: "volume"
+        source: "home_local_share"
+        target: "/home/prunerr/.local/share/"
+      - type: "volume"
+        source: "home_cache"
+        target: "/home/prunerr/.cache/"
+      # The volume on which Transmission's `download-dir` is stored:
+      - type: "volume"
+        source: "media_library"
         target: "${DOWNLOAD_VOLUME:-/media/Library/}"
-        bind:
-          propagation: "shared"
     restart: "unless-stopped"
+
+volumes:
+
+  # The volume on which Transmission's `download-dir` is stored:
+  media_library:
+    name: "media_library"
+    driver: "local"
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${DOWNLOAD_VOLUME:-/media/Library/}"
+
+  home_config:
+    name: "home_config"
+    driver: "local"
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${CHECKOUT_DIR:-.}/home/.config/"
+  home_local_share:
+    name: "home_local_share"
+    driver: "local"
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${CHECKOUT_DIR:-.}/home/.local/share/"
+  home_cache:
+    name: "home_cache"
+    driver: "local"
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${CHECKOUT_DIR:-.}/home/.cache/"

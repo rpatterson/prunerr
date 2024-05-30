@@ -59,11 +59,19 @@ services:
     volumes:
       # Reflect local changes inside the container:
       - "${CHECKOUT_DIR:-.}/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr/"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/usr/local/src/prunerr/"
       # Preserve user configuration, data, and caches between containers and variants:
-      - "${CHECKOUT_DIR:-.}/home/.config/:/home/prunerr/.config/"
-      - "${CHECKOUT_DIR:-.}/home/.local/share/:/home/prunerr/.local/share/"
-      - "${CHECKOUT_DIR:-.}/home/.cache/:/home/prunerr/.cache/"
+      - type: "volume"
+        source: "home_config"
+        target: "/home/prunerr/.config/"
+      - type: "volume"
+        source: "home_local_share"
+        target: "/home/prunerr/.local/share/"
+      - type: "volume"
+        source: "home_cache"
+        target: "/home/prunerr/.cache/"
       # Avoid any clashes between image variants and the local host at both build and
       # runtime:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
@@ -82,7 +90,9 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr/"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr/"
     command: >-
       hadolint "./Dockerfile"
@@ -95,7 +105,9 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/data/"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/data/"
     command: >-
       lint
 
@@ -107,7 +119,9 @@ services:
     environment:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/usr/local/src/prunerr"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr"
     command: >-
       .
@@ -118,7 +132,9 @@ services:
       - "release"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/data/"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/data/"
     entrypoint: "ash"
     # Strip reStructuredText directives unsupported in Markdown before converting, for
     # example table of contents, and converted Markdown that isn't widely supported, for
@@ -141,7 +157,9 @@ services:
       DOCKER_USER: "${DOCKER_USER:-}"
       DOCKER_PASS: "${DOCKER_PASS:-}"
     volumes:
-      - "${CHECKOUT_DIR:-.}/:/data/"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/data/"
     command: >-
       --file "/data/var/README.md"
       --short "Perma-seed Servarr media libraries"
@@ -154,7 +172,9 @@ services:
     environment:
       CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
     volumes:
-      - "./:/usr/local/src/prunerr/"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "/usr/local/src/prunerr/"
     working_dir: "/usr/local/src/prunerr/"
 
   ## Containers related to CI/CD:
@@ -170,7 +190,9 @@ services:
     privileged: true
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "${CHECKOUT_DIR:-.}/:${CHECKOUT_DIR:-.}"
+      - type: "volume"
+        source: "src_prunerr"
+        target: "${CHECKOUT_DIR:-.}"
       - "${CHECKOUT_DIR:-.}/build-host/bin/init-job.sh:/usr/local/bin/init-job.sh"
       - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       # Share local SSH authentication to repository remotes
@@ -188,3 +210,13 @@ services:
   gitlab-runner:
     profiles:
       - "ci"
+
+volumes:
+
+  src_prunerr:
+    name: "src_prunerr"
+    driver: "local"
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${CHECKOUT_DIR:-.}/"

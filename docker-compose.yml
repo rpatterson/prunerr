@@ -83,14 +83,20 @@ services:
     volumes:
       # Preserve user configuration, data, and caches between containers and variants:
       - type: "volume"
-        source: "home_config"
-        target: "/home/prunerr/.config"
+        source: "project_home"
+        target: "/home/prunerr"
+        volume:
+          subpath: "./.config/"
       - type: "volume"
-        source: "home_local_share"
-        target: "/home/prunerr/.local/share"
+        source: "project_home"
+        target: "/home/prunerr"
+        volume:
+          subpath: "./.local/share/"
       - type: "volume"
-        source: "home_cache"
-        target: "/home/prunerr/.cache"
+        source: "project_home"
+        target: "/home/prunerr"
+        volume:
+          subpath: "./.cache/"
       # The volume on which Transmission's `download-dir` is stored:
       - type: "volume"
         source: "media_library"
@@ -121,24 +127,11 @@ volumes:
   #     device: "/dev/mapper/_dev_md127p1"
   #     type: "ext4"
 
-  home_config:
-    name: "home_config"
+  # Share user `${HOME}` data between services but isolated within the project:
+  project_home:
+    name: "${PROJECT_NAME:-prunerr}_home"
     driver: "local"
     driver_opts:
       type: "none"
       o: "bind"
-      device: "${CHECKOUT_DIR:-.}/home/.config/"
-  home_local_share:
-    name: "home_local_share"
-    driver: "local"
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "${CHECKOUT_DIR:-.}/home/.local/share/"
-  home_cache:
-    name: "home_cache"
-    driver: "local"
-    driver_opts:
-      type: "none"
-      o: "bind"
-      device: "${CHECKOUT_DIR:-.}/home/.cache/"
+      device: "${CHECKOUT_DIR:-.}/home/"

@@ -34,7 +34,7 @@ services:
       # The volume on which Transmission's `download-dir` is stored:
       - type: "volume"
         source: "media_library"
-        target: "${DOWNLOAD_VOLUME:-/media/Library/}"
+        target: "${DOWNLOAD_VOLUME:-/media/Library}"
     # Transmission seems to be very poorly behaved when disk space is exhausted: items
     # become corrupted, items lose track of their data/files, etc..  Guard against that,
     # for example if Prunerr stops running for any reason, by shutting it down before
@@ -84,17 +84,17 @@ services:
       # Preserve user configuration, data, and caches between containers and variants:
       - type: "volume"
         source: "home_config"
-        target: "/home/prunerr/.config/"
+        target: "/home/prunerr/.config"
       - type: "volume"
         source: "home_local_share"
-        target: "/home/prunerr/.local/share/"
+        target: "/home/prunerr/.local/share"
       - type: "volume"
         source: "home_cache"
-        target: "/home/prunerr/.cache/"
+        target: "/home/prunerr/.cache"
       # The volume on which Transmission's `download-dir` is stored:
       - type: "volume"
         source: "media_library"
-        target: "${DOWNLOAD_VOLUME:-/media/Library/}"
+        target: "${DOWNLOAD_VOLUME:-/media/Library}"
     restart: "unless-stopped"
 
 volumes:

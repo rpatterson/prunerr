@@ -17,7 +17,7 @@ NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
 # TEMPLATE: See comments towards the bottom and update.
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
-export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library/
+export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library
 PRUNERR_CMD=exec
 PRUNERR_ARGS=$(PRUNERR_CMD)
 

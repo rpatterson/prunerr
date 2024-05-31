@@ -61,17 +61,17 @@ services:
       - "${CHECKOUT_DIR:-.}/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       - type: "volume"
         source: "src_prunerr"
-        target: "/usr/local/src/prunerr/"
+        target: "/usr/local/src/prunerr"
       # Preserve user configuration, data, and caches between containers and variants:
       - type: "volume"
         source: "home_config"
-        target: "/home/prunerr/.config/"
+        target: "/home/prunerr/.config"
       - type: "volume"
         source: "home_local_share"
-        target: "/home/prunerr/.local/share/"
+        target: "/home/prunerr/.local/share"
       - type: "volume"
         source: "home_cache"
-        target: "/home/prunerr/.cache/"
+        target: "/home/prunerr/.cache"
       # Avoid any clashes between image variants and the local host at both build and
       # runtime:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\
@@ -92,7 +92,7 @@ services:
     volumes:
       - type: "volume"
         source: "src_prunerr"
-        target: "/usr/local/src/prunerr/"
+        target: "/usr/local/src/prunerr"
     working_dir: "/usr/local/src/prunerr/"
     command: >-
       hadolint "./Dockerfile"
@@ -107,7 +107,7 @@ services:
     volumes:
       - type: "volume"
         source: "src_prunerr"
-        target: "/data/"
+        target: "/data"
     command: >-
       lint
 
@@ -121,7 +121,7 @@ services:
     volumes:
       - type: "volume"
         source: "src_prunerr"
-        target: "/usr/local/src/prunerr/"
+        target: "/usr/local/src/prunerr"
     working_dir: "/usr/local/src/prunerr"
     command: >-
       .
@@ -134,7 +134,7 @@ services:
     volumes:
       - type: "volume"
         source: "src_prunerr"
-        target: "/data/"
+        target: "/data"
     entrypoint: "ash"
     # Strip reStructuredText directives unsupported in Markdown before converting, for
     # example table of contents, and converted Markdown that isn't widely supported, for
@@ -159,7 +159,7 @@ services:
     volumes:
       - type: "volume"
         source: "src_prunerr"
-        target: "/data/"
+        target: "/data"
     command: >-
       --file "/data/var/README.md"
       --short "Perma-seed Servarr media libraries"
@@ -174,7 +174,7 @@ services:
     volumes:
       - type: "volume"
         source: "src_prunerr"
-        target: "/usr/local/src/prunerr/"
+        target: "/usr/local/src/prunerr"
     working_dir: "/usr/local/src/prunerr/"
 
   ## Containers related to CI/CD:

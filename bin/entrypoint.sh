@@ -29,7 +29,7 @@ main() {
         # Add an unprivileged user:
         if ! getent group "${PGID}" >"/dev/null"
         then
-            addgroup --gid "${PGID}" "${PROJECT_NAME}"
+            addgroup --gid "${PGID}" "prunerr"
         fi
         group_name=$(getent group "${PGID}" | cut -d ":" -f 1)
         if ! id "${PUID}" >"/dev/null" 2>&1
@@ -37,7 +37,7 @@ main() {
             # Add a user to the `passwd` DB to support looking up the
             # `~prunerr/` HOME directory:
             adduser --uid "${PUID}" --gid "${PGID}" --disabled-password \
-                --gecos "Prunerr,,," "${PROJECT_NAME}" >"/dev/null"
+                --gecos "Prunerr,,," "prunerr" >"/dev/null"
         fi
         if tty_dev=$(tty)
         then

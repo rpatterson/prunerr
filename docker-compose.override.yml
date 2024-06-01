@@ -64,20 +64,14 @@ services:
         target: "/usr/local/src/prunerr"
       # Preserve user configuration, data, and caches between containers and variants:
       - type: "volume"
-        source: "project_home"
-        target: "/home/prunerr"
-        volume:
-          subpath: "./.config/"
+        source: "home_config"
+        target: "/home/prunerr/.config"
       - type: "volume"
-        source: "project_home"
-        target: "/home/prunerr"
-        volume:
-          subpath: "./.local/share/"
+        source: "home_local_share"
+        target: "/home/prunerr/.local/share"
       - type: "volume"
-        source: "project_home"
-        target: "/home/prunerr"
-        volume:
-          subpath: "./.cache/"
+        source: "home_cache"
+        target: "/home/prunerr/.cache"
       # Avoid any clashes between image variants and the local host at both build and
       # runtime:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\

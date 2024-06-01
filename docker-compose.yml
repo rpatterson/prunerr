@@ -122,21 +122,21 @@ volumes:
   #     type: "ext4"
 
   home_config:
-    name: "home_config"
+    name: "${PROJECT_NAME:-prunerr}_home_config"
     driver: "local"
     driver_opts:
       type: "none"
       o: "bind"
       device: "${CHECKOUT_DIR:-.}/home/.config/"
   home_local_share:
-    name: "home_local_share"
+    name: "${PROJECT_NAME:-prunerr}_home_local_share"
     driver: "local"
     driver_opts:
       type: "none"
       o: "bind"
       device: "${CHECKOUT_DIR:-.}/home/.local/share/"
   home_cache:
-    name: "home_cache"
+    name: "${PROJECT_NAME:-prunerr}_home_cache"
     driver: "local"
     driver_opts:
       type: "none"

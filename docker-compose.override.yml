@@ -60,7 +60,7 @@ services:
       # Reflect local changes inside the container:
       - "${CHECKOUT_DIR:-.}/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/usr/local/src/prunerr"
       # Preserve user configuration, data, and caches between containers and variants:
       - type: "volume"
@@ -91,7 +91,7 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/usr/local/src/prunerr"
     working_dir: "/usr/local/src/prunerr/"
     command: >-
@@ -106,7 +106,7 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/data"
     command: >-
       lint
@@ -120,7 +120,7 @@ services:
       TZ: "${TZ:-Etc/UTC}"
     volumes:
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/usr/local/src/prunerr"
     working_dir: "/usr/local/src/prunerr"
     command: >-
@@ -133,7 +133,7 @@ services:
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
     volumes:
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/data"
     entrypoint: "ash"
     # Strip reStructuredText directives unsupported in Markdown before converting, for
@@ -158,7 +158,7 @@ services:
       DOCKER_PASS: "${DOCKER_PASS:-}"
     volumes:
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/data"
     command: >-
       --file "/data/var/README.md"
@@ -173,7 +173,7 @@ services:
       CI_JOB_TOKEN: "${CI_JOB_TOKEN:-}"
     volumes:
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "/usr/local/src/prunerr"
     working_dir: "/usr/local/src/prunerr/"
 
@@ -191,7 +191,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
       - type: "volume"
-        source: "checkout"
+        source: "prunerr_checkout"
         target: "${CHECKOUT_DIR:-.}"
       - "${CHECKOUT_DIR:-.}/build-host/bin/init-job.sh:/usr/local/bin/init-job.sh"
       - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
@@ -213,8 +213,8 @@ services:
 
 volumes:
 
-  checkout:
-    name: "${PROJECT_NAME:-prunerr}_checkout"
+  prunerr_checkout:
+    name: "prunerr_checkout"
     driver: "local"
     driver_opts:
       type: "none"

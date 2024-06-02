@@ -44,6 +44,8 @@ High priority
 
    Perhaps we can use the Servarr "Connect" API?
 
+#. Refactor per-indexer configuration to support sharing between indexers?
+
 
 ****************************************************************************************
 Nice to have

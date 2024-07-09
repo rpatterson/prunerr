@@ -1,0 +1,85 @@
+[
+  {
+    "title": "Bar Movie",
+    "originalTitle": "Bar Movie",
+    "originalLanguage": {
+      "id": 1,
+      "name": "English"
+    },
+    "alternateTitles": [],
+    "secondaryYearSourceId": 0,
+    "sortTitle": "bar movie",
+    "sizeOnDisk": 1073741824,
+    "status": "released",
+    "overview": "This is the Bar Movie overview.",
+    "inCinemas": "1980-01-05T00:00:00Z",
+    "physicalRelease": "1980-07-05T00:00:00Z",
+    "digitalRelease": "2010-01-05T00:00:00Z",
+    "images": [],
+    "website": "https://studio.example.com/movies/bar-movie",
+    "year": 1980,
+    "youTubeTrailerId": "xxxxxxxxxxx",
+    "studio": "Grault Studio",
+    "path": "/media/Library/Videos/Movies/Bar Movie (1980) [tmdbid-1]",
+    "qualityProfileId": 1,
+    "hasFile": true,
+    "movieFileId": 1,
+    "monitored": true,
+    "minimumAvailability": "released",
+    "isAvailable": true,
+    "folderName": "/media/Library/Videos/Movies/Bar Movie (1980) [tmdbid-1]",
+    "runtime": 90,
+    "cleanTitle": "barmovie",
+    "imdbId": "tt0000001",
+    "tmdbId": 1,
+    "titleSlug": "1",
+    "rootFolderPath": "/media/Library/Videos/Movies/",
+    "certification": "PG",
+    "genres": [],
+    "tags": [],
+    "added": "2010-01-07T00:00:00Z",
+    "ratings": {},
+    "movieFile": {
+      "movieId": 1,
+      "relativePath": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "path": "/media/Library/Videos/Movies/Bar Movie (1980) [tmdbid-1]/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "size": 1073741824,
+      "dateAdded": "2010-01-07T00:00:00Z",
+      "sceneName": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
+      "releaseGroup": "RELEASER",
+      "edition": "",
+      "languages": [
+        {
+          "id": 1,
+          "name": "English"
+        }
+      ],
+      "quality": {
+        "quality": {
+          "id": 1,
+          "name": "WEBDL-480p",
+          "source": "web",
+          "resolution": 480
+        },
+        "revision": {
+          "version": 1,
+          "real": 0,
+          "isRepack": false
+        }
+      },
+      "customFormatScore": 0,
+      "indexerFlags": 0,
+      "mediaInfo": {},
+      "originalFilePath": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "qualityCutoffNotMet": false,
+      "id": 1
+    },
+    "popularity": 66.667,
+    "statistics": {
+      "movieFileCount": 1,
+      "sizeOnDisk": 1073741824,
+      "releaseGroups": ["RELEASER"]
+    },
+    "id": 1
+  }
+]

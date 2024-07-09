@@ -149,6 +149,35 @@ parser_free_space = subparsers.add_parser(
 parser_free_space.set_defaults(command=free_space)
 
 
+def export(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> dict:
+    runner.update()
+    return runner.export(*args, **kwargs)
+
+
+export.__doc__ = prunerr.runner.PrunerrRunner.export.__doc__
+parser_export = subparsers.add_parser(
+    "export",
+    help=export.__doc__.strip(),  # type: ignore
+    description=export.__doc__.strip(),  # type: ignore
+)
+parser_export.add_argument(
+    "--extra-data-path",
+    "-d",
+    dest="extra_data_paths",
+    type=pathlib.Path,
+    nargs="*",
+    help="""\
+Additional paths to search for existing download item data beyond the usual
+`**/downloads/` and `**/seeding/` directories.
+""",
+)
+parser_export.set_defaults(command=export)
+
+
 def exec_(  # pylint: disable=missing-function-docstring,missing-return-doc
     runner,
     *args,

@@ -12,6 +12,7 @@ import os
 import time
 import urllib.parse
 import json
+import subprocess  # nosec, pragmatic choice for performance
 import logging
 
 import transmission_rpc
@@ -68,7 +69,9 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         item has multiple files, assumes that all files are under the same top-level
         directory.
         """
-        file_roots = [pathlib.Path(item_file.name).parts[0] for item_file in self.files]
+        file_roots = list(
+            {item_file.relative.parts[0]: None for item_file in self.files}
+        )
         if file_roots:
             if len(set(file_roots)) > 1:
                 logger.error(
@@ -201,8 +204,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     def files(self):  # pylint: disable=invalid-overridden-method,useless-suppression
         """
         Iterate over all download item file paths that exist.
-
-        Optionally filter the list by those that are selected in the download client.
         """
         return [PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()]
 
@@ -290,6 +291,101 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         return results
 
+    def find_location(self, data_paths):
+        """
+        Find the most downloaded data path for this download item and set location.
+
+        The current implementation guesses the most downloaded path by sorting the
+        possible matches by size, largest first, and then modification date, most recent
+        first, and selects the first of those sorted paths. Anything more accurate
+        requires CPU intensive, time consuming verification.
+
+        :param data_paths: Paths to directories whose direct or immediate children are
+            checked for existing download item data.
+        :return: A ``pathlib.Path()`` object to the best data path if the location was
+            changed.
+        """
+
+        def key(data_path, self=self):
+            """
+            Determine the size and modification date of this items data in the path.
+            """
+            item_path = data_path / self.root_name
+            du_process = subprocess.run(  # nosec, pragmatic choice for performance
+                ["du", "-s", str(item_path)],
+                capture_output=True,
+                check=True,
+            )
+            return (
+                int(du_process.stdout.strip().split()[0]),
+                item_path.stat().st_mtime,
+            )
+
+        locations = [
+            data_path
+            for data_path in data_paths
+            if (data_path / self.root_name).exists()
+        ]
+        if not locations:
+            logger.debug(
+                "No existing download item location found for %r: %s",
+                self,
+                self.download_dir,
+            )
+            return None
+        location = sorted(locations, reverse=True, key=key)[0]
+        if pathlib.Path(self.download_dir) != location:
+            logger.info(
+                "Changing download item location for %r: %r -> %r",
+                self,
+                self.download_dir,
+                location,
+            )
+            self.locate_data(location)
+            # Avoid another RPC request, update the field value using the internals:
+            self._fields["downloadDir"] = transmission_rpc.lib_types.Field(
+                str(location),
+                False,
+            )
+            return location
+
+        logger.debug(
+            "Download item location already best for %r: %s",
+            self,
+            self.download_dir,
+        )
+        return None
+
+    def deselect_unimported_files(self):
+        """
+        For any unimported and incomplete files, deselect them for download.
+
+        :return: Map file indexes to ``prunerr.downloaditem.PrunerrDownloadItemFile()``
+            instances for any files that were deselected.
+        """
+        deselected_files = [
+            download_file_idx
+            for download_file_idx, download_file in enumerate(self.files)
+            if (
+                not download_file.path.exists()
+                or (
+                    download_file.stat.st_nlink <= 1
+                    and download_file.completed < download_file.size
+                )
+            )
+        ]
+        if deselected_files:
+            logger.info(
+                "Deselecting un-imported, incomplete download files for %r: %r",
+                self,
+                deselected_files,
+            )
+            self.download_client.client.change_torrent(
+                [self.hashString],
+                files_unwanted=deselected_files,
+            )
+        return deselected_files
+
 
 class PrunerrDownloadItemFile:
     """
@@ -313,11 +409,18 @@ class PrunerrDownloadItemFile:
             return getattr(self.stat, name)
 
     @cached_property
+    def relative(self):
+        """
+        Assemble a `pathlib` path for this item file relative to the item root.
+        """
+        return pathlib.Path(self.rpc_file.name)
+
+    @cached_property
     def path(self):
         """
         Assemble a `pathlib` path for this item file only as needed and only once.
         """
-        return self.download_item.path.parent / self.rpc_file.name
+        return self.download_item.path.parent / self.relative
 
     @cached_property
     def stat(self):

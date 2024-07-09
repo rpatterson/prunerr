@@ -418,6 +418,23 @@ class PrunerrDownloadClient:
                 del self.verifying_items[item_hash]
         return verified_items
 
+    def add_torrent(self, torrent, **kwargs):
+        """
+        Add a torrent to the download client and update instance state.
+
+        :param torrent: The torrent to add, passed to
+            ``transmission_rpc.client.Client().add_torrent()``.
+        :return: The added ``prunerr.downloaditem.PrunerrDownloadItem()`` instance.
+        """
+        logger.info("Adding torrent: %s", torrent)
+        added_torrent = prunerr.downloaditem.PrunerrDownloadItem(
+            self,
+            self.client,  # pylint: disable=protected-access
+            self.client.add_torrent(torrent=torrent, **kwargs),
+        )
+        self.items.append(added_torrent)
+        return added_torrent
+
 
 class DownloadClientTimeout(Exception):
     """A download client operation took too long."""

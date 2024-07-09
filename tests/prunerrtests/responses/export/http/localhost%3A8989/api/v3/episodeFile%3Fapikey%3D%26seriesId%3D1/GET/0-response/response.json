@@ -1,0 +1,290 @@
+[
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 1
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 2
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E03.Garply.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E03.Garply.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E03.Garply.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 3
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 4
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E05.Xyzzy.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E05.Xyzzy.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E05.Xyzzy.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 5
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E06.Fred.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E06.Fred.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E06.Fred.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 6
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E07.Thud.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E07.Thud.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E07.Thud.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 7
+  },
+  {
+    "seriesId": 1,
+    "seasonNumber": 1,
+    "relativePath": "Season 01/Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+    "size": 1073741824,
+    "dateAdded": "2021-04-22T00:00:00Z",
+    "sceneName": "Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "releaseGroup": "RELEASER",
+    "languages": [
+      {
+        "id": 1,
+        "name": "English"
+      }
+    ],
+    "quality": {
+      "quality": {
+        "id": 1,
+        "name": "WEBDL-480p",
+        "source": "web",
+        "resolution": 480
+      },
+      "revision": {
+        "version": 1,
+        "real": 0,
+        "isRepack": false
+      }
+    },
+    "customFormats": [],
+    "customFormatScore": 0,
+    "indexerFlags": 0,
+    "releaseType": "episode",
+    "mediaInfo": {},
+    "qualityCutoffNotMet": true,
+    "id": 8
+  }
+]

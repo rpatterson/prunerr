@@ -15,6 +15,20 @@ Required
 
 #. Not deleting orphans in ``**/incomplete/``?
 
+#. Use YAML anchors and merge keys to demonstrate how to share configuration between
+   indexers?
+
+#. Move pausing download out of prunerr into the Transmission container via a
+   ``periodic`` script. Prevent Transmission from exhausting space when Prunerr is
+   down. Establish a margin between when it pauses download and when Prunerr starts
+   deleting items.
+
+#. Move critical disk space container shutdown into a ``periodic`` script.
+
+#. Extend critical disk space container shutdown to the Transmission data filesystem.
+
+#. Take ``done-date`` from Servarr when missing or 0 in Transmission.
+
 #. Add torrent date handling to the ``export`` sub-command. Take the ``grabbed`` history
    record dates for the ``added-date`` and the ``downloadFolderImported`` record dates
    for the ``done-date`` and `set them in the Transmission '/config/resume/*.resume'
@@ -30,6 +44,12 @@ High priority
 #. Add a review to exclude BluRay/DVD full disc rips.
 
 #. Deselect unimported files before deciding whether to delete?
+
+#. Link the top-level docs for each sub-command into their runner API docs.
+
+#. Investigate Transmission "Labels". They're not visible in the Transmission Remote GTK
+   GUI but they are visible in the web UI. Should we replace the use of directories with
+   labels?
 
 #. Well documented configuration snippets demonstrating all important use cases.
 
@@ -56,6 +76,11 @@ High priority
 ****************************************************************************************
 Nice to have
 ****************************************************************************************
+
+#. Support selecting only one series or movie for the ``export`` sub-command.
+
+#. Implement ``__eq__`` or better and audit other "dunder" methods to implement. Use the
+   normalized ``self.config["url"]`` for servarr and download client instances.
 
 #. Improve configure-ability, particularly the various download client paths:
 

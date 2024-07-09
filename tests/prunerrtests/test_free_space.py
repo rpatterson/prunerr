@@ -31,11 +31,13 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         """
         Prunerr removes imported items to free space according to configured rules.
         """
+        # 0. Verify initial assumptions and conditions
+        # Add an orphan file to the download client seeding directory:
         shutil.copy2(
             self.EXAMPLE_VIDEO,
             self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name,
         )
-        # 0. Verify initial assumptions and conditions
+        # Import a download item file into the library:
         self.mock_servarr_import_item(self.seeding_item)
         self.assertFalse(
             self.incomplete_item.exists(),

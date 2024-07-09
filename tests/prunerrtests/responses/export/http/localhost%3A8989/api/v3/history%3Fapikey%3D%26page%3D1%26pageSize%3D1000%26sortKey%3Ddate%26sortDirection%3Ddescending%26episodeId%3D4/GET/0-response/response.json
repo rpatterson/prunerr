@@ -1,0 +1,95 @@
+{
+  "page": 1,
+  "pageSize": 1000,
+  "sortKey": "date",
+  "sortDirection": "descending",
+  "totalRecords": 2,
+  "records": [
+    {
+      "episodeId": 4,
+      "seriesId": 1,
+      "sourceTitle": "Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+      "language": {
+        "id": 1,
+        "name": "English"
+      },
+      "quality": {
+        "quality": {
+          "id": 1,
+          "name": "WEBDL-480p",
+          "source": "web",
+          "resolution": 480
+        },
+        "revision": {
+          "version": 1,
+          "real": 0,
+          "isRepack": false
+        }
+      },
+      "qualityCutoffNotMet": true,
+      "languageCutoffNotMet": false,
+      "date": "2021-04-22T00:00:00Z",
+      "downloadId": "2968A07994B84D3AA21EC131195FCC58195FCC58",
+      "eventType": "downloadFolderImported",
+      "data": {
+        "fileId": "4",
+        "droppedPath": "/media/Library/manual/Sonarr/Videos/Series/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+        "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+        "downloadClient": "Transmission",
+        "downloadClientName": "transmission",
+        "preferredWordScore": "0",
+        "releaseGroup": "RELEASER"
+      },
+      "id": 6
+    },
+    {
+      "episodeId": 4,
+      "seriesId": 1,
+      "sourceTitle": "Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+      "language": {
+        "id": 1,
+        "name": "English"
+      },
+      "quality": {
+        "quality": {
+          "id": 1,
+          "name": "WEBDL-480p",
+          "source": "web",
+          "resolution": 480
+        },
+        "revision": {
+          "version": 1,
+          "real": 0,
+          "isRepack": false
+        }
+      },
+      "customFormats": [],
+      "customFormatScore": 0,
+      "qualityCutoffNotMet": true,
+      "date": "2021-04-22T00:00:00Z",
+      "downloadId": "2968A07994B84D3AA21EC131195FCC58195FCC58",
+      "eventType": "grabbed",
+      "data": {
+        "indexer": "Plugh Indexer",
+        "nzbInfoUrl": "https://plugh.example.com/torrent/4",
+        "releaseGroup": "RELEASER",
+        "age": "365",
+        "ageHours": "8760.00000000000",
+        "ageMinutes": "525600.00000000",
+        "publishedDate": "2021-08-14T00:00:00Z",
+        "downloadClient": "Transmission",
+        "downloadClientName": "transmission",
+        "size": "1073741824",
+        "downloadUrl": "http://192.168.1.1:9117/dl/plugh/?jackett_apikey=&path=&file=Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+        "guid": "https://plugh.example.com/download/4/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.torrent",
+        "tvdbId": "0",
+        "tvRageId": "0",
+        "protocol": "2",
+        "preferredWordScore": "0",
+        "seriesMatchType": "Title",
+        "torrentInfoHash": ""
+      },
+      "id": 7
+    }
+  ]
+}

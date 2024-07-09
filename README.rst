@@ -304,6 +304,14 @@ The Docker container image can run the command-line script as well::
 
 
 ****************************************************************************************
+Export sub-command
+****************************************************************************************
+
+The ``export`` sub-command is roughly the inverse of Servarr import events, hard link
+imported files back into download client items and verify. See the CLI ``$ prunerr
+export --help`` output for more details.
+
+****************************************************************************************
 Contributing
 ****************************************************************************************
 

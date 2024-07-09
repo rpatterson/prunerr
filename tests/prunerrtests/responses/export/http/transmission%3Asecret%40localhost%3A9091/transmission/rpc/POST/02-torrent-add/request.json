@@ -1,0 +1,9 @@
+{
+  "arguments": {
+    "filename": "http://192.168.1.1:9117/dl/plugh/?jackett_apikey=&path=&file=Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
+    "paused": true
+  },
+  "method": "torrent-add",
+  "tag": 2
+}

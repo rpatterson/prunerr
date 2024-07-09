@@ -15,7 +15,7 @@ Required
 
 #. Take ``done-date`` from Servarr when missing or 0 in Transmission.
 
-#. `Fix missing ``*-(date|time|seconds)``
+#. `Fix missing '*-(date|time|seconds)'
    fields
    <https://github.com/transmission/transmission/issues/4314#issuecomment-1336485761>`_
    from Servarr in ``./transmission/config/resume/*.resume`` and restart transmission.

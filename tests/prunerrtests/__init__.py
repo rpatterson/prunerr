@@ -83,6 +83,8 @@ class PrunerrTestCase(
     # The set of request responses to mock
     RESPONSES_DIR = pathlib.Path(__file__).parent / "responses" / "default"
     DOWNLOAD_CLIENT_URL = "http://transmission@localhost:9091/transmission/"
+    DOWNLOAD_CLIENT_REQUEST = "01-torrent-get"
+    DOWNLOAD_ITEM_INDEX = 0
 
     # Download client path elements
     STORAGE_RELATIVE = pathlib.PurePath("media", "Library")
@@ -198,7 +200,7 @@ class PrunerrTestCase(
             self.set_up_download_item(
                 self.download_client_items_responses[self.DOWNLOAD_CLIENT_URL][
                     "arguments"
-                ]["torrents"][-1]["name"]
+                ]["torrents"][self.DOWNLOAD_ITEM_INDEX]["name"]
             )
 
     def set_up_download_item(self, download_item_title):
@@ -231,18 +233,15 @@ class PrunerrTestCase(
         netloc = download_client_url.netloc
         if not download_client_url.port:
             netloc = f"{netloc}:{80 if download_client_url.scheme == 'http' else 443}"
-        torrent_list_mocks = sorted(
-            (
-                self.RESPONSES_DIR
-                / download_client_url.scheme
-                / urllib.parse.quote(netloc)
-                / urllib.parse.quote(download_client_url.path.lstrip(os.path.sep))
-                / "rpc"
-                / "POST"
-            ).glob("*-torrent-get")
-        )
         with (
-            torrent_list_mocks[0] / "response.json"
+            self.RESPONSES_DIR
+            / download_client_url.scheme
+            / urllib.parse.quote(netloc)
+            / urllib.parse.quote(download_client_url.path.lstrip(os.path.sep))
+            / "rpc"
+            / "POST"
+            / self.DOWNLOAD_CLIENT_REQUEST
+            / "response.json"
         ).open() as download_client_items_response:
             self.download_client_items_responses[
                 prunerr.utils.normalize_url(download_client_url.geturl())

@@ -27,6 +27,7 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
     RESPONSES_DIR = (
         prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "review-downloading"
     )
+    DOWNLOAD_ITEM_INDEX = -1
 
     def test_review_bandwidth_priority(self):
         """

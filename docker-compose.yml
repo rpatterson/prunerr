@@ -98,7 +98,6 @@ services:
     restart: "unless-stopped"
 
 volumes:
-
   # The volume on which Transmission's `download-dir` is stored:
   media_library:
     name: "media_library"

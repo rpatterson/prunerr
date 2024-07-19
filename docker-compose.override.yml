@@ -212,7 +212,6 @@ services:
       - "ci"
 
 volumes:
-
   prunerr_checkout:
     name: "prunerr_checkout"
     driver: "local"

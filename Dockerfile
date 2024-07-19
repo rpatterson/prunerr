@@ -52,7 +52,7 @@ RUN \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
-    apt-get install --no-install-recommends -y "gosu=1.14-1+b6"
+    apt-get install --no-install-recommends -y "gosu=1.14-1+b10"
 
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Install dependencies with fixed versions in a separate layer to optimize build times

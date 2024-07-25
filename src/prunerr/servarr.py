@@ -197,53 +197,16 @@ class PrunerrServarrInstance:
         imports_by_download = self.map_downloads_to_files(extra_data_paths)
 
         # Ensure that the download client has a download item for each download ID:
-        download_items_by_id = {}
+        download_items_by_id: dict = {}
         for download_client_name, download_ids in imports_by_download.items():
             if download_client_name is None:
                 # Manual import record with no grab record and this now download URL:
                 continue
-            servarr_download_client = self.download_client_names[download_client_name]
-            download_items_by_id[download_client_name] = {
-                item.hashString.upper(): item
-                for item in servarr_download_client.download_client.items
-            }
-            for download_id, download_urls in download_ids.items():
-                if len(download_urls) > 1:  # pragma: no cover
-                    logger.warning(
-                        "Multiple grab URLs for the same download item: %s",
-                        download_id,
-                    )
-                for download_url in download_urls.keys():
-                    if download_id in download_items_by_id[download_client_name]:
-                        logger.debug("Skipping already added torrent: %s", download_url)
-                    elif (
-                        urllib.parse.urlsplit(download_url).scheme == "magnet"
-                    ):  # pragma: no cover
-                        # Supporting adding magnet torrents would be a PITA because we'd
-                        # have to use a torrent cache to get torrent files which feels
-                        # like too much trouble for mostly public torrents:
-                        logger.error(
-                            "Skipping magnet torrent: %s",
-                            download_url,
-                        )
-                    else:
-                        try:
-                            download_items_by_id[download_client_name][
-                                download_id
-                            ] = servarr_download_client.download_client.add_torrent(
-                                download_url,
-                                paused=True,
-                                download_dir=str(servarr_download_client.seeding_dir),
-                            )
-                        except (
-                            transmission_rpc.error.TransmissionError
-                        ):  # pragma: no cover
-                            # Tolerate exceptions adding torrents because the download
-                            # URL may no longer be valid, IOW 404:
-                            logger.exception(
-                                "Exception adding torrent: %s",
-                                download_url,
-                            )
+            self.download_client_names[download_client_name].maybe_add_download_items(
+                download_client_name,
+                download_items_by_id,
+                download_ids,
+            )
 
         # Lookup the download IDs for imported files without them by download item name:
         imports_by_download = self.lookup_download_ids(imports_by_download)
@@ -863,6 +826,64 @@ class PrunerrServarrDownloadClient:
             )
             vars(download_item).pop("path", None)
         return [download_item.hashString for download_item in download_items]
+
+    def maybe_add_download_items(
+        self,
+        download_client_name,
+        download_items_by_id,
+        download_ids,
+    ):
+        """
+        Add a download item from the given URL if not already in the download client.
+
+        :param download_client_name: The name of the download client in Servarr.
+        :param download_items_by_id: Map download item hashes to the items.
+        :param download_ids: Map download item hashes to download item URLs.
+        """
+        download_items_by_id[download_client_name] = {
+            item.hashString.upper(): item for item in self.download_client.items
+        }
+        for download_id, download_urls in download_ids.items():
+            if download_id in download_items_by_id[download_client_name]:
+                logger.debug(
+                    "Skipping already added torrent: %s",
+                    list(download_urls.keys())[0],
+                )
+                continue
+            if len(download_urls) > 1:  # pragma: no cover
+                logger.warning(
+                    "Multiple grab URLs for the same download item: %s",
+                    download_id,
+                )
+            for download_url in download_urls.keys():
+                if (
+                    urllib.parse.urlsplit(download_url).scheme == "magnet"
+                ):  # pragma: no cover
+                    # Supporting adding magnet torrents would be a PITA because we'd
+                    # have to use a torrent cache to get torrent files which feels
+                    # like too much trouble for mostly public torrents:
+                    logger.error(
+                        "Skipping magnet torrent: %s",
+                        download_url,
+                    )
+                else:
+                    try:
+                        download_items_by_id[download_client_name][
+                            download_id
+                        ] = self.download_client.add_torrent(
+                            download_url,
+                            paused=True,
+                            download_dir=str(self.seeding_dir),
+                        )
+                    except transmission_rpc.error.TransmissionError:  # pragma: no cover
+                        # Tolerate exceptions adding torrents because the download
+                        # URL may no longer be valid, IOW 404:
+                        logger.exception(
+                            "Exception adding torrent: %s",
+                            download_url,
+                        )
+                    else:
+                        break
 
 
 def deserialize_servarr_download_client(download_client_config):

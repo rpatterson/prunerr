@@ -127,54 +127,39 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         self.assertIn(
             self.servarr_urls[0],
             export_results,
-            "Export results missing download client results",
+            "Export results missing download item results",
         )
         self.assertIsInstance(
             export_results[self.servarr_urls[0]],
             dict,
-            "Export results wrong download client results type",
+            "Export results wrong download item results type",
         )
         self.assertEqual(
             len(export_results[self.servarr_urls[0]]),
-            1,
-            "Export results wrong number of download client results",
-        )
-        self.assertIn(
-            "transmission",
-            export_results[self.servarr_urls[0]],
-            "Export results missing download client results",
-        )
-        self.assertIsInstance(
-            export_results[self.servarr_urls[0]]["transmission"],
-            dict,
-            "Export results wrong download client results type",
-        )
-        self.assertEqual(
-            len(export_results[self.servarr_urls[0]]["transmission"]),
             3,
-            "Export results wrong number of download client results",
+            "Export results wrong number of download item results",
         )
-        download_item_hash = "1FAFED76F4264B14934C13D7A306F94FEA4B3184"
+        exported_download_item_hash = list(
+            self.download_client_items_responses.values(),
+        )[0]["arguments"]["torrents"][0]["hashString"]
         self.assertIn(
-            download_item_hash,
-            export_results[self.servarr_urls[0]]["transmission"],
-            "Download client results missing download item",
+            exported_download_item_hash,
+            export_results[self.servarr_urls[0]],
+            "Export results missing download item results",
         )
         self.assertIsInstance(
-            export_results[self.servarr_urls[0]]["transmission"][download_item_hash],
+            export_results[self.servarr_urls[0]][exported_download_item_hash],
             list,
-            "Download item results wrong type",
+            "Export results wrong download item results type",
         )
         self.assertEqual(
-            len(
-                export_results[self.servarr_urls[0]]["transmission"][download_item_hash]
-            ),
+            len(export_results[self.servarr_urls[0]][exported_download_item_hash]),
             1,
-            "Download item wrong number of results",
+            "Export results wrong number of hard linked file results",
         )
         self.assertIn(
             str(self.imported_item_file),
-            export_results[self.servarr_urls[0]]["transmission"][download_item_hash],
+            export_results[self.servarr_urls[0]][exported_download_item_hash],
             "Download item results missing linked file",
         )
 

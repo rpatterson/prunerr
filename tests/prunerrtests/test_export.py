@@ -147,40 +147,37 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         self.assertIn(
             self.servarr_urls[0],
             export_results,
-            "Export results missing download item results",
+            "Export results missing download clients",
         )
         self.assertIsInstance(
             export_results[self.servarr_urls[0]],
             dict,
-            "Export results wrong download item results type",
+            "Export results wrong download client results type",
         )
         self.assertEqual(
             len(export_results[self.servarr_urls[0]]),
-            3,
-            "Export results wrong number of download item results",
+            1,
+            "Export results wrong number of download clients",
         )
-        exported_download_item_hash = list(
-            self.download_client_items_responses.values(),
-        )[0]["arguments"]["torrents"][0]["hashString"]
         self.assertIn(
-            exported_download_item_hash,
+            "Foo Series",
             export_results[self.servarr_urls[0]],
-            "Export results missing download item results",
+            "Export results missing series results",
         )
         self.assertIsInstance(
-            export_results[self.servarr_urls[0]][exported_download_item_hash],
+            export_results[self.servarr_urls[0]]["Foo Series"],
             list,
-            "Export results wrong download item results type",
+            "Export results wrong series results type",
         )
         self.assertEqual(
-            len(export_results[self.servarr_urls[0]][exported_download_item_hash]),
-            1,
-            "Export results wrong number of hard linked file results",
+            len(export_results[self.servarr_urls[0]]["Foo Series"]),
+            3,
+            "Export results wrong number of hard linked files",
         )
         self.assertIn(
-            str(self.imported_item_file),
-            export_results[self.servarr_urls[0]][exported_download_item_hash],
-            "Download item results missing linked file",
+            str(self.seeding_item_file),
+            export_results[self.servarr_urls[0]]["Foo Series"],
+            "Export results missing hard linked file",
         )
 
         # 3. The item has been added back to the download client, verified and resumed:

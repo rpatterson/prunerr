@@ -88,8 +88,6 @@ class PrunerrServarrInstance:
     }
     MAX_PAGE_SIZE = 250
 
-    type_map = None
-    client = None
     queue = None
 
     def __init__(self, runner):
@@ -97,7 +95,9 @@ class PrunerrServarrInstance:
         Capture a references to the runner and individual Servarr configuration.
         """
         self.runner = runner
+        self.type_map = None
         self.config = {}
+        self.client = None
         self.download_clients = {}
         self.download_client_names = {}
 
@@ -195,27 +195,130 @@ class PrunerrServarrInstance:
 
         :param extra_data_paths: Additional download client paths whose immediate
             children might contain download item data.
-        :return: Map download client items to any files have been linked.
+        :return: Map series/movies to the relative paths of any imported files that were
+            linked into the download item.
         """
         data_paths = self.collect_data_paths(extra_data_paths)
+        download_items_by_id: dict = {}
+        download_ids_by_name: dict = {"sourceTitle": {}, "downloadRootName": {}}
+        for download_client in self.download_clients.values():
+            for item in download_client.download_client.items:
+                download_items_by_id.setdefault(item.hashString.upper(), []).append(
+                    item,
+                )
+                download_ids_by_name["sourceTitle"].setdefault(
+                    item.name,
+                    item.hashString.upper(),
+                )
+                download_ids_by_name["downloadRootName"].setdefault(
+                    item.root_name,
+                    item.hashString.upper(),
+                )
 
-        # Map download item IDs to its imported files:
-        download_items_by_id, imports_by_download = self.map_downloads_to_files(
-            data_paths,
-        )
-
-        # Locate existing download item data in known directories and set the best
-        # candidate as the download item's location:
-        export_results: dict = link_imported_files(
-            data_paths,
-            download_items_by_id,
-            imports_by_download,
-        )
+        # Start with collated grab and import history for each series/movie:
+        export_results = {}
+        for root_item in self.client.get(self.type_map["dir_type"]):
+            linked_files = self.export_root_item(
+                data_paths,
+                download_items_by_id,
+                download_ids_by_name,
+                root_item,
+            )
+            if linked_files:
+                export_results[root_item["title"]] = linked_files
 
         # Report results if any:
         if export_results:
             return export_results
         return None
+
+    def export_root_item(
+        self,
+        data_paths,
+        download_items_by_id,
+        download_ids_by_name,
+        root_item,
+    ):
+        """
+        Link imported files back into download items for one series/movie.
+
+        :param data_paths: The full list of data paths including those from the Servarr
+            download clients.
+        :param download_items_by_id: Map download item hashes to the items.
+        :param download_ids_by_name: Map download item root basenames to the items.
+        :param root_item: The dictionary from the Servarr API JSON for the top-level
+            library item, for example series or movie.
+        :return: The download item file paths of any imported files that were linked
+            into the download item.
+        """
+        mapped_history = self.collate_export_history(data_paths, root_item)
+
+        # Map imported file paths missing download item IDs/hashes by further methods
+        # now that all history data has been collated:
+        imported_items = list(self.list_imported_files(root_item))
+        for imported_item in imported_items:
+            download_id = (
+                mapped_history["importedRel"]
+                .get(
+                    imported_item["file"]["relative"],
+                    {},
+                )
+                .get("downloadId")
+            )
+            if not download_id:
+                if download_id := lookup_download_ids(
+                    download_ids_by_name,
+                    mapped_history,
+                    imported_item,
+                ):
+                    mapped_history["importedRel"][
+                        imported_item["file"]["relative"]
+                    ].setdefault("downloadId", download_id)
+                # BBB: Reports as uncovered only under Python <= v3.9:
+                else:  # pragma: no cover
+                    continue
+
+        # Now group the imported files under the download item IDs/hashes the come from
+        # them:
+        download_ids = {}
+        for imported_item in imported_items:
+            imported_collated = mapped_history["importedRel"].get(
+                imported_item["file"]["relative"],
+                {},
+            )
+            download_id = imported_collated.get("downloadId")
+            if not (
+                imported_collated.get("downloadId")
+                and imported_collated.get("droppedRel")
+            ):
+                # Logged in `lookup_download_ids()`:
+                continue
+            download_ids.setdefault(imported_collated["downloadId"], {}).setdefault(
+                imported_item["file"]["relative"],
+                imported_collated,
+            )
+
+        linked_files = []
+        for download_id, imported_relatives in download_ids.items():
+            # Next, ensure all download hashes are in the download client, re-adding the
+            # items if necessary:
+            maybe_add_download_item(
+                download_items_by_id,
+                download_ids_by_name,
+                download_id,
+                mapped_history["downloadId"].get(download_id, {}),
+            )
+
+            # Finally, hard link imported files into the download items:
+            for download_item in download_items_by_id.get(download_id, []):
+                linked_files.extend(
+                    download_item.link_imported_files(
+                        data_paths,
+                        pathlib.Path(root_item["path"]),
+                        imported_relatives,
+                    ),
+                )
+        return linked_files
 
     def get_api_paged_records(self, endpoint, page_number=1, **params):
         """
@@ -323,387 +426,331 @@ class PrunerrServarrInstance:
         # Remove duplicates but preserve order:
         return list(dict.fromkeys(data_paths))
 
-    def map_downloads_to_files(self, data_paths):
+    def collate_export_history(self, data_paths, root_item):
         """
-        Collate the Servarr history for all imported files by download item ID.
+        Map grab and import history records to download items by various means.
 
-        Imported files without grab history records, such as manual imports, cannot be
-        mapped to download IDs. The download item name for those files is determined by
-        searching the immediate children of the data paths known to Servarr and those
-        paths in ``extra_data_paths`` for those that match the beginning of the
-        ``droppedPath``. Another dictionary mapping those download item names to
-        imported files is returned under the ``None`` key.
+        There are several workflows for importing files from download items and thus
+        several edge cases. The normal workflow is that Servarr grabs a release and then
+        imports all files available in the grabbed download item once finished. In that
+        case the download item ID/hash can be determined explicitly because the grab
+        history immediately precedes the import history and both history records have
+        the same download item ID/hash. But sometimes a finished download item requires
+        manual intervention to import, in which case more files may be imported than the
+        grab history expects and as such those "extra" imported files have no
+        corresponding grab history but the import history may still have a download item
+        ID/hash. Other times, more files may be manually imported by the user *after*
+        Servarr already imported the files it expected to find from the grab history, in
+        which case not only do thise "extra" imported files have no corresponding grab
+        history but the import history may not have any download item ID/hash at
+        all. Unfortunately, these edge cases other than the normal workflow are common
+        enough that it would be infeasible for the user to handle them manually. Worse,
+        without the download item ID/hash, the only remaining way to match is to use
+        download item names or file paths, but it's possible, however uncommon, for
+        those to be shared between different download items.
+
+        To automate these other edge cases as much as possible and as safely as
+        possible, try to match imported files to download items using several
+        methods. These methods are tried in order and no further method are tried once a
+        method yields a download item ID/hash for a given imported file:
+
+        #. First, if the import history has a download item ID/hash, then it is matched
+           by that.
+
+        #. Next, if the import history has a download item name and the grab history for
+           the whole series/movie has that same download item name, then use the
+           download item ID/hash from that grab history.
+
+        #. Use known paths where Servarr imports download item files from to determine
+           the root basename common to all files in the download item. If the grab
+           history for the whole series/movie has a download item name that matches that
+           root basename, then use the download item ID/hash from that grab history.
+
+        #. Finally, use the root basename from the previous method to determine the
+           relative path within the download item's files for this imported file. Match
+           that relative path to the relative paths for all download items' files in the
+           download client's items and use the newest matching download item's ID/hash.
+
+        Note that matching by the relative paths of download item files requires those
+        download items to be currently added in the download client. This means the last
+        method, matching by file relative paths, can't be done until the grab history
+        from the previous methods have been used to re-add all download items not still
+        in the download client. This also means, that if a download item has been
+        removed from the download client and none of the previous methods yield grab
+        history for a download item, then the last relative path method can't make a
+        match at all.
 
         :param data_paths: The full list of data paths including those from the Servarr
             download clients.
-        :return: Map download item IDs to that item's Servarr JSON API import item
-            dictionaries.
-        """
-        # First collect all the download hashes we need to have in the download client:
-        imports_by_download = {}
-        grab_history = {}
-        for root_item in self.client.get(self.type_map["dir_type"]):
-            for imported_item in self.list_imported_files(root_item):
-                import_record = self.find_import_history(data_paths, imported_item)
-                if import_record is None:  # pragma: no cover
-                    # Logged in `self.find_import_history()`
-                    continue
-                imported_item["history"] = {"downloadFolderImported": import_record}
-                imports_by_download.setdefault(
-                    import_record.get("downloadId"),
-                    [],
-                ).append(imported_item)
-            grab_history.update(self.collate_grab_history(root_item))
-
-        # Next, ensure all download hashes are in the download client, re-adding the
-        # items if necessary:
-        download_items_by_id = {}
-        for client in self.download_client_names.values():
-            download_items_by_id.update(
-                (item.hashString.upper(), item) for item in client.download_client.items
-            )
-        for download_id, imported_items in imports_by_download.items():
-            if download_id in grab_history:
-                grab_record = grab_history[download_id]
-                if (
-                    grab_record["data"]["downloadClientName"]
-                    in self.download_client_names
-                ):
-                    grab_record["data"]["downloadClient"] = self.download_client_names[
-                        grab_record["data"]["downloadClientName"]
-                    ]
-                else:  # pragma: no cover
-                    logger.warning(
-                        "Download client name not found, defaulting to first: %s",
-                        grab_record["data"]["downloadClientName"],
-                    )
-                    grab_record["data"]["downloadClient"] = list(
-                        self.download_client_names.values(),
-                    )[0]
-                    grab_record["data"]["downloadClientName"] = list(
-                        self.download_client_names.keys(),
-                    )[0]
-                grab_record["data"]["downloadClient"].maybe_add_download_item(
-                    download_items_by_id,
-                    grab_record,
-                )
-                for imported_item in imported_items:
-                    imported_item["history"]["grabbed"] = grab_record
-            else:
-                # The import history *does* have a download hash but there's *no*
-                # corresponding grab history. I found at least two real-world
-                # examples of this. I'm guessing this happens when importing a
-                # download item that was added to the download client outside of
-                # Servarr. I think this can also happen when a multi-season pack
-                # requires manual intervention and ends up importing more files than
-                # it was grabbed for:
-                logger.debug(
-                    "No grab history for import history with download hash: %s",
-                    imported_items[0]["file"]["path"],
-                )
-
-        # Now that all download items are populated in the download client, we can
-        # map download item root names to the download items and then map imported
-        # items without download item hashes to download items using the root name:
-        imports_by_download = self.lookup_download_ids(
-            imports_by_download,
-            grab_history,
-        )
-
-        return download_items_by_id, imports_by_download
-
-    def lookup_download_ids(self, imports_by_download, grab_history):
-        """
-        Lookup the download IDs for imported files without them by download item name.
-
-        :param imports_by_download: Map download client names to download item IDs to
-        :param grab_history: Map download item hashes to the download item's most recent
-            grab history record.
-        :return: Map download client names to download item IDs to that item's Servarr
-            JSON API import item dictionaries.
-        """
-        download_items_by_name = {}
-        for client in self.download_client_names.values():
-            for item in client.download_client.items:
-                download_items_by_name.setdefault(item.root_name, item)
-        for imported_item in imports_by_download.get(None, []):
-            download_name = imported_item["history"]["downloadFolderImported"][
-                "data"
-            ].get("downloadName")
-            if download_name is None:  # pragma: no cover
-                continue
-            if download_name in download_items_by_name:
-                logger.warning(
-                    "Lookup download hash by download root name %r: %s",
-                    download_name,
-                    imported_item["file"]["path"],
-                )
-                download_id = download_items_by_name[download_name].hashString.upper()
-                imports_by_download.setdefault(download_id, []).append(
-                    imported_item,
-                )
-                imported_item["history"]["grabbed"] = grab_history.get(download_id)
-            else:
-                logger.error(
-                    "No download item found by root name: %s",
-                    imported_item["file"]["path"],
-                )
-
-        imports_by_download.pop(None, None)
-        return imports_by_download
-
-    def collate_grab_history(self, root_item):
-        """
-        Map grab history records by download ID and download root name.
-
         :param root_item: The dictionary from the Servarr API JSON for the top-level
             library item, for example series or movie.
-        :return: A dictionary mapping the download history records with the ``None`` key
-            containing a dictionary mapping download root names to records.
+        :return: A dictionary mapping the history records by various means.
         """
-        grab_history = {}
+        mapped_history = {
+            "importedRel": {},
+            "downloadId": {},
+            "sourceTitle": {},
+            "downloadRootName": {},
+        }
         for history_record in self.client.get(
             f"history/{self.type_map['dir_type']}",
             **{f"{self.type_map['dir_type']}Id": root_item["id"]},
         ):
-            if history_record["eventType"] != "grabbed":
-                continue
-            grab_history.setdefault(history_record["downloadId"], history_record)
-
-        return grab_history
-
-    def find_import_history(self, data_paths, imported_item):
-        """
-        Locate the latest Servarr history for this imported file.
-
-        :param data_paths: The global set of download client paths whose immediate
-            children might contain download item data.
-        :param imported_item: The dictionary from the Servarr API JSON for the imported
-            item, for example episode or movie.
-        :return: The dictionary from the Servarr API JSON for the import history record.
-        """
-        import_record = None
-        endpoint = (
-            "history"
-            if not self.type_map["item_history_is_typed"]
-            else f"history/{self.type_map['item_type']}"
-        )
-        params = {f"{self.type_map['item_type']}Id": imported_item["id"]}
-        for history_record in (
-            self.get_api_paged_records(
-                endpoint,
-                **dict(
-                    params,
-                    **{
-                        "pageSize": 1000,
-                        "sortKey": "date",
-                        "sortDirection": "descending",
-                    },
-                ),
-            )
-            if self.type_map["item_history_is_paged"]
-            else self.client.get(endpoint, **params)
-        ):
-            if (
-                history_record["eventType"] != "downloadFolderImported"
-            ):  # pragma: no cover
+            if history_record["eventType"] not in {
+                "grabbed",
+                "downloadFolderImported",
+            }:  # pragma: no cover
                 continue
 
-            # Match on relative paths to tolerate items imported before Servarr renamed
-            # the top-level series/movie:
-            history_record["data"]["importedPath"] = pathlib.Path(
-                history_record["data"]["importedPath"],
-            )
-            history_record["data"]["importedRel"] = history_record["data"][
-                "importedPath"
-            ].relative_to(
-                history_record["data"]["importedPath"].parents[
-                    self.type_map["file_depth"] - 1
-                ]
-            )
-            if (
-                history_record["data"]["importedRel"]
-                == imported_item["file"]["relative"]
-            ):
-                import_record = history_record
-                # Don't proceed past the most recent import record:
-                break
-            logger.error(  # pragma: no cover
-                "Import record for different file found before for current "
-                "file: %r != %r",
-                str(history_record["data"]["importedPath"]),
-                str(imported_item["file"]["path"]),
-            )
-            return None  # pragma: no cover
-        else:  # pragma: no cover
-            # At lease one use case leads to this, existing files added to the
-            # library outside of Servarr. IOW, when files are put in place and then
-            # scanned by Servarr without ever having grabbed or imported them. This
-            # will be true for all existing files in place before "installing"
-            # Servarr:
-            logger.warning(
-                "No import history found for file: %s",
-                imported_item["file"]["path"],
-            )
-            return None
-
-        # Determine which part of the paths are from the download item:
-        import_record["data"]["droppedPath"] = pathlib.Path(
-            import_record["data"]["droppedPath"],
-        )
-        for data_path in data_paths:
-            if (
-                data_path.resolve()
-                in import_record["data"]["droppedPath"].resolve().parents
-            ):
-                import_record["data"]["droppedRel"] = (
-                    import_record["data"]["droppedPath"]
-                    .resolve()
-                    .relative_to(data_path)
+            # Derive the relative path to the imported file if present in this history
+            # record:
+            imported_path = imported_relative = None
+            if history_record["data"].get("importedPath"):
+                imported_path = pathlib.Path(history_record["data"]["importedPath"])
+                imported_relative = imported_path.relative_to(
+                    imported_path.parents[self.type_map["file_depth"] - 1],
                 )
-                import_record["data"]["location"] = import_record["data"][
-                    "droppedPath"
-                ].parents[len(import_record["data"]["droppedRel"].parts) - 1]
-                import_record["data"]["downloadName"] = import_record["data"][
-                    "droppedRel"
-                ].parts[0]
-                break
-        else:
-            logger.error(
-                "No download root name found: %s",
-                imported_item["file"]["path"],
+
+            # Determine which part of the paths are from the download item:
+            dropped_relative = None
+            if history_record["data"].get("droppedPath"):
+                dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
+                for data_path in data_paths:
+                    if data_path.resolve() in dropped_path.resolve().parents:
+                        dropped_relative = dropped_path.resolve().relative_to(data_path)
+                        mapped_history["importedRel"].setdefault(
+                            imported_relative,
+                            {},
+                        ).setdefault("droppedRel", dropped_relative)
+                        mapped_history["importedRel"].setdefault(
+                            imported_relative,
+                            {},
+                        ).setdefault(
+                            "location",
+                            dropped_path.parents[len(dropped_relative.parts) - 1],
+                        )
+                        break
+                else:
+                    logger.error(
+                        "No download root name found: %s",
+                        dropped_path,
+                    )
+
+            # The most common case, map an imported path to a download item ID/hash:
+            if history_record["data"].get("importedPath") and history_record.get(
+                "downloadId"
+            ):
+                # Match on relative paths to tolerate items imported before Servarr
+                # renamed the top-level series/movie:
+                mapped_history["importedRel"].setdefault(
+                    imported_relative,
+                    {},
+                ).setdefault(
+                    "downloadId",
+                    history_record["downloadId"],
+                )
+
+            # Map download item IDs/hashes to download URLs if download items need to be
+            # re-added to the download client:
+            if history_record["data"].get("downloadUrl") and history_record.get(
+                "downloadId"
+            ):
+                # Match this grab history to it's download client:
+                if (
+                    history_record["data"]["downloadClientName"]
+                    in self.download_client_names
+                ):
+                    download_client = self.download_client_names[
+                        history_record["data"]["downloadClientName"]
+                    ]
+                else:  # pragma: no cover
+                    logger.warning(
+                        "Download client name not found, defaulting to first: %s",
+                        history_record["data"]["downloadClientName"],
+                    )
+                    download_client = list(
+                        self.download_client_names.values(),
+                    )[0]
+                mapped_history["downloadId"].setdefault(
+                    history_record["downloadId"],
+                    {},
+                ).setdefault(history_record["data"]["downloadUrl"], download_client)
+
+            # If the import history has no download item ID/hash, then try to guess the
+            # download item by other means:
+            collate_export_history_guesses(
+                mapped_history,
+                imported_relative,
+                dropped_relative,
+                history_record,
             )
 
-        return import_record
+        return mapped_history
 
 
-def link_imported_files(
-    data_paths,
-    download_items_by_id,
-    imports_by_download,
+def collate_export_history_guesses(
+    mapped_history,
+    imported_relative,
+    dropped_relative,
+    history_record,
 ):
     """
-    Hard link imported files back into download items.
+    Try to guess the download item for an imported file by means other than ID/hash.
 
-    :param data_paths: The full list of data paths including those from the Servarr
-        download clients.
-    :param download_items_by_id: Map download client names to download item
-        hashes/IDs to that the download item.
-    :param imports_by_download: Map download item IDs to that item's Servarr JSON
-        API import item dictionaries.
-    :return: Map download client items to any files have been linked.
+    :param mapped_history: A dictionary mapping the history records by various
+        means.
+    :param imported_relative: The relative path to the imported file within the
+        series/movie.
+    :param dropped_relative: The relative path to the download item file within the
+        download item ``downloadDir``.
+    :param history_record: The dictionary from the Servarr API JSON for the
+        individual history record.
     """
-    export_results = {}
-    for download_id, imported_items in imports_by_download.items():
-        if download_id not in download_items_by_id:  # pragma: no cover
-            # Logged in `PrunerrServarrDownloadClient.maybe_add_download_item()`:
-            continue
+    # If the import history has no download item ID/hash, try to match on the
+    # download item name in `sourceTitle`:
+    if history_record.get("sourceTitle"):  # pragma: no cover
+        if history_record.get("downloadId"):
+            mapped_history["sourceTitle"].setdefault(
+                history_record["sourceTitle"],
+                history_record["downloadId"],
+            )
+        if history_record["data"].get("importedPath"):
+            # Match on relative paths to tolerate items imported before Servarr
+            # renamed the top-level series/movie:
+            mapped_history["importedRel"].setdefault(
+                imported_relative,
+                {},
+            ).setdefault(
+                "sourceTitle",
+                history_record["sourceTitle"],
+            )
 
-        download_item = download_items_by_id[download_id]
-        need_verify = False
-
-        # Change the download item data path if a better one is found:
-        # Collect additional possible data paths from the import history
-        # records:
-        if download_item.find_location(
-            collect_item_data_paths(data_paths, imported_items),
-        ):
-            need_verify = True
-
-        # Hard link imported files into the download item's location:
-        for import_item in imported_items:
-            if "droppedRel" in import_item["history"]["downloadFolderImported"][
-                "data"
-            ] and maybe_link_file(
-                download_item.download_dir
-                / import_item["history"]["downloadFolderImported"]["data"][
-                    "droppedRel"
-                ],
-                import_item["file"]["path"],
-            ):
-                need_verify = True
-                export_results.setdefault(download_id, []).append(
-                    str(import_item["file"]["path"]),
+    # As a last resort, derive the download item's root basename from the import
+    # history and match that to a download item ID/hash:
+    if history_record["data"].get("droppedPath"):
+        if dropped_relative:
+            if history_record.get("downloadId"):
+                mapped_history["downloadRootName"].setdefault(
+                    dropped_relative.parts[0],
+                    history_record["downloadId"],
+                )
+            if history_record["data"].get("importedPath"):  # pragma: no cover
+                mapped_history["importedRel"].setdefault(
+                    # Match on relative paths to tolerate items imported
+                    # before Servarr renamed the top-level series/movie:
+                    imported_relative,
+                    {},
+                ).setdefault(
+                    "downloadRootName",
+                    dropped_relative.parts[0],
                 )
 
-        if need_verify:
-            # Deselect for download any remaining incomplete files:
-            download_item.deselect_unimported_files()
 
-            logger.info(
-                "Verifying and resuming download item: %r",
-                download_item,
-            )
-            download_item.download_client.client.verify_torrent(
-                download_item.hashString,
-            )
-            download_item.start()
-
-    return export_results
-
-
-def collect_item_data_paths(data_paths, imported_items):
+def lookup_download_ids(
+    download_ids_by_name,
+    mapped_history,
+    imported_item,
+    import_keys=("sourceTitle", "downloadRootName"),
+):
     """
-    Include per-item data paths from Servarr import history.
+    Lookup the download IDs for imported files without them by download item name.
 
-    :param data_paths: The global set of download client paths whose immediate
-        children might contain download item data.
-    :param imported_items: Servarr JSON API import item dictionaries.
-    :return: The full list of data paths including those from the this item's import
-        history.
+    :param download_ids_by_name: Map download item root basenames to the items.
+    :param mapped_history: A dictionary mapping the history records by various
+        means.
+    :param imported_item: The dictionary from the Servarr API JSON for the
+        individual imported file.
     """
-    item_data_paths = dict.fromkeys(data_paths)
-    for import_item in imported_items:
-        if "location" in import_item["history"]["downloadFolderImported"]["data"]:
-            item_data_paths[
-                import_item["history"]["downloadFolderImported"]["data"]["location"]
-            ] = None
-    return list(item_data_paths)
-
-
-def maybe_link_file(source, target):
-    """
-    Link the source file to the target path if not already linked to it.
-
-    :param source: The path of the file to hard link.
-    :param target: The path to hard link the file to.
-    :return: ``True`` if the source was hard linked.
-    """
-    try:
-        source.parent.mkdir(parents=True, exist_ok=True)
-    except OSError:  # pragma: no cover
-        logger.exception(
-            "Error creating download item directory: %s",
-            source.parent,
-        )
-        return False
-    if source.parent.stat().st_dev != target.parent.stat().st_dev:  # pragma: no cover
-        logger.exception(
-            "Download item on different filesystem: %r -> %r",
-            str(source),
-            str(target),
-        )
-        return False
-    if source.exists():
-        if source.samefile(target):
-            logger.debug(
-                "Already hard linked to file: %r -> %r",
-                str(source),
-                str(target),
-            )
-            return False
-        logger.info(
-            "Deleting existing file: %s",
-            source,
-        )
-        source.unlink()
-    logger.info(
-        "Hard linking file: %r -> %r",
-        str(source),
-        str(target),
+    imported_data = mapped_history["importedRel"].get(
+        imported_item["file"]["relative"],
+        {},
     )
-    source.hardlink_to(target)
-    return True
+    for import_key in import_keys:
+        if not imported_data.get(import_key):  # pragma: no cover
+            continue
+        for mapped_names in (mapped_history, download_ids_by_name):
+            if mapped_names[import_key].get(imported_data[import_key]):
+                return mapped_names[import_key][imported_data[import_key]]
+
+    logger.error(
+        "Could not lookup download item by names: %s",
+        imported_item["file"]["path"],
+    )
+    return None
+
+
+def maybe_add_download_item(
+    download_items_by_id,
+    download_ids_by_name,
+    download_id,
+    download_urls,
+):
+    """
+    Add a download item from the given URL if not already in the download client.
+
+    :param download_items_by_id: Map download item hashes to the items.
+    :param download_ids_by_name: Map download item root basenames to the items.
+    :param download_id: The download item ID/hash.
+    :param download_urls: The download item URLs mapped to the download client to add
+        them to.
+    :return: The download item whether added or existing or None if it could not be
+        added.
+    """
+    if download_id in download_items_by_id:
+        logger.debug(
+            "Skipping already added torrent: %s",
+            download_items_by_id[download_id][0].name,
+        )
+        return download_items_by_id[download_id][0]
+    if not download_urls:  # pragma: no cover
+        logger.error(
+            "No grab history found for download item ID/hash: %s",
+            download_id,
+        )
+        return None
+
+    # Try each download URL from the grab history, most recent first:
+    for download_url, download_client in download_urls.items():
+        if urllib.parse.urlsplit(download_url).scheme == "magnet":  # pragma: no cover
+            # Supporting adding magnet torrents would be a PITA because we'd
+            # have to use a torrent cache to get torrent files which feels
+            # like too much trouble for mostly public torrents:
+            logger.error(
+                "Skipping magnet torrent: %s",
+                download_url,
+            )
+            continue
+
+        try:
+            download_item = download_client.download_client.add_torrent(
+                download_url,
+                paused=True,
+                download_dir=str(download_client.seeding_dir),
+            )
+        except transmission_rpc.error.TransmissionError:  # pragma: no cover
+            # Tolerate exceptions adding torrents because the download
+            # URL may no longer be valid, IOW 404:
+            logger.exception(
+                "Exception adding torrent: %s",
+                download_url,
+            )
+            continue
+        else:
+            download_items_by_id.setdefault(
+                download_item.hashString.upper(),
+                [],
+            ).append(download_item)
+            download_ids_by_name["sourceTitle"].setdefault(
+                download_item.name,
+                download_item.hashString.upper(),
+            )
+            download_ids_by_name["downloadRootName"].setdefault(
+                download_item.root_name,
+                download_item.hashString.upper(),
+            )
+            return download_item
+
+    return None  # pragma: no cover
 
 
 class PrunerrServarrDownloadClient:
@@ -814,58 +861,6 @@ class PrunerrServarrDownloadClient:
             )
             vars(download_item).pop("path", None)
         return [download_item.hashString for download_item in download_items]
-
-    def maybe_add_download_item(
-        self,
-        download_items_by_id,
-        grab_record,
-    ):
-        """
-        Add a download item from the given URL if not already in the download client.
-
-        :param download_items_by_id: Map download item hashes to the items.
-        :param grab_record: The Servarr API JSON dictionary representing the grab
-            history record.
-        :return: The added download item if one was added.
-        """
-        if grab_record["downloadId"] in download_items_by_id:
-            logger.debug(
-                "Skipping already added torrent: %s",
-                grab_record["sourceTitle"],
-            )
-            return None
-        if (
-            urllib.parse.urlsplit(
-                grab_record["data"]["downloadUrl"],
-            ).scheme
-            == "magnet"
-        ):  # pragma: no cover
-            # Supporting adding magnet torrents would be a PITA because we'd
-            # have to use a torrent cache to get torrent files which feels
-            # like too much trouble for mostly public torrents:
-            logger.error(
-                "Skipping magnet torrent: %s",
-                grab_record["sourceTitle"],
-            )
-            return None
-
-        try:
-            download_item = self.download_client.add_torrent(
-                grab_record["data"]["downloadUrl"],
-                paused=True,
-                download_dir=str(self.seeding_dir),
-            )
-        except transmission_rpc.error.TransmissionError:  # pragma: no cover
-            # Tolerate exceptions adding torrents because the download
-            # URL may no longer be valid, IOW 404:
-            logger.exception(
-                "Exception adding torrent: %s",
-                grab_record["sourceTitle"],
-            )
-            return None
-
-        download_items_by_id[download_item.hashString.upper()] = download_item
-        return download_item
 
 
 def deserialize_servarr_download_client(download_client_config):

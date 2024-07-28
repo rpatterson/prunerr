@@ -326,7 +326,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             for data_path in data_paths
             if (data_path / self.root_name).exists()
         ]
-        if not locations:
+        if not locations:  # pragma: no cover
             logger.debug(
                 "No existing download item location found for %r: %s",
                 self,
@@ -355,6 +355,51 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             self.download_dir,
         )
         return None
+
+    def link_imported_files(self, data_paths, imported_root, imported_relatives):
+        """
+        Hard link imported files back into download items.
+
+        :param data_paths: The full list of data paths including those from the Servarr
+            download clients.
+        :param imported_root: The path to the series/movie directory containing the
+            relative imported file paths.
+        :param imported_relatives: Map the relative paths of imported files to the
+            corresponding paths within the download item.
+        :return: The download item file paths of any imported files that were linked
+            into the download item.
+        :rtype: Iterator[]
+        """
+        need_verify = False
+
+        # Change the download item data path if a better one is found:
+        # Collect additional possible data paths from the import history
+        # records:
+        item_data_paths = dict.fromkeys(data_paths)
+        for imported_relative, dropped_data in imported_relatives.items():
+            item_data_paths[dropped_data["location"]] = None
+        if self.find_location(list(item_data_paths)):
+            need_verify = True
+
+        # Hard link imported files into the download item's location:
+        for imported_relative, dropped_data in imported_relatives.items():
+            download_file_path = self.download_dir / dropped_data["droppedRel"]
+            if maybe_link_file(download_file_path, imported_root / imported_relative):
+                need_verify = True
+                yield str(download_file_path)
+
+        if need_verify:
+            # Deselect for download any remaining incomplete files:
+            self.deselect_unimported_files()
+
+            logger.info(
+                "Verifying and resuming download item: %r",
+                self,
+            )
+            self.download_client.client.verify_torrent(
+                self.hashString,
+            )
+            self.start()
 
     def deselect_unimported_files(self):
         """
@@ -439,3 +484,48 @@ class PrunerrDownloadItemFile:
         if self.stat is not None and self.st_nlink > 1:
             return self.st_size
         return 0
+
+
+def maybe_link_file(source, target):
+    """
+    Link the source file to the target path if not already linked to it.
+
+    :param source: The path of the file to hard link.
+    :param target: The path to hard link the file to.
+    :return: ``True`` if the source was hard linked.
+    """
+    try:
+        source.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:  # pragma: no cover
+        logger.exception(
+            "Error creating download item directory: %s",
+            source.parent,
+        )
+        return False
+    if source.parent.stat().st_dev != target.parent.stat().st_dev:  # pragma: no cover
+        logger.exception(
+            "Download item on different filesystem: %r -> %r",
+            str(source),
+            str(target),
+        )
+        return False
+    if source.exists():
+        if source.samefile(target):
+            logger.debug(
+                "Already hard linked to file: %r -> %r",
+                str(source),
+                str(target),
+            )
+            return False
+        logger.info(
+            "Deleting existing file: %s",
+            source,
+        )
+        source.unlink()
+    logger.info(
+        "Hard linking file: %r -> %r",
+        str(source),
+        str(target),
+    )
+    source.hardlink_to(target)
+    return True

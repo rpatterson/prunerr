@@ -111,6 +111,26 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         )
         shutil.copy2(self.EXAMPLE_VIDEO, manual_import_single_item)
 
+        # A Radarr import of a movie:
+        movie_seeding_file = (
+            self.seeding_item_file.parents[4]
+            / "Radarr"
+            / "Videos"
+            / "Movies"
+            / "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER"
+            / "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv"
+        )
+        movie_seeding_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.EXAMPLE_VIDEO, movie_seeding_file)
+        movie_import = (
+            self.imported_item_file.parents[3]
+            / "Movies"
+            / "Bar Movie (1980) [tmdbid-1]"
+            / "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv"
+        )
+        movie_import.parent.mkdir(parents=True, exist_ok=True)
+        movie_import.hardlink_to(movie_seeding_file)
+
     def test_export_workflow(self):
         """
         Link imported files back into download items and verify, Servarr import inverse.

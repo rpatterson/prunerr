@@ -345,7 +345,7 @@ class PrunerrServarrInstance:
         for root_item in self.client.get(self.type_map["dir_type"]):
             for imported_item in self.list_imported_files(root_item):
                 import_record = self.find_import_history(data_paths, imported_item)
-                if import_record is None:
+                if import_record is None:  # pragma: no cover
                     # Logged in `self.find_import_history()`
                     continue
                 imported_item["history"] = {"downloadFolderImported": import_record}
@@ -528,13 +528,13 @@ class PrunerrServarrInstance:
                 import_record = history_record
                 # Don't proceed past the most recent import record:
                 break
-            logger.error(
+            logger.error(  # pragma: no cover
                 "Import record for different file found before for current "
                 "file: %r != %r",
                 str(history_record["data"]["importedPath"]),
                 str(imported_item["file"]["path"]),
             )
-            return None
+            return None  # pragma: no cover
         else:  # pragma: no cover
             # At lease one use case leads to this, existing files added to the
             # library outside of Servarr. IOW, when files are put in place and then

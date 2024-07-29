@@ -1,8 +1,7 @@
 [
   {
-    "episodeId": 1,
-    "seriesId": 1,
-    "sourceTitle": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "movieId": 1,
+    "sourceTitle": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
     "language": {
       "id": 1,
       "name": "English"
@@ -23,12 +22,12 @@
     "qualityCutoffNotMet": true,
     "languageCutoffNotMet": false,
     "date": "2021-04-22T00:00:00Z",
-    "downloadId": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
+    "downloadId": "909C9B954B414A87B1DCF6E2FB09650FCC35DE57",
     "eventType": "downloadFolderImported",
     "data": {
       "fileId": "1",
-      "droppedPath": "/media/Library/downloads/Sonarr/Videos/Series/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
-      "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "droppedPath": "/media/Library/downloads/Radarr/Videos/Movies/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "importedPath": "/media/Library/Videos/Movies/Bar Movie (1980) [tvdbid-1]/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
       "downloadClient": "Transmission",
       "downloadClientName": "transmission",
       "preferredWordScore": "0",
@@ -37,9 +36,8 @@
     "id": 1
   },
   {
-    "episodeId": 1,
-    "seriesId": 1,
-    "sourceTitle": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "movieId": 1,
+    "sourceTitle": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
     "language": {
       "id": 1,
       "name": "English"
@@ -61,7 +59,7 @@
     "customFormatScore": 0,
     "qualityCutoffNotMet": true,
     "date": "2021-04-22T00:00:00Z",
-    "downloadId": "1FAFED76F4264B14934C13D7A306F94FEA4B3184",
+    "downloadId": "909C9B954B414A87B1DCF6E2FB09650FCC35DE57",
     "eventType": "grabbed",
     "data": {
       "indexer": "Plugh Indexer",
@@ -74,13 +72,13 @@
       "downloadClient": "Transmission",
       "downloadClientName": "transmission",
       "size": "1073741824",
-      "downloadUrl": "http://192.168.1.1:9117/dl/plugh/?jackett_apikey=&path=&file=Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
-      "guid": "https://plugh.example.com/download/1/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.torrent",
+      "downloadUrl": "http://192.168.1.1:9117/dl/plugh/?jackett_apikey=&path=&file=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
+      "guid": "https://plugh.example.com/download/5/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.torrent",
       "tvdbId": "0",
       "tvRageId": "0",
       "protocol": "2",
       "preferredWordScore": "0",
-      "seriesMatchType": "Title",
+      "movieMatchType": "Title",
       "torrentInfoHash": ""
     },
     "id": 2

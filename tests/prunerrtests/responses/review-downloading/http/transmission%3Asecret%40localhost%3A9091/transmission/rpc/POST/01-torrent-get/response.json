@@ -207,7 +207,7 @@
         "isStalled": true,
         "labels": [],
         "leftUntilDone": 1048576,
-        "magnetLink": "magnet:?xt=urn:btih:1FAFED76F4264B14934C13D7A306F94FEA4B3184&dn=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER&tr=https%3A%2F%2Ftracker.private.example.com%2Fa%2F1fafed76f4264b14934c13d7a306f94fea4b3184%2Fannounce",
+        "magnetLink": "magnet:?xt=urn:btih:909C9B954B414A87B1DCF6E2FB09650FCC35DE57&dn=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER&tr=https%3A%2F%2Ftracker.private.example.com%2Fa%2F1fafed76f4264b14934c13d7a306f94fea4b3184%2Fannounce",
         "manualAnnounceTime": -1,
         "maxConnectedPeers": 288,
         "metadataPercentComplete": 1,
@@ -245,7 +245,7 @@
         "startDate": 0,
         "startDate": 0,
         "status": 4,
-        "torrentFile": "/config/torrents/1FAFED76F4264B14934C13D7A306F94FEA4B3184.torrent",
+        "torrentFile": "/config/torrents/909C9B954B414A87B1DCF6E2FB09650FCC35DE57.torrent",
         "totalSize": 1073741824,
         "trackerStats": [
           {

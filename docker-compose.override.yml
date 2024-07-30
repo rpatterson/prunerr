@@ -10,7 +10,7 @@ services:
     container_name: "prunerr-devel-transmission"
     volumes:
       # Exit the container if the core `s6-overlay` service fails
-      - "./s6/etc/services.d/default/finish:/etc/services.d/transmission/finish"
+      - "./s6/etc/s6-overlay/s6-rc.d/svc-transmission/finish:/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
 
   sonarr:
     container_name: "prunerr-devel-sonarr"

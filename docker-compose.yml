@@ -28,7 +28,8 @@ services:
     volumes:
       # Exit the container if the core `s6-overlay` service fails.
       # Replace with the correct path for your `$ docker compose ...` project.
-      # - "./s6/etc/s6-overlay/s6-rc.d/svc-transmission/finish:/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
+      # - "./transmission/etc/s6-overlay/s6-rc.d/svc-transmission/finish\
+      #   :/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
       # Intended for use in the image
       - "./transmission/config/:/config/"
       # The volume on which Transmission's `download-dir` is stored:

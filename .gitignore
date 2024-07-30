@@ -145,4 +145,9 @@ ENV
 # Project-specific artifacts
 /radarr
 /sonarr
-/transmission
+/transmission/config
+# Ensure the Docker volume exists so `# dockerd` doesn't create this as root:
+/transmission/config/*
+!/transmission/config/.git*
+!/transmission/config/Makefile
+/transmission/config/*~

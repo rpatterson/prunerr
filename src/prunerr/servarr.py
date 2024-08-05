@@ -72,6 +72,8 @@ class PrunerrServarrInstance:
                 "{series[title]} - {episode[seasonEpisode]} - {episode[title]}"
             ),
             "file_depth": 2,
+            "item_history_is_typed": False,
+            "item_history_is_paged": True,
         },
         "radarr": {
             "dir_type": "movie",
@@ -80,6 +82,8 @@ class PrunerrServarrInstance:
             "download_dir_field": "movieDirectory",
             "rename_template": "{movie[title]} ({movie[release_year]})",
             "file_depth": 1,
+            "item_history_is_typed": True,
+            "item_history_is_paged": False,
         },
     }
     MAX_PAGE_SIZE = 250
@@ -425,14 +429,28 @@ class PrunerrServarrInstance:
             imported file.
         """
         import_record = grab_record = None
-        params = {
-            "pageSize": 1000,
-            "sortKey": "date",
-            "sortDirection": "descending",
-        }
         type_map = self.TYPE_MAPS[self.config["type"]]
-        params[f"{type_map['item_type']}Id"] = imported_item["id"]
-        for history_record in self.get_api_paged_records("history", **params):
+        endpoint = (
+            "history"
+            if not type_map["item_history_is_typed"]
+            else f"history/{type_map['item_type']}"
+        )
+        params = {f"{type_map['item_type']}Id": imported_item["id"]}
+        for history_record in (
+            self.get_api_paged_records(
+                endpoint,
+                **dict(
+                    params,
+                    **{
+                        "pageSize": 1000,
+                        "sortKey": "date",
+                        "sortDirection": "descending",
+                    },
+                ),
+            )
+            if type_map["item_history_is_paged"]
+            else self.client.get(endpoint, **params)
+        ):
             # Assume the most recent import record corresponds to the current file:
             if (
                 history_record["eventType"] == "downloadFolderImported"

@@ -66,7 +66,6 @@ class PrunerrServarrInstance:
             # contrasted with the `dir_type`.  But an episode/movie may comprise of
             # multiple files and a file may contain multiple episodes.
             "item_type": "episode",
-            "file_has_multi": True,
             "client": arrapi.SonarrAPI,
             "download_dir_field": "tvDirectory",
             "rename_template": (
@@ -77,7 +76,6 @@ class PrunerrServarrInstance:
         "radarr": {
             "dir_type": "movie",
             "item_type": "movie",
-            "file_has_multi": False,
             "client": arrapi.RadarrAPI,
             "download_dir_field": "movieDirectory",
             "rename_template": "{movie[title]} ({movie[release_year]})",

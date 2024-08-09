@@ -1324,8 +1324,14 @@ $(HOME)/.local/state/docker-multi-platform/log/host-install.log:
 	fi
 	date | tee -a "$(@)"
 
+# Create any mount points for bind volumes that `# dockerd` shouldn't or can't create,
+# such as directory bind volumes that root shouldn't own by or file bind volumes that `#
+# dockerd` shouldn't create as directories:
+./home/.bash_history:
+	touch "$(@)"
+
 # Local environment variables and secrets from a template:
-./.env.~out~: ./.env.in
+./.env.~out~: ./.env.in ./home/.bash_history
 	export TRANSMISSION_PASS="$$(apg -M ncl -n 1)"
 	$(call expand_template,$(<),$(@))
 

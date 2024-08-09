@@ -56,6 +56,9 @@ services:
       # Variables from the environment to pass through into the container:
       CI: "${CI:-false}"
       # DEBUG: "true"
+      # FIXME: Cleanup once fixed Prunerr entrypoint has been released:
+      # fix(docker): Entrypoint user should not change
+      PROJECT_NAME: "prunerr"
     volumes:
       # Reflect local changes inside the container:
       - "${CHECKOUT_DIR:-.}/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
@@ -72,6 +75,9 @@ services:
       - type: "volume"
         source: "home_cache"
         target: "/home/prunerr/.cache"
+      # Preserve shell history inside containers, requires `$ touch
+      # ./home/.bash_history`:
+      - "./home/.bash_history:/home/prunerr/.bash_history"
       # Avoid any clashes between image variants and the local host at both build and
       # runtime:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}/\

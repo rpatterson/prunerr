@@ -35,12 +35,6 @@ WORKDIR "${HOME}"
 ENTRYPOINT [ "entrypoint.sh" ]
 CMD [ "${PROJECT_NAME}", "daemon" ]
 
-# Support for a volume to preserve data between runs and share data between variants:
-RUN mkdir -pv "${HOME}/.local/share/${PROJECT_NAME}/" && \
-    touch "${HOME}/.local/share/${PROJECT_NAME}/bash_history" && \
-    ln -snv --relative "${HOME}/.local/share/${PROJECT_NAME}/bash_history" \
-        "${HOME}/.bash_history"
-
 # Put the `ENTRYPOINT` on the `$PATH`
 COPY [ "./bin/entrypoint.sh", "/usr/local/bin/" ]
 
@@ -105,6 +99,8 @@ ENV PATH="${VIRTUAL_ENV}/bin:${HOME}/.local/bin:${PATH}"
 # Remain in the checkout `WORKDIR` and make the build tools the default
 # command to run.
 ENV PATH="${HOME}/.local/bin:${PATH}"
+# Install tox in the unprivileged user's `${HOME}`:
+ENV PIPX_HOME="/${HOME}/.local/pipx"
 WORKDIR "/usr/local/src/${PROJECT_NAME}/"
 # Have to use the shell form of `CMD` because it needs variable substitution:
 # hadolint ignore=DL3025

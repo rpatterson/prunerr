@@ -250,6 +250,15 @@ sub-command performs the following operations.
       Walk all the top-level directories used by each download client and identify which
       paths don't correspond to a download client item.
 
+      .. warning::
+         Stop Prunerr before moving any download items.
+
+         Prunerr uses the list of files for every download item to identify orphans. If
+         a user, or anything else other than Prunerr, moves or changes the location of a
+         download item while Prunerr is identifying orphans, Prunerr may identify the
+         *new* download item data path as an orphan and delete it out from under the
+         download item leading to data loss.
+
    #. Imported/seeding download items
 
       IOW, download items that have been acted upon by Servarr and moved to the

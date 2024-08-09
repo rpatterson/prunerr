@@ -13,17 +13,23 @@ Known bugs and wanted features.
 Required
 ****************************************************************************************
 
-#. Take ``done-date`` from Servarr when missing or 0 in Transmission.
+#. Not deleting orphans in ``**/incomplete/``?
 
-#. `Fix missing '*-(date|time|seconds)'
-   fields
+#. Add torrent date handling to the ``export`` sub-command. Take the ``grabbed`` history
+   record dates for the ``added-date`` and the ``downloadFolderImported`` record dates
+   for the ``done-date`` and `set them in the Transmission '/config/resume/*.resume'
+   files
    <https://github.com/transmission/transmission/issues/4314#issuecomment-1336485761>`_
-   from Servarr in ``./transmission/config/resume/*.resume`` and restart transmission.
+   if those dates are older than the current.
 
 
 ****************************************************************************************
 High priority
 ****************************************************************************************
+
+#. Add a review to exclude BluRay/DVD full disc rips.
+
+#. Deselect unimported files before deciding whether to delete?
 
 #. Well documented configuration snippets demonstrating all important use cases.
 

@@ -45,4 +45,4 @@ linkcheck_anchors_ignore = [
 linkcheck_ignore = ["https://liberapay.com/.*"]
 
 # -- Extension options -------------------------------------------------------
-ogp_site_url = 'http://project-structure.readthedocs.io/'
+ogp_site_url = 'http://prunerr.readthedocs.io/'

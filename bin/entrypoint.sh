@@ -8,11 +8,13 @@
 
 set -eu -o pipefail
 shopt -s inherit_errexit
+CHOWN_ARGS=""
 if test "${DEBUG:=false}" = "true"
 then
     # Echo commands for easier debugging
     set -x
     PS4='$0:$LINENO+'
+    CHOWN_ARGS+="-c"
 fi
 
 
@@ -26,6 +28,12 @@ main() {
             echo "ERROR: Can't create a user when not run as root" 1>&2
             false
         fi
+
+	# Ensure the home directory in the image has the correct permissions. Change
+	# permissions selectively to avoid time-consuming recursion:
+	chown ${CHOWN_ARGS} "${PUID}:${PGID}" "/home/${PROJECT_NAME}/" \
+	      /home/${PROJECT_NAME}/.??* /home/${PROJECT_NAME}/.local/*
+
         # Add an unprivileged user:
         if ! getent group "${PGID}" >"/dev/null"
         then

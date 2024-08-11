@@ -1,6 +1,6 @@
 {
   "arguments": {
-    "filename": "http://192.168.1.1:9117/dl/plugh/?jackett_apikey=&path=&file=Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "filename": "http://localhost:9696/1/download?apikey=&link=&file=Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
     "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
     "paused": true
   },

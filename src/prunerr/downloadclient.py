@@ -33,9 +33,9 @@ class PrunerrDownloadClient:
     SEEDING_DIR_BASENAME = "seeding"
     UNREGISTERED_ERROR_RE = re.compile(r".*(not |un)registered.*")
 
-    client = None
-    items = None
-    operations = None
+    client: transmission_rpc.client.Client
+    items: list
+    operations: prunerr.operations.PrunerrOperations
 
     def __init__(self, runner):
         """

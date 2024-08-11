@@ -72,7 +72,7 @@
       "downloadClient": "Transmission",
       "downloadClientName": "transmission",
       "size": "1073741824",
-      "downloadUrl": "http://192.168.1.1:9117/dl/plugh/?jackett_apikey=&path=&file=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
+      "downloadUrl": "http://localhost:9696/1/download?apikey=&link=&file=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
       "guid": "https://plugh.example.com/download/5/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.torrent",
       "tvdbId": "0",
       "tvRageId": "0",

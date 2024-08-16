@@ -77,6 +77,10 @@ High priority
 Nice to have
 ****************************************************************************************
 
+#. Also import `extras and such
+   <https://jellyfin.org/docs/general/server/media/movies/#movie-extras>`_ that Servarr
+   doesn't support.
+
 #. Support selecting only one series or movie for the ``export`` sub-command.
 
 #. Implement ``__eq__`` or better and audit other "dunder" methods to implement. Use the

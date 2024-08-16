@@ -261,8 +261,17 @@ class PrunerrDownloadClient:
         # deleting the data of large items: e.g. season packs.
         if path.is_dir():
             shutil.rmtree(path, onerror=log_rmtree_error)
-        else:
+        elif path.exists():
             path.unlink()
+        else:  # pragma: no cover
+            # Under high download client load, the deletion from the client sometimes
+            # seems to fail but Prunerr successfully deletes the data. On the next
+            # `daemon` loop Prunerr will try to delete it from the client again, which
+            # is correct, but then chokes on the missing files it already deleted.
+            logger.error(
+                "Path to be deleted doesn't exist: %s",
+                path,
+            )
         if next(path.parent.iterdir(), None) is None:
             # The directory containging the file is empty
             path.parent.rmdir()

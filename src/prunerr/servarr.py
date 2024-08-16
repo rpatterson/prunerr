@@ -484,7 +484,7 @@ class PrunerrServarrInstance:
                 logger.error(
                     "Import record for different file found before for current "
                     "file: %r != %r",
-                    history_record["data"]["importedPath"],
+                    str(history_record["data"]["importedPath"]),
                     str(imported_item["file"]["path"]),
                 )
             # Find the most recent grab record that corresponds to the import
@@ -655,8 +655,8 @@ def maybe_link_file(source, target):
         if source.samefile(target):
             logger.debug(
                 "Already hard linked to file: %r -> %r",
-                source,
-                target,
+                str(source),
+                str(target),
             )
             return False
         logger.info(
@@ -666,8 +666,8 @@ def maybe_link_file(source, target):
         source.unlink()
     logger.info(
         "Hard linking file: %r -> %r",
-        source,
-        target,
+        str(source),
+        str(target),
     )
     source.parent.mkdir(parents=True, exist_ok=True)
     source.hardlink_to(target)

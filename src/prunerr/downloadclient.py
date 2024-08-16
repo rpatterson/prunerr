@@ -218,7 +218,26 @@ class PrunerrDownloadClient:
                     )
                 ),
             )
-            self.client.remove_torrent([item.hashString])
+
+            # When freeing disk space it's important not to get hung up waiting for a
+            # heavily loaded client. Be very defensive and proceed directly to deleting
+            # the data:
+            try:
+                self.client.remove_torrent([item.hashString], timeout=1.0)
+            except transmission_rpc.error.TransmissionTimeoutError:  # pragma: no cover
+                logger.debug(
+                    "Expected short timeout to promptly free space: %r",
+                    item,
+                    exc_info=True,
+                )
+            except (
+                Exception  # pylint: disable=broad-exception-caught
+            ):  # pragma: no cover
+                logger.exception(
+                    "Unexpected exception removing item, freeing space anyways: %r",
+                    item,
+                )
+
             self.items.remove(item)
             path = item.files_parent
 

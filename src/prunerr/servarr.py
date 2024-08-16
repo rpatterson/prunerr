@@ -738,28 +738,17 @@ def maybe_add_download_item(
     # Try each download URL from the grab history, most recent first:
     for download_url, download_client in download_urls.items():
         try:
-            response = requests.get(download_url, timeout=5)
-        except requests.exceptions.RequestException:  # pragma: no cover
-            logger.exception(
-                "Exception downloading release: %s",
-                download_url,
-            )
-            continue
-        try:
-            response.raise_for_status()
-        except requests.exceptions.RequestException:  # pragma: no cover
-            logger.exception(
-                "Error response status downloading release: %s",
-                download_url,
-            )
-            continue
-
-        try:
             download_item = download_client.download_client.add_torrent(
-                response.content,
+                download_url,
                 paused=True,
                 download_dir=str(download_client.seeding_dir),
             )
+        except requests.exceptions.RequestException:  # pragma: no cover
+            logger.exception(
+                "Exception downloading torrent: %s",
+                download_url,
+            )
+            continue
         except transmission_rpc.error.TransmissionError:  # pragma: no cover
             # Tolerate exceptions adding torrents because the download
             # URL may no longer be valid, IOW 404:

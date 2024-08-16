@@ -14,6 +14,7 @@ import shutil
 import urllib.parse
 import logging
 
+import requests
 import transmission_rpc
 
 import prunerr.downloaditem
@@ -424,19 +425,20 @@ class PrunerrDownloadClient:
                 del self.verifying_items[item_hash]
         return verified_items
 
-    def add_torrent(self, torrent, **kwargs):
+    def add_torrent(self, download_url, **kwargs):
         """
         Add a torrent to the download client and update instance state.
 
-        :param torrent: The torrent to add, passed to
-            ``transmission_rpc.client.Client().add_torrent()``.
+        :param download_url: The URL from which to download the torrent to add.
         :return: The added ``prunerr.downloaditem.PrunerrDownloadItem()`` instance.
         """
-        logger.info("Adding torrent: %s", torrent)
+        logger.info("Downloading torrent: %s", download_url)
+        response = requests.get(download_url, timeout=5, stream=True)
+        response.raise_for_status()
         added_torrent = prunerr.downloaditem.PrunerrDownloadItem(
             self,
             self.client,  # pylint: disable=protected-access
-            self.client.add_torrent(torrent=torrent, **kwargs),
+            self.client.add_torrent(torrent=response.raw, **kwargs),
         )
         self.items.append(added_torrent)
         return added_torrent

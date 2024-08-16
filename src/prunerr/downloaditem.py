@@ -133,19 +133,15 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 self,
             )
             return None
-        if not (done_date := self._fields["doneDate"].value):
-            if self._fields["startDate"].value:
-                logger.warning(
-                    "Missing done date for seconds since done, using start date: %r",
-                    self,
-                )
-                done_date = self._fields["startDate"].value
-            elif self._fields["addedDate"].value:
-                logger.warning(
-                    "Missing done date for seconds since done, using added date: %r",
-                    self,
-                )
-                done_date = self._fields["addedDate"].value
+        if (
+            not (done_date := self._fields["doneDate"].value)
+            and self._fields["addedDate"].value
+        ):
+            logger.warning(
+                "Missing done date for seconds since done, using added date: %r",
+                self,
+            )
+            done_date = self._fields["addedDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date
 

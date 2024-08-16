@@ -514,6 +514,16 @@ class PrunerrServarrInstance:
                         self.download_client_names.keys(),
                     )[0]
                 break
+            # Don't proceed past previous imports:
+            if (
+                history_record["eventType"] == "downloadFolderImported"
+                and import_record is not None
+            ):  # pragma: no cover
+                logger.debug(
+                    "Skipping previous import history: %s",
+                    history_record["data"]["importedPath"],
+                )
+                break
         else:
             # At lease one use case leads to this, existing files added to the library
             # outside of Servarr. IOW, when files are put in place and then scanned by

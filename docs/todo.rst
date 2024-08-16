@@ -40,6 +40,11 @@ High priority
 
 #. Deselect unimported files before deciding whether to delete?
 
+#. When removing download items from the client while running the ``$ prunerr
+   free-space`` sub-command, avoid a heavily loaded client blocking deleting items by
+   sending the ``remove_torrent()`` `request asynchronously
+   <https://www.python-httpx.org/async/>`_.
+
 #. Link the top-level docs for each sub-command into their runner API docs.
 
 #. Investigate Transmission "Labels". They're not visible in the Transmission Remote GTK

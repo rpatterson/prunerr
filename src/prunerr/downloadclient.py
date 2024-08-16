@@ -224,7 +224,10 @@ class PrunerrDownloadClient:
             # heavily loaded client. Be very defensive and proceed directly to deleting
             # the data:
             try:
-                self.client.remove_torrent([item.hashString], timeout=1.0)
+                self.client.remove_torrent(
+                    [item.hashString],
+                    timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
+                )
             except transmission_rpc.error.TransmissionTimeoutError:  # pragma: no cover
                 logger.debug(
                     "Expected short timeout to promptly free space: %r",

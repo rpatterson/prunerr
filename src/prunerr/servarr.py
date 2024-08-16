@@ -15,6 +15,7 @@ import urllib.parse
 import logging
 import typing
 
+import transmission_rpc
 import arrapi
 import arrapi.apis.base
 
@@ -160,7 +161,10 @@ class PrunerrServarrInstance:
 
         return self.client
 
-    def export(self, extra_data_paths=None) -> typing.Optional[dict]:
+    def export(  # noqa: MC0001, pylint: disable=too-complex
+        self,
+        extra_data_paths=None,
+    ) -> typing.Optional[dict]:
         """
         Link imported files back into download items and verify, Servarr import inverse.
 
@@ -212,14 +216,34 @@ class PrunerrServarrInstance:
                 for download_url in download_urls.keys():
                     if download_id in download_items_by_id[download_client_name]:
                         logger.debug("Skipping already added torrent: %s", download_url)
-                    else:
-                        download_items_by_id[download_client_name][
-                            download_id
-                        ] = servarr_download_client.download_client.add_torrent(
+                    elif (
+                        urllib.parse.urlsplit(download_url).scheme == "magnet"
+                    ):  # pragma: no cover
+                        # Supporting adding magnet torrents would be a PITA because we'd
+                        # have to use a torrent cache to get torrent files which feels
+                        # like too much trouble for mostly public torrents:
+                        logger.error(
+                            "Skipping magnet torrent: %s",
                             download_url,
-                            paused=True,
-                            download_dir=str(servarr_download_client.seeding_dir),
                         )
+                    else:
+                        try:
+                            download_items_by_id[download_client_name][
+                                download_id
+                            ] = servarr_download_client.download_client.add_torrent(
+                                download_url,
+                                paused=True,
+                                download_dir=str(servarr_download_client.seeding_dir),
+                            )
+                        except (
+                            transmission_rpc.error.TransmissionError
+                        ):  # pragma: no cover
+                            # Tolerate exceptions adding torrents because the download
+                            # URL may no longer be valid, IOW 404:
+                            logger.exception(
+                                "Exception adding torrent: %s",
+                                download_url,
+                            )
 
         # Lookup the download IDs for imported files without them by download item name:
         imports_by_download = self.lookup_download_ids(imports_by_download)
@@ -602,6 +626,16 @@ class PrunerrServarrInstance:
         export_results = {}
         for download_client_name, download_ids in imports_by_download.items():
             for download_id, download_urls in download_ids.items():
+                if (
+                    download_id not in download_items_by_id[download_client_name]
+                ):  # pragma: no cover
+                    logger.debug(
+                        "No download item in client for hash %r: %s",
+                        download_id,
+                        list(download_urls.keys())[0],
+                    )
+                    continue
+
                 download_item = download_items_by_id[download_client_name][download_id]
                 need_verify = False
 

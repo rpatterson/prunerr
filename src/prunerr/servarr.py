@@ -297,14 +297,14 @@ class PrunerrServarrInstance:
             )
             # Then iterate over the imported files:
             for imported_item in items:
+                if not imported_item["hasFile"] is True:
+                    continue
                 imported_item["file"] = item_files[
                     imported_item[f"{type_map['item_type']}FileId"]
                 ]
                 imported_item["file"]["path"] = pathlib.Path(
                     imported_item["file"]["path"],
                 )
-                if not imported_item["hasFile"] is True:
-                    continue
                 yield imported_item
 
     def collect_data_paths(self, extra_data_paths=None):

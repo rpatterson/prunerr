@@ -142,3 +142,6 @@ Nice to have
    HTML, probably using XPaths.
 
 #. Re-enable the prose linters and address all failures.
+
+#. :Tests: Add test cases for the test coverage holes in the ``$ prunerr export``
+           sub-command.

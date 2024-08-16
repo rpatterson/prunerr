@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# Shut down the container when `/config/` is running out of disk space.
+#
+# This is necessary because Transmission seems very poorly behaved when the filesystem
+# storing its `config-dir` runs out of space. I've not tried to reliably reproduce this
+# issue, but multiple times my Transmission instance has lost track of most torrents'
+# `downloadDir` and every time that happened the `/config/` filesystem had run out of
+# space.
+#
+# Usage:
+#  /usr/local/bin/transmission-config-space-shutdown [CONFIG_MIN_SPACE]
+
+set -eu -o pipefail
+if [ ! -z "${DEBUG:=}" ]
+then
+    # Echo commands for easier debugging
+    export PS4='+$(basename "${0}"):${LINENO}+'
+    set -x
+fi
+
+
+# Calculate an appropriate margin of disk space to keep free in `/config/`. This should
+# be at least as much space as anything might write to the filesystem that stores
+# `/config/` in the time it might take for the client to cleanly shutdown. From my
+# reading of [the s6-overlay `S6_KILL_GRACETIME`docs
+# ](https://github.com/just-containers/s6-overlay?tab=readme-ov-file#customizing-s6-overlay-behaviour),
+# it seems like by default service processes are given 3 seconds before sending
+# `SIGKILL`. Then I tested write speed on `/config/` with:
+#     # docker compose exec transmission \
+#     dd if=/dev/zero of=/config/write-zero.bin count=2M`
+# Adding margins that gives:
+# - Maximum halt time: 10 seconds
+# - Write speed: 300 MB/s
+# - Convert to KB: 1024 KB/MB
+# Total:
+#     $ echo $(( 10 * 300 * 1024 ))
+#     3072000
+# Or ~3 GB:
+CONFIG_MIN_SPACE="${CONFIG_MIN_SPACE:-3072000}"
+
+# Which filesystems does Transmission store torrent metadata. That means all torrent
+# data except for the torrent's file contents, for example the torrent's `downloadDir`:
+CONFIG_DIR="${CONFIG_DIR:-/config/}"
+
+
+main() {
+    config_min_space="${1:-${CONFIG_MIN_SPACE}}"
+    config_dir="${2:-${CONFIG_DIR}}"
+
+    available_space="$(df --output="avail" "${config_dir}" | tail -n +2)"
+    if test "${available_space}" -lt "${config_min_space}"
+    then
+	echo "0" > "/run/s6-linux-init-container-results/exitcode"
+	exec /run/s6/basedir/bin/halt
+    fi
+}
+
+main "$@"

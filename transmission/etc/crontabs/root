@@ -10,3 +10,5 @@
 0	3	*	*	6	run-parts /etc/periodic/weekly
 0	5	1	*	*	run-parts /etc/periodic/monthly
 
+# Shut down the container without restarting it when `/config/` is running out of disk space:
+*    *       *       *       *       /usr/bin/timeout -v --kill-after=2m 1m /usr/local/bin/transmission-config-space-shutdown

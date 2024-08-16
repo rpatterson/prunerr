@@ -17,6 +17,9 @@ services:
       # Pause downloading when the `downloadDir` is getting low on space:
       - "./transmission/usr/local/bin/transmission-pause-download:\
         /usr/local/bin/transmission-pause-download"
+      # Shut down the container when `/config/` is running out of disk space:
+      - "./transmission/usr/local/bin/transmission-config-space-shutdown:\
+        /usr/local/bin/transmission-config-space-shutdown"
 
   sonarr:
     container_name: "prunerr-devel-sonarr"

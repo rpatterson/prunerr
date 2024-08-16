@@ -35,6 +35,9 @@ services:
       # Pause downloading when the `downloadDir` is getting low on space:
       # - "./transmission/usr/local/bin/transmission-pause-download:\
       #   /usr/local/bin/transmission-pause-download"
+      # Shut down the container when `/config/` is running out of disk space:
+      # - "./transmission/usr/local/bin/transmission-config-space-shutdown:\
+      #   /usr/local/bin/transmission-config-space-shutdown"
       # Intended for use in the image
       - "./transmission/config/:/config/"
       # The volume on which Transmission's `download-dir` is stored:
@@ -56,8 +59,6 @@ services:
       # `./.env` so that the `HEALTHCHECK` fails and the container is restart when that
       # happens.
       test: >-
-        test "$(df --output="avail" "${DOWNLOAD_DIR:-/media/Library/}" | tail -n +2)"
-        -gt "${CRITICAL_AVAIL:-1048576}" || /sbin/shutdown &&
         curl -LIs -X GET -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
         "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
         grep '^X-Transmission-Session-Id: '

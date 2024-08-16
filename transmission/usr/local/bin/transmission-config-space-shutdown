@@ -34,14 +34,14 @@ fi
 #     # docker compose exec transmission \
 #     dd if=/dev/zero of=/config/write-zero.bin count=2M`
 # Adding margins that gives:
-# - Maximum halt time: 10 seconds
+# - Maximum halt time: 20 seconds
 # - Write speed: 300 MB/s
 # - Convert to KB: 1024 KB/MB
 # Total:
-#     $ echo $(( 10 * 300 * 1024 ))
-#     3072000
+#     $ echo $(( 20 * 300 * 1024 ))
+#     6144000
 # Or ~3 GB:
-CONFIG_MIN_SPACE="${CONFIG_MIN_SPACE:-3072000}"
+CONFIG_MIN_SPACE="${CONFIG_MIN_SPACE:-6144000}"
 
 # Which filesystems does Transmission store torrent metadata. That means all torrent
 # data except for the torrent's file contents, for example the torrent's `downloadDir`:

@@ -292,16 +292,6 @@ sub-command performs the following operations.
    ``indexers/priorities`` indexer order then by the configured operations for that
    item's indexer.
 
-The Docker container image can run the command-line script as well::
-
-  $ docker compose run "prunerr" prunerr --help
-  usage: prunerr [-h]
-
-  prunerr foundation or template, top-level package.
-
-  optional arguments:
-    -h, --help  show this help message and exit
-
 
 ****************************************************************************************
 Export sub-command

@@ -200,7 +200,7 @@ class PrunerrServarrInstance:
                 continue
             servarr_download_client = self.download_client_names[download_client_name]
             download_items_by_id[download_client_name] = {
-                item.hashString: item
+                item.hashString.upper(): item
                 for item in servarr_download_client.download_client.items
             }
             for download_id, download_urls in download_ids.items():
@@ -542,7 +542,7 @@ class PrunerrServarrInstance:
             for import_item in import_items:
                 import_item["history"]["downloadFolderImported"][
                     "downloadId"
-                ] = download_items[0].hashString
+                ] = download_items[0].hashString.upper()
                 for download_ids in imports_by_download.values():
                     logger.warning(
                         "Matched download root name to download item: %r -> %r",
@@ -550,7 +550,7 @@ class PrunerrServarrInstance:
                         download_items[0],
                     )
                     download_ids.setdefault(
-                        download_items[0].hashString,
+                        download_items[0].hashString.upper(),
                         {},
                     ).setdefault(None, []).append(import_item)
         imports_by_download.pop(None, None)

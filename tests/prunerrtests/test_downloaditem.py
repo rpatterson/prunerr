@@ -91,7 +91,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         self.assertGreater(
             download_items[2].seconds_since_done,
             0,
-            "Wrong item start date time duration since finished downloading",
+            "Wrong item added date time duration since finished downloading",
         )
         self.assertGreater(
             download_items[3].seconds_since_done,

@@ -123,7 +123,7 @@
         "webseedsSendingToUs": 0
       },
       {
-        "addedDate": 0,
+        "addedDate": 1,
         "bandwidthPriority": 0,
         "doneDate": 0,
         "downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
@@ -151,7 +151,7 @@
         "seedRatioLimit": 4,
         "seedRatioMode": 0,
         "sizeWhenDone": 1073741824,
-        "startDate": 1,
+        "startDate": 0,
         "status": 4,
         "totalSize": 1073741824,
         "trackers": [

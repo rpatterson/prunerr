@@ -6,7 +6,7 @@
 # in containers.
 services:
   transmission:
-    image: "linuxserver/transmission"
+    image: "linuxserver/transmission:4.0.5"
     container_name: "transmission"
     # command:
     #   # From `# pgrep -fla transmission`:

@@ -206,7 +206,11 @@ class PrunerrOperations:
                 getattr(matching_file, file_attr) for matching_file in matching_files
             )
             if aggregation == "portion":
-                sort_value = sort_value / getattr(download_item, total)
+                sort_value = (
+                    0
+                    if getattr(download_item, total)
+                    else sort_value / getattr(download_item, total)
+                )
         else:
             raise ValueError(f"Unknown item files aggregation {aggregation!r}")
 

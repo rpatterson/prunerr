@@ -43,6 +43,8 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     Enrich download item data from the download client API.
     """
 
+    DOWNLOAD_DIR_FIELD = "downloadDir"
+
     def __init__(self, download_client, client, torrent):
         """
         Reconstitute the native Python representation.
@@ -328,17 +330,21 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         ]
         if not locations:  # pragma: no cover
             logger.debug(
-                "No existing download item location found for %r: %s",
+                "No existing download item location found for: %r",
                 self,
-                self.download_dir,
             )
             return None
         location = sorted(locations, reverse=True, key=key)[0]
+        if self.DOWNLOAD_DIR_FIELD not in self._fields:  # pragma: no cover
+            logger.debug(
+                "Missing download dir field, updating: %r",
+                self,
+            )
+            self.update()
         if pathlib.Path(self.download_dir) != location:
             logger.info(
-                "Changing download item location for %r: %r -> %r",
+                "Changing download item location for %r: %s",
                 self,
-                self.download_dir,
                 location,
             )
             self.locate_data(location)
@@ -352,7 +358,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         logger.debug(
             "Download item location already best for %r: %s",
             self,
-            self.download_dir,
+            location,
         )
         return None
 
@@ -372,9 +378,8 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         need_verify = False
 
-        # Change the download item data path if a better one is found:
-        # Collect additional possible data paths from the import history
-        # records:
+        # Change the download item data path if a better one is found.  Collect
+        # additional possible data paths from the import history records:
         item_data_paths = dict.fromkeys(data_paths)
         for imported_relative, dropped_data in imported_relatives.items():
             item_data_paths[dropped_data["location"]] = None
@@ -383,6 +388,12 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         # Hard link imported files into the download item's location:
         for imported_relative, dropped_data in imported_relatives.items():
+            if self.DOWNLOAD_DIR_FIELD not in self._fields:  # pragma: no cover
+                logger.debug(
+                    "Missing download dir field, updating: %r",
+                    self,
+                )
+                self.update()
             download_file_path = self.download_dir / dropped_data["droppedRel"]
             if maybe_link_file(download_file_path, imported_root / imported_relative):
                 need_verify = True

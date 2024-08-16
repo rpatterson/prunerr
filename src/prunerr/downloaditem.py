@@ -63,6 +63,29 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         vars(self).pop("path", None)
 
     @cached_property
+    def root_name(self):
+        """
+        Return the name of the first path element for all items in the download item.
+
+        Needed because it's not always the same as the item's name.  If the download
+        item has multiple files, assumes that all files are under the same top-level
+        directory.
+        """
+        file_roots = list(
+            {item_file.relative.parts[0]: None for item_file in self.files}
+        )
+        if file_roots:
+            if len(set(file_roots)) > 1:
+                logger.error(
+                    "Files in %r have multiple roots, using: %s",
+                    self,
+                    file_roots[0],
+                    extra={"runner": self.download_client.runner},
+                )
+            return file_roots[0]
+        return self.name
+
+    @cached_property
     def path(self):
         """
         Return the root path for all files in the download item.
@@ -70,7 +93,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         Needed because it's not always the same as the item's download directory plus
         the item's name.
         """
-        return (pathlib.Path(self.download_dir) / self.name).resolve()
+        return (pathlib.Path(self.download_dir) / self.root_name).resolve()
 
     @cached_property
     def files_parent(self):
@@ -79,7 +102,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         This may be the `incomplete_dir` while the item is downloading.
         """
-        files_parent = pathlib.Path(self.download_dir) / self.name
+        files_parent = pathlib.Path(self.download_dir) / self.root_name
         if (
             self.download_client.client.session.incomplete_dir_enabled
             and not files_parent.exists()
@@ -289,7 +312,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             """
             Determine the size and modification date of this items data in the path.
             """
-            item_path = data_path / self.name
+            item_path = data_path / self.root_name
             du_process = subprocess.run(  # nosec, pragmatic choice for performance
                 ["du", "-s", str(item_path)],
                 capture_output=True,
@@ -301,7 +324,9 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             )
 
         locations = [
-            data_path for data_path in data_paths if (data_path / self.name).exists()
+            data_path
+            for data_path in data_paths
+            if (data_path / self.root_name).exists()
         ]
         if not locations:  # pragma: no cover
             logger.debug(
@@ -448,10 +473,7 @@ class PrunerrDownloadItemFile:
         """
         Assemble a `pathlib` path for this item file relative to the item root.
         """
-        return pathlib.Path(
-            self.download_item.name,
-            *pathlib.Path(self.rpc_file.name).parts[1:],
-        )
+        return pathlib.Path(self.rpc_file.name)
 
     @cached_property
     def path(self):

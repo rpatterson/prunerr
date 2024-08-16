@@ -362,7 +362,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         )
         return None
 
-    def link_imported_files(self, data_paths, imported_root, imported_relatives):
+    def link_imported_files(
+        self,
+        data_paths,
+        imported_root,
+        imported_relatives,
+        need_verify=False,
+    ):
         """
         Hard link imported files back into download items.
 
@@ -376,8 +382,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             into the download item.
         :rtype: Iterator[]
         """
-        need_verify = False
-
         # Change the download item data path if a better one is found.  Collect
         # additional possible data paths from the import history records:
         item_data_paths = dict.fromkeys(data_paths)

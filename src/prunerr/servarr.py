@@ -257,27 +257,7 @@ class PrunerrServarrInstance:
         # Map imported file paths missing download item IDs/hashes by further methods
         # now that all history data has been collated:
         imported_items = list(self.list_imported_files(root_item))
-        for imported_item in imported_items:
-            download_id = (
-                mapped_history["importedRel"]
-                .get(
-                    imported_item["file"]["relative"],
-                    {},
-                )
-                .get("downloadId")
-            )
-            if not download_id:
-                if download_id := lookup_download_ids(
-                    download_ids_by_name,
-                    mapped_history,
-                    imported_item,
-                ):
-                    mapped_history["importedRel"][
-                        imported_item["file"]["relative"]
-                    ].setdefault("downloadId", download_id)
-                # BBB: Reports as uncovered only under Python <= v3.9:
-                else:  # pragma: no cover
-                    continue
+        lookup_download_ids(download_ids_by_name, mapped_history, imported_items)
 
         # Now group the imported files under the download item IDs/hashes the come from
         # them:
@@ -650,7 +630,7 @@ def collate_export_history_guesses(
 def lookup_download_ids(
     download_ids_by_name,
     mapped_history,
-    imported_item,
+    imported_items,
     import_keys=("sourceTitle", "downloadRootName"),
 ):
     """
@@ -659,25 +639,70 @@ def lookup_download_ids(
     :param download_ids_by_name: Map download item root basenames to the items.
     :param mapped_history: A dictionary mapping the history records by various
         means.
-    :param imported_item: The dictionary from the Servarr API JSON for the
-        individual imported file.
+    :param imported_items: The dictionaries from the Servarr API JSON for the
+        individual imported files.
+    :param import_keys: What top-level keys in the ``imported_items`` whose values to
+        match against download item names. The order defines precedence.
     """
-    imported_data = mapped_history["importedRel"].get(
-        imported_item["file"]["relative"],
-        {},
-    )
-    for import_key in import_keys:
-        if not imported_data.get(import_key):  # pragma: no cover
+    download_ids = {}
+    for imported_item in imported_items:
+        download_id = (
+            mapped_history["importedRel"]
+            .get(
+                imported_item["file"]["relative"],
+                {},
+            )
+            .get("downloadId")
+        )
+        if download_id:
             continue
-        for mapped_names in (mapped_history, download_ids_by_name):
-            if mapped_names[import_key].get(imported_data[import_key]):
-                return mapped_names[import_key][imported_data[import_key]]
 
-    logger.error(
-        "Could not lookup download item by names: %s",
-        imported_item["file"]["path"],
-    )
-    return None
+        imported_data = mapped_history["importedRel"].get(
+            imported_item["file"]["relative"],
+            {},
+        )
+        for import_key in import_keys:
+            if not (import_name := imported_data.get(import_key)):  # pragma: no cover
+                continue
+
+            for mapped_names in (mapped_history, download_ids_by_name):
+                if download_id := download_ids.get(import_key, {}).get(
+                    import_name
+                ):  # pragma: no cover
+                    logger.debug(
+                        "Reusing previous download item %r name lookup, %r: %s",
+                        import_key,
+                        import_name,
+                        imported_item["file"]["path"],
+                    )
+                elif download_id := mapped_names[import_key].get(import_name):
+                    logger.info(
+                        "Matched download item by %r name, %r: %s",
+                        import_key,
+                        import_name,
+                        imported_item["file"]["path"],
+                    )
+                    download_ids.setdefault(import_key, {}).setdefault(
+                        import_name,
+                        download_id,
+                    )
+
+                if download_id:
+                    mapped_history["importedRel"][
+                        imported_item["file"]["relative"]
+                    ].setdefault("downloadId", download_id)
+                    break
+
+            if download_id:
+                break
+
+        else:
+            logger.error(
+                "Could not lookup download item by names: %s",
+                imported_item["file"]["path"],
+            )
+
+    return download_ids
 
 
 def maybe_add_download_item(

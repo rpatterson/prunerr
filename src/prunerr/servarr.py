@@ -283,11 +283,14 @@ class PrunerrServarrInstance:
         for download_id, imported_relatives in download_ids.items():
             # Next, ensure all download hashes are in the download client, re-adding the
             # items if necessary:
-            maybe_add_download_item(
-                download_items_by_id,
-                download_ids_by_name,
-                download_id,
-                mapped_history["downloadId"].get(download_id, {}),
+            need_verify = (
+                maybe_add_download_item(
+                    download_items_by_id,
+                    download_ids_by_name,
+                    download_id,
+                    mapped_history["downloadId"].get(download_id, {}),
+                )
+                is not None
             )
 
             # Finally, hard link imported files into the download items:
@@ -297,6 +300,7 @@ class PrunerrServarrInstance:
                         data_paths,
                         pathlib.Path(root_item["path"]),
                         imported_relatives,
+                        need_verify=need_verify,
                     ),
                 )
         return linked_files
@@ -727,7 +731,7 @@ def maybe_add_download_item(
             "Skipping already added torrent: %s",
             download_items_by_id[download_id][0].name,
         )
-        return download_items_by_id[download_id][0]
+        return None
     if not download_urls:  # pragma: no cover
         logger.error(
             "No grab history found for download item ID/hash: %s",

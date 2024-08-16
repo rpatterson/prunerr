@@ -387,18 +387,25 @@ class PrunerrServarrInstance:
                 )
 
             if download_id := import_record.get("downloadId"):
-                grab_record = imported_item["history"]["grabbed"]
-                # Map download client names download item IDs to its imported files:
-                imports_by_download.setdefault(
-                    grab_record["data"]["downloadClientName"],
-                    {},
-                ).setdefault(download_id, {}).setdefault(
-                    grab_record["data"]["downloadUrl"],
-                    [],
-                ).append(
-                    imported_item,
-                )
-
+                if (grab_record := imported_item["history"]["grabbed"]) is not None:
+                    # Map download client names download item IDs to its imported files:
+                    imports_by_download.setdefault(
+                        grab_record["data"]["downloadClientName"],
+                        {},
+                    ).setdefault(download_id, {}).setdefault(
+                        grab_record["data"]["downloadUrl"],
+                        [],
+                    ).append(
+                        imported_item,
+                    )
+                else:  # pragma: no cover
+                    # I found at least one real-world example of this. I'm guessing this
+                    # happens when importing a download item that was added to the
+                    # download client outside of Servarr:
+                    logger.warning(
+                        "No grab history for import history with download hash: %s",
+                        imported_item["file"]["path"],
+                    )
             else:
                 logger.warning(
                     "No download hash found, checking download root name: %s",

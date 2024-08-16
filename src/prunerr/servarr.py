@@ -432,10 +432,12 @@ class PrunerrServarrInstance:
                         imported_item,
                     )
                 else:  # pragma: no cover
-                    # I found at least one real-world example of this. I'm guessing this
-                    # happens when importing a download item that was added to the
-                    # download client outside of Servarr:
-                    logger.warning(
+                    # I found at least two real-world examples of this. I'm guessing
+                    # this happens when importing a download item that was added to the
+                    # download client outside of Servarr. I think this can also happen
+                    # when a multi-season pack requires manual intervention and ends up
+                    # importing more files than it was grabbed for:
+                    logger.debug(
                         "No grab history for import history with download hash: %s",
                         imported_item["file"]["path"],
                     )

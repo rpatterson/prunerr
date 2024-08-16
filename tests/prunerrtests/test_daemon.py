@@ -11,7 +11,6 @@ Tests covering the Prunerr `daemon` sub-command.
 import os
 import pathlib
 import time
-import socket
 
 from unittest import mock
 
@@ -49,7 +48,7 @@ def mock_network_retry_response(
     """
     Raise an exception while running `exec` that `daemon` catches.
     """
-    raise socket.error("Temporary network connection error")
+    raise ConnectionError("Temporary network connection error")
 
 
 def mock_exit_daemon_response(

@@ -351,6 +351,8 @@ class PrunerrRunner:
                 # Run the `exec` sub-command as the inner loop
                 self.exec_()
             except utils.RETRY_EXC_TYPES as exc:  # pragma: no cover
+                # TODO: If `ValueError`, check if it's from `transmission_rpc` and
+                # related to an interrupted RPC response, otherwise re-raise.
                 logger.error(
                     "Connection error while updating from server: %s",
                     exc,

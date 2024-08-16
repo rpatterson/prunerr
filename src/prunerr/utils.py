@@ -11,7 +11,6 @@ Useful to avoid circular imports.
 """
 
 import os
-import socket
 import json
 import urllib.parse
 import logging
@@ -44,7 +43,7 @@ POST_MORTEM = (  # noqa: F841
 )
 
 RETRY_EXC_TYPES = (
-    socket.error,
+    ConnectionError,
     transmission_rpc.error.TransmissionError,
     arrapi.exceptions.ConnectionFailure,
     # Can be raised by `transmission_rpc` when deserializing JSON from an interrupted

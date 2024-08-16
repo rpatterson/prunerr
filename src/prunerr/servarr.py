@@ -482,7 +482,11 @@ class PrunerrServarrInstance:
                 ].download_client
                 break
         else:
-            logger.error(
+            # At lease one use case leads to this, existing files added to the library
+            # outside of Servarr. IOW, when files are put in place and then scanned by
+            # Servarr without ever having grabbed or imported them. This will be true
+            # for all existing files in place before "installing" Servarr:
+            logger.warning(
                 "No import record found for file: %s",
                 imported_item["file"]["path"],
             )

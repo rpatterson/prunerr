@@ -495,9 +495,24 @@ class PrunerrServarrInstance:
                 and history_record["downloadId"] == import_record["downloadId"]
             ):
                 grab_record = history_record
-                grab_record["data"]["downloadClient"] = self.download_client_names[
+                if (
                     grab_record["data"]["downloadClientName"]
-                ].download_client
+                    in self.download_client_names
+                ):
+                    grab_record["data"]["downloadClient"] = self.download_client_names[
+                        grab_record["data"]["downloadClientName"]
+                    ].download_client
+                else:  # pragma: no cover
+                    logger.warning(
+                        "Download client name not found, defaulting to first: %s",
+                        grab_record["data"]["downloadClientName"],
+                    )
+                    grab_record["data"]["downloadClient"] = list(
+                        self.download_client_names.values(),
+                    )[0]
+                    grab_record["data"]["downloadClientName"] = list(
+                        self.download_client_names.keys(),
+                    )[0]
                 break
         else:
             # At lease one use case leads to this, existing files added to the library

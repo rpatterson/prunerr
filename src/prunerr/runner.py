@@ -486,7 +486,7 @@ class PrunerrRunner:
                 item_files.update(
                     item_file.path
                     for item_file in download_item.files
-                    if item_file.path.exists()
+                    if item_file.selected and item_file.path.exists()
                 )
 
         # Aggregate all the download item directories across all download clients.  Some

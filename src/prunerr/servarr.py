@@ -439,7 +439,7 @@ class PrunerrServarrInstance:
                         "No grab history for import history with download hash: %s",
                         imported_item["file"]["path"],
                     )
-            else:
+            elif "downloadName" in import_record["data"]:  # pragma: no cover
                 logger.warning(
                     "No download hash found, checking download root name: %s",
                     imported_item["file"]["path"],

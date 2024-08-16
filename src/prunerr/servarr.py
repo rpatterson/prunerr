@@ -651,6 +651,21 @@ def maybe_link_file(source, target):
     :param target: The path to hard link the file to.
     :return: ``True`` if the source was hard linked.
     """
+    try:
+        source.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:  # pragma: no cover
+        logger.exception(
+            "Error creating download item directory: %s",
+            source.parent,
+        )
+        return False
+    if source.parent.stat().st_dev != target.parent.stat().st_dev:  # pragma: no cover
+        logger.exception(
+            "Download item on different filesystem: %r -> %r",
+            str(source),
+            str(target),
+        )
+        return False
     if source.exists():
         if source.samefile(target):
             logger.debug(
@@ -669,7 +684,6 @@ def maybe_link_file(source, target):
         str(source),
         str(target),
     )
-    source.parent.mkdir(parents=True, exist_ok=True)
     source.hardlink_to(target)
     return True
 

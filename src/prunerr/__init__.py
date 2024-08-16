@@ -169,7 +169,7 @@ parser_export.add_argument(
     "-d",
     dest="extra_data_paths",
     type=pathlib.Path,
-    nargs="*",
+    action="append",
     help="""\
 Additional paths to search for existing download item data beyond the usual
 `**/downloads/` and `**/seeding/` directories.

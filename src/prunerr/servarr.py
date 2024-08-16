@@ -526,6 +526,11 @@ class PrunerrServarrInstance:
                     "downloadId"
                 ] = download_items[0].hashString
                 for download_ids in imports_by_download.values():
+                    logger.warning(
+                        "Matched download root name to download item: %r -> %r",
+                        download_name,
+                        download_items[0],
+                    )
                     download_ids.setdefault(
                         download_items[0].hashString,
                         {},

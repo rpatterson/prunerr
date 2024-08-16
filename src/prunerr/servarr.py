@@ -333,12 +333,16 @@ class PrunerrServarrInstance:
                     servarr_download_client.download_dir,
                 ]
             )
-        # Remove duplicates but preserve order:
-        return list(
-            dict.fromkeys(
-                data_paths + extra_data_paths,
+            # Add the path suffix specific to this Servarr instance to each of the extra
+            # data paths:
+            servarr_suffix = servarr_download_client.download_dir.relative_to(
+                servarr_download_client.download_client.client.session.download_dir,
             )
-        )
+            data_paths.extend(
+                extra_data_path / servarr_suffix for extra_data_path in extra_data_paths
+            )
+        # Remove duplicates but preserve order:
+        return list(dict.fromkeys(data_paths))
 
     def map_downloads_to_files(self, extra_data_paths=None):
         """

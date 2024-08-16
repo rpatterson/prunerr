@@ -274,15 +274,7 @@ sub-command performs the following operations.
       ``download-clients/*/max-download-bandwidth`` and
       ``download-clients/*/min-download-time-margin``
 
-   #. If there's sufficient disk space, remove any bandwidth limits set previously and
-      continue to the next operation if any.
-
-   #. Otherwise, delete the item.
-
-   If there's still not enough disk space after going through all the groups, then stop
-   downloading by setting the download bandwidth limit to ``0``. IOW, keep seeding, but
-   no more downloading until a future ``$ prunerr free-space`` run is able to free
-   sufficient space.
+   #. If there's insufficient disk space, delete the item.
 
    For the orphans group, delete smaller items first to minimize the amount of
    re-downloading needed should the user notice and correct any issues resulting in the
@@ -291,6 +283,12 @@ sub-command performs the following operations.
    For the other groups delete items in the order determined by the configured
    ``indexers/priorities`` indexer order then by the configured operations for that
    item's indexer.
+
+   For those times when there's nothing Prunerr can delete to free disk space, most
+   users' download clients should also probably pause downloading when disk space drops
+   significantly below this margin. Use `the provided Transmission pause download
+   script`_ and, optionally, `integrate it into your Docker Compose project via a cron
+   job`_ or see those as examples.
 
 
 ****************************************************************************************
@@ -357,6 +355,10 @@ References
 
 .. _`the example configuration`:
    https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
+.. _`the provided Transmission pause download script`:
+   https://gitlab.com/rpatterson/prunerr/blob/main/transmission/usr/local/bin/transmission-pause-download
+.. _`integrate it into your Docker Compose project via a cron job`:
+   https://gitlab.com/rpatterson/prunerr/blob/main/transmission/etc/crontabs/abc
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/prunerr

@@ -30,15 +30,20 @@ download-clients:
     ## client](https://transmission-rpc.readthedocs.io/en/stable/client.html#timeouts):
     timeout: 30
     ## Calculate an appropriate margin of disk space to keep free when deciding whether to
-    ## prune download items based the maximum download bandwidth/speed in Mbps and the
-    ## amount of time in seconds at that rate for which download clients should be able to
-    ## continue downloading without exhausting disk space.
+    ## prune download items. This should be a wider margin, larger, than the margin for
+    ## when to pause downloading in
+    ## `./transmission/usr/local/bin/transmission-pause-download` so that Prunerr can
+    ## delete un-imported items before pausing download. It should be at least as much
+    ## wider as the client might download in the time it might take for Prunerr's
+    ## requests to be processed by the client under worst case conditions. An example of
+    ## worst case conditions would be actively downloading, and thus hashing, at full
+    ## speed, while also verifying corrupt torrents, for maximum CPU usage. Under those
+    ## conditions UIs requests have exceeded a 2 minute timeout, so double that then
+    ## doubled again:
     ## 100 Mb/s, e.g. dedicated ethernet, default
     max-download-bandwidth: 100
-    ## 60 seconds * 60 minutes = 1 hour, default
-    # min-download-time-margin: 3600
-    ## 60 seconds * 10 daemon poll margin = 10 minutes
-    min-download-time-margin: 600
+    ## 4 x the worst case request processing time, 8 minutes * 60 seconds/minute:
+    min-download-time-margin: 480
 indexers:
   ## Determine the indexer/tracker for download items by matching the hostnames of
   ## tracker announce and scrape URLs.  The matched indexer name,

@@ -18,11 +18,6 @@ Required
 #. Use YAML anchors and merge keys to demonstrate how to share configuration between
    indexers?
 
-#. Move pausing download out of prunerr into the Transmission container via a
-   ``periodic`` script. Prevent Transmission from exhausting space when Prunerr is
-   down. Establish a margin between when it pauses download and when Prunerr starts
-   deleting items.
-
 #. Move critical disk space container shutdown into a ``periodic`` script.
 
 #. Extend critical disk space container shutdown to the Transmission data filesystem.
@@ -66,7 +61,7 @@ High priority
    episodes from another. Maybe extend the existing operations support to write CSV
    report files?
 
-#. Send a notification when no download item can be deleted and downloading is paused:
+#. Send a notification when disk space is low and no download item can be deleted:
 
    Perhaps we can use the Servarr "Connect" API?
 

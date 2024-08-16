@@ -4,3 +4,9 @@
 
 # min   hour    day     month   weekday command
 0       3       *       *       *       /app/blocklist-update.sh 2>&1
+
+# Use `# timeout ...` to prevent jobs from stacking up endlessly and exhausting
+# resources when the `# transmission-daemon` is slow to respond:
+
+# Pause downloading when the `downloadDir` is getting low on space:
+*    *       *       *       *       /usr/bin/timeout -v --kill-after=30m 25m /usr/local/bin/transmission-pause-download

@@ -7,6 +7,7 @@ Test Prunerr's interaction with download items.
 
 import os
 import pathlib
+import logging
 
 from unittest import mock
 
@@ -35,8 +36,38 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         self.mock_responses()
         runner.update()
         self.assertEqual(
-            runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[0].name,
+            runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[0].root_name,
             "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+            "Wrong root name for download item with no files",
+        )
+
+    def test_download_item_multiple_roots(self):
+        """
+        Download items log an error if the item has multiple root directories.
+        """
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        self.mock_responses()
+        runner.update()
+        with self.assertLogs(
+            prunerr.downloaditem.logger,
+            level=logging.ERROR,
+        ) as logged_msgs:
+            root_name = (
+                runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[1].root_name
+            )
+        self.assertEqual(
+            len(logged_msgs.records),
+            1,
+            "Wrong number of download item logged records",
+        )
+        self.assertIn(
+            "multiple roots",
+            logged_msgs.records[0].message,
+            "Wrong logged record message",
+        )
+        self.assertEqual(
+            root_name,
+            "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
             "Wrong root name for download item with no files",
         )
 

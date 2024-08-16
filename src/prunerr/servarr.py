@@ -201,8 +201,7 @@ class PrunerrServarrInstance:
         """
         data_paths = self.collect_data_paths(extra_data_paths)
         download_items_by_id: dict = {}
-        download_ids_by_name: dict = {"sourceTitle": {}}
-        download_ids_by_name["downloadRootName"] = download_ids_by_name["sourceTitle"]
+        download_ids_by_name: dict = {"sourceTitle": {}, "downloadRootName": {}}
         for download_client in self.download_clients.values():
             for item in download_client.download_client.items:
                 download_items_by_id.setdefault(item.hashString.upper(), []).append(
@@ -210,6 +209,10 @@ class PrunerrServarrInstance:
                 )
                 download_ids_by_name["sourceTitle"].setdefault(
                     item.name,
+                    item.hashString.upper(),
+                )
+                download_ids_by_name["downloadRootName"].setdefault(
+                    item.root_name,
                     item.hashString.upper(),
                 )
 
@@ -765,6 +768,10 @@ def maybe_add_download_item(
             ).append(download_item)
             download_ids_by_name["sourceTitle"].setdefault(
                 download_item.name,
+                download_item.hashString.upper(),
+            )
+            download_ids_by_name["downloadRootName"].setdefault(
+                download_item.root_name,
                 download_item.hashString.upper(),
             )
             return download_item

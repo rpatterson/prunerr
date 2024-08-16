@@ -14,7 +14,7 @@
     "config-dir": "/config",
     "dht-enabled": true,
     "download-dir": "/media/Library/downloads",
-    "download-dir-free-space": 7327449088,
+    "download-dir-free-space": 6291455000,
     "download-queue-enabled": false,
     "download-queue-size": 5,
     "encryption": "tolerated",

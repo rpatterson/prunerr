@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+# Pause downloading by setting the download speed limit
+#
+# Usage:
+#  /usr/local/bin/transmission-pause-download [DOWNLOAD_MIN_SPACE DOWNLOAD_DIR]
+
+set -eu -o pipefail
+if [ ! -z "${DEBUG:=}" ]
+then
+    # Echo commands for easier debugging
+    export PS4='+$(basename "${0}"):${LINENO}+'
+    set -x
+fi
+
+
+# Calculate an appropriate margin of disk space to keep free. This should be at least as
+# much space as the client might download in the time it might take for the client to
+# actually process the pause download request under worst case conditions. An example of
+# worst case conditions would be actively downloading, and thus hashing, at full speed,
+# while also verifying corrupt torrents, for maximum CPU usage. Under those conditions
+# UIs requests have exceeded a 10 minute timeout, so double that:
+# - Dedicated ethernet: 100 Mb/s
+# - Convert to bytes: 8 b/B
+# - Convert to Kb/s: 1024 KB/MB
+# - Time margin: 20 minutes
+# - Convert to seconds: 60 seconds/minutes
+# Total:
+#     $ echo $(( ( 100 / 8 ) * 1024 * 20 * 60 ))
+#     14745600
+# Or ~23 Gb:
+DOWNLOAD_MIN_SPACE="${DOWNLOAD_MIN_SPACE:-14745600}"
+
+# Which filesystems to check for sufficient free space:
+DOWNLOAD_DIR="${DOWNLOAD_DIR:-/media/Library/}"
+
+
+main() {
+    download_min_space="${1:-${DOWNLOAD_MIN_SPACE}}"
+    download_dir="${2:-${DOWNLOAD_DIR}}"
+
+    available_space="$(df --output="avail" "${download_dir}" | tail -n +2)"
+    if test "${available_space}" -lt "${download_min_space}"
+    then
+	until transmission-remote --downlimit "0" > "/dev/null"
+	do
+	    sleep 1
+	done
+    else
+	until transmission-remote --no-downlimit > "/dev/null"
+	do
+	    sleep 1
+	done
+    fi
+}
+
+main "$@"

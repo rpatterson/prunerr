@@ -72,10 +72,6 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Not enough free space before 'imported sufficient' `free-space` run",
         )
-        self.assertFalse(
-            imported_sufficient_before_session["speed-limit-down-enabled"],
-            "Download limit enabled before 'imported sufficient' `free-space` run",
-        )
         prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
         self.assert_request_mocks(imported_sufficient_request_mocks)
         self.assertFalse(
@@ -113,10 +109,6 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             imported_insufficient_before_session["download-dir-free-space"],
             self.min_free_space,
             "Too much free space before 'imported insufficient' `free-space` run",
-        )
-        self.assertFalse(
-            imported_insufficient_before_session["speed-limit-down-enabled"],
-            "Download limit enabled before 'imported insufficient' `free-space` run",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
         self.assert_request_mocks(imported_insufficient_request_mocks)
@@ -156,10 +148,6 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             upgraded_insufficient_before_session["download-dir-free-space"],
             self.min_free_space,
             "Too much free space before 'upgraded insufficient' `free-space` run",
-        )
-        self.assertTrue(
-            upgraded_insufficient_before_session["speed-limit-down-enabled"],
-            "Download limit disabled before 'upgraded insufficient' `free-space` run",
         )
         prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
         self.assert_request_mocks(upgraded_insufficient_request_mocks)

@@ -275,9 +275,9 @@ class PrunerrDownloadClient:
 
         return size
 
-    def free_space_maybe_resume(self):
+    def free_space_check(self):
         """
-        Determine if there's sufficient free disk space, resume downloading if paused.
+        Determine if there's sufficient free disk space.
         """
         total_remaining_download = sum(
             item.leftUntilDone for item in self.items if item.status == "downloading"
@@ -314,7 +314,6 @@ class PrunerrDownloadClient:
                     )
                 ),
             )
-            self.resume_downloading(self.client.session)
             return True
         logger.debug(
             "Insufficient free space to continue downloading: "
@@ -333,18 +332,6 @@ class PrunerrDownloadClient:
             ),
         )
         return False
-
-    def resume_downloading(self, session):
-        """
-        Resume downloading if it's been stopped.
-        """
-        speed_limit_down = self.config["max-download-bandwidth"]
-        if session.speed_limit_down_enabled and (
-            not speed_limit_down or speed_limit_down != session.speed_limit_down
-        ):
-            kwargs = {"speed_limit_down_enabled": False}
-            logger.info("Resuming downloading: %s", kwargs)
-            self.client.set_session(**kwargs)
 
     def find_unregistered(self):  # noqa: V105
         """

@@ -32,6 +32,9 @@ services:
       #   :/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
       # Support adding cron jobs from the compose project:
       # - "./transmission/etc/crontabs/:/etc/crontabs/"
+      # Pause downloading when the `downloadDir` is getting low on space:
+      # - "./transmission/usr/local/bin/transmission-pause-download:\
+      #   /usr/local/bin/transmission-pause-download"
       # Intended for use in the image
       - "./transmission/config/:/config/"
       # The volume on which Transmission's `download-dir` is stored:

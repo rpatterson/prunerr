@@ -360,10 +360,6 @@ class PrunerrRunner:
                     - download_client.client.session.download_dir_free_space,
                 ),
             )
-            kwargs = {"speed_limit_down": 0, "speed_limit_down_enabled": True}
-            # TODO: Notification when downloading is paused
-            logger.info("Stopping downloading: %s", kwargs)
-            download_client.client.set_session(**kwargs)
 
         return results
 
@@ -423,7 +419,7 @@ class PrunerrRunner:
         return {
             download_client_url: download_client
             for download_client_url, download_client in self.download_clients.items()
-            if not download_client.free_space_maybe_resume()
+            if not download_client.free_space_check()
         }
 
     def free_space_remove_items(

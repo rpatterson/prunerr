@@ -39,10 +39,6 @@ download-clients:
     # min-download-time-margin: 3600
     ## 60 seconds * 10 daemon poll margin = 10 minutes
     min-download-time-margin: 600
-    ## Should the maximum download bandwidth/speed be set in the download client as a
-    ## limit when resuming downloads after previously stopping?  May be useful for QoS to
-    ## optimize real download throughput.
-    # resume-set-download-bandwidth-limit: false
 indexers:
   ## Determine the indexer/tracker for download items by matching the hostnames of
   ## tracker announce and scrape URLs.  The matched indexer name,

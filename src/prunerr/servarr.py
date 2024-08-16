@@ -305,6 +305,11 @@ class PrunerrServarrInstance:
                 imported_item["file"]["path"] = pathlib.Path(
                     imported_item["file"]["path"],
                 )
+                imported_item["file"]["relative"] = imported_item["file"][
+                    "path"
+                ].relative_to(
+                    imported_item["file"]["path"].parents[type_map["file_depth"] - 1]
+                )
                 yield imported_item
 
     def collect_data_paths(self, extra_data_paths=None):
@@ -445,12 +450,21 @@ class PrunerrServarrInstance:
                 history_record["data"]["importedPath"] = pathlib.Path(
                     history_record["data"]["importedPath"],
                 )
+                history_record["data"]["importedRel"] = history_record["data"][
+                    "importedPath"
+                ].relative_to(
+                    history_record["data"]["importedPath"].parents[
+                        type_map["file_depth"] - 1
+                    ]
+                )
                 history_record["data"]["droppedPath"] = pathlib.Path(
                     history_record["data"]["droppedPath"],
                 )
+                # Match on relative paths to tolerate items imported before Servarr
+                # renamed the top-level series/movie:
                 if (
-                    history_record["data"]["importedPath"]
-                    == imported_item["file"]["path"]
+                    history_record["data"]["importedRel"]
+                    == imported_item["file"]["relative"]
                 ):
                     import_record = history_record
                     if download_id := import_record.get("downloadId"):

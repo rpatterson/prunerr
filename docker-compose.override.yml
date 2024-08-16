@@ -12,6 +12,8 @@ services:
       # Exit the container if the core `s6-overlay` service fails
       - "./transmission/etc/s6-overlay/s6-rc.d/svc-transmission/finish\
         :/etc/s6-overlay/s6-rc.d/svc-transmission/finish"
+      # Support adding cron jobs from the compose project:
+      - "./transmission/etc/crontabs/:/etc/crontabs/"
 
   sonarr:
     container_name: "prunerr-devel-sonarr"

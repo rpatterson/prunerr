@@ -175,9 +175,12 @@ class PrunerrOperations:
         """
         Return aggregated values from item files.
         """
-        file_attr = operation_config.get("name", "size")
-        aggregation = operation_config.get("aggregation", "portion")
-        total = operation_config.get("total", "size_when_done")
+        quantity = operation_config.get("name")
+        filter_attrs = operation_config.get("filter-attrs", [])
+        path_patterns = operation_config.get("path-patterns", [])
+        aggregation = operation_config.get("aggregation")
+        if aggregation not in {None, "portion"}:
+            raise ValueError(f"Unknown item files aggregation {aggregation!r}")
 
         if not download_item.files:
             if download_item.hashString.upper() not in self.seen_empty_files:
@@ -188,30 +191,38 @@ class PrunerrOperations:
                 self.seen_empty_files.add(download_item.hashString.upper())
             return False
 
-        if patterns := operation_config.get("patterns", []):
-            matching_files = []
-            for pattern in patterns:
-                matching_files.extend(
-                    item_file
-                    for item_file in download_item.files
-                    if re.fullmatch(pattern, item_file.name)
+        wanted_files = matching_files = [
+            item_file for item_file in download_item.files if item_file.selected
+        ]
+        for filter_attr in filter_attrs:
+            matching_files = [
+                matching_file
+                for matching_file in matching_files
+                if getattr(matching_file, filter_attr)
+            ]
+        if path_patterns:
+            pattern_files = []
+            for pattern in path_patterns:
+                pattern_files.extend(
+                    matching_file
+                    for matching_file in matching_files
+                    if re.fullmatch(pattern, matching_file.name)
                 )
-        else:
-            matching_files = download_item.files
+            matching_files = pattern_files
 
-        if aggregation == "count":
-            sort_value = len(matching_files)
-        elif aggregation in {"sum", "portion"}:
-            sort_value = sum(
-                getattr(matching_file, file_attr) for matching_file in matching_files
-            )
-            if aggregation == "portion":
-                sort_value = (
-                    0
-                    if getattr(download_item, total)
-                    else sort_value / getattr(download_item, total)
+        sort_value = (
+            sum(getattr(matching_file, quantity) for matching_file in matching_files)
+            if quantity
+            else len(matching_files)
+        )
+
+        if aggregation == "portion":
+            if quantity:
+                total = sum(
+                    getattr(wanted_file, quantity) for wanted_file in wanted_files
                 )
-        else:
-            raise ValueError(f"Unknown item files aggregation {aggregation!r}")
+            else:  # pragma: no cover
+                total = len(wanted_files)
+            sort_value = 0 if not total else sort_value / total
 
         return sort_value

@@ -595,7 +595,10 @@ class PrunerrServarrInstance:
                 # Map download item IDs/hashes to download URLs if download items need
                 # to be re-added to the download client:
                 mapped_history["downloadId"][history_record["downloadId"]] = {
-                    history_record["data"]["downloadUrl"]: download_client,
+                    history_record["data"]["downloadUrl"]: {
+                        "downloadClient": download_client,
+                        "nzbInfoUrl": history_record["data"]["nzbInfoUrl"],
+                    },
                 }
 
             else:  # pragma: no cover
@@ -755,17 +758,18 @@ def maybe_add_download_item(
         return None
 
     # Try each download URL from the grab history, most recent first:
-    for download_url, download_client in download_urls.items():
+    for download_url, download_data in download_urls.items():
+        logger.info("Downloading release: %s", download_url)
         try:
-            download_item = download_client.download_client.add_torrent(
+            download_item = download_data["downloadClient"].download_client.add_torrent(
                 download_url,
                 paused=True,
-                download_dir=str(download_client.seeding_dir),
+                download_dir=str(download_data["downloadClient"].seeding_dir),
             )
         except requests.exceptions.RequestException:  # pragma: no cover
             logger.exception(
                 "Exception downloading torrent: %s",
-                download_url,
+                download_data["nzbInfoUrl"],
             )
             continue
         except transmission_rpc.error.TransmissionError:  # pragma: no cover
@@ -773,7 +777,7 @@ def maybe_add_download_item(
             # URL may no longer be valid, IOW 404:
             logger.exception(
                 "Exception adding torrent: %s",
-                download_url,
+                download_data["nzbInfoUrl"],
             )
             continue
         else:

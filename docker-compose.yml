@@ -105,6 +105,8 @@ services:
       # Preserve shell history inside containers, requires `$ touch
       # ./home/.bash_history`:
       - "./home/.bash_history:/home/prunerr/.bash_history"
+      # Access to Transmission's data for the `$ prunerr re-add` sub-command:
+      - "./transmission/config/:/config/"
     restart: "unless-stopped"
 
 volumes:

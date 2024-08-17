@@ -178,6 +178,24 @@ Additional paths to search for existing download item data beyond the usual
 parser_export.set_defaults(command=export)
 
 
+def re_add(  # pylint: disable=missing-function-docstring,missing-return-doc
+    runner,
+    *args,
+    **kwargs,
+) -> dict:
+    runner.update()
+    return runner.re_add(*args, **kwargs)
+
+
+re_add.__doc__ = prunerr.runner.PrunerrRunner.re_add.__doc__
+parser_re_add = subparsers.add_parser(
+    "re-add",
+    help=re_add.__doc__.strip(),  # type: ignore
+    description=re_add.__doc__.strip(),  # type: ignore
+)
+parser_re_add.set_defaults(command=re_add)
+
+
 def exec_(  # pylint: disable=missing-function-docstring,missing-return-doc
     runner,
     *args,

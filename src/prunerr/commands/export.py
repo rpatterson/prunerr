@@ -684,25 +684,21 @@ def maybe_add_download_item(
 
     # Try each download URL from the grab history, most recent first:
     for download_url, download_data in download_urls.items():
-        logger.info("Downloading release: %s", download_url)
         try:
             download_item = download_data["downloadClient"].download_client.add_torrent(
                 download_url,
                 paused=True,
                 download_dir=str(download_data["downloadClient"].seeding_dir),
             )
-        except requests.exceptions.RequestException:  # pragma: no cover
-            logger.exception(
-                "Exception downloading torrent: %s",
-                download_data["nzbInfoUrl"],
-            )
-            continue
-        except transmission_rpc.error.TransmissionError:  # pragma: no cover
+        except (
+            requests.exceptions.RequestException,
+            transmission_rpc.error.TransmissionError,
+        ):  # pragma: no cover
             # Tolerate exceptions adding torrents because the download
             # URL may no longer be valid, IOW 404:
             logger.exception(
                 "Exception adding torrent: %s",
-                download_data["nzbInfoUrl"],
+                download_data.get("nzbInfoUrl") or download_url,
             )
             continue
         else:

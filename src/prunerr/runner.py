@@ -20,6 +20,7 @@ import prunerr.downloadclient
 import prunerr.servarr
 from . import utils
 from .utils import cached_property
+from .commands import export
 
 logger = logging.getLogger(__name__)
 
@@ -279,8 +280,9 @@ class PrunerrRunner:
 
         # The Servarr instances drive the export process:
         for servarr_url, servarr in self.servarrs.items():
-            servarr_export_results = servarr.export(extra_data_paths=extra_data_paths)
-            if servarr_export_results:
+            command_run = export.ExportCommandRun(servarr)
+            command_run.update(extra_data_paths=extra_data_paths)
+            if servarr_export_results := command_run():
                 export_results[servarr_url] = servarr_export_results
 
         # Report results if any:

@@ -273,7 +273,9 @@ class PrunerrTestCase(
             if not isinstance(item, dict):
                 continue
             for key, value in list(item.items()):
-                if isinstance(value, (str)) and value.startswith("/media/"):
+                if isinstance(value, (str)) and (
+                    value.startswith("/media/") or value.startswith("/config/")
+                ):
                     # Keys containing storage paths in this object
                     item[key] = f"{self.tmp_path}{value}"
                 elif isinstance(value, (dict, list)):

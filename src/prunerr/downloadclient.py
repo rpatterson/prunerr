@@ -178,6 +178,36 @@ class PrunerrDownloadClient:
                 results[item.hashString] = item_results
         return results
 
+    def re_add(self) -> list:
+        """
+        Remove and re-add all download items with nothing downloaded.
+
+        :return: List all the items that were re-added to the download client.
+        """
+        seeding_dir = (
+            pathlib.Path(self.client.session.download_dir).parent
+            / self.SEEDING_DIR_BASENAME
+        )
+        # Transmission seems to verify items in the order of their indexes, in the order
+        # they were added, so reverse the order to avoid clashing with items in the
+        # process of verifying:
+        re_add_results = []
+        for item in reversed(self.items):
+            # Skip items from the older full-list response first for speed:
+            if not item.re_add_check(seeding_dir):  # pragma: no cover
+                continue
+            # Also get the latest item data in case it has finished verifying while
+            # previous items were re-added:
+            item.update()
+            if not item.re_add_check(seeding_dir):  # pragma: no cover
+                logger.debug(
+                    "Not re-adding download item whose metadata changed: %r",
+                    item,
+                )
+                continue
+            re_add_results.append(item.re_add().name)
+        return re_add_results
+
     # Other, non-sub-command methods
 
     def sort_items_by_tracker(self, items):

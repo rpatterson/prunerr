@@ -190,7 +190,7 @@ class ExportServarrRootItem:
                 maybe_add_download_item(
                     self.command_run.download_ids,
                     download_id,
-                    self.download_ids.get(download_id, {}),
+                    self.download_ids.get(download_id, {}).get("downloadUrl", {}),
                 )
                 is not None
             )
@@ -359,14 +359,6 @@ class ExportServarrRootItem:
                         self.command_run.servarr.type_map["file_depth"] - 1
                     ],
                 )
-                if (
-                    # Not for one of the currently imported paths:
-                    imported_relative not in self.imported_items
-                    # Older history for an imported path that has already found the
-                    # most recent import history:
-                    or imported_relative in self.imported_relatives
-                ):  # pragma: no cover
-                    continue
                 self.update_import_record(history_record, imported_relative)
 
             elif history_record["eventType"] == self.GRAB_EVENT_TYPE:
@@ -397,10 +389,13 @@ class ExportServarrRootItem:
         :param imported_relative: The relative path to the imported file within the
             series/movie.
         """
-        imported_collated = self.imported_relatives[imported_relative] = {}
+        # Match on relative paths to tolerate items imported before Servarr renamed the
+        # top-level series/movie:
+        imported_collated = {}
 
         # Determine which part of the paths are from the download item:
         dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
+        download_root_name = None
         for data_path in self.command_run.data_paths:
             if data_path.resolve() in dropped_path.resolve().parents:
                 dropped_relative = dropped_path.resolve().relative_to(data_path)
@@ -408,14 +403,9 @@ class ExportServarrRootItem:
                 imported_collated["location"] = dropped_path.parents[
                     len(dropped_relative.parts) - 1
                 ]
-                imported_collated["downloadRootName"] = dropped_relative.parts[0]
-                # As a last resort, match the download item's root basename to a
-                # download item ID/hash:
-                if history_record.get("downloadId"):
-                    self.import_names["downloadRootName"].setdefault(
-                        imported_collated["downloadRootName"],
-                        history_record["downloadId"],
-                    )
+                download_root_name = imported_collated[
+                    "downloadRootName"
+                ] = dropped_relative.parts[0]
                 break
         else:
             logger.error(
@@ -423,18 +413,71 @@ class ExportServarrRootItem:
                 dropped_path,
             )
 
-        # The most common case, map an imported path to a download item ID/hash:
         if history_record.get("downloadId"):
-            # Match on relative paths to tolerate items imported before Servarr
-            # renamed the top-level series/movie:
+            # The most common case, map an imported path to a download item hash ID:
             imported_collated["downloadId"] = history_record["downloadId"]
+            # Also map the download item hash ID to collated data:
+            download_id_collated = self.download_ids.setdefault(
+                history_record["downloadId"],
+                {},
+            )
+
+            # As a last resort, match the download item's root basename to a download
+            # item ID/hash:
+            if download_root_name:
+                # Assume the older download item root basename is correct for the hash
+                # ID, overwrite any previous values:
+                self.import_names["downloadRootName"][
+                    download_root_name
+                ] = history_record["downloadId"]
+                if (
+                    download_id_collated.get("downloadRootName")
+                    and download_root_name != download_id_collated["downloadRootName"]
+                ):  # pragma: no cover
+                    # Corrupt Servarr download item history where the same download item
+                    # hash ID is on the import history records from different download
+                    # items. The only cases of this I've seen are when more recent
+                    # manual imports seem to get the download item hash ID from the
+                    # previous automated import they upgrade, so assume the older record
+                    # is the correct download item hash ID:
+                    logger.error(
+                        "Duplicate"
+                        " hash IDs for root basename, choosing older"
+                        ": %r -> %r",
+                        download_id_collated["downloadRootName"],
+                        download_root_name,
+                    )
+                    # When collating the older import history with the correct download
+                    # item hash ID, remove the wrong download item hash ID from the data
+                    # collated previously from the newer import history:
+                    for old_imported_relative in download_id_collated.get(
+                        "importedRel",
+                        [],
+                    ):
+                        old_imported_collated = self.imported_relatives.get(
+                            old_imported_relative,
+                            {},
+                        )
+                        old_imported_collated.pop("downloadId", None)
+                        old_imported_collated.pop("sourceTitle", None)
+                    download_id_collated.pop("importedRel", None)
+                # Also map the download item hash ID to the root basename for comparison
+                # with older history later to identify incorrect download item hash IDs:
+                download_id_collated["downloadRootName"] = download_root_name
+
+            # Earlier, when collating the newer import history with the incorrect
+            # download item hash ID, store a reference so we can remove that hash ID
+            # when collating the older, correct history later:
+            download_id_collated.setdefault("importedRel", []).append(imported_relative)
 
         # If the import history has no download item ID/hash, try to match on
         # the download item name in `sourceTitle`:
-        if history_record.get("sourceTitle"):
+        if history_record.get("sourceTitle"):  # pragma: no cover
             imported_collated["sourceTitle"] = history_record["sourceTitle"]
-        else:  # pragma: no cover
-            pass
+
+        # Only store collated history for the most recent import that's in the library:
+        if imported_relative in self.imported_items:  # pragma: no cover
+            self.imported_relatives.setdefault(imported_relative, imported_collated)
 
     def update_grab_record(
         self,
@@ -465,12 +508,16 @@ class ExportServarrRootItem:
 
         # Map download item IDs/hashes to download URLs if download items need
         # to be re-added to the download client:
-        self.download_ids[history_record["downloadId"]] = {
-            history_record["data"]["downloadUrl"]: {
+        self.download_ids.setdefault(history_record["downloadId"], {}).setdefault(
+            "downloadUrl",
+            {},
+        ).setdefault(
+            history_record["data"]["downloadUrl"],
+            {
                 "downloadClient": download_client,
                 "nzbInfoUrl": history_record["data"]["nzbInfoUrl"],
             },
-        }
+        )
 
     def lookup_download_ids(
         self,

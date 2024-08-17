@@ -488,13 +488,11 @@ class PrunerrDownloadItemFile:
         return None
 
     @cached_property  # noqa: V105
-    def size_imported(self):
+    def is_imported(self):
         """
-        Return the file's size if the file has more than one hard link.
+        Has this file been imported into the library by hard linking it elsewhere.
         """
-        if self.stat is not None and self.st_nlink > 1:
-            return self.st_size
-        return 0
+        return self.stat is not None and self.st_nlink > 1
 
 
 def maybe_link_file(source, target):

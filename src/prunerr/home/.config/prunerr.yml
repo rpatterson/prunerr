@@ -90,7 +90,12 @@ indexers:
           blacklist: true
         ## Remove download items containing archives to optimize seeding per disk space.
         - type: "files"
-          patterns:
+          ## The attribute of the download item's files whose value is the quantity to
+          ## measure:
+          name: "size"
+          ## Regular expressions matched against each file's path to decide which files
+          ## to measure:
+          path-patterns:
             - ".+\\.rar$"
             - ".+\\.r[0-9]+$"
             - ".+\\.zip$"
@@ -98,12 +103,9 @@ indexers:
             - ".+\\.gz$"
             - ".+\\.tgz$"
             - ".+\\.bz2$"
-          ## The attribute of the download item's files with those extension
-          # name: "size"  # Default
-          ## The portion of the download item's size from files with those extension
-          # aggregation: "portion"  # Default
-          # aggregation: "sum"
-          # aggregation: "count"  # `name` is ignored
+          ## Calculate the portion of matching the download item's size compared to the
+          ## size of all the files:
+          aggregation: "portion"
           ## TODO: Tune this value?
           maximum: 0.50
           remove: true
@@ -134,7 +136,8 @@ indexers:
           remove: true
           blacklist: true
         - type: "files"
-          patterns:
+          name: "size"
+          path-patterns:
             - ".+\\.rar$"
             - ".+\\.r[0-9]+$"
             - ".+\\.zip$"
@@ -142,6 +145,7 @@ indexers:
             - ".+\\.gz$"
             - ".+\\.tgz$"
             - ".+\\.bz2$"
+          aggregation: "portion"
           maximum: 0.50
           remove: true
           blacklist: true
@@ -193,7 +197,9 @@ indexers:
         ## imported, assumes that samples, extras, etc. won't consume more than 10% of
         ## the item's total size.
         - type: "files"
-          name: "size_imported"
+          name: "size"
+          filter-attrs:
+            - "is_imported"
           aggregation: "portion"
           reversed: true
           filter: true
@@ -226,7 +232,9 @@ indexers:
       operations:
         ## Delete download items that are the least imported into Servarr first.
         - type: "files"
-          name: "size_imported"
+          name: "size"
+          filter-attrs:
+            - "is_imported"
           aggregation: "portion"
           reversed: true
         ## Delete popular download items with a healthy number of seeders before

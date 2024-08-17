@@ -186,11 +186,12 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                 [
                     {
                         "type": "files",
-                        "aggregation": "count",
                     },
                 ],
                 self.item,
-            )[1][0],
+            )[
+                1
+            ][0],
             2,
             "Wrong item files count",
         )
@@ -204,7 +205,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                 [
                     {
                         "type": "files",
-                        "aggregation": "sum",
+                        "name": "size",
                     },
                 ],
                 self.item,

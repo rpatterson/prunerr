@@ -12,9 +12,10 @@ Prunerr interaction with Servarr instances.
 import dataclasses
 import time
 import urllib.parse
-import logging
 import typing
+import logging
 
+import requests
 import transmission_rpc
 import arrapi
 import arrapi.apis.base
@@ -711,19 +712,26 @@ def maybe_add_download_item(
 
     # Try each download URL from the grab history, most recent first:
     for download_url, download_client in download_urls.items():
-        if urllib.parse.urlsplit(download_url).scheme == "magnet":  # pragma: no cover
-            # Supporting adding magnet torrents would be a PITA because we'd
-            # have to use a torrent cache to get torrent files which feels
-            # like too much trouble for mostly public torrents:
-            logger.error(
-                "Skipping magnet torrent: %s",
+        try:
+            response = requests.get(download_url, timeout=5)
+        except requests.exceptions.RequestException:  # pragma: no cover
+            logger.exception(
+                "Exception downloading release: %s",
+                download_url,
+            )
+            continue
+        try:
+            response.raise_for_status()
+        except requests.exceptions.RequestException:  # pragma: no cover
+            logger.exception(
+                "Error response status downloading release: %s",
                 download_url,
             )
             continue
 
         try:
             download_item = download_client.download_client.add_torrent(
-                download_url,
+                response.content,
                 paused=True,
                 download_dir=str(download_client.seeding_dir),
             )

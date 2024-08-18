@@ -388,7 +388,14 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             need_verify = True
 
         # Hard link imported files into the download item's location:
+        file_relatives = set(item_file.relative for item_file in self.files)
         for imported_relative, dropped_data in imported_relatives.items():
+            if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
+                logger.error(
+                    "Dropped path doesn't match download item file: %s",
+                    dropped_data["droppedRel"],
+                )
+                continue
             if self.DOWNLOAD_DIR_FIELD not in self._fields:  # pragma: no cover
                 logger.debug(
                     "Missing download dir field, updating: %r",

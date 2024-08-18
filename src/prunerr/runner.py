@@ -105,9 +105,9 @@ class PrunerrRunner:
         servarrs = {}
         for servarr_name, servarr_config in self.config.get("servarrs", {}).items():
             servarr_config.setdefault("name", servarr_name)
-            servarrs[
-                utils.normalize_url(servarr_config["url"])
-            ] = prunerr.servarr.PrunerrServarrInstance(self)
+            servarrs[utils.normalize_url(servarr_config["url"])] = (
+                prunerr.servarr.PrunerrServarrInstance(self)
+            )
             servarrs[servarr_config["url"]].update(servarr_config)
         self.servarrs = servarrs
 
@@ -121,9 +121,9 @@ class PrunerrRunner:
             download_client_config.update(
                 prunerr.downloadclient.config_from_url(download_client_config["url"]),
             )
-            download_client_configs[
-                download_client_config["url"]
-            ] = download_client_config
+            download_client_configs[download_client_config["url"]] = (
+                download_client_config
+            )
         # Reconcile with download clients defined in Servarr settings
         for servarr in self.servarrs.values():
             for download_client_url in servarr.download_clients.keys():
@@ -144,9 +144,9 @@ class PrunerrRunner:
                 ]
             else:
                 # Instantiate newly defined download clients
-                download_clients[
-                    download_client_url
-                ] = prunerr.downloadclient.PrunerrDownloadClient(self)
+                download_clients[download_client_url] = (
+                    prunerr.downloadclient.PrunerrDownloadClient(self)
+                )
             # Associate with Servarr instances
             for servarr_url in download_client_config.get("servarrs", set()):
                 self.servarrs[servarr_url].download_clients[

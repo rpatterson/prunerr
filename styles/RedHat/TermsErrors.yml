@@ -19,9 +19,10 @@ swap:
   "(?<!Mozilla )Thunderbird": Mozilla Thunderbird
   "(?<!pseudo-)ops": operations
   "(?<!self-)hosted engine|hosted-engine": self-hosted engine
+  "bare metal( clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| instance?| machines?| media| nodes?| provisioning| servers?| workers?)": bare-metal$1
+  "bare-metal(?! clusters?| compute| configuration| controls?| environments?| equipment| events?| hardware| hosts?| infrastructure| installations?| installers?| instance?| machines?| media| nodes?| provisioning| servers?| workers?)": bare metal
   "[bB]asic [aA]uth": Basic HTTP authentication|Basic authentication
   "a lot(?: of)?": many|much
-  "AI": Assisted Installer
   "best of breed|best-of-breed": best in class
   "bottle neck|bottle-neck": bottleneck
   "Christian name|forename|first name": given name
@@ -35,10 +36,10 @@ swap:
   "top(?:-)?left": upper left|upper right|upper-left|upper-right
   "top(?:-)?right": upper left|upper right|upper-left|upper-right
   "UPI": user-provisioned infrastructure
-  "w/(?!o) ": "with "
   "w/o": without
   '(?<!IBM\s)S\/390|S90|S\s390': IBM S/390
   'backwards?\scompatible': compatible with earlier versions
+  '(?<= )for instance(?=,)': for example
   10BASE-2: 10BASE2
   10BASET: 10BASE-T
   24/7: 24x7
@@ -97,7 +98,6 @@ swap:
   cancelling: canceling
   canned: preplanned|preconfigured|predefined
   cardreader: card reader
-  carry out: test|run
   case insensitive: not case-sensitive
   catalogue: catalog
   catastrophic error: unrecoverable error
@@ -143,7 +143,7 @@ swap:
   cyber threat: cyberthreat
   cyberresilience: cyber resilience
   data base: database
-  datacenter|data-center|data centre|datacentre: data center
+  (?<!vCenter )datacenter|data-center|data centre|datacentre: data center
   datafile: data file
   dataflow: data flow
   datamart: data mart
@@ -294,6 +294,8 @@ swap:
   on the fly: dynamically|as needed|in real time|immediately
   on the other hand: however|alternatively|conversely
   openshit: OpenShift
+  opt into: opt in
+  opting into: opting in|opting in to
   organise: organize
   organised: organized
   organising: organizing
@@ -301,6 +303,7 @@ swap:
   pain point: challenge|concern|difficulty|issue
   parent task: parent process
   parent/child: parent-child
+  peer-pod: peer pod
   passive broker: slave broker
   pathname: path name
   PCOMM: Personal Communications

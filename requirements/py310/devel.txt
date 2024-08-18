@@ -4,9 +4,9 @@
 #
 #    pip-compile --extra=devel --output-file=requirements/py310/devel.txt --strip-extras pyproject.toml
 #
-argcomplete==3.1.2
+argcomplete==3.5.0
     # via prunerr (pyproject.toml)
-arrapi==1.4.3
+arrapi==1.4.13
     # via prunerr (pyproject.toml)
 astroid==2.15.8
     # via
@@ -16,27 +16,27 @@ astroid==2.15.8
     #   requirements-detector
 autoflake==1.7.8
     # via prunerr (pyproject.toml)
-autopep8==2.0.4
+autopep8==2.3.1
     # via prunerr (pyproject.toml)
-bandit==1.7.5
+bandit==1.7.9
     # via prospector
-black==23.10.1
+black==24.8.0
     # via prunerr (pyproject.toml)
-build==1.0.3
+build==1.2.1
     # via
     #   prunerr (pyproject.toml)
     #   pyroma
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
-charset-normalizer==3.3.1
+charset-normalizer==3.3.2
     # via requests
 click==8.1.7
     # via black
 colorama==0.4.6
     # via radon
-dill==0.3.7
+dill==0.3.8
     # via pylint
-docutils==0.20.1
+docutils==0.21.2
     # via pyroma
 dodgy==0.2.1
     # via prospector
@@ -48,15 +48,13 @@ flake8-polyfill==1.0.2
     # via pep8-naming
 gitdb==4.0.11
     # via gitpython
-gitpython==3.1.40
-    # via
-    #   bandit
-    #   prospector
-idna==3.4
+gitpython==3.1.43
+    # via prospector
+idna==3.7
     # via requests
-isort==5.12.0
+isort==5.13.2
     # via pylint
-lazy-object-proxy==1.9.0
+lazy-object-proxy==1.10.0
     # via astroid
 main-wrapper==0.1.1
     # via service-logging
@@ -71,36 +69,36 @@ mccabe==0.7.0
     #   pylint
 mdurl==0.1.2
     # via markdown-it-py
-mypy==1.6.1
+mypy==1.11.1
     # via prospector
 mypy-extensions==1.0.0
     # via
     #   black
     #   mypy
-nodeenv==1.8.0
+nodeenv==1.9.1
     # via pyright
-packaging==23.2
+packaging==24.1
     # via
     #   black
     #   build
     #   prospector
     #   pyroma
     #   requirements-detector
-pathspec==0.11.2
+pathspec==0.12.1
     # via black
-pbr==5.11.1
+pbr==6.0.0
     # via stevedore
 pep8==1.7.1
     # via flake8
 pep8-naming==0.10.0
     # via prospector
-platformdirs==3.11.0
+platformdirs==4.2.2
     # via
     #   black
     #   pylint
 prospector==1.10.3
     # via prunerr (pyproject.toml)
-pycodestyle==2.11.1
+pycodestyle==2.12.1
     # via
     #   autopep8
     #   prospector
@@ -111,7 +109,7 @@ pyflakes==2.5.0
     #   autoflake
     #   flake8
     #   prospector
-pygments==2.16.1
+pygments==2.18.0
     # via
     #   pyroma
     #   rich
@@ -134,13 +132,13 @@ pylint-plugin-utils==0.7
     #   pylint-celery
     #   pylint-django
     #   pylint-flask
-pyproject-hooks==1.0.0
+pyproject-hooks==1.1.0
     # via build
-pyright==1.1.333
+pyright==1.1.376
     # via prospector
 pyroma==4.2
     # via prospector
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via
     #   bandit
     #   prospector
@@ -148,7 +146,7 @@ pyyaml==6.0.1
     #   xenon
 radon==6.0.1
     # via xenon
-requests==2.31.0
+requests==2.32.3
     # via
     #   arrapi
     #   prunerr (pyproject.toml)
@@ -157,7 +155,7 @@ requests==2.31.0
     #   xenon
 requirements-detector==1.2.2
     # via prospector
-rich==13.6.0
+rich==13.7.1
     # via bandit
 semver==3.0.2
     # via requirements-detector
@@ -173,15 +171,14 @@ smmap==5.0.1
     # via gitdb
 snowballstemmer==2.2.0
     # via pydocstyle
-stevedore==5.1.0
+stevedore==5.2.0
     # via bandit
-tenacity==8.2.3
+tenacity==9.0.0
     # via prunerr (pyproject.toml)
 toml==0.10.2
     # via
     #   prospector
     #   requirements-detector
-    #   vulture
 tomli==2.0.1
     # via
     #   autoflake
@@ -190,30 +187,30 @@ tomli==2.0.1
     #   build
     #   mypy
     #   pylint
-    #   pyproject-hooks
-tomlkit==0.12.1
+    #   vulture
+tomlkit==0.13.2
     # via pylint
 transmission-rpc==3.4.2
     # via prunerr (pyproject.toml)
-trove-classifiers==2023.10.18
+trove-classifiers==2024.7.2
     # via pyroma
-types-pyyaml==6.0.12.12
+types-pyyaml==6.0.12.20240808
     # via prunerr (pyproject.toml)
 types-requests==2.32.0.20240712
     # via prunerr (pyproject.toml)
-typing-extensions==4.8.0
+typing-extensions==4.12.2
     # via
     #   astroid
     #   black
     #   mypy
     #   transmission-rpc
-urllib3==2.0.7
+urllib3==2.2.2
     # via
     #   requests
     #   types-requests
-vulture==2.10
+vulture==2.11
     # via prospector
-wrapt==1.15.0
+wrapt==1.16.0
     # via astroid
 xenon==0.9.1
     # via prunerr (pyproject.toml)

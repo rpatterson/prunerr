@@ -403,9 +403,9 @@ class ExportServarrRootItem:
                 imported_collated["location"] = dropped_path.parents[
                     len(dropped_relative.parts) - 1
                 ]
-                download_root_name = imported_collated[
-                    "downloadRootName"
-                ] = dropped_relative.parts[0]
+                download_root_name = imported_collated["downloadRootName"] = (
+                    dropped_relative.parts[0]
+                )
                 break
         else:
             logger.error(
@@ -427,9 +427,9 @@ class ExportServarrRootItem:
             if download_root_name:
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
-                self.import_names["downloadRootName"][
-                    download_root_name
-                ] = history_record["downloadId"]
+                self.import_names["downloadRootName"][download_root_name] = (
+                    history_record["downloadId"]
+                )
                 if (
                     download_id_collated.get("downloadRootName")
                     and download_root_name != download_id_collated["downloadRootName"]

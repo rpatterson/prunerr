@@ -4,21 +4,21 @@
 #
 #    pip-compile --output-file=requirements/py312/user.txt --strip-extras pyproject.toml
 #
-argcomplete==3.1.2
+argcomplete==3.5.0
     # via prunerr (pyproject.toml)
-arrapi==1.4.3
+arrapi==1.4.13
     # via prunerr (pyproject.toml)
-certifi==2023.7.22
+certifi==2024.7.4
     # via requests
-charset-normalizer==3.3.1
+charset-normalizer==3.3.2
     # via requests
-idna==3.4
+idna==3.7
     # via requests
 main-wrapper==0.1.1
     # via service-logging
-pyyaml==6.0.1
+pyyaml==6.0.2
     # via prunerr (pyproject.toml)
-requests==2.31.0
+requests==2.32.3
     # via
     #   arrapi
     #   prunerr (pyproject.toml)
@@ -27,11 +27,11 @@ service-logging==0.1.1
     # via prunerr (pyproject.toml)
 six==1.16.0
     # via main-wrapper
-tenacity==8.2.3
+tenacity==9.0.0
     # via prunerr (pyproject.toml)
 transmission-rpc==3.4.2
     # via prunerr (pyproject.toml)
-typing-extensions==4.8.0
+typing-extensions==4.12.2
     # via transmission-rpc
-urllib3==2.0.7
+urllib3==2.2.2
     # via requests

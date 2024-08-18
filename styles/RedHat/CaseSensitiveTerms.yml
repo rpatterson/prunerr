@@ -2,21 +2,20 @@
 extends: substitution
 ignorecase: false
 level: error
-link: https://redhat-documentation.github.io/vale-at-red-hat/docs/reference-guide/casesensitiveterms/
-message: Use '%s' rather than '%s'.
-# source: "https://redhat-documentation.github.io/supplementary-style-guide/#glossary-terms-conventions"
+link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/casesensitiveterms/
+message: "Use '%s' rather than '%s'."
 action:
   name: replace
 swap:
+  "(?<!.-)javadocs?": Javadoc|API documentation|Java API documentation
   "(?<!/)var": VAR
   "(?<!Business )Resource Planner|(?<!Business Resource )Planner": Business Resource Planner
-  "(?<!Microsoft )Azure": Microsoft Azure
   "(?<!Microsoft Azure )On-Demand Marketplace": Microsoft Azure On-Demand Marketplace
-  "(?<!Red Hat )Customer Portal": Red Hat Customer Portal
   "(?<!Red Hat )JBoss Enterprise Application Platform": Red Hat JBoss Enterprise Application Platform
   "(?<!Red Hat )OpenStack Platform|RHOS|RH-OSP": Red Hat OpenStack Platform
   "(?<!Red Hat JBoss )BRMS(?! engine)": inference engine
   "(?<!Red Hat JBoss )BRMS|BRM|(?<!Red Hat )JBoss BRMS": Red Hat JBoss BRMS
+  "(?<!T-)BC": Business Central
   "[dD]ay-0|day 0": Day 0
   "[dD]ay-1|day 1": Day 1
   "[dD]ay-2|day 2": Day 2
@@ -24,16 +23,16 @@ swap:
   "DM(?![ -]Multipath)|directory manager": Directory Manager
   "JBoss Broker|Red Hat Broker|The AMQ Broker": AMQ Broker
   "JBoss Console|Red Hat Console": AMQ Console
-  "Kernel(?!-based Virtual Machine)": kernel
+  "Kernel(?!-based Virtual Machine| Module Management| parameters| arguments| packet filtering)": kernel
   "OCM|(?<!Red Hat OpenShift )Cluster Manager|(?<!Red Hat )OpenShift Cluster Manager|the OpenShift Cluster Manager": Red Hat OpenShift Cluster Manager
   "OD": Red Hat OpenShift Dedicated
-  "(?<!.-)javadocs?": Javadoc|API documentation|Java API documentation
+  "sub version|(?<!Apache )Subversion": sub-version
   '(?<!\.)IM': instant message
   '(?<!\.)yaml|Yaml': YAML
   '(?<!JBoss )EAP|(?<!Red Hat )JBoss(?!\sCommunity|\sBroker|\sClients|\sConsole|\sAMQ|\sData\sGrid|\sBRMS|\sBPMS|\sEnterprise\sApplication\sPlatform|\.org|\sInterconnect|\sEAP|\sBPM\sSuite)': JBoss EAP
   '(?<!Realtime )Decision\sServer': Realtime Decision Server
   '[nN]odejs|[nN]ode\.JS|node\.js': Node.js
-  '\s\.Net Core|\s\.Net|\s\.NET\sCore|dotNet': .NET
+  'dotNet': .NET
   'A-MQ(?!\sBroker|\sClient|\sConsole|\sInterconnect)': AMQ
   'A-MQ\sBroker': AMQ Broker
   'A-MQ\sClients': AMQ Clients
@@ -54,18 +53,19 @@ swap:
   'Red\sHat\sVirtualization\sHypervisor|RHV\sHost|RHV-H': Red Hat Virtualization Host
   'RHVM|RHV-M|RHV\sManager': Red Hat Virtualization Manager
   'self-hosted\sengine\svirtual\smachine|engine\sVM': Manager virtual machine
-  "sub version|(?<!Apache )Subversion": sub-version
+  (?<!Ansible )Playbook: playbook
   Ansible playbook: Ansible Playbook
+  Ansible rulebook: Ansible Rulebook
   Appliance Console: Appliance console
-  Applix|ApplixWare: Applixware
   application stream|Application stream: Application Stream
+  Applix|ApplixWare: Applixware
   Appstream|appstream: AppStream repository
   asciidoctor|AsciiDoctor: Asciidoctor
   asciidoc|Asciidoc: AsciiDoc
   assertj|Assertj: AssertJ
   auto-link|AutoLink: autolink
+  AWS opt in Region: AWS opt-in Region
   basic authentication|Basic Authentication|basic auth|Basic auth|Basic Auth: Basic HTTP authentication|Basic authentication
-  "(?<!T-)BC": Business Central
   Bean: bean
   Bios: BIOS
   blue print|BluePrint: blueprint
@@ -87,11 +87,12 @@ swap:
   classic mode: GNOME Classic
   CloudForms Management Engine|CFME: Red Hat CloudForms|Red Hat CloudForms Appliance
   command prompt: shell prompt|Command Prompt (Windows product)
-  Composite Content view|composite content view|Composite View|composite view: Composite Content View
+  Composite Content view|Composite Content Ciew|Composite View|composite view: composite content view
   configmap: config map
   configuration map: config map
-  Content view|content view: Content View
+  Content view|Content View: content view
   control key|ctrl: Ctrl
+  CP|RHCP|customer portal: Customer Portal|Red Hat Customer Portal
   crush map|crushmap: CRUSH map
   csv: CSV
   CygMon|cygmon|CYGMON: Cygmon
@@ -128,7 +129,7 @@ swap:
   GDBTK: Insight
   gid|Gid: GID
   Gimp|gimp: GIMP
-  git|GIT: Git
+  GIT: Git
   Gnome|gnome: GNOME
   Gnu|gnu: GNU
   Gpl|gpl: GPL
@@ -148,7 +149,7 @@ swap:
   Ignite|Fuse Ignite: Fuse Online|Red Hat Fuse Online|Syndesis
   ignition config: Ignition config
   IM: instant message
-  Image Builder: image builder
+  Image builder|Image Builder: Insights image builder|image builder
   INSTALL_DIR|installDir: FUSE_HOME
   Iops|IOPs: IOPS
   Ip: IP
@@ -175,7 +176,7 @@ swap:
   kjar|kJAR: KJAR
   knowledgebase: Knowledgebase
   ksession|knowledge session: KIE session
-  Kubelet: kubelet
+  Kubelet(?! Stats Receiver): kubelet
   kubernetes|k8s: Kubernetes
   kvm: KVM
   Lan|lan: LAN
@@ -184,6 +185,7 @@ swap:
   Lightweight Directory Access Protocol over Secure Socket Layer: LDAPS
   LINUX|linux: Linux
   live-backup group: master-slave group
+  Local Zone|LZ|local zone: AWS Local Zone
   Lun|lun: LUN
   master CA: IdM CA renewal server
   master server: IdM server and replicas
@@ -205,10 +207,10 @@ swap:
   ODF: Red Hat OpenShift Data Foundation
   OK button|okay|ok: OK
   Open InfiniBand|Infiniband: InfiniBand
+  Open Telemetry: OpenTelemetry (OTel)
   openid connect|Openid Connect: OpenID Connect
   openrewrite|Openrewrite|Open Rewrite: OpenRewrite
   Openshift online|OO: Red Hat OpenShift Online
-  Open Telemetry: OpenTelemetry (OTel)
   Operating Environment: operating environment
   Operator Hub|Operator hub|Operatorhub|operatorhub: OperatorHub
   Opex|Opex|OPEX|opEx: OpEx
@@ -216,13 +218,13 @@ swap:
   Organization administrator|Org Admin|org admin: Organization Administrator
   OS|Operating System: operating system
   Overcloud: overcloud
+  P-PC|PPC64: PowerPC
   Podman desktop: Podman Desktop
   podman: Podman
   popup|Pop-up: pop-up
   Posix|posix: POSIX
   Postscript: PostScript
   Powershell|powershell: PowerShell
-  PPC|P-PC|PPC64: PowerPC
   Ppp|ppp: PPP
   prom|Prom: PROM
   proof key for code exchange: Proof Key for Code Exchange
@@ -241,12 +243,11 @@ swap:
   RAW: raw
   Red Hat JBoss Data Grid|JDG: Red Hat Data Grid
   Red Hat JBoss EAP: Red Hat JBoss Enterprise Application Platform
-  Red Hat Network Satellite server: Red Hat Network Satellite Server
-  Red Hat Proxy: Red Hat Network Proxy Server
   Red Hat Satellite Capsule server: Red Hat Satellite Capsule Server
   Red Hat Satellite server: Red Hat Satellite Server
   Red Hat satellite: Red Hat Satellite
   Redboot|Red Boot: RedBoot
+  RedFish: Redfish
   redis: Redis
   RESTEASY|resteasy|Resteasy: RESTEasy
   RHDS: Red Hat Directory Server
@@ -286,7 +287,7 @@ swap:
   StartX: startx
   STI|source to image: Source-to-Image (S2I)
   SU: su
-  Subscription manifest: Subscription Manifest
+  Subscription Manifest: subscription manifest
   Sys V|System V: SysV
   system D|system D|SystemD|system d: systemd
   Technology preview|technology preview: Technology Preview
@@ -310,7 +311,7 @@ swap:
   vnuma|VNUMA: vNUMA node
   vpn: VPN
   VS Code|VSCode|VisualStudioCode|VisualStudio Code: Visual Studio Code
-  VT-i|VT: Intel Virtualization Technology
+  VT(?!-d)|VT-i: Intel Virtualization Technology
   wan: WAN
   wca: WCA
   web-UI|webUI: web UI

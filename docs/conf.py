@@ -42,7 +42,12 @@ linkcheck_anchors_ignore = [
     # Tolerate links to source code lines in VCS provider web UIs:
     "^L[0-9]+",
 ]
-linkcheck_ignore = ["https://liberapay.com/.*"]
+linkcheck_ignore = [
+    "https://liberapay.com/.*",
+    # Blocked on GitHub Acgtions:
+    #     403 Client Error: Blocked for url: ...
+    "https://www.reddit.com/.*",
+]
 
 # -- Extension options -------------------------------------------------------
 ogp_site_url = 'http://prunerr.readthedocs.io/'

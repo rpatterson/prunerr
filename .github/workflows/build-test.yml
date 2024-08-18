@@ -81,7 +81,7 @@ jobs:
       - name: "Archive test, coverage, and lint reports"
         uses: "actions/upload-artifact@master"
         with:
-          name: "test-coverage-lint-reports"
+          name: "test-coverage-lint-reports-python${{ matrix.PYTHON_MINORS }}"
           path: |
             ./build/reports/
       - name: "Publish test suite report"

@@ -3,10 +3,10 @@
 extends: spelling
 level: warning
 link: https://redhat-documentation.github.io/vale-at-red-hat/docs/main/reference-guide/spelling/
-message: "Use correct American English spelling. Did you really mean '%s'?"
+message: "Verify the word '%s'. It is not in the American English spelling dictionary used by Vale."
 # A "filter" is a case-sensitive regular expression specifying words to ignore during spell checking.
 # Spelling rule applies to individual words
-# There is no need to add plural forms (s?) to th regex
+# There is no need to add plural forms (s?) to the regex
 filters:
   - "[aA]ccessor"
   - "[aA]llowlist"
@@ -31,6 +31,7 @@ filters:
   - "[cC]olocate"
   - "[cC]olocation"
   - "[cC]onfig"
+  - "[cC]ontainerd"
   - "[cC]orequisite"
   - "[cC]ustomizer"
   - "[cC]yberattack"
@@ -39,6 +40,7 @@ filters:
   - "[dD]atasource"
   - "[dD]eclaratively"
   - "[dD]ecompiler"
+  - "[dD]efragmentation"
   - "[dD]eserialization"
   - "[dD]eserialize"
   - "[dD]eserialized"
@@ -47,7 +49,7 @@ filters:
   - "[dD]ev"
   - "[dD]ev[wW]orkspace"
   - "[dD]evfile"
-  - "[dD]evfiles"
+  - "[dD]istro"
   - "[dD]ownstream"
   - "[dD]ownstreaming"
   - "[eE]xposal"
@@ -58,6 +60,7 @@ filters:
   - "[fF]ailover"
   - "[fF]indability"
   - "[gG]bps"
+  - "[gG]ibibyte"
   - "[gG]it"
   - "[gG]lock"
   - "[gG]radle"
@@ -81,7 +84,9 @@ filters:
   - "[kK]eylime"
   - "[kK]eyring"
   - "[kK]eyrings"
+  - "[kK]eyspace"
   - "[kK]eytab"
+  - "[kK]ustomize"
   - "[lL]ibvirt"
   - "[lL]icensor"
   - "[lL]iquibase"
@@ -120,6 +125,7 @@ filters:
   - "[mM]ultizone"
   - "[nN]amespace"
   - "[nN]amespaces"
+  - "[nN]MState"
   - "[nN]onheap"
   - "[nN]oninteractive"
   - "[nN]onpaired"
@@ -176,6 +182,7 @@ filters:
   - "[rR]ollouts"
   - "[rR]oundtable"
   - "[rR]oundtables"
+  - "[rR]ulebook"
   - "[rR]uleset"
   - "[rR]unlevel"
   - "[rR]unlevels"
@@ -212,6 +219,7 @@ filters:
   - "[sS]ysctl"
   - "[sS]yslog"
   - "[sS]ystemd"
+  - "[tT]elco"
   - "[tT]emplated"
   - "[tT]heia"
   - "[tT]olerations"
@@ -489,6 +497,7 @@ filters:
   - USBGuard
   - Vale
   - Valgrind
+  - vCenter
   - vDisk
   - Velero
   - Vert.x

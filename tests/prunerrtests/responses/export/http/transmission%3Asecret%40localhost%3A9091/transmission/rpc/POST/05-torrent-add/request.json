@@ -1,6 +1,6 @@
 {
   "arguments": {
-    "filename": "http://localhost:9696/1/download?apikey=&link=&file=Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+    "metainfo": "IkV4YW1wbGUgdG9ycmVudCBmb3IgdGVzdGluZyI=",
     "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
     "paused": true
   },

@@ -360,7 +360,7 @@ class PrunerrRunner:
         )
         for orphan_download_clients, file_path, file_stat in self.find_orphans():
             first_download_client = next(iter(orphan_download_clients.values()))
-            first_download_client.delete_files((file_path, file_stat))
+            first_download_client.try_delete_files((file_path, file_stat))
             results.setdefault(
                 first_download_client.config["url"],
                 [],
@@ -478,7 +478,7 @@ class PrunerrRunner:
                     download_client,
                     download_client_method,
                 )():
-                    removed_size = download_client.delete_files(download_item)
+                    removed_size = download_client.try_delete_files(download_item)
                     results.setdefault(
                         download_client_url,
                         [],

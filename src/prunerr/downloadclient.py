@@ -12,6 +12,8 @@ Prunerr interaction with download clients.
 import re
 import shutil
 import urllib.parse
+import bdb
+import pdb
 import logging
 
 import requests
@@ -228,6 +230,9 @@ class PrunerrDownloadClient:
         Delete all files and directories for the given path and stat or download item.
 
         First remove from the download client if given a download item.
+
+        :param item: A `pathlib.Path()` filesystem path or a download item to be
+            deleted.
         """
         # Handle actual items recognized by the download client
         if isinstance(item, prunerr.downloaditem.PrunerrDownloadItem):
@@ -253,25 +258,10 @@ class PrunerrDownloadClient:
             # When freeing disk space it's important not to get hung up waiting for a
             # heavily loaded client. Be very defensive and proceed directly to deleting
             # the data:
-            try:
-                self.client.remove_torrent(
-                    [item.hashString],
-                    timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
-                )
-            except transmission_rpc.error.TransmissionTimeoutError:  # pragma: no cover
-                logger.debug(
-                    "Expected short timeout to promptly free space: %r",
-                    item,
-                    exc_info=True,
-                )
-            except (
-                Exception  # pylint: disable=broad-exception-caught
-            ):  # pragma: no cover
-                logger.exception(
-                    "Unexpected exception removing item, freeing space anyways: %r",
-                    item,
-                )
-
+            self.client.remove_torrent(
+                [item.hashString],
+                timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
+            )
             self.items.remove(item)
             path = item.files_parent
 
@@ -317,6 +307,35 @@ class PrunerrDownloadClient:
             download_client.client.get_session()
 
         return size
+
+    def try_delete_files(self, item):
+        """
+        Attempt to delete a path or a download item, but tolerate and log failures.
+
+        :param item: A `pathlib.Path()` filesystem path or a download item to be
+            deleted.
+        """
+        try:
+            return self.delete_files(item)
+        except transmission_rpc.error.TransmissionTimeoutError:  # pragma: no cover
+            logger.debug(
+                "Expected short timeout to promptly free space: %r",
+                item,
+                exc_info=True,
+            )
+        except (
+            Exception  # pylint: disable=broad-exception-caught
+        ) as exc_value:  # pragma: no cover
+            if isinstance(
+                exc_value,
+                (KeyboardInterrupt, AssertionError, bdb.BdbQuit, pdb.Restart),
+            ):
+                raise
+            logger.exception(
+                "Unexpected exception removing item, freeing space anyways: %r",
+                item,
+            )
+        return 0  # pragma: no cover
 
     def free_space_check(self):
         """

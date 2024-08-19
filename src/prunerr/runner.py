@@ -504,9 +504,11 @@ class PrunerrRunner:
 
         :return: A list of orphaned filesystem paths
         """
-        # Collect all the download item files that actually exist currently
         item_files: set = set()
+        download_item_dirs: dict = {}
         for download_client_url, download_client in self.download_clients.items():
+
+            # Collect all the download item files that actually exist currently
             for download_item in download_client.items:
                 item_files.update(
                     item_file.path
@@ -514,22 +516,20 @@ class PrunerrRunner:
                     if item_file.selected and item_file.path.exists()
                 )
 
-        # Aggregate all the download item directories across all download clients.  Some
-        # download item directories may be shared across download clients and some may
-        # be on different filesystems so we need to aggregate them all across download
-        # clients but keep track of which download clients use which directories.
-        download_item_dirs: dict = {}
-        # TODO: Consider all orphans under the download client directories, not just the
-        # Servarr managed directories
-        for download_client_url, download_client in self.download_clients.items():
+            # Aggregate all the download item directories across all download clients.
+            # Some download item directories may be shared across download clients and
+            # some may be on different filesystems so we need to aggregate them all
+            # across download clients but keep track of which download clients use which
+            # directories.
             for servarr_download_client in download_client.servarrs.values():
                 for download_item_dir in (
                     servarr_download_client.download_dir,
                     servarr_download_client.seeding_dir,
                 ):
-                    download_item_dirs.setdefault(download_item_dir, {})[
-                        download_client_url
-                    ] = download_client
+                    download_item_dirs.setdefault(download_item_dir, {}).setdefault(
+                        download_client_url,
+                        download_client,
+                    )
 
         # Collect any files in any download item directories that aren't download item
         # files.  Also yield the download clients that the file's download item

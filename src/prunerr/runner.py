@@ -547,7 +547,11 @@ class PrunerrRunner:
         # Order orphans by smallest size first.  Use this sort order to give the user as
         # long as possible to rescue any larger, and thus harder to restore, files.
         # Also cleans up noisy small file clutter first.
-        orphans.sort(key=lambda orphan: orphan[2].st_size)
+        orphans.sort(
+            key=lambda orphan: (
+                1 / orphan[2].st_nlink,
+                orphan[2].st_blocks * 512),
+        )
 
         return orphans
 

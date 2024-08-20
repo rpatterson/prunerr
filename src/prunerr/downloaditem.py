@@ -206,6 +206,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         """
         return [PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()]
 
+    @cached_property
+    def du(self):
+        """
+        The real storage usage of all files, considering hard links and sparse files.
+        """
+        return sum(item_file.du for item_file in self.files if item_file.path.exists())
+
     def match_indexer_urls(self):
         """
         Return the indexer name if the download item matches a configured tracker URL.
@@ -548,6 +555,13 @@ class PrunerrDownloadItemFile:
         if self.path.exists():
             return self.path.stat()
         return None
+
+    @cached_property
+    def du(self):
+        """
+        The real storage usage of the file, considering hard links and sparse files.
+        """
+        return (self.stat.st_blocks * 512) if (self.stat.st_nlink == 1) else 0
 
     @cached_property  # noqa: V105
     def is_imported(self):

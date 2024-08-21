@@ -147,7 +147,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 "Can't determine seconds since done, not complete: %r",
                 self,
             )
-            return None
+            return 0
         if (
             not (done_date := self._fields["doneDate"].value)
             and self._fields["addedDate"].value

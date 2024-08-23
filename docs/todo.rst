@@ -21,12 +21,6 @@ Required
 #. Use YAML anchors and merge keys to demonstrate how to share configuration between
    indexers?
 
-#. Move critical disk space container shutdown into a ``periodic`` script.
-
-#. Extend critical disk space container shutdown to the Transmission data filesystem.
-
-#. Take ``done-date`` from Servarr when missing or 0 in Transmission.
-
 #. Add torrent date handling to the ``export`` sub-command. Take the ``grabbed`` history
    record dates for the ``added-date`` and the ``downloadFolderImported`` record dates
    for the ``done-date`` and `set them in the Transmission '/config/resume/*.resume'
@@ -39,7 +33,20 @@ Required
 High priority
 ****************************************************************************************
 
-#. Add a review to exclude BluRay/DVD full disc rips.
+#. Augment the download item ``__repr__()`` method:
+
+   - size
+   - seconds since done
+   - the indexer/tracker
+   - percentage imported
+
+#. Report which seeding items will be deleted when space runs low so the user can
+   intervene before if possible. Also send notifications once we've decided on a way to
+   do that.
+
+#. Move deleting unregistered items to a review.
+
+#. Move deleting orphans to a separate sub-command.
 
 #. Deselect unimported files before deciding whether to delete?
 
@@ -47,6 +54,11 @@ High priority
    free-space`` sub-command, avoid a heavily loaded client blocking deleting items by
    sending the ``remove_torrent()`` `request asynchronously
    <https://www.python-httpx.org/async/>`_.
+
+#. Allow grouping indexers/trackers. Refactor operations configuration to be by
+   arbitrary named groups that include multiple indexers/trackers.
+
+#. Add a review to exclude BluRay/DVD full disc rips.
 
 #. Link the top-level docs for each sub-command into their runner API docs.
 
@@ -64,14 +76,11 @@ High priority
    Docs benefit most from fresh eyes. If you find anything confusing, ask for help. When
    you understand better, contribute changes to the docs to help others.
 
-#. Find a good way to review download items that are now only partially hard
-   linked. IOW, when only some episodes from one download item have replaced only some
-   episodes from another. Maybe extend the existing operations support to write CSV
-   report files?
-
-#. Send a notification when disk space is low and no download item can be deleted:
-
-   Perhaps we can use the Servarr "Connect" API?
+#. Send a notification when disk space is low and no download item can be deleted. The
+   Servarr API doesn't provide an endpoint for sending notifications that I can find, so
+   we'll need to adopt a tool or framework. I already use and love `ntfy
+   <https://ntfy.readthedocs.io/en/latest/ntfy.html#ntfy.notify>`_ so might as well use
+   that.
 
 #. Refactor per-indexer configuration to support sharing between indexers?
 
@@ -80,11 +89,17 @@ High priority
 Nice to have
 ****************************************************************************************
 
+#. Maybe refactor everything to be centered around arbitrary phases and groups of
+   operations. Move what Prunerr does in the ``review`` and ``free-space`` sub-commands
+   and the order of operations in general into groups of operations.
+
 #. Also import `extras and such
    <https://jellyfin.org/docs/general/server/media/movies/#movie-extras>`_ that Servarr
    doesn't support.
 
 #. Support selecting only one series or movie for the ``export`` sub-command.
+
+#. Extend the existing operations support to write CSV report files.
 
 #. Implement ``__eq__`` or better and audit other "dunder" methods to implement. Use the
    normalized ``self.config["url"]`` for servarr and download client instances.
@@ -93,8 +108,6 @@ Nice to have
 
    Currently, Prunerr hard-codes the ``.../incomplete/``, ``.../downloads/``, and
    ``.../seeding/`` paths.
-
-#. Report multi-season items that are only partially imported.
 
 #. Unit tests
 

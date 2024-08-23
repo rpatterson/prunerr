@@ -258,10 +258,6 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         indexer_config = reviews_indxers[sort_key[0]]
         operation_configs = indexer_config.get("operations", [])
 
-        download_id = self.hashString.upper()
-        queue_record = servarr_queue.get(download_id, {})
-        queue_id = queue_record.get("id")
-
         results = []
         for operation_config, sort_value in zip(operation_configs, sort_key[1:]):
             if sort_value:
@@ -275,7 +271,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                     operation_config["type"],
                     self,
                 )
-                if not queue_record:
+                if not servarr_queue:
                     logger.warning(
                         "Download item not in any Servarr queue: %r",
                         self,
@@ -286,7 +282,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                     if operation_config.get("blacklist", False):
                         delete_params["blacklist"] = "true"
                         result["blacklist"] = True
-                    queue_record["servarr"].client.delete(
+                    servarr_queue["servarr"].client.delete(
                         f"queue/{queue_id}",
                         **delete_params,
                     )

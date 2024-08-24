@@ -236,7 +236,7 @@ class PrunerrDownloadClient:
         """
         # Handle actual items recognized by the download client
         if isinstance(item, prunerr.downloaditem.PrunerrDownloadItem):
-            size = item.totalSize
+            size = item.disk_usage
             self.operations.exec_indexer_operations(item)
             logger.info(
                 "Deleting %r, "
@@ -280,7 +280,7 @@ class PrunerrDownloadClient:
         # Handle filesystem paths not recognized by the download client
         else:
             path, stat = item
-            size = stat.st_size
+            size = (stat.st_blocks * 512) if (stat.st_nlink == 1) else 0
             logger.info(
                 "Deleting %r: %0.2f %s + %0.2f %s",
                 str(path),

@@ -169,8 +169,9 @@ class PrunerrDownloadClient:
         download_dir = pathlib.Path(self.client.session.download_dir)
         for item in [item for item in self.items if download_dir in item.path.parents]:
             item_results = None
+            queue_record = servarr_queue.get(item.hashString.upper(), {})
             try:
-                item_results = item.review(servarr_queue)
+                item_results = item.review(queue_record)
             except utils.RETRY_EXC_TYPES:
                 logger.exception(
                     "Error reviewing item: %s",

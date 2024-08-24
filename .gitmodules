@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+[submodule "checkouts/ntfy"]
+	path = checkouts/ntfy
+	url = https://github.com/theMarix/ntfy.git
+	update = rebase
+	branch = python3.11-compat
+	fetchRecurseSubmodules = true

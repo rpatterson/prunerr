@@ -95,8 +95,13 @@ module = [
        "argcomplete",
        # Development and build tools:
        "decli", "configobj",
+       # External checkouts:
+       "ntfy.*"
        ]
 ignore_missing_imports = true
+[[tool.mypy.overrides]]
+module = ["ntfy.*"]
+ignore_errors = true
 
 [tool.vulture]
 # https://github.com/jendrikseipp/vulture#ignoring-files

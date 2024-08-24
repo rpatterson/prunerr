@@ -33,6 +33,8 @@ Required
 High priority
 ****************************************************************************************
 
+#. :notify: Move ``ntfy`` logging handler into a PR or a separate package.
+
 #. Report which seeding items will be deleted when space runs low so the user can
    intervene before if possible. Also send notifications once we've decided on a way to
    do that.

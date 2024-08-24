@@ -299,6 +299,26 @@ The ``export`` sub-command is roughly the inverse of Servarr import events, hard
 imported files back into download client items and verify. See the CLI ``$ prunerr
 export --help`` output for more details.
 
+
+****************************************************************************************
+Notifications
+****************************************************************************************
+
+When running the ``$ prunerr daemon`` sub-command, notifications can be sent using
+`ntfy`_ when Prunerr encounters errors such as when there's nothing Prunerr can delete
+to free disk space.
+
+Unfortunately, ``ntfy`` is somewhat unmaintained so Prunerr includes a more current fork
+and branch. Install it's dependencies with the ``ntfy`` extra. for example ``$ pip3
+install --user prunerr[ntfy]``. Prunerr reproduces `ntfy's "extra" dependencies`_ for
+the specific back-ends, so see those extras and add them for the back-ends you use when
+installing Prunerr, for example ``$ pip3 install --user prunerr[ntfy,pid,matrix]``. `The
+Docker container`_ extras that are currently working for that image's Python version.
+
+Then `configure ntfy`_. If using the Docker container, see `the ntfy comment in
+./docker-compose.yml`_ for how to bind mount your user's configuration into the
+container by using a volume.
+
 ****************************************************************************************
 Contributing
 ****************************************************************************************
@@ -352,6 +372,7 @@ References
 .. _`the example ./docker-compose.yml file`:
    https://gitlab.com/rpatterson/prunerr/-/blob/main/docker-compose.yml
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
+.. _The Docker container: `Docker Container Image`_
 
 .. _`the example configuration`:
    https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
@@ -359,6 +380,12 @@ References
    https://gitlab.com/rpatterson/prunerr/blob/main/transmission/usr/local/bin/transmission-pause-download
 .. _`integrate it into your Docker Compose project via a cron job`:
    https://gitlab.com/rpatterson/prunerr/blob/main/transmission/etc/crontabs/abc
+
+.. _`ntfy`: https://ntfy.readthedocs.io/en/latest/
+.. _`ntfy's "extra" dependencies`: https://ntfy.readthedocs.io/en/latest/#extras
+.. _`configure ntfy`: https://ntfy.readthedocs.io/en/latest/#configuring-ntfy
+.. _`the ntfy comment in ./docker-compose.yml`:
+   https://gitlab.com/rpatterson/prunerr/-/blob/main/docker-compose.yml#L101-103
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/prunerr

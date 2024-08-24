@@ -275,6 +275,7 @@ TOX_EXEC_OPTS=--no-recreate-pkg --skip-pkg-install
 TOX_EXEC_ARGS=tox exec $(TOX_EXEC_OPTS) -e "$(PYTHON_DEFAULT_ENV)"
 TOX_EXEC_BUILD_ARGS=tox exec $(TOX_EXEC_OPTS) -e "build"
 PIP_COMPILE_EXTRA=
+PIP_NTFY_EXTRAS=ntfy,telegram,instapush,emoji,pid,slack,rocketchat,matrix
 
 # Values used to build Docker images:
 DOCKER_FILE=./Dockerfile
@@ -1191,15 +1192,21 @@ $(foreach extra,$(PYTHON_EXTRAS),$(call python_combine_requirements,$(extra))): 
 	true DEBUG Updated prereqs: $(?)
 	extra_basename="$$(basename "$(@)")"
 	$(MAKE) -e PYTHON_ENV="$$(basename "$$(dirname "$(@)")")" \
-	    PIP_COMPILE_EXTRA="$${extra_basename%.txt}" \
+	    PIP_COMPILE_EXTRA="$${extra_basename%.txt},ntfy" \
 	    PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
 	    build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/user.txt): ./pyproject.toml ./setup.cfg ./tox.ini
 	true DEBUG Updated prereqs: $(?)
-	$(MAKE) -e PYTHON_ENV="$(@:requirements/%/user.txt=%)" PIP_COMPILE_SRC="$(<)" \
-	    PIP_COMPILE_OUT="$(@)" build-requirements-compile
+	export PYTHON_ENV="$(@:requirements/%/user.txt=%)"
+	export PIP_COMPILE_EXTRA="$(PIP_NTFY_EXTRAS)"
+	if test "$${PYTHON_ENV}" = "py39" || test "$${PYTHON_ENV}" = "py38"
+	then
+	    PIP_COMPILE_EXTRA+=",xmpp"
+	fi
+	$(MAKE) -e PIP_COMPILE_SRC="$(<)" PIP_COMPILE_OUT="$(@)" \
+	    build-requirements-compile
 	mkdir -pv "./var/log/"
 	touch "./var/log/rebuild.log"
 $(PYTHON_ENVS:%=./requirements/%/build.txt): ./requirements/build.txt.in

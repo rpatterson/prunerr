@@ -33,13 +33,6 @@ Required
 High priority
 ****************************************************************************************
 
-#. Augment the download item ``__repr__()`` method:
-
-   - size
-   - seconds since done
-   - the indexer/tracker
-   - percentage imported
-
 #. Report which seeding items will be deleted when space runs low so the user can
    intervene before if possible. Also send notifications once we've decided on a way to
    do that.
@@ -88,6 +81,11 @@ High priority
 ****************************************************************************************
 Nice to have
 ****************************************************************************************
+
+#. Add an interactive prompt mode where the user is prompted for ``y/n`` every time
+   Prunerr would make a change. Make the prompt a sub-class of ``pdb.Pdb`` for
+   inspecting the context with additional commands for proceeding or skipping the given
+   action.
 
 #. Maybe refactor everything to be centered around arbitrary phases and groups of
    operations. Move what Prunerr does in the ``review`` and ``free-space`` sub-commands

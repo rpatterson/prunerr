@@ -240,19 +240,10 @@ class PrunerrDownloadClient:
             size = item.disk_usage
             self.operations.exec_indexer_operations(item)
             logger.info(
-                "Deleting %r, "
-                "%0.2f %s + %0.2f %s: indexer=%s, priority=%s, ratio=%0.2f",
+                "Deleting %r: free space -> %0.2f %s",
                 item,
-                *(
-                    transmission_rpc.utils.format_size(
-                        self.client.session.download_dir_free_space,
-                    )
-                    + transmission_rpc.utils.format_size(size)
-                    + (
-                        item.match_indexer_urls(),
-                        item.bandwidthPriority,
-                        item.ratio,
-                    )
+                *transmission_rpc.utils.format_size(
+                    self.client.session.download_dir_free_space + size,
                 ),
             )
 
@@ -283,13 +274,13 @@ class PrunerrDownloadClient:
             path, stat = item
             size = (stat.st_blocks * 512) if (stat.st_nlink == 1) else 0
             logger.info(
-                "Deleting %r: %0.2f %s + %0.2f %s",
+                "Deleting %r, %0.2f %s: free space -> %0.2f %s",
                 str(path),
                 *(
-                    transmission_rpc.utils.format_size(
-                        self.client.session.download_dir_free_space,
+                    transmission_rpc.utils.format_size(size)
+                    + transmission_rpc.utils.format_size(
+                        self.client.session.download_dir_free_space + size,
                     )
-                    + transmission_rpc.utils.format_size(size)
                 ),
             )
 

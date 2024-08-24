@@ -43,6 +43,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
     Enrich download item data from the download client API.
     """
 
+    HASH_FIELD = "hashString"
     DOWNLOAD_DIR_FIELD = "downloadDir"
     CHECKING_STATUS = "checking"
 
@@ -55,6 +56,32 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             client,
             {field_name: field.value for field_name, field in torrent._fields.items()},
         )
+
+    def __repr__(self) -> str:
+        """
+        Report all available commonly useful information.
+        """
+        details = {}
+        if (name := self._get_name_string()) is not None:
+            details["name"] = name
+        elif self.HASH_FIELD in self._fields:  # pragma: no cover
+            details["hash"] = self._fields[self.HASH_FIELD].value
+        details["indexer"] = self.match_indexer_urls()
+        details["size"] = self.disk_usage
+        imported_portion = round(
+            (
+                sum(
+                    item_file.size
+                    for item_file in self.files
+                    if item_file.selected and item_file.is_imported
+                )
+                / self._fields["sizeWhenDone"].value
+            )
+            * 100
+        )
+        details["imported"] = f"{imported_portion}%"
+        details_str = " ".join(f"{attr}={value!r}" for attr, value in details.items())
+        return f"<Torrent {details_str}>"
 
     def update(self, timeout=None):
         """
@@ -95,7 +122,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             if len(set(file_roots)) > 1:
                 logger.error(
                     "Files in %r have multiple roots, using: %s",
-                    self,
+                    self.name,
                     file_roots[0],
                     extra={"runner": self.download_client.runner},
                 )
@@ -434,6 +461,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
 
         if need_verify:
             # Deselect for download any remaining incomplete files:
+            self.clear()
             self.deselect_unimported_files()
 
             logger.info(

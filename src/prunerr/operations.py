@@ -192,7 +192,9 @@ class PrunerrOperations:
             return False
 
         wanted_files = matching_files = [
-            item_file for item_file in download_item.files if item_file.selected
+            item_file
+            for item_file in download_item.files
+            if item_file.selected and item_file.path.exists()
         ]
         for filter_attr in filter_attrs:
             matching_files = [

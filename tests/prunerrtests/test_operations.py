@@ -192,7 +192,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             )[
                 1
             ][0],
-            2,
+            1,
             "Wrong item files count",
         )
 
@@ -210,7 +210,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                 ],
                 self.item,
             )[1][0],
-            2147483648,
+            1073741824,
             "Wrong item files size sum",
         )
 

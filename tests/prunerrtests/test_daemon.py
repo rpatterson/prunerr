@@ -78,6 +78,13 @@ class PrunerrDaemonTests(prunerrtests.PrunerrTestCase):
 
     RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "daemon"
 
+    def setUp(self):
+        """
+        Remove the ``ntfy`` logging handler after, regardless of success of failure.
+        """
+        super().setUp()
+        self.addCleanup(prunerr.logger.removeHandler, prunerr.utils.notify_handler)
+
     def test_daemon_command(self):
         """
         The daemon sub-command loops twice and exits.

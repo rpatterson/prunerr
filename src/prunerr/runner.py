@@ -384,6 +384,10 @@ class PrunerrRunner:
             return results
 
         for download_client_url, download_client in download_clients.items():
+            # TODO: Send a notification [via
+            # ntfy](https://github.com/dschep/ntfy/issues/275#issuecomment-2307662650)
+            # when disk space is low and no download item can be deleted:
+            # TODO: Record that a notification has been sent for this "instance".
             logger.error(
                 "Insufficient free space for %r but nothing can be deleted: %0.2f %s",
                 download_client_url,
@@ -419,7 +423,7 @@ class PrunerrRunner:
             except utils.RETRY_EXC_TYPES as exc:  # pragma: no cover
                 # TODO: If `ValueError`, check if it's from `transmission_rpc` and
                 # related to an interrupted RPC response, otherwise re-raise.
-                logger.error(
+                logger.warning(
                     "Connection error while updating from server: %s",
                     exc,
                 )

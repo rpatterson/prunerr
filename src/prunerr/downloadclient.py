@@ -384,6 +384,7 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
                     )
                 ),
             )
+            # TODO: Clear the record of whether a notification was previously sent.
             return True
         logger.debug(
             "Insufficient free space to continue downloading: "

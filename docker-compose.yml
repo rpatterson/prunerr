@@ -76,6 +76,9 @@ services:
   prunerr-daemon:
     image: "registry.gitlab.com/rpatterson/prunerr"
     container_name: "prunerr-daemon"
+    # Uncomment and customize to your environment for more helpful notification titles:
+    # domainname: "example.comm"
+    # hostname: "prunerr.example.comm"
     depends_on:
       - "transmission"
     environment:
@@ -99,6 +102,9 @@ services:
       - type: "volume"
         source: "home_cache"
         target: "/home/prunerr/.cache"
+      # Re-use the user's `ntfy` configuration for notifications on `ERROR` log level
+      # messages:
+      # - "~/.config/ntfy/:/home/prunerr/.config/ntfy/"
       # The volume on which Transmission's `download-dir` is stored:
       - type: "volume"
         source: "media_library"

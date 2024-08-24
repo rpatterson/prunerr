@@ -244,6 +244,8 @@ parser_exec.set_defaults(command=exec_)
 
 
 def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    if utils.ntfy is not None:  # pragma: no cover
+        logger.addHandler(utils.notify_handler)
     runner.daemon(*args, **kwargs)
 
 

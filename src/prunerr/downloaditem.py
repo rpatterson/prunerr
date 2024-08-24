@@ -61,10 +61,16 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         Update cached values when this download item is updated.
         """
         super().update(timeout=timeout)
-        # Clear any previously cached derivative instance attributes:
-        for attr in list(vars(self).keys()):
-            if isinstance(getattr(type(self), attr, None), cached_property):
-                del vars(self)[attr]
+        self.clear()
+
+    def clear(self):
+        """
+        Reset derived attributes cached in this instance.
+        """
+        for obj in [self] + self.files:
+            for attr in list(vars(obj).keys()):
+                if isinstance(getattr(type(obj), attr, None), cached_property):
+                    del vars(obj)[attr]
 
     @cached_property
     def download_dir(self):

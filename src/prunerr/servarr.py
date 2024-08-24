@@ -301,7 +301,7 @@ class PrunerrServarrDownloadClient:
                     value=self.seeding_dir
                 )
             )
-            vars(download_item).pop("path", None)
+            download_item.clear()
         return [download_item.hashString for download_item in download_items]
 
 

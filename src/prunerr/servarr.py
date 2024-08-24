@@ -11,9 +11,11 @@ Prunerr interaction with Servarr instances.
 
 import dataclasses
 import time
+import datetime
 import urllib.parse
 import logging
 
+import dateutil
 import arrapi
 import arrapi.apis.base
 
@@ -277,15 +279,18 @@ class PrunerrServarrDownloadClient:
             # Skip items not in this Servarr instance's download directory for this
             # download client
             and self.download_dir in servarr_download_item.download_item.path.parents
-            # Skip items with no history other than `grabbed` events
-            and [
-                history_record
-                for history_record in self.servarr.get_api_paged_records(
-                    "history",
-                    downloadId=servarr_download_item.download_item.hashString.upper(),
-                )
-                if history_record["eventType"] != "grabbed"
-            ]
+            # Skip items with no history other than `grabbed` events:
+            and servarr_download_item.history[0]["eventType"] != "grabbed"
+            # Skip items whose most recent history other than `grabbed`, such as
+            # `downloadFolderimported`, is too recent to avoid moving out from under
+            # Servarr:
+            # TODO: Make timezone aware:
+            # TODO: Add a separate configuration key for the wait period:
+            and (
+                datetime.datetime.now(datetime.timezone.utc)
+                - dateutil.parser.parse(servarr_download_item.history[0]["date"])
+            )
+            > datetime.timedelta(seconds=self.servarr.runner.config["daemon"]["poll"])
         ]
         if not download_items:
             logger.debug(
@@ -389,4 +394,16 @@ class PrunerrServarrDownloadItem:
             f" {self.servarr_download_client.servarr.config.get('name')!r}"
             f"->{self.servarr_download_client.config.get('url')!r}"
             f" torrent={self.download_item!r}>"
+        )
+
+    @cached_property
+    def history(self):
+        """
+        Lookup and collate this download item's Servarr history records.
+        """
+        return list(
+            self.servarr_download_client.servarr.get_api_paged_records(
+                "history",
+                downloadId=self.download_item.hashString.upper(),
+            ),
         )

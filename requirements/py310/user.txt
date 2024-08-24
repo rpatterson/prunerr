@@ -16,6 +16,8 @@ idna==3.7
     # via requests
 main-wrapper==0.1.1
     # via service-logging
+python-dateutil==2.9.0.post0
+    # via prunerr (pyproject.toml)
 pyyaml==6.0.2
     # via prunerr (pyproject.toml)
 requests==2.32.3
@@ -26,7 +28,9 @@ requests==2.32.3
 service-logging==0.1.1
     # via prunerr (pyproject.toml)
 six==1.16.0
-    # via main-wrapper
+    # via
+    #   main-wrapper
+    #   python-dateutil
 tenacity==9.0.0
     # via prunerr (pyproject.toml)
 transmission-rpc==3.4.2

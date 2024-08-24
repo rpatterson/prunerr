@@ -10,6 +10,7 @@ Prunerr interaction with download clients.
 """
 
 import re
+import datetime
 import shutil
 import urllib.parse
 import bdb
@@ -27,7 +28,7 @@ from .utils import pathlib
 logger = logging.getLogger(__name__)
 
 
-class PrunerrDownloadClient:
+class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
     """
     An individual, specific download client that Prunerr interacts with.
     """
@@ -38,6 +39,7 @@ class PrunerrDownloadClient:
 
     client: transmission_rpc.client.Client
     items: list
+    items_requested: datetime.datetime
     operations: prunerr.operations.PrunerrOperations
 
     def __init__(self, runner):
@@ -152,6 +154,7 @@ class PrunerrDownloadClient:
             # operations on individual torrents (e.g. review).
             for torrent in self.client.get_torrents()
         ]
+        self.items_requested = datetime.datetime.now(datetime.timezone.utc)
         return self.items
 
     # Sub-commands

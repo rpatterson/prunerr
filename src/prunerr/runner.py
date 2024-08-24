@@ -8,6 +8,7 @@ Run Prunerr commands across multiple Servarr instances and download clients.
 import gc
 import os
 import time
+import datetime
 import pathlib
 import logging
 import typing
@@ -522,6 +523,14 @@ class PrunerrRunner:
                     item_file.path
                     for item_file in download_item.files
                     if item_file.selected and item_file.path.exists()
+                    # Avoid deleting incomplete files for newly added torrents. Exclude
+                    # files whose creation date is newer than when the download items
+                    # were requested from the RPC API:
+                    and datetime.datetime.fromtimestamp(
+                        item_file.path.stat().st_ctime,
+                        datetime.timezone.utc,
+                    )
+                    < download_client.items_requested
                 )
 
             # Aggregate all the download item directories across all download clients.

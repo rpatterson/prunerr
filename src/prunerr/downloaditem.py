@@ -182,10 +182,11 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             not (done_date := self._fields["doneDate"].value)
             and self._fields["addedDate"].value
         ):
-            logger.warning(
-                "Missing done date for seconds since done, using added date: %r",
-                self,
-            )
+            # I've seen cases where almost half of torrents that I confirmed were
+            # complete and seeding have no `doneDate`. Maybe this happens when adding a
+            # torrent when the local data is already complete, AKA adding a seed?
+            # Regardless of why it happens, it happens so often it's too noisy to log
+            # even at the `DEBUG` level:
             done_date = self._fields["addedDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date

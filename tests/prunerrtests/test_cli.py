@@ -7,11 +7,13 @@ Test the prunerr Command-Line Interface.
 
 import sys
 import os
+import collections
 import io
 import runpy
 import subprocess  # nosec B404
 import contextlib
 import pathlib
+import logging
 
 from unittest import mock
 
@@ -25,6 +27,42 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
     """
     Test the prunerr command-line interface.
     """
+
+    LOGGERS = [logging.getLogger(), logging.getLogger(prunerr.__name__)]
+    LOGGER_ATTRS = ["handlers", "level", "filters"]
+
+    def setUp(self):
+        """
+        Capture what's needed to restore logging after calling ``main()``.
+
+        The logging configuration is global state which breaks isolation between
+        tests. So any tests which call ``config_cli_logging()``, which ``main()`` calls,
+        need to restore the logging configuration back to what it was before
+        ``prunerr.config_cli_logging()`` made it's changes.
+        """
+        super().setUp()
+
+        def cleanup_logging(
+            loggers_state: list = [
+                {attr: getattr(unconfigured_logger, attr) for attr in self.LOGGER_ATTRS}
+                for unconfigured_logger in self.LOGGERS
+            ],
+        ):
+            """
+            Restore the logging configuration and caches from before calling ``main()``.
+
+            :param loggers_state: The state of the loggers to be conigured from before
+                running this test.
+            """
+            for logger_idx, configured_logger in enumerate(self.LOGGERS):
+                vars(configured_logger).update(loggers_state[logger_idx])
+
+        self.addCleanup(cleanup_logging)
+        for unconfigured_logger in self.LOGGERS:
+            for attr in self.LOGGER_ATTRS:
+                value = getattr(unconfigured_logger, attr)
+                if not isinstance(value, collections.abc.Hashable):
+                    setattr(unconfigured_logger, attr, type(value)())
 
     def test_importable(self):
         """

@@ -298,6 +298,12 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
         """
         Second Review of a download item without a queue record doesn't logs a warning.
         """
+        # Add the logging filter that excludes subsequent log messages for the same
+        # item:
+        item_logger = logging.getLogger(prunerr.downloaditem.__name__)
+        self.addCleanup(item_logger.removeFilter, prunerr.utils.daemon_once_filter)
+        item_logger.addFilter(prunerr.utils.daemon_once_filter)
+
         runner = prunerr.runner.PrunerrRunner(
             config=pathlib.Path(__file__).parent
             / "home"
@@ -305,16 +311,33 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
             / ".config"
             / "prunerr.yml",
         )
-        runner.quiet = True
+
+        # On the first run, the per-item messages are logged and the item hash IDs
+        # recorded:
         self.mock_responses(
             self.RESPONSES_DIR.parent / "review-edge-cases",
         )
         runner.update()
+        runner.review()
+
+        # Now on the next run, those log messages for those same items are not repeated:
+        runner.quiet = True
+        for download_client_url in self.download_client_urls:
+            self.set_up_download_item_files(download_client_url)
+        self.set_up_download_item(
+            self.download_client_items_responses[self.DOWNLOAD_CLIENT_URL]["arguments"][
+                "torrents"
+            ][self.DOWNLOAD_ITEM_INDEX]["name"]
+        )
+        self.mock_responses(
+            self.RESPONSES_DIR.parent / "review-edge-cases",
+        )
         if hasattr(self, "assertNoLogs"):  # pragma: no cover
             with self.assertNoLogs(
                 prunerr.downloaditem.logger,
                 level=logging.WARNING,
             ):
+                runner.update()
                 runner.review()
         else:  # pragma: no cover
             # BBB: Python <3.10 compat
@@ -323,4 +346,5 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
                     prunerr.downloaditem.logger,
                     level=logging.WARNING,
                 ):
+                    runner.update()
                     runner.review()

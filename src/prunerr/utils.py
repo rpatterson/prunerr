@@ -83,12 +83,27 @@ class DaemonOnceFilter(logging.Filter):  # pylint: disable=too-few-public-method
     Log a given message only once per daemon session, the first loop.
     """
 
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize the record of which download items have been logged.
+        """
+        super().__init__(*args, **kwargs)
+
+        self.download_hashes = set()
+
     def filter(self, record):
         """
         Check the record extra attributes to see if the runner has already looped once.
         """
-        if (runner := getattr(record, "runner", None)) is not None:
-            return not runner.quiet
+        download_hash = getattr(record, "download_hash", None)
+        if (
+            (runner := getattr(record, "runner", None)) is not None
+            and runner.quiet
+            and download_hash is not None
+            and download_hash in self.download_hashes
+        ):
+            return False
+        self.download_hashes.add(download_hash)
         return True
 
 

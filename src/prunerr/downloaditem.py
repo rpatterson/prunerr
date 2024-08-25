@@ -124,7 +124,10 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                     "Files in %r have multiple roots, using: %s",
                     self.name,
                     file_roots[0],
-                    extra={"runner": self.download_client.runner},
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hashString,
+                    },
                 )
             return file_roots[0]
         return self.name
@@ -176,6 +179,10 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             logger.warning(
                 "Can't determine seconds since done, not complete: %r",
                 self,
+                extra={
+                    "runner": self.download_client.runner,
+                    "download_hash": self.hashString,
+                },
             )
             return 0
         if (
@@ -187,6 +194,14 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             # torrent when the local data is already complete, AKA adding a seed?
             # Regardless of why it happens, it happens so often it's too noisy to log
             # even at the `DEBUG` level:
+            logger.warning(
+                "Missing done date for seconds since done, using added date: %r",
+                self,
+                extra={
+                    "runner": self.download_client.runner,
+                    "download_hash": self.hashString,
+                },
+            )
             done_date = self._fields["addedDate"].value
         if done_date and done_date > 0:
             return time.time() - done_date
@@ -194,6 +209,10 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         logger.warning(
             "Missing done date for seconds since done: %r",
             self,
+            extra={
+                "runner": self.download_client.runner,
+                "download_hash": self.hashString,
+            },
         )
         return None
 
@@ -209,13 +228,19 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             logger.warning(
                 "Done date is the same as added date: %r",
                 self,
-                extra={"runner": self.download_client.runner},
+                extra={
+                    "runner": self.download_client.runner,
+                    "download_hash": self.hashString,
+                },
             )
         elif done_date < self._fields["addedDate"].value:
             logger.warning(
                 "Done date is before added date: %r",
                 self,
-                extra={"runner": self.download_client.runner},
+                extra={
+                    "runner": self.download_client.runner,
+                    "download_hash": self.hashString,
+                },
             )
         if not done_date:
             done_date = time.time()
@@ -223,13 +248,19 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 logger.warning(  # pragma: no cover
                     "Added date is now: %r",
                     self,
-                    extra={"runner": self.download_client.runner},
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hashString,
+                    },
                 )
             elif done_date < self._fields["addedDate"].value:
                 logger.warning(
                     "Added date is in the future: %r",
                     self,
-                    extra={"runner": self.download_client.runner},
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hashString,
+                    },
                 )
         return done_date - self._fields["addedDate"].value
 
@@ -310,7 +341,10 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                     logger.warning(
                         "Download item not in any Servarr queue: %r",
                         self,
-                        extra={"runner": self.download_client.runner},
+                        extra={
+                            "runner": self.download_client.runner,
+                            "download_hash": self.hashString,
+                        },
                     )
                 else:
                     delete_params = {}

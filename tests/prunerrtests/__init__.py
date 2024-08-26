@@ -455,41 +455,31 @@ class PrunerrTestCase(
         """
         mock_method = request_mock._method  # pylint: disable=protected-access
         mock_url = request_mock._url  # pylint: disable=protected-access
-        if request_mock.call_count < len(mock_responses):
-            response_contents = []
-            for response_params in mock_responses.values():
-                response_content = response_params.get(
-                    "json",
-                    response_params.get("text", response_params.get("content")),
-                )
+        mock_response_values = list(mock_responses.values())
+        for response_params in mock_response_values:
+            for content_key in ("json", "text", "content"):
+                if content_key not in response_params:
+                    continue
                 if isinstance(
-                    response_content, (str, bytes)
+                    response_params[content_key], (str, bytes)
                 ) and "Content-Type" in response_params.get("headers", {}):
                     _, minor_type = parse_content_type(
                         response_params["headers"]["Content-Type"],
                     )
                     if minor_type.lower() == "json":
-                        response_content = json.loads(response_content)
-                response_contents.append(response_content)
+                        response_params[content_key] = json.loads(
+                            response_params[content_key],
+                        )
+        if request_mock.call_count < len(mock_responses):
             self.assertEqual(
-                response_contents,
-                response_contents[: request_mock.call_count],
+                mock_response_values,
+                mock_response_values[: request_mock.call_count],
                 f"Some response mocks not called: {mock_method} {mock_url}",
             )
         elif request_mock.call_count > len(mock_responses):
-            request_contents = []
-            for mock_call in request_mock.request_history:
-                request_content = mock_call.text
-                if "Accept" in mock_call.headers:
-                    _, minor_type = parse_content_type(
-                        mock_call.headers["Accept"],
-                    )
-                    if minor_type.lower() == "json":
-                        request_content = mock_call.json()
-                request_contents.append(request_content)
             self.assertEqual(
-                request_contents[: len(mock_responses)],
-                request_contents,
+                mock_response_values[: len(mock_responses)],
+                mock_response_values,
                 f"More requests than mocks: {mock_method} {mock_url}",
             )
 

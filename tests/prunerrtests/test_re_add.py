@@ -35,5 +35,5 @@ class PrunerrReAddTests(prunerrtests.PrunerrTestCase):
         torrent_path.parent.mkdir(parents=True, exist_ok=True)
         torrent_path.write_text('["Example torrent for testing"]')
         self.mock_responses()
-        prunerr.main(args=[f"--config={self.CONFIG}", "re-add"])
+        prunerr.re_add(self.runner)
         # TODO: Add test coverage.

@@ -32,11 +32,6 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         Prunerr removes imported items to free space according to configured rules.
         """
         # 0. Verify initial assumptions and conditions
-        # Add an orphan file to the download client seeding directory:
-        shutil.copy2(
-            self.EXAMPLE_VIDEO,
-            self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name,
-        )
         # Import a download item file into the library:
         self.mock_servarr_import_item(self.seeding_item)
         self.assertFalse(
@@ -72,7 +67,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Not enough free space before 'imported sufficient' `free-space` run",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
+        prunerr.free_space(self.runner)
         self.assert_request_mocks(imported_sufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -97,8 +92,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         )
 
         # 2. There's *not* enough free space and no download items can be
-        #    deleted. Running the `free-space` sub-command stops the download client
-        #    from downloading further.
+        #    deleted. Running the `free-space` sub-command still makes no changes.
         imported_insufficient_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-imported-insufficient",
         )
@@ -110,7 +104,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Too much free space before 'imported insufficient' `free-space` run",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
+        prunerr.free_space(self.runner)
         self.assert_request_mocks(imported_insufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -134,7 +128,51 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             "Download item file not imported by Servarr",
         )
 
-        # 3. There's still not enough free space but now enough download items can be
+        # 3. There's still not enough free space but now an orphan can be
+        #    deleted. That's still not enough free space after deleting it.
+        # Add an orphan file to the download client seeding directory:
+        orphan_path = self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name
+        shutil.copy2(self.EXAMPLE_VIDEO, orphan_path)
+        orphans_insufficient_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "free-space-orphans-insufficient",
+        )
+        orphans_insufficient_before_session = orphans_insufficient_request_mocks[
+            "http://transmission:secret@localhost:9091/transmission/rpc"
+        ]["POST"][1]["00-session-get"]["json"]["arguments"]
+        self.assertLess(
+            orphans_insufficient_before_session["download-dir-free-space"],
+            self.min_free_space,
+            "Too much free space before 'orphans insufficient' `free-space` run",
+        )
+        prunerr.free_space(self.runner)
+        self.assert_request_mocks(orphans_insufficient_request_mocks)
+        self.assertFalse(
+            orphan_path.exists(),
+            "Orphan file exists after 'orphans insufficient' `free-space` run",
+        )
+        self.assertFalse(
+            self.incomplete_item.exists(),
+            "Item in incomplete dir after 'orphans insufficient' `free-space` run",
+        )
+        self.assertFalse(
+            self.downloaded_item.exists(),
+            "Item in downloading dir after 'orphans insufficient' `free-space` run",
+        )
+        self.assertTrue(
+            self.seeding_item.is_dir(),
+            "Seeding item not dir after 'orphans insufficient' `free-space` run",
+        )
+        self.assertTrue(
+            self.seeding_item_file.is_file(),
+            "Item file missing after 'orphans insufficient' `free-space` run",
+        )
+        self.assertEqual(
+            self.seeding_item_file.stat().st_nlink,
+            2,
+            "Download item file not imported by Servarr",
+        )
+
+        # 4. There's still not enough free space but now enough download items can be
         #    deleted to free sufficient space.  Running the `free-space` sub-command
         #    deletes enough download items and their files to free sufficient space and
         #    resumed downloading.
@@ -149,7 +187,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Too much free space before 'upgraded insufficient' `free-space` run",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
+        prunerr.free_space(self.runner)
         self.assert_request_mocks(upgraded_insufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -282,7 +320,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             prunerr.downloadclient.logger,
             level=logging.DEBUG,
         ) as logged_msgs:
-            prunerr.main(args=[f"--config={self.CONFIG}", "free-space"])
+            prunerr.free_space(self.runner)
         self.assert_request_mocks(remaining_downloads_request_mocks)
         self.assertIn(
             "greater than the available free",

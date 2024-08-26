@@ -125,7 +125,7 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
         # 1. Run the `review` sub-command.  The private item's bandwidth priority is
         # increased and the stalled public item is both deleted from the download client
         # and the release is blacklisted in Servarr.  Nothing else is changed.
-        prunerr.main(args=[f"--config={self.CONFIG}", "review"])
+        prunerr.review(self.runner)
         self.assert_request_mocks(downloading_request_mocks)
         (private_indexer_reviewed_torrent,) = downloading_request_mocks[
             "http://transmission:secret@localhost:9091/transmission/rpc"
@@ -191,7 +191,7 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
                 },
             },
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "review"])
+        prunerr.review(self.runner)
         self.assert_request_mocks(reviewed_request_mocks)
         (private_indexer_reviewed_torrent, _) = reviewed_request_mocks[
             "http://transmission:secret@localhost:9091/transmission/rpc"

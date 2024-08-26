@@ -107,5 +107,5 @@ class PrunerrDaemonTests(prunerrtests.PrunerrTestCase):
             PrunerrDaemonTestException,
             msg="Daemon loop exited with wrong exception",
         ):
-            prunerr.main(args=[f"--config={self.CONFIG}", "daemon"])
+            prunerr.daemon(self.runner)
         self.assert_request_mocks(daemon_request_mocks)

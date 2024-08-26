@@ -203,7 +203,7 @@ class PrunerrRunner:
             return results
         return None
 
-    def verify(self) -> dict:
+    def verify(self) -> typing.Optional[dict]:
         """
         Verify and resume download items flagged as having corrupt data.
 
@@ -213,9 +213,11 @@ class PrunerrRunner:
         for download_client_url, download_client in self.download_clients.items():
             if verifying_items := download_client.verify_corrupt_items():
                 verify_results[download_client_url] = verifying_items
-        return verify_results
+        if verify_results:
+            return verify_results
+        return None
 
-    def move(self) -> dict:
+    def move(self) -> typing.Optional[dict]:
         """
         Move download items that have been acted on by Servarr into the seeding dir.
 
@@ -231,7 +233,9 @@ class PrunerrRunner:
                     move_results.setdefault(servarr_url, {})[
                         download_client_url
                     ] = download_client_results
-        return move_results
+        if move_results:
+            return move_results
+        return None
 
     def review(self) -> typing.Optional[dict]:
         """
@@ -290,7 +294,7 @@ class PrunerrRunner:
             return export_results
         return None
 
-    def re_add(self) -> dict:
+    def re_add(self) -> typing.Optional[dict]:
         """
         Remove and re-add all download items with nothing downloaded.
 
@@ -311,7 +315,9 @@ class PrunerrRunner:
             if download_client_results := download_client.re_add():  # pragma: no cover
                 re_add_results[download_client_url] = download_client_results
 
-        return re_add_results
+        if re_add_results:
+            return re_add_results
+        return None  # pragma: no cover
 
     def free_space(self) -> typing.Optional[dict]:
         """
@@ -386,7 +392,9 @@ class PrunerrRunner:
                 ),
             )
 
-        return results
+        if results:
+            return results
+        return None
 
     def daemon(self):
         """

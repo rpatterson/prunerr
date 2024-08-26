@@ -205,13 +205,9 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         self.set_up_imported_files()
 
         self.mock_responses()
-        prunerr.main(
-            args=[
-                f"--config={self.CONFIG}",
-                "export",
-                "--extra-data-path",
-                str(self.storage_dir / "archived"),
-            ],
+        prunerr.export(
+            self.runner,
+            extra_data_paths=str(self.storage_dir / "archived"),
         )
 
     def test_export_empty(self):

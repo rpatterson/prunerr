@@ -28,7 +28,15 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
     Test the prunerr command-line interface.
     """
 
-    LOGGERS = [logging.getLogger(), logging.getLogger(prunerr.__name__)]
+    LOGGERS = [
+        logging.getLogger(),
+        logging.getLogger(prunerr.__name__),
+        logging.getLogger(prunerr.runner.__name__),
+        logging.getLogger(prunerr.downloadclient.__name__),
+        logging.getLogger(prunerr.downloaditem.__name__),
+        logging.getLogger(prunerr.operations.__name__),
+        logging.getLogger(prunerr.servarr.__name__),
+    ]
     LOGGER_ATTRS = ["handlers", "level", "filters"]
 
     def setUp(self):
@@ -198,4 +206,18 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
             script_process.returncode,
             0,
             "Running the console script exited with non-zero status code",
+        )
+
+    def test_cli_empty_results(self):
+        """
+        Print nothing to ``stdout`` when the sub-command returns no results.
+        """
+        self.mock_responses()
+        stdout_file = io.StringIO()
+        with contextlib.redirect_stdout(stdout_file):
+            prunerr.main(args=[f"--config={self.CONFIG}", "verify"])
+        self.assertEqual(
+            stdout_file.getvalue(),
+            "",
+            "Verify sub-command with empty results printed something to ``stdout``",
         )

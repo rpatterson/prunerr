@@ -108,6 +108,9 @@ class PrunerrTestCase(
         """
         super().setUp()
 
+        # Create a runner object to test the CLI entrypoint functions:
+        self.runner = prunerr.runner.PrunerrRunner(self.CONFIG)
+
         # Create a temporary directory for mutable test data
         self.tmp_dir = (
             tempfile.TemporaryDirectory(  # pylint: disable=consider-using-with

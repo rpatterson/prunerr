@@ -58,7 +58,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         #    isn't visible in the Servarr API yet.  Running the `move` sub-command
         #    results in no changes.
         ungrabbed_request_mocks = self.mock_responses()
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(ungrabbed_request_mocks)
         self.assertTrue(
             self.incomplete_item.is_dir(),
@@ -88,7 +88,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         grabbed_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-grabbed",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(grabbed_request_mocks)
         self.assertTrue(
             self.incomplete_item.is_dir(),
@@ -154,7 +154,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         )
         # Proceed with the `move` sub-command
         completed_request_mocks = self.mock_responses(completed_responses_dir)
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(completed_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -185,7 +185,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         completed_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-completed",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(completed_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -227,7 +227,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
                 },
             },
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(import_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -258,7 +258,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         imported_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-imported",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(imported_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -287,7 +287,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         deleted_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-deleted",
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(deleted_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -334,7 +334,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
                 },
             },
         )
-        prunerr.main(args=[f"--config={self.CONFIG}", "move"])
+        prunerr.move(self.runner)
         self.assert_request_mocks(imported_before_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),

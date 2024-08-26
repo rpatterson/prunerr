@@ -21,6 +21,7 @@ import prunerr.downloadclient
 import prunerr.downloaditem
 from . import utils
 from .utils import pathlib
+from .utils import cached_property
 
 logger = logging.getLogger(__name__)
 
@@ -231,6 +232,30 @@ class PrunerrServarrDownloadClient:
         ).resolve()
         return self.download_dir
 
+    @cached_property
+    def items(self):
+        """
+        Represent the download client's items as Servarr releases.
+        """
+        return [
+            PrunerrServarrDownloadItem(self, item)
+            for item in self.download_client.items
+        ]
+
+    def add_torrent(self, download_url, **kwargs):
+        """
+        Add a torrent to the download client and update instance state.
+
+        :param download_url: The URL from which to download the torrent to add.
+        :return: The added ``prunerr.downloaditem.PrunerrDownloadItem()`` instance.
+        """
+        added_item = PrunerrServarrDownloadItem(
+            self,
+            self.download_client.add_torrent(download_url, **kwargs),
+        )
+        self.items.append(added_item)
+        return added_item
+
     def move(self, move_timeout=5 * 60):
         """
         Move download items that have been acted on by Servarr into the seeding dir.
@@ -242,21 +267,22 @@ class PrunerrServarrDownloadClient:
         chance to recognize notice them.
         """
         download_items = [
-            download_item
-            for download_item in self.download_client.items
+            servarr_download_item
+            for servarr_download_item in self.items
             # Skip items still downloading
-            if download_item.status == "seeding"
+            if servarr_download_item.download_item.status == "seeding"
             # Skip items known by a Servarr instance in it's queue
-            and download_item.hashString.upper() not in self.servarr.queue
+            and servarr_download_item.download_item.hashString.upper()
+            not in self.servarr.queue
             # Skip items not in this Servarr instance's download directory for this
             # download client
-            and self.download_dir in download_item.path.parents
+            and self.download_dir in servarr_download_item.download_item.path.parents
             # Skip items with no history other than `grabbed` events
             and [
                 history_record
                 for history_record in self.servarr.get_api_paged_records(
                     "history",
-                    downloadId=download_item.hashString.upper(),
+                    downloadId=servarr_download_item.download_item.hashString.upper(),
                 )
                 if history_record["eventType"] != "grabbed"
             ]
@@ -271,19 +297,25 @@ class PrunerrServarrDownloadClient:
             "Moving download items: %r -> %r\n  %s",
             str(self.download_dir),
             str(self.seeding_dir),
-            "\n  ".join(repr(download_item) for download_item in download_items),
+            "\n  ".join(
+                repr(servarr_download_item.download_item)
+                for servarr_download_item in download_items
+            ),
         )
         self.download_client.client.move_torrent_data(
-            ids=[download_item.hashString for download_item in download_items],
+            ids=[
+                servarr_download_item.download_item.hashString
+                for servarr_download_item in download_items
+            ],
             location=self.seeding_dir,
         )
         # Wait for a timeout for items to finish moving before proceeding.
         start = time.time()
         while next(  # pylint: disable=while-used
             (
-                download_item
-                for download_item in download_items
-                if download_item.path.exists()
+                servarr_download_item
+                for servarr_download_item in download_items
+                if servarr_download_item.download_item.path.exists()
             ),
             None,
         ):
@@ -295,14 +327,19 @@ class PrunerrServarrDownloadClient:
             time.sleep(1)
         # Update the download item's dir for subsequent operations, done manually to
         # minimize requests.
-        for download_item in download_items:
-            download_item._fields[download_item.DOWNLOAD_DIR_FIELD] = (
-                download_item._fields[download_item.DOWNLOAD_DIR_FIELD]._replace(
-                    value=self.seeding_dir
-                )
+        for servarr_download_item in download_items:
+            servarr_download_item.download_item._fields[
+                servarr_download_item.download_item.DOWNLOAD_DIR_FIELD
+            ] = servarr_download_item.download_item._fields[
+                servarr_download_item.download_item.DOWNLOAD_DIR_FIELD
+            ]._replace(
+                value=self.seeding_dir
             )
-            download_item.clear()
-        return [download_item.hashString for download_item in download_items]
+            servarr_download_item.download_item.clear()
+        return [
+            servarr_download_item.download_item.hashString
+            for servarr_download_item in download_items
+        ]
 
 
 def deserialize_servarr_download_client(download_client_config):
@@ -327,3 +364,29 @@ def deserialize_servarr_download_client(download_client_config):
         "",
     ).geturl()
     return download_client_config
+
+
+class PrunerrServarrDownloadItem:
+    """
+    A specific Servar instance's individual download item.
+    """
+
+    download_item = None
+
+    def __init__(self, servarr_download_client, download_item):
+        """
+        Capture references to the servarr download client and the download item.
+        """
+        self.servarr_download_client = servarr_download_client
+        self.download_item = download_item
+
+    def __repr__(self):
+        """
+        Readable, informative, and specific representation to ease debugging.
+        """
+        return repr(
+            f"<{type(self).__name__}"
+            f" {self.servarr_download_client.servarr.config.get('name')!r}"
+            f"->{self.servarr_download_client.config.get('url')!r}"
+            f" torrent={self.download_item!r}>"
+        )

@@ -9,6 +9,8 @@ import os
 
 from unittest import mock
 
+import transmission_rpc
+
 import prunerrtests
 
 import prunerr
@@ -27,6 +29,7 @@ class PrunerrServarrTests(
         The Servarr representations provide useful information for debugging.
         """
         runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        runner.config = {}
         servarr = prunerr.servarr.PrunerrServarrInstance(runner)
         servarr.config = {"name": list(self.config["servarrs"].keys())[0]}
         self.assertIn(
@@ -41,6 +44,28 @@ class PrunerrServarrTests(
         servarr_download_client.config = {
             "url": self.download_client_urls[0],
         }
+        servarr_download_client.download_client.items = [
+            prunerr.downloaditem.PrunerrDownloadItem(
+                servarr_download_client.download_client,
+                None,
+                transmission_rpc.Torrent(
+                    None,
+                    {
+                        "id": list(self.download_client_items_responses.values())[0][
+                            "arguments"
+                        ]["torrents"][0]["hashString"],
+                        "name": self.download_item_title,
+                        "sizeWhenDone": 1,
+                    },
+                ),
+            )
+        ]
+        servarr_download_client.download_client.operations = (
+            prunerr.operations.PrunerrOperations(
+                servarr_download_client.download_client,
+                {},
+            )
+        )
         self.assertIn(
             servarr.config["name"],
             repr(servarr_download_client),
@@ -49,5 +74,10 @@ class PrunerrServarrTests(
         self.assertIn(
             self.download_client_urls[0],
             repr(servarr_download_client),
+            "Download client URL missing from Servarr representation",
+        )
+        self.assertIn(
+            self.download_item_title,
+            repr(servarr_download_client.items[0]),
             "Download client URL missing from Servarr representation",
         )

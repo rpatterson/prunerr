@@ -90,7 +90,7 @@ class PrunerrServarrInstance:
 
     def __init__(self, runner):
         """
-        Capture a references to the runner and individual Servarr configuration.
+        Capture references to the runner and individual Servarr configuration.
         """
         self.runner = runner
         self.type_map = None
@@ -206,7 +206,7 @@ class PrunerrServarrDownloadClient:
 
     def __init__(self, servarr):
         """
-        Capture a references to the servarr instance and download client.
+        Capture references to the servarr instance and download client.
         """
         self.servarr = servarr
         self.config = {}

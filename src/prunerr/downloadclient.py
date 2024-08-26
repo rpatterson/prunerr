@@ -42,7 +42,7 @@ class PrunerrDownloadClient:
 
     def __init__(self, runner):
         """
-        Capture a references to the runner and individual download client configuration.
+        Capture references to the runner and individual download client configuration.
         """
         self.runner = runner
         self.config = {}

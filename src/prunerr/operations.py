@@ -65,7 +65,7 @@ class PrunerrOperations:
 
     def __init__(self, download_client, config):
         """
-        Capture a references to the download client and operations configuration.
+        Capture references to the download client and operations configuration.
         """
         self.download_client = download_client
         self.config = config

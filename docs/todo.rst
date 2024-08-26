@@ -159,7 +159,12 @@ Nice to have
    etc.. It should include generalized support for configuring how to scrape data from
    HTML, probably using XPaths.
 
-#. Re-enable the prose linters and address all failures.
+#. :Tests: Add test cases for the ignored test coverage holes::
 
-#. :Tests: Add test cases for the test coverage holes in the ``$ prunerr export``
-           sub-command.
+             $ git grep -i -e 'pragma: no cover' -- '*.py'
+
+#. :Lint: Resolve ignored linter failures::
+
+            $ git grep -i -e 'alex disable hooks|hadolint ignore|pylint: disable|type: ignore' -- '*.py'
+
+#. :Lint: Re-enable the prose linters and address all failures.

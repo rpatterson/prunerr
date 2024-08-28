@@ -33,10 +33,14 @@ importlib-metadata==8.2.0
     # via build
 iniconfig==2.0.0
     # via pytest
+jinja2==3.1.4
+    # via prunerr (pyproject.toml)
 lib-detect-testenv==2.0.8
     # via cli-exit-tools
 main-wrapper==0.1.1
     # via service-logging
+markupsafe==2.1.5
+    # via jinja2
 packaging==24.1
     # via
     #   build

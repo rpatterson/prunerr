@@ -74,12 +74,14 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         ):
             self.operations.exec_operations(
                 [
-                    {
-                        "type": "value",
-                        "name": "status",
-                        "equals": "seeding",
-                        "maximum": 1,
-                    },
+                    prunerr.operations.parse_operation(
+                        {
+                            "type": "value",
+                            "template": "{{item.status}}",
+                            "equals": "seeding",
+                            "maximum": 1,
+                        },
+                    ),
                 ],
                 self.item,
             )
@@ -94,11 +96,13 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         ):
             self.operations.exec_operations(
                 [
-                    {
-                        "type": "value",
-                        "name": "peersFrom",
-                        "reversed": True,
-                    },
+                    prunerr.operations.parse_operation(
+                        {
+                            "type": "value",
+                            "template": "{{item.peersFrom}}",
+                            "reversed": True,
+                        },
+                    ),
                 ],
                 self.item,
             )
@@ -110,10 +114,12 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         self.assertEqual(
             self.operations.exec_operations(
                 [
-                    {
-                        "type": "value",
-                        "name": "foo",
-                    },
+                    prunerr.operations.parse_operation(
+                        {
+                            "type": "value",
+                            "template": "{{item.foo}}",
+                        },
+                    ),
                 ],
                 self.item,
             )[1],
@@ -131,15 +137,19 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                     "type": "and",
                     "filter": True,
                     "operations": [
-                        {
-                            "type": "value",
-                            "name": "status",
-                            "equals": "seeding",
-                        },
-                        {
-                            "type": "value",
-                            "name": "priorities",
-                        },
+                        prunerr.operations.parse_operation(
+                            {
+                                "type": "value",
+                                "template": "{{item.status}}",
+                                "equals": "seeding",
+                            },
+                        ),
+                        prunerr.operations.parse_operation(
+                            {
+                                "type": "value",
+                                "template": "{{item.priorities}}",
+                            },
+                        ),
                     ],
                 }
             ],
@@ -157,15 +167,19 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                     "type": "and",
                     "filter": True,
                     "operations": [
-                        {
-                            "type": "value",
-                            "name": "priorities",
-                            "reversed": True,
-                        },
-                        {
-                            "type": "value",
-                            "name": "status",
-                        },
+                        prunerr.operations.parse_operation(
+                            {
+                                "type": "value",
+                                "template": "{{item.priorities}}",
+                                "reversed": True,
+                            },
+                        ),
+                        prunerr.operations.parse_operation(
+                            {
+                                "type": "value",
+                                "template": "{{item.status}}",
+                            },
+                        ),
                     ],
                 }
             ],
@@ -203,10 +217,12 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         self.assertEqual(
             self.operations.exec_operations(
                 [
-                    {
-                        "type": "files",
-                        "name": "size",
-                    },
+                    prunerr.operations.parse_operation(
+                        {
+                            "type": "files",
+                            "template": "{{file.size}}",
+                        },
+                    ),
                 ],
                 self.item,
             )[1][0],

@@ -18,6 +18,10 @@ Required
    <https://github.com/linuxserver/docker-transmission/issues/284#issue-2451398884>`_
    has been fixed.
 
+#. :transmisison:
+
+   Remove the ``transmission-rpc<4`` version, upgrade it, test and resolve issues.
+
 #. Use YAML anchors and merge keys to demonstrate how to share configuration between
    indexers?
 

@@ -56,6 +56,8 @@ idna==3.7
     # via requests
 isort==5.13.2
     # via pylint
+jinja2==3.1.4
+    # via prunerr (pyproject.toml)
 lazy-object-proxy==1.10.0
     # via astroid
 main-wrapper==0.1.1
@@ -64,6 +66,8 @@ mando==0.7.1
     # via radon
 markdown-it-py==3.0.0
     # via rich
+markupsafe==2.1.5
+    # via jinja2
 mccabe==0.7.0
     # via
     #   flake8

@@ -64,7 +64,9 @@ services:
       PGID: "${PGID:-${PUID:-1000}}"
       # Variables from the environment to pass through into the container:
       CI: "${CI:-false}"
-      # DEBUG: "true"
+      # Pass in from the environment or set to `true` here to get more verbose `DEBUG`
+      # logging:
+      DEBUG: "${DEBUG:-}"
       # FIXME: Cleanup once fixed Prunerr entrypoint has been released:
       # fix(docker): Entrypoint user should not change
       PROJECT_NAME: "prunerr"
@@ -217,7 +219,9 @@ services:
       TZ: "${TZ:-Etc/UTC}"
       PUID: "${PUID:-1000}"
       PGID: "${DOCKER_GID:-${PGID:-${PUID:-1000}}}"
-      # DEBUG: "true"
+      # Pass in from the environment or set to `true` here to get more verbose `DEBUG`
+      # logging:
+      DEBUG: "${DEBUG:-}"
     working_dir: "${CHECKOUT_DIR:-.}"
     command: >-
       make -e test-lint build-docker test-docker release

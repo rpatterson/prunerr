@@ -8,16 +8,19 @@
 
 set -eu -o pipefail
 shopt -s inherit_errexit
+PROSPECTOR_ARGS=
 if test "${DEBUG:=false}" = "true"
 then
     # Echo commands for easier debugging
     set -x
     PS4='$0:$LINENO+'
+    PROSPECTOR_ARGS+=" -X"
 fi
 
 
 main() {
-    git ls-files -co --exclude-standard -z '*.py' | xargs -0 -- prospector "${@}"
+    git ls-files -co --exclude-standard -z '*.py' |
+	xargs -0 -- prospector ${PROSPECTOR_ARGS} "${@}"
 }
 
 

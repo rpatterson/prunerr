@@ -31,7 +31,7 @@ try:
     # BBB: Python <3.10 compat
     import pathlib3x as pathlib  # pylint: disable=unused-import
 except ImportError:  # pragma: no cover
-    import pathlib  # type: ignore # pylint: disable=unused-import
+    import pathlib  # type: ignore # pylint: disable=unused-import # noqa: F401
 
 try:
     from functools import (  # type: ignore # pylint: disable=unused-import
@@ -39,7 +39,7 @@ try:
     )
 except ImportError:  # pragma: no cover
     # BBB: Python <3.8 compatibility
-    from backports.cached_property import cached_property  # type: ignore
+    from backports.cached_property import cached_property  # type: ignore # noqa: F401
 
 TRUE_STRS = {"1", "true", "yes", "on"}
 DEBUG = (  # noqa: F841

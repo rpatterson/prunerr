@@ -27,21 +27,21 @@ indexers:
         - type: "or"
           operations:
             - type: "value"
-              name: "status"
+              template: "{{item.status}}"
               equals: "seeding"
             - type: "value"
-              name: "age"
+              template: "{{item.age}}"
               maximum: 604800
             - type: "value"
-              name: "seconds_downloading"
+              template: "{{item.seconds_downloading}}"
               maximum: 0
             - type: "value"
-              name: "rate_total"
+              template: "{{item.rate_total}}"
               minimum: 50
           remove: true
           blacklist: true
         - type: "files"
-          name: "size"
+          template: "{{file.size}}"
           path-patterns:
             - ".+\\.rar$"
             - ".+\\.r[0-9]+$"
@@ -55,7 +55,7 @@ indexers:
           remove: true
           blacklist: true
         - type: "value"
-          name: "bandwidthPriority"
+          template: "{{item.bandwidthPriority}}"
           equals: 1
           change:
             bandwidthPriority: 1
@@ -64,21 +64,21 @@ indexers:
         - type: "or"
           operations:
             - type: "value"
-              name: "status"
+              template: "{{item.status}}"
               equals: "seeding"
             - type: "value"
-              name: "age"
+              template: "{{item.age}}"
               maximum: 604800
             - type: "value"
-              name: "seconds_downloading"
+              template: "{{item.seconds_downloading}}"
               maximum: 0
             - type: "value"
-              name: "rate_total"
+              template: "{{item.rate_total}}"
               minimum: 50
           remove: true
           blacklist: true
         - type: "files"
-          name: "size"
+          template: "{{file.size}}"
           path-patterns:
             - ".+\\.rar$"
             - ".+\\.r[0-9]+$"
@@ -92,7 +92,7 @@ indexers:
           remove: true
           blacklist: true
         - type: "value"
-          name: "bandwidthPriority"
+          template: "{{item.bandwidthPriority}}"
           equals: -1
           change:
             bandwidthPriority: -1
@@ -103,13 +103,13 @@ indexers:
           filter: true
           operations:
             - type: "value"
-              name: "seconds_since_done"
+              template: "{{item.seconds_since_done}}"
               minimum: 864000
             - type: "value"
-              name: "ratio"
+              template: "{{item.ratio}}"
               minimum: 1.0
         - type: "files"
-          name: "size"
+          template: "{{file.size}}"
           filter-attrs:
             - "is_imported"
           aggregation: "portion"
@@ -117,21 +117,21 @@ indexers:
           filter: true
           minimum: 0.9
         - type: "value"
-          name: "uploadedEver"
+          template: "{{item.uploadedEver}}"
           reversed: true
         - type: "value"
-          name: "size_when_done"
+          template: "{{item.size_when_done}}"
           minimum: 10737418240
           reversed: true
         - type: "value"
-          name: "size_when_done"
+          template: "{{item.size_when_done}}"
     - name: null
       operations:
         - type: "files"
-          name: "size"
+          template: "{{file.size}}"
           filter-attrs:
             - "is_imported"
           aggregation: "portion"
           reversed: true
         - type: "value"
-          name: "ratio"
+          template: "{{item.ratio}}"

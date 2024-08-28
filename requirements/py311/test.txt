@@ -24,8 +24,12 @@ idna==3.7
     # via requests
 iniconfig==2.0.0
     # via pytest
+jinja2==3.1.4
+    # via prunerr (pyproject.toml)
 main-wrapper==0.1.1
     # via service-logging
+markupsafe==2.1.5
+    # via jinja2
 packaging==24.1
     # via
     #   build

@@ -14,28 +14,67 @@ Used to determine item indexer priority, reviewing grabbed items, etc.
 import re
 import logging
 
+import jinja2.environment
+import jinja2.nativetypes
+
 logger = logging.getLogger(__name__)
 
-missing_value = object()
+jinja_env = jinja2.nativetypes.NativeEnvironment()
 
 
-def apply_sort_value(operation_config, include, sort_value):
+def parse_operation(operation_config):
+    """
+    Parse or compile any expressions in the configuration.
+
+    Done for better speed when executing the same operation against multiple download
+    items.
+    """
+    if "equals" in operation_config and (
+        "minimum" in operation_config or "maximum" in operation_config
+    ):
+        raise ValueError(
+            f"Operation {operation_config['type']!r} "
+            f"includes both `equals` and `minimum` or `maximum`"
+        )
+    operation_config.update(
+        (key, jinja_env.from_string(operation_config[key]))
+        for key in ("template", "equals", "minimum", "maximum")
+        if key in operation_config and isinstance(operation_config[key], str)
+    )
+
+    for child_operation_config in operation_config.get("operations", []):
+        parse_operation(child_operation_config)
+
+    return operation_config
+
+
+def render_value(template, **context):
+    """
+    Render a Jinja template string, or return directly if not a string.
+    """
+    if isinstance(template, jinja2.environment.Template):
+        return template.render(**context)
+    return template
+
+
+def apply_sort_value(operation_config, item, include, sort_value):
     """
     Apply any restrictions that can apply across different operation types.
     """
     sort_bool = None
     if "equals" in operation_config:
-        sort_bool = sort_value == operation_config["equals"]
-        if "minimum" in operation_config or "maximum" in operation_config:
-            raise ValueError(
-                f"Operation {operation_config['type']!r} "
-                f"includes both `equals` and `minimum` or `maximum`"
-            )
+        sort_bool = sort_value == render_value(operation_config["equals"], item=item)
     else:
         if "minimum" in operation_config:
-            sort_bool = sort_value >= operation_config["minimum"]
+            sort_bool = sort_value >= render_value(
+                operation_config["minimum"],
+                item=item,
+            )
         if "maximum" in operation_config and (sort_bool is None or sort_bool):
-            sort_bool = sort_value <= operation_config["maximum"]
+            sort_bool = sort_value <= render_value(
+                operation_config["maximum"],
+                item=item,
+            )
     if sort_bool is not None:
         sort_value = sort_bool
     # Should the operation value be used to filter this download item?
@@ -75,14 +114,17 @@ class PrunerrOperations:
             config["priorities"] = [
                 self.download_client.runner.example_confg["indexers"]["priorities"][-1]
             ]
-        self.indexer_operations = {
-            operations_type: {
-                indexer_config["name"]: indexer_config
-                for indexer_config in indexer_configs
-            }
-            for operations_type, indexer_configs in config.items()
-            if operations_type != "hostnames"
-        }
+        self.indexer_operations = {}
+        for operations_type, indexer_configs in config.items():
+            if operations_type == "hostnames":
+                continue
+            self.indexer_operations[operations_type] = {}
+            for indexer_config in indexer_configs:
+                self.indexer_operations[operations_type][
+                    indexer_config["name"]
+                ] = indexer_config
+                for operation_config in indexer_config["operations"]:
+                    parse_operation(operation_config)
 
         self.seen_empty_files = set()
 
@@ -119,11 +161,14 @@ class PrunerrOperations:
                     f"{operation_config['type']!r}"
                 )
             # Delegate to the executor to get the operation value for this download item
-            if (sort_value := executor(operation_config, item)) is None:
+            if (sort_value := executor(operation_config, item)) is None or isinstance(
+                sort_value, jinja2.runtime.Undefined
+            ):
                 # If an executor returns None, all other handling should be skipped
                 return include, tuple(sort_key)
             include, sort_value = apply_sort_value(
                 operation_config,
+                item,
                 include,
                 sort_value,
             )
@@ -138,12 +183,7 @@ class PrunerrOperations:
         """
         Return the attribute or key value for the download item.
         """
-        # Use `missing_value` instead of `hasattr()`
-        # to avoid redundant property method calls
-        value = getattr(item, operation_config["name"], missing_value)
-        if value is not missing_value:
-            return value
-        return None
+        return render_value(operation_config["template"], item=item)
 
     def exec_operation_or(self, operation_config, item):  # noqa: V105
         """
@@ -175,7 +215,7 @@ class PrunerrOperations:
         """
         Return aggregated values from item files.
         """
-        quantity = operation_config.get("name")
+        template = operation_config.get("template")
         filter_attrs = operation_config.get("filter-attrs", [])
         path_patterns = operation_config.get("path-patterns", [])
         aggregation = operation_config.get("aggregation")
@@ -213,15 +253,15 @@ class PrunerrOperations:
             matching_files = pattern_files
 
         sort_value = (
-            sum(getattr(matching_file, quantity) for matching_file in matching_files)
-            if quantity
+            sum(template.render(file=matching_file) for matching_file in matching_files)
+            if template
             else len(matching_files)
         )
 
         if aggregation == "portion":
-            if quantity:
+            if template:
                 total = sum(
-                    getattr(wanted_file, quantity) for wanted_file in wanted_files
+                    template.render(file=wanted_file) for wanted_file in wanted_files
                 )
             else:  # pragma: no cover
                 total = len(wanted_files)

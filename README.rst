@@ -193,8 +193,7 @@ Releases publish multi-platform images for the following platforms:
 Usage
 ****************************************************************************************
 
-Start by writing your ``~/.config/prunerr.yml`` configuration file. See the comments in
-`the example configuration`_ for details.
+Start by writing your ``~/.config/prunerr.yml`` `configuration file`_.
 
 Once configured, you may run individual sub-commands once, run all operations once as
 configured using the ``$ prunerr exec`` sub-command, or run all operations in a polling
@@ -209,6 +208,18 @@ If using the Docker container image, the container can be run from the command-l
 well::
 
   $ docker compose run "prunerr" prunerr --help
+
+
+****************************************************************************************
+Configuration File
+****************************************************************************************
+
+See the comments in `the example configuration`_ for details and examples. Values are
+extracted from download items and their files for the ``template``, ``equals``,
+``minimum``, ``maximum`` keys using `Jinja templates`_. Note that `YAML types`_ in those
+keys other than strings, such as integers or floats, will not be rendered as templates.
+YAML strings without any template expressions in them will render to themselves, for
+example ``"template": "Some fixed string"`` renders to ``Some fixed string``.
 
 
 ****************************************************************************************
@@ -376,6 +387,8 @@ References
 
 .. _`the example configuration`:
    https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
+.. _`Jinja templates`: https://jinja.palletsprojects.com/en/latest/templates/
+.. _`YAML types`: https://yaml.org/spec/1.2.2/#1021-tags
 .. _`the provided Transmission pause download script`:
    https://gitlab.com/rpatterson/prunerr/blob/main/transmission/usr/local/bin/transmission-pause-download
 .. _`integrate it into your Docker Compose project via a cron job`:

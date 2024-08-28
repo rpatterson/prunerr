@@ -24,18 +24,18 @@ indexers:
         - type: "or"
           operations:
             - type: "value"
-              name: "status"
+              template: "{{item.status}}"
               equals: "seeding"
             - type: "value"
-              name: "age"
+              template: "{{item.age}}"
               maximum: 604800
             - type: "value"
-              name: "seconds_downloading"
+              template: "{{item.seconds_downloading}}"
               maximum: 0
             - type: "value"
-              name: "rate_total"
+              template: "{{item.rate_total}}"
               minimum: 50
           remove: true
         - type: "value"
-          name: "bandwidthPriority"
+          template: "{{item.bandwidthPriority}}"
           equals: 1

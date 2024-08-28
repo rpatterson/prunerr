@@ -87,6 +87,7 @@ ignore-paths:
   # Ignore failures in these artifacts:
   - "src/prunerr/version.py"
 
-  # TEMPLATE: Add any paths that never contain Python code under `./src/prunerr/`
-  # or `./tests/prunerrtests/` for your project:
-  #  - "tests/prunerrtests/fixtures"
+  # Paths that never contain Python code under `./src/prunerr/` or
+  # `./tests/prunerrtests/`:
+  - "tests/prunerrtests/home/"
+  - "tests/prunerrtests/responses/"

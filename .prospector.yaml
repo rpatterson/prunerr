@@ -55,6 +55,10 @@ pep257:
     - "D200"
     # Redundant with `pylint - missing-function-docstring`
     - "D103"
+pycodestyle:
+  disable:
+    # Redundant with Black's formatting of `{"foo": None}` vs `foo_list[bar_idx + 1 :]`:
+    - "E203"
 
 # Prospector's file finding process seems quite expensive, best to aggressively
 # exclude directories it should never have to search:

@@ -199,3 +199,25 @@ class NotifyHandler(logging.Handler):  # pylint: disable=too-few-public-methods
 
 notify_handler = NotifyHandler()
 notify_handler.setLevel(logging.ERROR)
+
+
+class PrunerrComponent:
+    """
+    An object representing a part of the Prunerr and Servarr architecture.
+    """
+
+    def update(self):
+        """
+        Update cached values when this download item is updated.
+        """
+        self.clear()
+
+    def clear(self):
+        """
+        Reset derived attributes cached in this instance.
+        """
+        for attr_name in list(vars(self).keys()):
+            if isinstance(getattr(type(self), attr_name, None), cached_property):
+                delattr(self, attr_name)
+            elif hasattr(getattr(self, attr_name, None), "cache_clear"):
+                getattr(self, attr_name).cache_clear()

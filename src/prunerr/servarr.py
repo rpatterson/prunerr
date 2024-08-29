@@ -51,7 +51,7 @@ class PrunerrServarrAPIClient:
         return self.client._raw._delete  # pylint: disable=protected-access
 
 
-class PrunerrServarrInstance:
+class PrunerrServarrInstance(utils.PrunerrComponent):
     """
     An individual, specific Servarr instance that Prunerr interacts with.
     """
@@ -108,13 +108,14 @@ class PrunerrServarrInstance:
         """
         return f"<{type(self).__name__} {self.config.get('name')!r}>"
 
-    def update(self, config):
+    def update(self, config):  # pylint: disable=arguments-differ
         """
         Update configuration, connect the API client, and refresh Servarr API data.
 
         Also retrieves any download clients defined in the Servarr settings and updates
         the prunerr representations.
         """
+        super().update()
         self.config = config
         self.config["url"] = utils.normalize_url(self.config["url"])
         self.type_map = self.TYPE_MAPS[self.config["type"]]
@@ -198,7 +199,7 @@ class PrunerrServarrInstance:
             yield from response["records"]
 
 
-class PrunerrServarrDownloadClient:
+class PrunerrServarrDownloadClient(utils.PrunerrComponent):
     """
     A specific Servar instance's individual specific download client.
     """
@@ -223,10 +224,11 @@ class PrunerrServarrDownloadClient:
             f"->{self.config.get('url')!r}>"
         )
 
-    def update(self, config):
+    def update(self, config):  # pylint: disable=arguments-differ
         """
         Update download client configuration specific to this Servarr instance.
         """
+        super().update()
         self.config = config
         # Assemble the download client paths managed by Servarr
         self.download_dir = pathlib.Path(
@@ -371,7 +373,7 @@ def deserialize_servarr_download_client(download_client_config):
     return download_client_config
 
 
-class PrunerrServarrDownloadItem:
+class PrunerrServarrDownloadItem(utils.PrunerrComponent):
     """
     A specific Servar instance's individual download item.
     """

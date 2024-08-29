@@ -26,14 +26,13 @@ from .commands import export
 logger = logging.getLogger(__name__)
 
 
-class PrunerrRunner:
+class PrunerrRunner(utils.PrunerrComponent):
     """
     Run Prunerr sub-commands across multiple Servarr instances and download clients.
     """
 
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
 
-    config: dict
     config_stat: os.stat_result
     quiet = False
 
@@ -41,11 +40,22 @@ class PrunerrRunner:
         """
         Capture a reference to the global Prunerr configuration file.
         """
+        with self.EXAMPLE_CONFIG.open() as config_opened:
+            self.example_confg = yaml.safe_load(config_opened)
         self.config_file = pathlib.Path(config)
 
         # Initialize any local instance state
         self.download_clients = {}
         self.servarrs = {}
+
+    @cached_property
+    def config(self) -> dict:
+        """
+        Parse and validate the configuration file and cache in instance state.
+
+        :return: The parsed YAML configuration as a Python mapping
+        """
+        return self.validate()
 
     def validate(self) -> dict:
         """
@@ -102,7 +112,7 @@ class PrunerrRunner:
         :return: Map download client URLs to
             ``prunerr.downloadclient.PrunerrDownloadClient`` instances
         """
-        self.config = self.validate()
+        super().update()
 
         # Update Servarr API clients
         servarrs = {}
@@ -159,16 +169,6 @@ class PrunerrRunner:
         self.download_clients = download_clients
 
         return self.download_clients
-
-    @cached_property
-    def example_confg(self) -> dict:
-        """
-        Use the example configuration file for defaults where needed.
-
-        :return: The configuration file YAML as Python values
-        """
-        with self.EXAMPLE_CONFIG.open() as config_opened:
-            return yaml.safe_load(config_opened)
 
     # Sub-commands
 
@@ -609,14 +609,10 @@ class PrunerrRunner:
         """
         Free any memory possible between daemon loops.
         """
-        del self.config
+        super().clear()
         self.servarrs.clear()
         # Clear discreet download client caches to preserve verifying download items
         for _, download_client in self.download_clients.items():
-            del download_client.config
-            del download_client.operations
-            del download_client.client
-            download_client.servarrs.clear()
-            del download_client.items
+            download_client.clear()
         # Tell Python it's a good time to free memory
         gc.collect()

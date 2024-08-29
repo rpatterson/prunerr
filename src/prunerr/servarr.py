@@ -158,12 +158,12 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_client_names = download_client_names
 
         # Update any data in instance state that should *not* be cached across updates
-        self.queue = {
-            record["downloadId"]: dict(record, servarr=self)
-            for record in self.get_api_paged_records("queue")
-            # `Pending` records have no download client hash yet
-            if record.get("downloadId")
-        }
+        self.queue = {}
+        for record in self.get_api_paged_records("queue"):
+            record["servarr"] = self
+            # `Pending` records have no download item hash ID yet and so are grouped
+            # under `None`:
+            self.queue.setdefault(record.get("downloadId"), []).append(record)
 
         return self.client
 

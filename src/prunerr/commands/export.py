@@ -437,8 +437,8 @@ class ExportServarrRootItem:
                     download_id_collated.get("downloadRootName")
                     and download_root_name != download_id_collated["downloadRootName"]
                 ):  # pragma: no cover
-                    # Corrupt Servarr download item history where the same download item
-                    # hash ID is on the import history records from different download
+                    # Corrupt Servarr release history where the same download item hash
+                    # ID is on the import history records from different download
                     # items. The only cases of this I've seen are when more recent
                     # manual imports seem to get the download item hash ID from the
                     # previous automated import they upgrade, so assume the older record
@@ -688,7 +688,7 @@ def maybe_add_download_item(
     # Try each download URL from the grab history, most recent first:
     for download_url, download_data in download_urls.items():
         try:
-            servarr_download_item = download_data["downloadClient"].add_torrent(
+            release = download_data["downloadClient"].add_torrent(
                 download_url,
                 paused=True,
                 download_dir=str(download_data["downloadClient"].seeding_dir),
@@ -706,9 +706,9 @@ def maybe_add_download_item(
             continue
         else:
             download_items_by_id.setdefault(
-                servarr_download_item.download_item.hashString.upper(),
+                release.download_item.hashString.upper(),
                 [],
-            ).append(servarr_download_item.download_item)
-            return servarr_download_item.download_item
+            ).append(release.download_item)
+            return release.download_item
 
     return None  # pragma: no cover

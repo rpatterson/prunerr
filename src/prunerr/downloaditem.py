@@ -17,6 +17,7 @@ import logging
 
 import transmission_rpc
 
+from . import utils
 from .utils import pathlib
 from .utils import cached_property
 
@@ -38,7 +39,7 @@ def parallel_to(base_path, parallel_path, root_basename):
     )
 
 
-class PrunerrDownloadItem(transmission_rpc.Torrent):
+class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
     """
     Enrich download item data from the download client API.
     """
@@ -83,21 +84,21 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         details_str = " ".join(f"{attr}={value!r}" for attr, value in details.items())
         return f"<Torrent {details_str}>"
 
-    def update(self, timeout=None):
+    def update(self):
         """
         Update cached values when this download item is updated.
         """
-        super().update(timeout=timeout)
+        super().update()
+        super(utils.PrunerrComponent, self).update()
         self.clear()
 
     def clear(self):
         """
         Reset derived attributes cached in this instance.
         """
-        for obj in [self] + self.files:
-            for attr in list(vars(obj).keys()):
-                if isinstance(getattr(type(obj), attr, None), cached_property):
-                    del vars(obj)[attr]
+        super().clear()
+        for item_file in self.files:
+            item_file.clear()
 
     @cached_property
     def download_dir(self):
@@ -605,7 +606,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         return True
 
 
-class PrunerrDownloadItemFile:
+class PrunerrDownloadItemFile(utils.PrunerrComponent):
     """
     Combine Prunerr's download item file access and the RPC client library's.
     """

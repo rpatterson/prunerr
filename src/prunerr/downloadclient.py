@@ -24,12 +24,15 @@ import prunerr.downloaditem
 import prunerr.operations
 from . import utils
 from .utils import pathlib
+from .utils import cached_property
 
 root_logger = logging.getLogger()
 logger = logging.getLogger(__name__)
 
 
-class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
+class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
+    utils.PrunerrComponent
+):
     """
     An individual, specific download client that Prunerr interacts with.
     """
@@ -39,7 +42,6 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
     UNREGISTERED_ERROR_RE = re.compile(r".*(not |un)registered.*")
 
     client: transmission_rpc.client.Client
-    items: list
     items_requested: datetime.datetime
     operations: prunerr.operations.PrunerrOperations
 
@@ -58,10 +60,11 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
         """
         return f"<{type(self).__name__} at {self.config.get('name')!r}>"
 
-    def update(self, config):
+    def update(self, config):  # pylint: disable=arguments-differ
         """
         Update configuration, connect the RPC client, and update the list of items.
         """
+        super().update()
         self.config = config
 
         if not self.config.get("url"):
@@ -137,13 +140,16 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
                 self.SEEDING_DIR_BASENAME,
             )
 
-        # Retrieve any information from the download client's RPC API needed for all
-        # sub-commands
+    @cached_property
+    def items(self):
+        """
+        Request the download items from the client as needed and cache.
+        """
         logger.debug(
             "Retrieving list of download items from download client: %s",
             self.config["url"],
         )
-        self.items = [
+        items = [
             prunerr.downloaditem.PrunerrDownloadItem(
                 self,
                 torrent._client,  # pylint: disable=protected-access
@@ -155,8 +161,25 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
             # operations on individual torrents (e.g. review).
             for torrent in self.client.get_torrents()
         ]
+
+        # Record when the items were requested to identify filesystem changes that are
+        # more current than our list of items:
         self.items_requested = datetime.datetime.now(datetime.timezone.utc)
-        return self.items
+
+        # Ensure that all Servarr instances are also up to date, clear cached items:
+        for servarr in self.servarrs.values():
+            vars(servarr).pop("items", None)
+
+        return items
+
+    def clear(self):
+        """
+        Reset derived attributes cached in this instance.
+        """
+        super().clear()
+        self.servarrs.clear()
+        for attr in ("config", "operations", "client"):
+            vars(self).pop(attr, None)
 
     # Sub-commands
 

@@ -57,6 +57,12 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
 
         request_mocks = self.mock_responses()
         runner.update()
+        for download_client in runner.download_clients.values():
+            self.assertIsInstance(
+                download_client.items,
+                list,
+                "Wrong download client items type",
+            )
         self.assert_request_mocks(request_mocks)
         self.assertIn(
             "download_clients",

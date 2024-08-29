@@ -25,6 +25,7 @@ import prunerr.operations
 from . import utils
 from .utils import pathlib
 
+root_logger = logging.getLogger()
 logger = logging.getLogger(__name__)
 
 
@@ -170,9 +171,25 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
         # Need to make a copy in case review leads to deleting an item and modifying
         # `self.items`.
         download_dir = pathlib.Path(self.client.session.download_dir)
-        for item in [item for item in self.items if download_dir in item.path.parents]:
+        for item in [
+            item
+            for item in self.items
+            # Only review new items, IOW only those that haven't been imported yet:
+            if download_dir in item.path.parents
+            # Only review items once based on whether the log file has been written
+            # to more recently than the configuration has been modified:
+            and (
+                not item.log_path.exists()
+                or self.runner.config_stat.st_mtime > item.log_path.stat().st_mtime
+            )
+        ]:
+            # Log messages specific to this download item to a dedicated log file:
+            item.log_path.parent.mkdir(parents=True, exist_ok=True)
+            item_handler = logging.FileHandler(item.log_path)
+            item_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
             item_results = None
             queue_record = servarr_queue.get(item.hashString.upper(), {})
+            root_logger.addHandler(item_handler)
             try:
                 item_results = item.review(queue_record)
             except utils.RETRY_EXC_TYPES:
@@ -180,8 +197,15 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
                     "Error reviewing item: %s",
                     item,
                 )
+            finally:
+                root_logger.removeHandler(item_handler)
+                item_handler.acquire()
+                item_handler.flush()
+                item_handler.close()
+
             if item_results:
                 results[item.hashString] = item_results
+
         return results
 
     def re_add(self) -> list:
@@ -229,7 +253,7 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
 
     # Methods used by the `free-space` sub-command
 
-    def delete_files(self, item):
+    def delete_files(self, item):  # pylint: disable=too-complex # noqa: MC0001
         """
         Delete all files and directories for the given path and stat or download item.
 
@@ -271,6 +295,8 @@ class PrunerrDownloadClient:  # pylint: disable=too-many-instance-attributes
                     if next(file_parent.iterdir(), None) is None:  # pragma: no cover
                         file_parent.rmdir()
                     file_parent = file_parent.parent
+            if item.log_path.exists():
+                item.log_path.unlink()
 
         # Handle filesystem paths not recognized by the download client
         else:

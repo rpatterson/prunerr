@@ -34,6 +34,7 @@ class PrunerrRunner:
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
 
     config: dict
+    config_stat: os.stat_result
     quiet = False
 
     def __init__(self, config):
@@ -58,6 +59,7 @@ class PrunerrRunner:
             raise utils.PrunerrValidationError(
                 f"Configuration file not found: {self.config_file}"
             )
+        self.config_stat = self.config_file.stat()
         with self.config_file.open(encoding="utf-8") as config_opened:
             self.config = yaml.safe_load(config_opened)
 
@@ -536,6 +538,7 @@ class PrunerrRunner:
                     )
                     < download_client.items_requested
                 )
+                item_files.add(download_item.log_path)
 
             # Aggregate all the download item directories across all download clients.
             # Some download item directories may be shared across download clients and

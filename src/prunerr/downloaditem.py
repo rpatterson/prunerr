@@ -293,6 +293,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
             item_file.disk_usage for item_file in self.files if item_file.path.exists()
         )
 
+    @cached_property
+    def log_path(self):
+        """
+        Assemble the path for the log file dedicated to this individual download item.
+        """
+        return pathlib.Path(self.download_dir, f"{self.hashString}-prunerr.log")
+
     def match_indexer_urls(self):
         """
         Return the indexer name if the download item matches a configured tracker URL.

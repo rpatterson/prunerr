@@ -332,6 +332,8 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
         self.mock_responses(
             self.RESPONSES_DIR.parent / "review-edge-cases",
         )
+        # Simulate a change in the configuration so that the reviews will be repeated:
+        runner.config_file.touch()
         if hasattr(self, "assertNoLogs"):  # pragma: no cover
             with self.assertNoLogs(
                 prunerr.downloaditem.logger,

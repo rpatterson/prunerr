@@ -359,8 +359,8 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
                     if operation_config.get("blacklist", False):
                         delete_params["blacklist"] = "true"
                         result["blacklist"] = True
-                    servarr_queue["servarr"].client.delete(
-                        f"queue/{servarr_queue.get('id')}",
+                    servarr_queue[0]["servarr"].client.delete(
+                        f"queue/{servarr_queue[0].get('id')}",
                         **delete_params,
                     )
                 self.download_client.delete_files(self)

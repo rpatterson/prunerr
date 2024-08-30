@@ -89,8 +89,6 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
     }
     MAX_PAGE_SIZE = 250
 
-    queue = None
-
     def __init__(self, runner):
         """
         Capture references to the runner and individual Servarr configuration.
@@ -157,15 +155,22 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_clients = download_clients
         self.download_client_names = download_client_names
 
-        # Update any data in instance state that should *not* be cached across updates
-        self.queue = {}
+        return self.client
+
+    @cached_property
+    def queue(self):
+        """
+        Retrieve the queue of downloading releases for this Servarr instance.
+
+        :return: Map The Servarr API JSON
+        """
+        queue = {}
         for record in self.get_api_paged_records("queue"):
             record["servarr"] = self
             # `Pending` records have no download item hash ID yet and so are grouped
             # under `None`:
-            self.queue.setdefault(record.get("downloadId"), []).append(record)
-
-        return self.client
+            queue.setdefault(record.get("downloadId"), []).append(record)
+        return queue
 
     def get_api_paged_records(self, endpoint, page_number=1, **params):
         """
@@ -197,6 +202,53 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
             )
             page_number = response["page"] + 1
             yield from response["records"]
+
+
+class PrunerrServarrRelease(utils.PrunerrComponent):
+    """
+    A specific Servar instance's individual download item.
+    """
+
+    download_item = None
+
+    def __init__(self, servarr_download_client, download_item):
+        """
+        Capture references to the servarr download client and the download item.
+        """
+        self.servarr_download_client = servarr_download_client
+        self.download_item = download_item
+
+    def __repr__(self):
+        """
+        Readable, informative, and specific representation to ease debugging.
+        """
+        return repr(
+            f"<{type(self).__name__}"
+            f" {self.servarr_download_client.servarr.config.get('name')!r}"
+            f"->{self.servarr_download_client.config.get('url')!r}"
+            f" torrent={self.download_item!r}>"
+        )
+
+    @cached_property
+    def queue(self):
+        """
+        Lookup this release's queue record from it's Servarr instance.
+        """
+        return self.servarr_download_client.servarr.queue.get(
+            self.download_item.hashString.upper(),
+        )
+
+    @cached_property
+    def history(self):
+        """
+        Lookup and collate this download item's Servarr history records.
+        """
+        return list(
+            self.servarr_download_client.servarr.get_api_paged_records(
+                "history",
+                downloadId=self.download_item.hashString.upper(),
+            ),
+        )
 
 
 class PrunerrServarrDownloadClient(utils.PrunerrComponent):
@@ -236,14 +288,17 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         ).resolve()
         return self.download_dir
 
-    @cached_property
-    def items(self):
+    def wrap_release(
+        self,
+        download_item: prunerr.downloaditem.PrunerrDownloadItem,
+    ) -> PrunerrServarrRelease:
         """
-        Represent the download client's items as Servarr releases.
+        Associate the download client item with the Servarr that grabbed the release.
+
+        :param download_item: The download item to lookup.
+        :return: The Servarr release that corresponds to the ``download_item``.
         """
-        return [
-            PrunerrServarrRelease(self, item) for item in self.download_client.items
-        ]
+        return prunerr.servarr.PrunerrServarrRelease(self, download_item)
 
     def add_torrent(self, download_url, **kwargs):
         """
@@ -256,7 +311,6 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             self,
             self.download_client.add_torrent(download_url, **kwargs),
         )
-        self.items.append(added_item)
         return added_item
 
     def move(self, move_timeout=5 * 60):
@@ -270,17 +324,17 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         chance to recognize notice them.
         """
         download_items = [
-            release
-            for release in self.items
+            download_item
+            for download_item in self.download_client.items
             # Skip items still downloading
-            if release.download_item.status == "seeding"
+            if download_item.status == "seeding"
             # Skip items known by a Servarr instance in it's queue
-            and release.download_item.hashString.upper() not in self.servarr.queue
+            and download_item.hashString.upper() not in self.servarr.queue
             # Skip items not in this Servarr instance's download directory for this
             # download client
-            and self.download_dir in release.download_item.path.parents
+            and self.download_dir in download_item.path.parents
             # Skip items with no history other than `grabbed` events:
-            and release.history[0]["eventType"] != "grabbed"
+            and download_item.release.history[0]["eventType"] != "grabbed"
             # Skip items whose most recent history other than `grabbed`, such as
             # `downloadFolderimported`, is too recent to avoid moving out from under
             # Servarr:
@@ -288,7 +342,7 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             # TODO: Add a separate configuration key for the wait period:
             and (
                 datetime.datetime.now(datetime.timezone.utc)
-                - dateutil.parser.parse(release.history[0]["date"])
+                - dateutil.parser.parse(download_item.release.history[0]["date"])
             )
             > datetime.timedelta(seconds=self.servarr.runner.config["daemon"]["poll"])
         ]
@@ -302,19 +356,19 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             "Moving download items: %r -> %r\n  %s",
             str(self.download_dir),
             str(self.seeding_dir),
-            "\n  ".join(repr(release.download_item) for release in download_items),
+            "\n  ".join(repr(download_item) for download_item in download_items),
         )
         self.download_client.client.move_torrent_data(
-            ids=[release.download_item.hashString for release in download_items],
+            ids=[download_item.hashString for download_item in download_items],
             location=self.seeding_dir,
         )
         # Wait for a timeout for items to finish moving before proceeding.
         start = time.time()
         while next(  # pylint: disable=while-used
             (
-                release
-                for release in download_items
-                if release.download_item.path.exists()
+                download_item
+                for download_item in download_items
+                if download_item.path.exists()
             ),
             None,
         ):
@@ -326,14 +380,23 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             time.sleep(1)
         # Update the download item's dir for subsequent operations, done manually to
         # minimize requests.
-        for release in download_items:
-            release.download_item._fields[release.download_item.DOWNLOAD_DIR_FIELD] = (
-                release.download_item._fields[
-                    release.download_item.DOWNLOAD_DIR_FIELD
-                ]._replace(value=self.seeding_dir)
+        for download_item in download_items:
+            download_item._fields[download_item.DOWNLOAD_DIR_FIELD] = (
+                download_item._fields[download_item.DOWNLOAD_DIR_FIELD]._replace(
+                    value=self.seeding_dir
+                )
             )
-            release.download_item.clear()
-        return [release.download_item.hashString for release in download_items]
+            download_item.clear()
+        return [download_item.hashString for download_item in download_items]
+
+    def delete(self, release, **params):
+        """
+        Delete a release from the Servarr queue.
+        """
+        return self.servarr.client.delete(
+            f"queue/{release.queue[0].get('id')}",
+            **params,
+        )
 
 
 def deserialize_servarr_download_client(download_client_config):
@@ -358,41 +421,3 @@ def deserialize_servarr_download_client(download_client_config):
         "",
     ).geturl()
     return download_client_config
-
-
-class PrunerrServarrRelease(utils.PrunerrComponent):
-    """
-    A specific Servar instance's individual download item.
-    """
-
-    download_item = None
-
-    def __init__(self, servarr_download_client, download_item):
-        """
-        Capture references to the servarr download client and the download item.
-        """
-        self.servarr_download_client = servarr_download_client
-        self.download_item = download_item
-
-    def __repr__(self):
-        """
-        Readable, informative, and specific representation to ease debugging.
-        """
-        return repr(
-            f"<{type(self).__name__}"
-            f" {self.servarr_download_client.servarr.config.get('name')!r}"
-            f"->{self.servarr_download_client.config.get('url')!r}"
-            f" torrent={self.download_item!r}>"
-        )
-
-    @cached_property
-    def history(self):
-        """
-        Lookup and collate this download item's Servarr history records.
-        """
-        return list(
-            self.servarr_download_client.servarr.get_api_paged_records(
-                "history",
-                downloadId=self.download_item.hashString.upper(),
-            ),
-        )

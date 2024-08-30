@@ -71,11 +71,11 @@ class ExportCommandRun:
         self.download_ids = {}
         self.import_names = {import_key: {} for import_key in self.IMPORT_KEYS}
         for download_client in self.servarr.download_clients.values():
-            for item in download_client.items:
+            for download_item in download_client.download_client.items:
                 self.download_ids.setdefault(
-                    item.download_item.hashString.upper(),
+                    download_item.hashString.upper(),
                     [],
-                ).append(item.download_item)
+                ).append(download_item)
 
     def __call__(self) -> typing.Optional[dict]:
         """

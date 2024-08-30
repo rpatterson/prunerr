@@ -44,6 +44,10 @@ class PrunerrServarrTests(
         servarr_download_client.config = {
             "url": self.download_client_urls[0],
         }
+        servarr_download_client.download_dir = self.downloaded_item.parent
+        servarr_download_client.download_client.servarrs = {
+            servarr_download_client.download_dir: servarr_download_client
+        }
         servarr_download_client.download_client.items = [
             prunerr.downloaditem.PrunerrDownloadItem(
                 servarr_download_client.download_client,
@@ -56,6 +60,7 @@ class PrunerrServarrTests(
                         ]["torrents"][0]["hashString"],
                         "name": self.download_item_title,
                         "sizeWhenDone": 1,
+                        "downloadDir": str(servarr_download_client.download_dir),
                     },
                 ),
             )
@@ -78,6 +83,6 @@ class PrunerrServarrTests(
         )
         self.assertIn(
             self.download_item_title,
-            repr(servarr_download_client.items[0]),
-            "Download client URL missing from Servarr representation",
+            repr(servarr_download_client.download_client.items[0].release),
+            "Download item title missing from Servarr release representation",
         )

@@ -130,13 +130,11 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         # Update any Servarr references or data that depends on the download client
         # session data
-        for servarr_url in config.get("servarrs", set()):
-            self.servarrs[servarr_url] = self.runner.servarrs[
-                servarr_url
-            ].download_clients[self.config["url"]]
-            self.servarrs[servarr_url].seeding_dir = prunerr.downloaditem.parallel_to(
+        for download_dir, servarr_download_client in config.get("servarrs", {}).items():
+            self.servarrs[download_dir] = servarr_download_client
+            servarr_download_client.seeding_dir = prunerr.downloaditem.parallel_to(
                 self.client.session.download_dir,
-                self.servarrs[servarr_url].download_dir,
+                self.servarrs[download_dir].download_dir,
                 self.SEEDING_DIR_BASENAME,
             )
 
@@ -183,7 +181,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
     # Sub-commands
 
-    def review(self, servarr_queue):
+    def review(self):
         """
         Apply configured review operations to all download items.
         """
@@ -211,10 +209,9 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             item_handler = logging.FileHandler(item.log_path)
             item_handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
             item_results = None
-            queue_record = servarr_queue.get(item.hashString.upper(), {})
             root_logger.addHandler(item_handler)
             try:
-                item_results = item.review(queue_record)
+                item_results = item.review()
             except utils.RETRY_EXC_TYPES:
                 logger.exception(
                     "Error reviewing item: %s",

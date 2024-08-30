@@ -207,7 +207,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         Prunerr deletes items to free space as a part of the `exec` sub-command.
         """
         self.mock_responses(
-            self.RESPONSES_DIR.parent / "free-space-upgraded-insufficient",
+            self.RESPONSES_DIR.parent / "free-space-exec",
         )
         runner = prunerr.runner.PrunerrRunner(self.CONFIG)
         runner.update()

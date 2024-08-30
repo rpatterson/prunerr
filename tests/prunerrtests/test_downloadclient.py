@@ -83,10 +83,10 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         # caching the clients may do
         self.assertIs(
             runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[0]]
-            .servarrs[self.config["servarrs"]["Sonarr"]["url"]]
+            .servarrs[self.servarr_downloaded_dir]
             .servarr.client,
             runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[1]]
-            .servarrs[self.config["servarrs"]["Sonarr"]["url"]]
+            .servarrs[self.servarr_downloaded_dir]
             .servarr.client,
             "Servarr instance client not re-used across download clients",
         )
@@ -143,50 +143,46 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         )
         for servarr_config in self.config["servarrs"].values():
             with self.subTest(servarr_url=servarr_config["url"]):
-                if (
-                    download_client.config["url"]
-                    == self.SERVARR_DOWNLOAD_CLIENT_URLS[0]
-                    or servarr_config["url"] == self.servarr_urls[0]
-                ):
-                    self.assertIn(
-                        servarr_config["url"],
-                        download_client.servarrs,
-                        "Download client missing Servarr URL",
-                    )
-                else:
-                    self.assertNotIn(
-                        servarr_config["url"],
-                        download_client.servarrs,
-                        "Download client includes wrong Servarr URL",
-                    )
+                servarr = runner.servarrs[servarr_config["url"]]
+                if download_client_url not in servarr.download_clients:
                     continue
-                servarr = download_client.servarrs[servarr_config["url"]]
+                servarr_download_client = servarr.download_clients[download_client_url]
+                self.assertIn(
+                    servarr_download_client.download_dir,
+                    download_client.servarrs,
+                    "Download client missing Servarr download directory",
+                )
+                self.assertIs(
+                    download_client.servarrs[servarr_download_client.download_dir],
+                    servarr_download_client,
+                    "Wrong Servarr download client instance",
+                )
                 self.assertIn(
                     "config",
-                    dir(servarr),
-                    "Servarr instance missing config",
+                    dir(servarr_download_client),
+                    "Servarr download client missing config",
                 )
                 self.assertIsInstance(
-                    servarr.config,
+                    servarr_download_client.config,
                     dict,
-                    "Servarr instance wrong config type",
+                    "Servarr download client wrong config type",
                 )
                 self.assertTrue(
-                    servarr.config,
-                    "Servarr instance empty config type",
+                    servarr_download_client.config,
+                    "Servarr download client empty config type",
                 )
                 self.assertIn(
                     "download_dir",
-                    dir(servarr),
-                    "Servarr instance missing download dir",
+                    dir(servarr_download_client),
+                    "Servarr download client missing download dir",
                 )
                 self.assertEqual(
-                    servarr.download_dir,
+                    servarr_download_client.download_dir,
                     self.tmp_path
                     / self.servarr_download_client_responses[servarr_config["url"]][0][
                         "fields"
                     ][7]["value"].lstrip(os.path.sep),
-                    "Servarr instance wrong download dir",
+                    "Servarr download client wrong download dir",
                 )
 
     def test_parallel_to(self):

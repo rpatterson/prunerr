@@ -19,8 +19,6 @@ download-clients:
     min-download-time-margin: 600
   Foo:
     url: "http://transmission@192.168.1.1:9091/transmission/"
-  Bar:
-    url: "http://192.168.1.2/transmission/"
   Example:
     url: "https://transmission.example.com"
   FooExample:

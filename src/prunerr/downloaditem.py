@@ -57,6 +57,9 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
             client,
             {field_name: field.value for field_name, field in torrent._fields.items()},
         )
+        self.files = [
+            PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()
+        ]
 
     def __repr__(self) -> str:
         """
@@ -277,13 +280,6 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         ) / seconds_downloading
 
     @cached_property
-    def files(self):  # pylint: disable=invalid-overridden-method,useless-suppression
-        """
-        Iterate over all download item file paths that exist.
-        """
-        return [PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()]
-
-    @cached_property
     def disk_usage(self):
         """
         Calculate the real storage usage of all files.
@@ -300,6 +296,16 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         Assemble the path for the log file dedicated to this individual download item.
         """
         return pathlib.Path(self.download_dir, f"{self.hashString}-prunerr.log")
+
+    @cached_property
+    def release(self):
+        """
+        Lookup the Servarr release corresponding to this download item if any.
+        """
+        servarr_download_client = self.download_client.servarrs.get(self.download_dir)
+        if servarr_download_client is not None:
+            return servarr_download_client.wrap_release(self)
+        return None  # pragma: no cover
 
     def match_indexer_urls(self):
         """
@@ -320,7 +326,7 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
                             return possible_name
         return None
 
-    def review(self, servarr_queue):
+    def review(self):
         """
         Apply review operations to this download item.
         """
@@ -345,7 +351,16 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
                     operation_config["type"],
                     self,
                 )
-                if not servarr_queue:
+                if self.release.queue is not None:
+                    delete_params = {}
+                    if operation_config.get("blacklist", False):
+                        delete_params["blacklist"] = "true"
+                        result["blacklist"] = True
+                    self.release.servarr_download_client.delete(
+                        self.release,
+                        **delete_params,
+                    )
+                else:
                     logger.warning(
                         "Download item not in any Servarr queue: %r",
                         self,
@@ -353,15 +368,6 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
                             "runner": self.download_client.runner,
                             "download_hash": self.hashString,
                         },
-                    )
-                else:
-                    delete_params = {}
-                    if operation_config.get("blacklist", False):
-                        delete_params["blacklist"] = "true"
-                        result["blacklist"] = True
-                    servarr_queue[0]["servarr"].client.delete(
-                        f"queue/{servarr_queue[0].get('id')}",
-                        **delete_params,
                     )
                 self.download_client.delete_files(self)
                 results.append(result)

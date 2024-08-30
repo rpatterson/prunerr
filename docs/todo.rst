@@ -32,6 +32,10 @@ Required
    <https://github.com/transmission/transmission/issues/4314#issuecomment-1336485761>`_
    if those dates are older than the current.
 
+#. :docs:
+
+   Verify the `CI docs build <https://readthedocs.org/projects/prunerr/>`_.
+
 
 ****************************************************************************************
 High priority

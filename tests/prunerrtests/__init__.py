@@ -27,6 +27,7 @@ import requests_mock
 
 import prunerr
 from prunerr.utils import pathlib
+from prunerr.servarr import downloadclient
 
 
 def parse_content_type(content_type):  # pragma: no cover
@@ -164,7 +165,7 @@ class PrunerrTestCase(
                 / "response.json"
             ).open() as servarr_download_client_response:
                 self.servarr_download_client_responses[servarr_url_split.geturl()] = [
-                    prunerr.servarr.deserialize_servarr_download_client(
+                    downloadclient.deserialize_servarr_download_client(
                         download_client_config,
                     )
                     for download_client_config in json.load(

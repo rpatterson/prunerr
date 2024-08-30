@@ -14,6 +14,7 @@ import transmission_rpc
 import prunerrtests
 
 import prunerr
+from prunerr.servarr import downloadclient
 
 
 @mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
@@ -37,7 +38,7 @@ class PrunerrServarrTests(
             repr(servarr),
             "Servarr name missing from Servarr representation",
         )
-        servarr_download_client = prunerr.servarr.PrunerrServarrDownloadClient(servarr)
+        servarr_download_client = downloadclient.PrunerrServarrDownloadClient(servarr)
         servarr_download_client.download_client = (
             prunerr.downloadclient.PrunerrDownloadClient(runner)
         )

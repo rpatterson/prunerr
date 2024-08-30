@@ -300,7 +300,10 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         """
         servarr_download_client = self.download_client.servarrs.get(self.download_dir)
         if servarr_download_client is not None:
-            return servarr_download_client.wrap_release(self)
+            return servarr_download_client.RELEASE_FACTORY(
+                servarr_download_client,
+                self,
+            )
         return None  # pragma: no cover
 
     def match_indexer_urls(self):

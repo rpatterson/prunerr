@@ -1,0 +1,66 @@
+{
+  "title": "Foo Series",
+  "alternateTitles": [],
+  "sortTitle": "foo series",
+  "status": "ended",
+  "ended": true,
+  "overview": "This is the Foo Series overview.",
+  "previousAiring": "1970-03-31T00:00:00Z",
+  "network": "Grault",
+  "airTime": "03:00",
+  "images": [],
+  "originalLanguage": {
+    "id": 1,
+    "name": "English"
+  },
+  "seasons": [
+    {
+      "seasonNumber": 1,
+      "monitored": true,
+      "statistics": {
+        "previousAiring": "1970-03-31T07:00:00Z",
+        "episodeFileCount": 2,
+        "episodeCount": 2,
+        "totalEpisodeCount": 2,
+        "sizeOnDisk": 1073741824,
+        "releaseGroups": [],
+        "percentOfEpisodes": 100
+      }
+    }
+  ],
+  "year": 1970,
+  "path": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]",
+  "qualityProfileId": 1,
+  "seasonFolder": true,
+  "monitored": true,
+  "monitorNewItems": "all",
+  "useSceneNumbering": false,
+  "runtime": 22,
+  "tvdbId": 0,
+  "tvRageId": 0,
+  "tvMazeId": 0,
+  "tmdbId": 0,
+  "firstAired": "1970-03-31T00:00:00Z",
+  "lastAired": "1970-03-31T00:00:00Z",
+  "seriesType": "standard",
+  "cleanTitle": "fooseries",
+  "imdbId": "0",
+  "titleSlug": "foo-series",
+  "rootFolderPath": "/media/Library/Videos/Series/",
+  "certification": "",
+  "genres": [],
+  "tags": [],
+  "added": "2021-04-22T00:00:00Z",
+  "ratings": {},
+  "statistics": {
+    "seasonCount": 1,
+    "episodeFileCount": 2,
+    "episodeCount": 2,
+    "totalEpisodeCount": 2,
+    "sizeOnDisk": 1073741824,
+    "releaseGroups": [],
+    "percentOfEpisodes": 100
+  },
+  "languageProfileId": 1,
+  "id": 1
+}

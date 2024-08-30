@@ -22,6 +22,8 @@ class PrunerrServarrTests(
     Test Prunerr's interaction with Servarr instances.
     """
 
+    RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "servarr"
+
     def test_servarr_repr(self):
         """
         The Servarr representations provide useful information for debugging.
@@ -51,4 +53,31 @@ class PrunerrServarrTests(
             self.download_item_title,
             repr(servarr_download_client.download_client.items[0].release),
             "Download item title missing from Servarr release representation",
+        )
+
+        root_item = prunerr.servarr.rootitem.PrunerrServarrRootItem(servarr, 1)
+        self.assertIn(
+            "id=1",
+            repr(root_item),
+            "Series DB ID missing from Servarr representation",
+        )
+        self.assertIsInstance(
+            root_item.data,
+            dict,
+            "Wrong root item data type",
+        )
+        self.assertTrue(
+            root_item.data.get("title"),
+            "Root item data missing series title",
+        )
+        self.assertIn(
+            root_item.data["title"],
+            repr(root_item),
+            "Series title missing from Servarr representation",
+        )
+
+        self.assertIn(
+            "root_item=",
+            repr(root_item.history),
+            "Series representation missing from Servarr history representation",
         )

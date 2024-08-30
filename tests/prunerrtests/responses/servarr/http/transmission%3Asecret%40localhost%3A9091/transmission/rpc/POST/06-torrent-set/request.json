@@ -1,0 +1,8 @@
+{
+  "arguments": {
+    "ids": ["8B8060BF22C942B1B6CABB8E5B840E445B840E44"],
+    "files-unwanted": [1]
+  },
+  "method": "torrent-set",
+  "tag": 6
+}

@@ -49,6 +49,11 @@ High priority
 
 #. Move deleting unregistered items to a review.
 
+#. :review:
+
+   Find the grab history for unregistered items and make them as failed to start a
+   search.
+
 #. Move deleting orphans to a separate sub-command.
 
 #. Deselect unimported files before deciding whether to delete?
@@ -60,6 +65,10 @@ High priority
 
 #. Allow grouping indexers/trackers. Refactor operations configuration to be by
    arbitrary named groups that include multiple indexers/trackers.
+
+#. Document expected filesystem layout including Transmission global ``download-dir``,
+   the per-client directory in the Servarr download client settings, and the expected
+   parallel paths.
 
 #. Add a review to exclude BluRay/DVD full disc rips.
 
@@ -104,6 +113,10 @@ Nice to have
 #. Also import `extras and such
    <https://jellyfin.org/docs/general/server/media/movies/#movie-extras>`_ that Servarr
    doesn't support.
+
+#. :Export:
+
+   Maybe detect when we can skip verifying items?
 
 #. Support selecting only one series or movie for the ``export`` sub-command.
 

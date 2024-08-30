@@ -1,0 +1,7 @@
+{
+  "tag": 7,
+  "method": "torrent-verify",
+  "arguments": {
+    "ids": ["8B8060BF22C942B1B6CABB8E5B840E445B840E44"]
+  }
+}

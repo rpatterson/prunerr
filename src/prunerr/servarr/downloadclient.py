@@ -88,6 +88,26 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             self.download_dir_suffix,
         )
 
+    @cached_property
+    def releases(self) -> list:
+        """
+        Wrap the download items managed by this Servarr instance as releases.
+
+        :return: The download items wrapped as releases specific to this instance.
+        """
+        releases = []
+        for download_item in self.download_client.items:
+            # Ensure this release instance and this download item instance are
+            # associated no matter which direction they came from:
+            if (release := vars(download_item).get("release")) is None:
+                release = prunerr.servarr.release.PrunerrServarrRelease(
+                    self,
+                    download_item,
+                )
+                download_item.release = release
+            releases.append(release)
+        return releases
+
     def add_torrent(self, download_url, **kwargs):
         """
         Add a torrent to the download client and update instance state.

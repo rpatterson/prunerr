@@ -1,0 +1,9 @@
+{
+  "arguments": {
+    "metainfo": "WyJFeGFtcGxlIHRvcnJlbnQgZm9yIHRlc3RpbmciXQ==",
+    "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
+    "paused": true
+  },
+  "method": "torrent-add",
+  "tag": 2
+}

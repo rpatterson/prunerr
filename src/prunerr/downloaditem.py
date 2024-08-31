@@ -155,14 +155,10 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         """
         parents = [self.download_dir]
         if (
-            self.download_client.client.session.incomplete_dir_enabled
-            and self.download_client.client.session.incomplete_dir
-        ):  # pragma: no cover
-            parents.append(
-                pathlib.Path(
-                    self.download_client.client.session.incomplete_dir,
-                )
-            )
+            self.download_client.incomplete_dir is not None
+            and self.download_client.incomplete_dir.exists()
+        ):
+            parents.append(self.download_client.incomplete_dir)
         return parents
 
     @cached_property  # noqa: V105

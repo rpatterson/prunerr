@@ -23,7 +23,6 @@ class ExportCommandRun:
 
     IMPORT_KEYS = ("sourceTitle", "downloadRootName")
 
-    data_paths = None
     download_ids: dict
     import_names: dict
 
@@ -36,37 +35,10 @@ class ExportCommandRun:
         """
         self.servarr = servarr
 
-    def update(self, extra_data_paths: typing.Optional[list] = None):
+    def update(self):
         """
         Process command-line arguments and collate global download items data.
-
-        :param extra_data_paths: Additional download client paths whose immediate
-            children might contain download item data.
         """
-        # Command-line arguments:
-        if extra_data_paths is None:
-            extra_data_paths = []
-        # Add the paths in the download clients that this servarr instance deals
-        # with:
-        data_paths = []
-        for servarr_download_client in self.servarr.download_clients.values():
-            data_paths.extend(
-                [
-                    servarr_download_client.seeding_dir,
-                    servarr_download_client.download_dir,
-                ]
-            )
-            # Add the path suffix specific to this Servarr instance to each of the extra
-            # data paths:
-            servarr_suffix = servarr_download_client.download_dir.relative_to(
-                servarr_download_client.download_client.client.session.download_dir,
-            )
-            data_paths.extend(
-                extra_data_path / servarr_suffix for extra_data_path in extra_data_paths
-            )
-        # Remove duplicates but preserve order:
-        self.data_paths = list(dict.fromkeys(data_paths))
-
         # Collect global download item data shared between series/movies:
         self.download_ids = {}
         self.import_names = {import_key: {} for import_key in self.IMPORT_KEYS}
@@ -227,9 +199,19 @@ class ExportServarrRootItem:
                 download_id,
                 [],
             ):
+                item_root_paths = []
+                for (
+                    servarr_download_client
+                ) in download_item.download_client.servarrs.values():
+                    item_root_paths.extend(
+                        download_item.download_client.download_dir.parent.glob(
+                            f"*/{servarr_download_client.download_dir_suffix}"
+                            f"/{download_item.root_name}",
+                        )
+                    )
                 linked_files.extend(
                     download_item.link_imported_files(
-                        self.command_run.data_paths,
+                        item_root_paths,
                         pathlib.Path(self.root_item["path"]),
                         imported_relatives,
                         need_verify=need_verify,
@@ -379,6 +361,49 @@ class ExportServarrRootItem:
                     history_record["downloadId"],
                 )
 
+    def find_dropped_relative(
+        self,
+        dropped_path: pathlib.Path,
+    ) -> typing.Optional[pathlib.Path]:
+        """
+        Determine the download item file's relative path from the dropped path.
+
+        :param dropped_path: The path the file was imported from.
+        :return: The relative path to the file within the download item if found.
+        """
+        dropped_relative = None
+        for (
+            servarr_download_client
+        ) in self.command_run.servarr.download_clients.values():
+            # Is this dropped path in a parallel path to the Servarr download
+            # directory from the Servarr download client settings:
+            download_dir = servarr_download_client.download_client.download_dir
+            servarr_suffix = servarr_download_client.download_dir_suffix
+            dropped_relative_parent = dropped_path.relative_to(download_dir.parent)
+            if not (
+                download_dir.parent in dropped_path.parents
+                and dropped_relative_parent.parts[1 : len(servarr_suffix.parts) + 1]
+                == servarr_suffix.parts
+            ):
+                # No, not parallel to this Servarr download client's download directory,
+                # try the next Servarr download client:
+                continue
+            if dropped_relative is None:
+                dropped_relative = dropped_path.relative_to(
+                    pathlib.Path(
+                        download_dir.parent,
+                        dropped_relative_parent.parts[0],
+                        servarr_suffix,
+                    ),
+                )
+            else:  # pragma: no cover
+                logger.error(
+                    "Dropped path is parallel to multiple Servarr"
+                    " download client directories: %s",
+                    dropped_path,
+                )
+        return dropped_relative
+
     def update_import_record(
         self,
         history_record: dict,
@@ -398,22 +423,18 @@ class ExportServarrRootItem:
 
         # Determine which part of the paths are from the download item:
         dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
-        download_root_name = None
-        for data_path in self.command_run.data_paths:
-            if data_path.resolve() in dropped_path.resolve().parents:
-                dropped_relative = dropped_path.resolve().relative_to(data_path)
-                imported_collated["droppedRel"] = dropped_relative
-                imported_collated["location"] = dropped_path.parents[
-                    len(dropped_relative.parts) - 1
-                ]
-                download_root_name = imported_collated["downloadRootName"] = (
-                    dropped_relative.parts[0]
-                )
-                break
-        else:
+        if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
             logger.error(
                 "No download root name found: %s",
                 dropped_path,
+            )
+        else:
+            imported_collated["droppedRel"] = dropped_relative
+            imported_collated["location"] = dropped_path.parents[
+                len(dropped_relative.parts) - 1
+            ]
+            download_root_name = imported_collated["downloadRootName"] = (
+                dropped_relative.parts[0]
             )
 
         if history_record.get("downloadId"):
@@ -427,7 +448,7 @@ class ExportServarrRootItem:
 
             # As a last resort, match the download item's root basename to a download
             # item ID/hash:
-            if download_root_name:
+            if dropped_relative:
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
                 self.import_names["downloadRootName"][download_root_name] = (

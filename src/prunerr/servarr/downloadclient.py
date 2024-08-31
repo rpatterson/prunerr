@@ -33,9 +33,10 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
 
     RELEASE_FACTORY = release_module.PrunerrServarrRelease
 
-    download_client = None
-    download_dir = None
-    seeding_dir = None
+    download_client: prunerr.downloadclient.PrunerrDownloadClient
+    download_dir: pathlib.Path
+    download_dir_suffix: pathlib.Path
+    seeding_dir: pathlib.Path
 
     def __init__(self, servarr):
         """
@@ -64,6 +65,26 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             self.config["fieldValues"][self.servarr.type_map["download_dir_field"]]
         ).resolve()
         return self.download_dir
+
+    def update_download_client(
+        self,
+        download_client: prunerr.downloadclient.PrunerrDownloadClient,
+    ):
+        """
+        Update from the download client session data once available.
+
+        :param download_client: The download client after getting the session.
+        """
+        self.download_dir_suffix = pathlib.Path(
+            *self.download_dir.relative_to(
+                download_client.download_dir.parent,
+            ).parts[1:],
+        )
+        self.seeding_dir = pathlib.Path(
+            download_client.download_dir.parent,
+            download_client.SEEDING_DIR_BASENAME,
+            self.download_dir_suffix,
+        )
 
     def add_torrent(self, download_url, **kwargs):
         """

@@ -236,7 +236,7 @@
     "eventType": "downloadFolderImported",
     "data": {
       "fileId": "4",
-      "droppedPath": "/media/Library/manual/Sonarr/Videos/Series/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "droppedPath": "/media/Library/downloads/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
       "importedPath": "/media/Library/Videos/Series/Foo Series (1970) [tvdbid-1]/Season 01/Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv",
       "downloadClient": "Transmission",
       "downloadClientName": "transmission",

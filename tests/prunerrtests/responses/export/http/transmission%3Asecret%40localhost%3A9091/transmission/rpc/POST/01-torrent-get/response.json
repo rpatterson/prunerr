@@ -72,7 +72,7 @@
         "addedDate": 0,
         "bandwidthPriority": 0,
         "doneDate": 0,
-        "downloadDir": "/media/Library/manual/Sonarr/Videos/Series",
+        "downloadDir": "/media/Library/downloads",
         "error": 0,
         "errorString": "",
         "eta": -1,

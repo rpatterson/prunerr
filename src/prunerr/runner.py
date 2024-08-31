@@ -277,10 +277,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             return review_results
         return None
 
-    def export(
-        self,
-        extra_data_paths: typing.Optional[list] = None,
-    ) -> typing.Optional[dict]:
+    def export(self) -> typing.Optional[dict]:
         """
         Link imported files back into download items and verify, Servarr import inverse.
 
@@ -296,8 +293,6 @@ class PrunerrRunner(utils.PrunerrComponent):
         removed because they're only partially imported and ``free-space`` may then
         remove them again depending on the configuration.
 
-        :param extra_data_paths: Additional download client paths whose immediate
-            children might contain download item data.
         :return: Map download client items to any files have been linked.
         """
         export_results = {}
@@ -305,7 +300,7 @@ class PrunerrRunner(utils.PrunerrComponent):
         # The Servarr instances drive the export process:
         for servarr_url, servarr in self.servarrs.items():
             command_run = export.ExportCommandRun(servarr)
-            command_run.update(extra_data_paths=extra_data_paths)
+            command_run.update()
             if servarr_export_results := command_run():
                 export_results[servarr_url] = servarr_export_results
 

@@ -9,6 +9,7 @@
 Prunerr interaction with download clients.
 """
 
+import typing
 import re
 import datetime
 import shutil
@@ -42,6 +43,9 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
     UNREGISTERED_ERROR_RE = re.compile(r".*(not |un)registered.*")
 
     client: transmission_rpc.client.Client
+    download_dir: pathlib.Path
+    seeding_dir: pathlib.Path
+    incomplete_dir: typing.Optional[pathlib.Path] = None
     items_requested: datetime.datetime
     operations: prunerr.operations.PrunerrOperations
 
@@ -127,6 +131,10 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 transmission_rpc.constants.DEFAULT_TIMEOUT,
             ),
         )
+        self.download_dir = pathlib.Path(self.client.session.download_dir)
+        self.seeding_dir = self.download_dir.with_name(self.SEEDING_DIR_BASENAME)
+        if self.client.session.incomplete_dir_enabled:  # pragma: no cover
+            self.incomplete_dir = pathlib.Path(self.client.session.incomplete_dir)
 
         # Update any Servarr references or data that depends on the download client
         # session data
@@ -137,6 +145,27 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 self.servarrs[download_dir].download_dir,
                 self.SEEDING_DIR_BASENAME,
             )
+
+    @cached_property
+    def managed_dirs(self) -> list:
+        """
+        Determine which directories are the top-level ancestors of files and items.
+
+        Used to determine how far "up" the chain of ancestors to delete empty
+        directories when deleting items or orphans.
+
+        :return: The filesystem paths for the directories from deepest or most specific
+            to the top-level download client's ``downloadDir`` and it's siblings.
+        """
+        managed_dirs = []
+        for servarr_download_client in self.servarrs.values():
+            managed_dirs.append(servarr_download_client.download_dir)
+            managed_dirs.append(servarr_download_client.seeding_dir)
+        managed_dirs.append(self.download_dir)
+        managed_dirs.append(self.seeding_dir)
+        if self.incomplete_dir is not None:  # pragma: no cover
+            managed_dirs.append(self.incomplete_dir)
+        return managed_dirs
 
     @cached_property
     def items(self):
@@ -234,22 +263,18 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         :return: List all the items that were re-added to the download client.
         """
-        seeding_dir = (
-            pathlib.Path(self.client.session.download_dir).parent
-            / self.SEEDING_DIR_BASENAME
-        )
         # Transmission seems to verify items in the order of their indexes, in the order
         # they were added, so reverse the order to avoid clashing with items in the
         # process of verifying:
         re_add_results = []
         for item in reversed(self.items):
             # Skip items from the older full-list response first for speed:
-            if not item.re_add_check(seeding_dir):  # pragma: no cover
+            if not item.re_add_check(self.seeding_dir):  # pragma: no cover
                 continue
             # Also get the latest item data in case it has finished verifying while
             # previous items were re-added:
             item.update()
-            if not item.re_add_check(seeding_dir):  # pragma: no cover
+            if not item.re_add_check(self.seeding_dir):  # pragma: no cover
                 logger.debug(
                     "Not re-adding download item whose metadata changed: %r",
                     item,
@@ -302,21 +327,14 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
             )
             self.items.remove(item)
-            # Remove each item file whether in the `download-dir` or the
-            # `incomplete-dir`:
+            # Delete the actual files ourselves to workaround Transmission hanging when
+            # deleting the data of large items: e.g. season packs.
             for item_file in item.files:
-                if item_file.path.exists():  # pragma: no cover
-                    item_file.path.unlink()
-                # Also remove the ancestor directories if they're not empty:
-                file_parent = item_file.path.parent
-                while [  # pylint: disable=while-used
-                    parent for parent in item.parents if parent in file_parent.parents
-                ]:
-                    if next(file_parent.iterdir(), None) is None:  # pragma: no cover
-                        file_parent.rmdir()
-                    file_parent = file_parent.parent
+                # Remove each item file whether in the `download-dir` or the
+                # `incomplete-dir`:
+                self.delete_path(item_file.path)
             if item.log_path.exists():
-                item.log_path.unlink()
+                self.delete_path(item.log_path)
 
         # Handle filesystem paths not recognized by the download client
         else:
@@ -333,25 +351,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 ),
             )
 
-            # Delete the actual files ourselves to workaround Transmission hanging when
-            # deleting the data of large items: e.g. season packs.
-            if path.is_dir():  # pragma: no cover
-                shutil.rmtree(path, onerror=log_rmtree_error)
-            elif path.exists():
-                path.unlink()
-            else:  # pragma: no cover
-                # Under high download client load, the deletion from the client
-                # sometimes seems to fail but Prunerr successfully deletes the data. On
-                # the next `daemon` loop Prunerr will try to delete it from the client
-                # again, which is correct, but then chokes on the missing files it
-                # already deleted.
-                logger.error(
-                    "Path to be deleted doesn't exist: %s",
-                    path,
-                )
-            if next(path.parent.iterdir(), None) is None:  # pragma: no cover
-                # The directory containging the file is empty
-                path.parent.rmdir()
+            self.delete_path(path)
 
         # Refresh the sessions data including free space.
         # TODO: Until we aggregate download client directories by `*.stat().st_dev`, we
@@ -361,6 +361,48 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             download_client.client.get_session()
 
         return size
+
+    def delete_path(self, path: pathlib.Path) -> pathlib.Path:
+        """
+        Delete this file or directory and empty parent directories.
+
+        :param path: The filesystem path to a file to delete or a directory to
+            recursively delete.
+        :return: The filesystem paths for all parent directories that were also deleted.
+        """
+        # The path is not in one of our managed directories, this should never happen:
+        for managed_dir in self.managed_dirs:
+            if managed_dir in path.parents:
+                break
+        else:  # pragma: no cover
+            raise ValueError("Refusing to delete a path in an un-managed directory")
+
+        # Delete the given path:
+        if path.is_dir():  # pragma: no cover
+            shutil.rmtree(path, onerror=log_rmtree_error)
+        elif path.exists():
+            path.unlink()
+        else:  # pragma: no cover
+            # Under high download client load, the deletion from the client
+            # sometimes seems to fail but Prunerr successfully deletes the data. On
+            # the next `daemon` loop Prunerr will try to delete it from the client
+            # again, which is correct, but then chokes on the missing files it
+            # already deleted.
+            logger.error(
+                "Path to be deleted doesn't exist: %s",
+                path,
+            )
+
+        # Also remove the ancestor directories if they're not empty:
+        removed_parents = []
+        for relative_parent in path.relative_to(managed_dir).parents[:-1]:
+            parent = managed_dir / relative_parent
+            if next(parent.iterdir(), None) is not None:  # pragma: no cover
+                # Not empty, stop removing parents:
+                break
+            parent.rmdir()
+            removed_parents.append(parent)
+        return removed_parents
 
     def try_delete_files(self, item):
         """
@@ -483,16 +525,12 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         """
         Filter items that have not yet been imported by Servarr, order by priority.
         """
-        seeding_dir = (
-            pathlib.Path(self.client.session.download_dir).parent
-            / self.SEEDING_DIR_BASENAME
-        )
         return self.sort_items_by_tracker(
             item
             for item in self.items
             # only those previously acted on by Servarr and moved
             if item.status == "seeding"
-            and seeding_dir in item.path.parents
+            and self.seeding_dir in item.path.parents
             and self.operations.exec_indexer_operations(item)[0]
         )
 

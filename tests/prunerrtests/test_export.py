@@ -7,7 +7,6 @@ Link imported files back into download items and verify, Servarr import inverse.
 
 import os
 import shutil
-import pathlib
 
 from unittest import mock
 
@@ -78,15 +77,7 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
                 "S01E04",
             ).replace("Corge", "Waldo"),
         )
-        manual_dir = self.seeding_dir.with_name("manual")
-        manual_len = len(manual_dir.parts)
-        missing_item = (
-            pathlib.Path(
-                manual_dir,
-                *self.seeding_item.parent.parts[manual_len:],
-            )
-            / missing_location.stem
-        )
+        missing_item = self.downloaded_dir / missing_location.stem
         (missing_item / missing_location.name).rename(missing_location)
         missing_item.rmdir()
 
@@ -205,10 +196,7 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         self.set_up_imported_files()
 
         self.mock_responses()
-        prunerr.export(
-            self.runner,
-            extra_data_paths=str(self.storage_dir / "archived"),
-        )
+        prunerr.export(self.runner)
 
     def test_export_empty(self):
         """

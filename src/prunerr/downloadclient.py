@@ -140,11 +140,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         # session data
         for download_dir, servarr_download_client in config.get("servarrs", {}).items():
             self.servarrs[download_dir] = servarr_download_client
-            servarr_download_client.seeding_dir = prunerr.downloaditem.parallel_to(
-                self.client.session.download_dir,
-                self.servarrs[download_dir].download_dir,
-                self.SEEDING_DIR_BASENAME,
-            )
+            servarr_download_client.update_download_client(self)
 
     @cached_property
     def managed_dirs(self) -> list:

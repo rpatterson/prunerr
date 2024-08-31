@@ -8,7 +8,6 @@
 Prunerr interaction with download clients.
 """
 
-import os
 import time
 import urllib.parse
 import json
@@ -22,21 +21,6 @@ from .utils import pathlib
 from .utils import cached_property
 
 logger = logging.getLogger(__name__)
-
-
-def parallel_to(base_path, parallel_path, root_basename):
-    """
-    Return a path with a parallel relative root to the given full path.
-    """
-    base_path = pathlib.Path(base_path)
-    common_path = pathlib.Path(os.path.commonpath((base_path.parent, parallel_path)))
-    return (
-        common_path
-        / root_basename
-        / pathlib.Path(parallel_path).relative_to(
-            list(parallel_path.parents)[-(len(base_path.parts))],
-        )
-    )
 
 
 class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
@@ -389,7 +373,7 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
 
         return results
 
-    def find_location(self, data_paths):
+    def find_location(self, item_root_paths: list) -> pathlib.Path:
         """
         Find the most downloaded data path for this download item and set location.
 
@@ -398,70 +382,57 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         first, and selects the first of those sorted paths. Anything more accurate
         requires CPU intensive, time consuming verification.
 
-        :param data_paths: Paths to directories whose direct or immediate children are
-            checked for existing download item data.
-        :return: A ``pathlib.Path()`` object to the best data path if the location was
-            changed.
+        :param item_root_paths: Filesystem paths of existing download item data.
+        :return: The best data path if the location was changed.
         """
-
-        def key(data_path, self=self):
-            """
-            Determine the size and modification date of this items data in the path.
-            """
-            item_path = data_path / self.root_name
-            du_process = subprocess.run(  # nosec, pragmatic choice for performance
-                ["du", "-s", str(item_path)],
-                capture_output=True,
-                check=True,
-            )
-            return (
-                int(du_process.stdout.strip().split()[0]),
-                item_path.stat().st_mtime,
-            )
-
-        locations = [
-            data_path
-            for data_path in data_paths
-            if (data_path / self.root_name).exists()
-        ]
-        if not locations:  # pragma: no cover
-            logger.debug(
-                "No existing download item location found for: %r",
-                self,
-            )
-            return None
-        location = sorted(locations, reverse=True, key=key)[0]
         if self.DOWNLOAD_DIR_FIELD not in self._fields:  # pragma: no cover
             logger.debug(
                 "Missing download dir field, updating: %r",
                 self,
             )
             self.update()
-        if self.download_dir != location:
+
+        def key(item_root_path):
+            """
+            Determine the size and modification date of this items data in the path.
+            """
+            du_process = subprocess.run(  # nosec, pragmatic choice for performance
+                ["du", "-s", str(item_root_path)],
+                capture_output=True,
+                check=True,
+            )
+            return (
+                int(du_process.stdout.strip().split()[0]),
+                item_root_path.stat().st_mtime,
+            )
+
+        item_root_path = sorted(item_root_paths, reverse=True, key=key)[0]
+
+        if self.download_dir != item_root_path.parent:
             logger.info(
                 "Changing download item location for %r: %s",
                 self,
-                location,
+                item_root_path.parent,
             )
-            self.locate_data(location)
+            self.locate_data(item_root_path.parent)
             # Avoid another RPC request, update the field value using the internals:
             self._fields[self.DOWNLOAD_DIR_FIELD] = transmission_rpc.lib_types.Field(
-                str(location),
+                str(item_root_path.parent),
                 False,
             )
             del self.download_dir
-            return location
+            return item_root_path.parent
 
         logger.debug(
             "Download item location already best for %r: %s",
             self,
-            location,
+            item_root_path.parent,
         )
         return None
 
     def link_imported_files(
         self,
-        data_paths,
+        item_root_paths,
         imported_root,
         imported_relatives,
         need_verify=False,
@@ -469,8 +440,7 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         """
         Hard link imported files back into download items.
 
-        :param data_paths: The full list of data paths including those from the Servarr
-            download clients.
+        :param item_root_paths: Filesystem paths of existing download item data.
         :param imported_root: The path to the series/movie directory containing the
             relative imported file paths.
         :param imported_relatives: Map the relative paths of imported files to the
@@ -481,10 +451,12 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
         """
         # Change the download item data path if a better one is found.  Collect
         # additional possible data paths from the import history records:
-        item_data_paths = dict.fromkeys(data_paths)
-        for imported_relative, dropped_data in imported_relatives.items():
-            item_data_paths[dropped_data["location"]] = None
-        if self.find_location(list(item_data_paths)):
+        if not (item_root_paths := list(item_root_paths)):
+            logger.debug(  # pragma: no cover
+                "No existing download item location found for: %r",
+                self,
+            )
+        elif self.find_location(item_root_paths):
             need_verify = True
 
         # Hard link imported files into the download item's location:

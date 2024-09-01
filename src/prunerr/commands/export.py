@@ -21,10 +21,7 @@ class ExportCommandRun:
     Represent the state and logic of an individual run of the ``export`` sub-command.
     """
 
-    IMPORT_KEYS = ("sourceTitle", "downloadRootName")
-
     download_ids: dict
-    import_names: dict
 
     def __init__(self, servarr):
         """
@@ -41,7 +38,6 @@ class ExportCommandRun:
         """
         # Collect global download item data shared between series/movies:
         self.download_ids = {}
-        self.import_names = {import_key: {} for import_key in self.IMPORT_KEYS}
         for download_client in self.servarr.download_clients.values():
             for download_item in download_client.download_client.items:
                 self.download_ids.setdefault(
@@ -104,7 +100,7 @@ class ExportServarrRootItem:
     imported_items: dict
     download_ids: dict
     imported_relatives: dict
-    import_names: dict
+    download_root_names: dict
     imported_download_ids: dict
 
     def __init__(self, command_run, root_item):
@@ -174,23 +170,13 @@ class ExportServarrRootItem:
         # pre-existing download item names and root basenames in the client:
         for download_items in self.command_run.download_ids.values():
             for download_item in download_items:
-                if not self.command_run.import_names["sourceTitle"].get(
-                    download_item.name,
-                ):
-                    self.command_run.import_names["sourceTitle"][
-                        download_item.name
-                    ] = download_item.hashString
-                if not self.command_run.import_names["downloadRootName"].get(
+                if not self.download_root_names.get(
                     download_item.root_name,
                 ):
-                    self.command_run.import_names["downloadRootName"][
-                        download_item.name
-                    ] = download_item.hashString
-        self.imported_download_ids.update(
-            self.lookup_download_ids(
-                mapped_names=self.command_run.import_names,
-            ),
-        )
+                    self.download_root_names[download_item.name] = (
+                        download_item.hashString
+                    )
+        self.imported_download_ids.update(self.lookup_download_ids())
 
         # Finally, hard link imported files into the download items:
         linked_files = []
@@ -324,9 +310,7 @@ class ExportServarrRootItem:
         """
         self.imported_relatives = {}
         self.download_ids = {}
-        self.import_names = {
-            import_key: {} for import_key in self.command_run.IMPORT_KEYS
-        }
+        self.download_root_names = {}
         for history_record in self.command_run.servarr.client.get(
             f"history/{self.command_run.servarr.type_map['dir_type']}",
             **{
@@ -352,14 +336,6 @@ class ExportServarrRootItem:
             else:  # pragma: no cover
                 # Not an import or grab record, skip it:
                 continue
-
-            # If the import history has no download item ID/hash, try to match on the
-            # download item name in `sourceTitle`:
-            if history_record.get("sourceTitle") and history_record.get("downloadId"):
-                self.import_names["sourceTitle"].setdefault(
-                    history_record["sourceTitle"],
-                    history_record["downloadId"],
-                )
 
     def find_dropped_relative(
         self,
@@ -451,9 +427,9 @@ class ExportServarrRootItem:
             if dropped_relative:
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
-                self.import_names["downloadRootName"][download_root_name] = (
-                    history_record["downloadId"]
-                )
+                self.download_root_names[download_root_name] = history_record[
+                    "downloadId"
+                ]
                 if (
                     download_id_collated.get("downloadRootName")
                     and download_root_name != download_id_collated["downloadRootName"]
@@ -483,7 +459,6 @@ class ExportServarrRootItem:
                             {},
                         )
                         old_imported_collated.pop("downloadId", None)
-                        old_imported_collated.pop("sourceTitle", None)
                     download_id_collated.pop("importedRel", None)
                 # Also map the download item hash ID to the root basename for comparison
                 # with older history later to identify incorrect download item hash IDs:
@@ -493,11 +468,6 @@ class ExportServarrRootItem:
             # download item hash ID, store a reference so we can remove that hash ID
             # when collating the older, correct history later:
             download_id_collated.setdefault("importedRel", []).append(imported_relative)
-
-        # If the import history has no download item ID/hash, try to match on
-        # the download item name in `sourceTitle`:
-        if history_record.get("sourceTitle"):  # pragma: no cover
-            imported_collated["sourceTitle"] = history_record["sourceTitle"]
 
         # Only store collated history for the most recent import that's in the library:
         if imported_relative in self.imported_items:  # pragma: no cover
@@ -543,19 +513,12 @@ class ExportServarrRootItem:
             },
         )
 
-    def lookup_download_ids(
-        self,
-        mapped_names: typing.Optional[dict] = None,
-    ) -> dict:
+    def lookup_download_ids(self) -> dict:
         """
         Lookup the download IDs for imported files without them by download item name.
 
-        :param mapped_names: Map download items by hashes, names and root basenames
-            (default: ``self.import_names``).
         :return: Map download item names and root basenames to download item hash IDs.
         """
-        if mapped_names is None:
-            mapped_names = self.import_names
         download_ids: dict = {}
         download_ids_by_names: dict = {}
         for imported_relative, imported_item in self.imported_items.items():
@@ -567,7 +530,6 @@ class ExportServarrRootItem:
                 continue
 
             download_id = self.lookup_download_id(
-                mapped_names,
                 download_ids_by_names,
                 imported_relative,
                 imported_item,
@@ -586,7 +548,6 @@ class ExportServarrRootItem:
 
     def lookup_download_id(
         self,
-        mapped_names: dict,
         download_ids_by_names: dict,
         imported_relative: pathlib.Path,
         imported_item: dict,
@@ -594,7 +555,6 @@ class ExportServarrRootItem:
         """
         Lookup the download IDs for imported files without them by download item name.
 
-        :param mapped_names: Map download items by hashes, names and root basenames.
         :param download_ids_by_names: Map import names and root basenames to download
             item hash IDs.
         :param imported_relative: The relative path to the imported file within the
@@ -604,78 +564,38 @@ class ExportServarrRootItem:
         :return: The download item hash ID if one matched by name or root basename.
         """
         imported_collated = self.imported_relatives.get(imported_relative, {})
-        for import_key in self.command_run.IMPORT_KEYS:
-            if not (
-                import_name := imported_collated.get(import_key)
-            ):  # pragma: no cover
-                continue
+        download_root_name = imported_collated.get("downloadRootName")
 
-            if download_id := download_ids_by_names.get(import_key, {}).get(
-                import_name
-            ):  # pragma: no cover
-                logger.debug(
-                    "Reusing previous download item %r name lookup, %r: %s",
-                    import_key,
-                    import_name,
-                    imported_item["file"]["path"],
-                )
-            elif download_id := lookup_import_name(
-                mapped_names,
-                import_key,
-                import_name,
-            ):
-                pass
-            else:
-                # As a last resort cross the import keys to make inexact
-                # matches. For example, manual import records whose `sourceTitle` is
-                # not the download item's name may still match to the `sourceTitle`
-                # by `downloadRootname` for the vast majority of download items
-                # where those two are the same:
-                for cross_import_key in self.command_run.IMPORT_KEYS:
-                    if cross_import_key == import_key:
-                        continue
-                    download_id = lookup_import_name(
-                        mapped_names,
-                        cross_import_key,
-                        import_name,
-                    )
+        if download_id := download_ids_by_names.get("downloadRootName", {}).get(
+            download_root_name
+        ):  # pragma: no cover
+            logger.debug(
+                "Reusing previous download item %r name lookup, %r: %s",
+                "downloadRootName",
+                download_root_name,
+                imported_item["file"]["path"],
+            )
+        elif download_id := self.download_root_names.get(
+            download_root_name,
+        ):
+            logger.info(
+                "Matched download item by %r name: %s",
+                "downloadRootName",
+                download_root_name,
+            )
 
-            if download_id:
-                download_ids_by_names.setdefault(import_key, {}).setdefault(
-                    import_name,
-                    download_id,
-                )
-                return download_id
+        if download_id:
+            download_ids_by_names.setdefault("downloadRootName", {}).setdefault(
+                download_root_name,
+                download_id,
+            )
+            return download_id
 
         logger.error(
             "Could not lookup download item by names: %s",
             imported_item["file"]["path"],
         )
         return None
-
-
-def lookup_import_name(
-    mapped_names: dict,
-    import_key: str,
-    import_name: str,
-) -> typing.Optional[str]:
-    """
-    Lookup one download item ID by a given import data key and corresponding name.
-
-    :param mapped_names: Map download items by hashes, names and root basenames.
-    :param import_key: The key in the Servarr API JSON for history to match the name
-        with.
-    :param import_name: The download item name or root basename to match.
-    :return: The download item hash ID if one matched.
-    """
-    if not (download_id := mapped_names[import_key].get(import_name)):
-        return None
-    logger.info(
-        "Matched download item by %r name: %s",
-        import_key,
-        import_name,
-    )
-    return download_id
 
 
 def maybe_add_download_item(

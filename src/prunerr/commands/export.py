@@ -100,7 +100,7 @@ class ExportServarrRootItem:
     imported_items: dict
     download_ids: dict
     imported_relatives: dict
-    download_root_names: dict
+    dropped_relatives: dict
     imported_download_ids: dict
 
     def __init__(self, command_run, root_item):
@@ -167,15 +167,16 @@ class ExportServarrRootItem:
             )
 
         # As a last resort, map any imported paths without download item IDs by the
-        # pre-existing download item names and root basenames in the client:
+        # pre-existing download item file relative paths in the client:
         for download_items in self.command_run.download_ids.values():
             for download_item in download_items:
-                if not self.download_root_names.get(
-                    download_item.root_name,
-                ):
-                    self.download_root_names[download_item.name] = (
-                        download_item.hashString
-                    )
+                for download_file in download_item.files:
+                    if not self.dropped_relatives.get(
+                        download_file.relative,
+                    ):
+                        self.dropped_relatives[download_file.relative] = (
+                            download_item.hashString
+                        )
         self.imported_download_ids.update(self.lookup_download_ids())
 
         # Finally, hard link imported files into the download items:
@@ -310,7 +311,7 @@ class ExportServarrRootItem:
         """
         self.imported_relatives = {}
         self.download_ids = {}
-        self.download_root_names = {}
+        self.dropped_relatives = {}
         for history_record in self.command_run.servarr.client.get(
             f"history/{self.command_run.servarr.type_map['dir_type']}",
             **{
@@ -401,7 +402,7 @@ class ExportServarrRootItem:
         dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
         if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
             logger.error(
-                "No download root name found: %s",
+                "No relative dropped path found: %s",
                 dropped_path,
             )
         else:
@@ -409,9 +410,6 @@ class ExportServarrRootItem:
             imported_collated["location"] = dropped_path.parents[
                 len(dropped_relative.parts) - 1
             ]
-            download_root_name = imported_collated["downloadRootName"] = (
-                dropped_relative.parts[0]
-            )
 
         if history_record.get("downloadId"):
             # The most common case, map an imported path to a download item hash ID:
@@ -427,12 +425,10 @@ class ExportServarrRootItem:
             if dropped_relative:
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
-                self.download_root_names[download_root_name] = history_record[
-                    "downloadId"
-                ]
+                self.dropped_relatives[dropped_relative] = history_record["downloadId"]
                 if (
-                    download_id_collated.get("downloadRootName")
-                    and download_root_name != download_id_collated["downloadRootName"]
+                    download_id_collated.get("droppedRel")
+                    and dropped_relative != download_id_collated["droppedRel"]
                 ):  # pragma: no cover
                     # Corrupt Servarr release history where the same download item hash
                     # ID is on the import history records from different download
@@ -441,11 +437,9 @@ class ExportServarrRootItem:
                     # previous automated import they upgrade, so assume the older record
                     # is the correct download item hash ID:
                     logger.error(
-                        "Duplicate"
-                        " hash IDs for root basename, choosing older"
-                        ": %r -> %r",
-                        download_id_collated["downloadRootName"],
-                        download_root_name,
+                        "Duplicate hash IDs for dropped path, choosing older: %r -> %r",
+                        download_id_collated["droppedRel"],
+                        dropped_relative,
                     )
                     # When collating the older import history with the correct download
                     # item hash ID, remove the wrong download item hash ID from the data
@@ -462,7 +456,7 @@ class ExportServarrRootItem:
                     download_id_collated.pop("importedRel", None)
                 # Also map the download item hash ID to the root basename for comparison
                 # with older history later to identify incorrect download item hash IDs:
-                download_id_collated["downloadRootName"] = download_root_name
+                download_id_collated["droppedRel"] = dropped_relative
 
             # Earlier, when collating the newer import history with the incorrect
             # download item hash ID, store a reference so we can remove that hash ID
@@ -520,7 +514,7 @@ class ExportServarrRootItem:
         :return: Map download item names and root basenames to download item hash IDs.
         """
         download_ids: dict = {}
-        download_ids_by_names: dict = {}
+        release_hashes_by_file: dict = {}
         for imported_relative, imported_item in self.imported_items.items():
             download_id = self.imported_relatives.get(
                 imported_relative,
@@ -530,7 +524,7 @@ class ExportServarrRootItem:
                 continue
 
             download_id = self.lookup_download_id(
-                download_ids_by_names,
+                release_hashes_by_file,
                 imported_relative,
                 imported_item,
             )
@@ -548,14 +542,14 @@ class ExportServarrRootItem:
 
     def lookup_download_id(
         self,
-        download_ids_by_names: dict,
+        release_hashes_by_file: dict,
         imported_relative: pathlib.Path,
         imported_item: dict,
     ) -> typing.Optional[str]:
         """
         Lookup the download IDs for imported files without them by download item name.
 
-        :param download_ids_by_names: Map import names and root basenames to download
+        :param release_hashes_by_file: Map import names and root basenames to download
             item hash IDs.
         :param imported_relative: The relative path to the imported file within the
             series/movie.
@@ -564,29 +558,27 @@ class ExportServarrRootItem:
         :return: The download item hash ID if one matched by name or root basename.
         """
         imported_collated = self.imported_relatives.get(imported_relative, {})
-        download_root_name = imported_collated.get("downloadRootName")
+        dropped_relative = imported_collated.get("droppedRel")
 
-        if download_id := download_ids_by_names.get("downloadRootName", {}).get(
-            download_root_name
+        if download_id := release_hashes_by_file.get("droppedRel", {}).get(
+            dropped_relative
         ):  # pragma: no cover
             logger.debug(
-                "Reusing previous download item %r name lookup, %r: %s",
-                "downloadRootName",
-                download_root_name,
+                "Reusing previous dropped relative path lookup, %r: %s",
+                dropped_relative,
                 imported_item["file"]["path"],
             )
-        elif download_id := self.download_root_names.get(
-            download_root_name,
+        elif download_id := self.dropped_relatives.get(
+            dropped_relative,
         ):
             logger.info(
-                "Matched download item by %r name: %s",
-                "downloadRootName",
-                download_root_name,
+                "Matched download item by dropped relative path: %s",
+                dropped_relative,
             )
 
         if download_id:
-            download_ids_by_names.setdefault("downloadRootName", {}).setdefault(
-                download_root_name,
+            release_hashes_by_file.setdefault("droppedRel", {}).setdefault(
+                dropped_relative,
                 download_id,
             )
             return download_id

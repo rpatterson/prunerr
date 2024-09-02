@@ -58,7 +58,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         self.servarrs = {}
         self.verifying_items = {}
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.

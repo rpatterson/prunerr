@@ -31,7 +31,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         self.servarr_download_client = servarr_download_client
         self.download_item = download_item
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.

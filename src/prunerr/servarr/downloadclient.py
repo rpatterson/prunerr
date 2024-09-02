@@ -46,7 +46,7 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         self.servarr = servarr
         self.config = {}
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.

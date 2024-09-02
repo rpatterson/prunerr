@@ -171,8 +171,9 @@ class ExportServarrRootItem:
         for download_items in self.command_run.download_ids.values():
             for download_item in download_items:
                 for download_file in download_item.files:
-                    if not self.dropped_relatives.get(
-                        download_file.relative,
+                    if (
+                        download_file.relative in self.dropped_relatives
+                        and not self.dropped_relatives[download_file.relative]
                     ):
                         self.dropped_relatives[download_file.relative] = (
                             download_item.hashString
@@ -425,7 +426,6 @@ class ExportServarrRootItem:
             if dropped_relative:
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
-                self.dropped_relatives[dropped_relative] = history_record["downloadId"]
                 if (
                     download_id_collated.get("droppedRel")
                     and dropped_relative != download_id_collated["droppedRel"]
@@ -466,6 +466,10 @@ class ExportServarrRootItem:
         # Only store collated history for the most recent import that's in the library:
         if imported_relative in self.imported_items:  # pragma: no cover
             self.imported_relatives.setdefault(imported_relative, imported_collated)
+            self.dropped_relatives.setdefault(
+                dropped_relative,
+                history_record.get("downloadId"),
+            )
 
     def update_grab_record(
         self,

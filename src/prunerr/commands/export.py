@@ -178,7 +178,10 @@ class ExportServarrRootItem:
                         self.dropped_relatives[download_file.relative] = (
                             download_item.hashString
                         )
-        self.imported_download_ids.update(self.lookup_download_ids())
+        for download_id, imported_relatives in self.lookup_download_ids().items():
+            self.imported_download_ids.setdefault(download_id, {}).update(
+                imported_relatives,
+            )
 
         # Finally, hard link imported files into the download items:
         linked_files = []

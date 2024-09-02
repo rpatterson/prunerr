@@ -206,6 +206,22 @@ class PrunerrComponent:
     An object representing a part of the Prunerr and Servarr architecture.
     """
 
+    @cached_property
+    def details(self):
+        """
+        Assemble all available useful information.
+        """
+        return {"id": id(self)}  # pragma: no cover
+
+    def __repr__(self) -> str:
+        """
+        Readable, informative, and specific representation to ease debugging.
+        """
+        details_str = " ".join(
+            f"{attr}={value!r}" for attr, value in self.details.items()
+        )
+        return f"<{type(self).__name__} {details_str}>"
+
     def update(self):
         """
         Update cached values when this download item is updated.

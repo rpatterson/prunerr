@@ -23,7 +23,10 @@ from .utils import cached_property
 logger = logging.getLogger(__name__)
 
 
-class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
+class PrunerrDownloadItem(
+    utils.PrunerrComponent,
+    transmission_rpc.Torrent,
+):  # pylint: disable=too-many-public-methods
     """
     Enrich download item data from the download client API.
     """
@@ -45,15 +48,18 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
             PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()
         ]
 
-    def __repr__(self) -> str:
+    @cached_property
+    def details(self):
         """
-        Report all available commonly useful information.
+        Assemble all available useful information.
         """
         details = {}
         if (name := self._get_name_string()) is not None:
             details["name"] = name
         elif self.HASH_FIELD in self._fields:  # pragma: no cover
             details["hash"] = self._fields[self.HASH_FIELD].value
+        else:  # pragma: no cover
+            details["id"] = self._fields["id"].value
         details["indexer"] = self.match_indexer_urls()
         details["size"] = self.disk_usage
         imported_portion = round(
@@ -68,8 +74,7 @@ class PrunerrDownloadItem(utils.PrunerrComponent, transmission_rpc.Torrent):
             * 100
         )
         details["imported"] = f"{imported_portion}%"
-        details_str = " ".join(f"{attr}={value!r}" for attr, value in details.items())
-        return f"<Torrent {details_str}>"
+        return details
 
     def update(self):
         """
@@ -603,6 +608,16 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
             return getattr(self.rpc_file, name)
         except AttributeError:  # pragma: no cover
             return getattr(self.stat, name)
+
+    @cached_property
+    def details(self):
+        """
+        Assemble all available useful information.
+        """
+        details = self.rpc_file._asdict()
+        details["disk_usage"] = self.disk_usage
+        details["imported"] = self.is_imported
+        return details
 
     @cached_property
     def relative(self):

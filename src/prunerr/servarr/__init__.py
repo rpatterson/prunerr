@@ -94,11 +94,12 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_clients = {}
         self.download_client_names = {}
 
-    def __repr__(self):
+    @cached_property
+    def details(self):
         """
-        Readable, informative, and specific representation to ease debugging.
+        Assemble all available useful information.
         """
-        return f"<{type(self).__name__} {self.config.get('name')!r}>"
+        return {"name": self.config.get("name")}
 
     def update(self, config):  # pylint: disable=arguments-differ
         """

@@ -206,7 +206,7 @@ class PrunerrComponent:
     An object representing a part of the Prunerr and Servarr architecture.
     """
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.

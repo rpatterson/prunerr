@@ -48,7 +48,7 @@ class PrunerrDownloadItem(
             PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()
         ]
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.
@@ -609,7 +609,7 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
         except AttributeError:  # pragma: no cover
             return getattr(self.stat, name)
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.

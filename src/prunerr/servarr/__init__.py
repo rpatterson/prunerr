@@ -94,7 +94,7 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_clients = {}
         self.download_client_names = {}
 
-    @cached_property
+    @property
     def details(self):
         """
         Assemble all available useful information.

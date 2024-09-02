@@ -21,6 +21,7 @@ import prunerr.downloaditem
 import prunerr.servarr.release
 from .. import utils
 from ..utils import pathlib
+from ..utils import cached_property
 from . import release as release_module
 
 logger = logging.getLogger(__name__)
@@ -45,14 +46,15 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         self.servarr = servarr
         self.config = {}
 
-    def __repr__(self):
+    @cached_property
+    def details(self):
         """
-        Readable, informative, and specific representation to ease debugging.
+        Assemble all available useful information.
         """
-        return (
-            f"<{type(self).__name__} {self.servarr.config.get('name')!r}"
-            f"->{self.config.get('url')!r}>"
-        )
+        return {
+            "servarr": self.servarr.config.get("name"),
+            "dowload_client": self.config.get("url"),
+        }
 
     def update(self, config):  # pylint: disable=arguments-differ
         """

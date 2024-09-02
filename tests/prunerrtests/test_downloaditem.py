@@ -113,3 +113,17 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             0,
             "Wrong download item total download rate",
         )
+
+    def test_download_item_file_repr(self):
+        """
+        Download item files provide useful debugging and introspection details.
+        """
+        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
+        self.mock_responses()
+        runner.update()
+        download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
+        self.assertIn(
+            "name=",
+            repr(download_items[1].files[0]),
+            "Download item string representation missing its name",
+        )

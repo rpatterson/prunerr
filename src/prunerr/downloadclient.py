@@ -58,11 +58,12 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         self.servarrs = {}
         self.verifying_items = {}
 
-    def __repr__(self):
+    @cached_property
+    def details(self):
         """
-        Readable, informative, and specific representation to ease debugging.
+        Assemble all available useful information.
         """
-        return f"<{type(self).__name__} at {self.config.get('name')!r}>"
+        return {"name": self.config.get("name")}
 
     def update(self, config):  # pylint: disable=arguments-differ
         """

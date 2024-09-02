@@ -31,16 +31,16 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         self.servarr_download_client = servarr_download_client
         self.download_item = download_item
 
-    def __repr__(self):
+    @cached_property
+    def details(self):
         """
-        Readable, informative, and specific representation to ease debugging.
+        Assemble all available useful information.
         """
-        return repr(
-            f"<{type(self).__name__}"
-            f" {self.servarr_download_client.servarr.config.get('name')!r}"
-            f"->{self.servarr_download_client.config.get('url')!r}"
-            f" torrent={self.download_item!r}>"
-        )
+        return {
+            "servarr": self.servarr_download_client.servarr.config.get("name"),
+            "dowload_client": self.servarr_download_client.config.get("url"),
+            "torrent": self.download_item,
+        }
 
     @cached_property
     def queue(self):

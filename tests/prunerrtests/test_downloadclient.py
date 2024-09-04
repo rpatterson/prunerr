@@ -15,6 +15,7 @@ import prunerrtests
 
 import prunerr.runner
 import prunerr.downloadclient
+from prunerr import utils
 
 
 @mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
@@ -206,7 +207,7 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         runner.config = self.config
         download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
         with self.assertRaises(
-            ValueError,
+            utils.PrunerrValidationError,
             msg="Download client URL without port did not raise and error",
         ):
             download_client.update({"url": "foo://transmission.example.com"})

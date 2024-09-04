@@ -1,14 +1,12 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=missing-any-param-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=missing-raises-doc
-
 """
 Tests covering the Prunerr `daemon` sub-command.
 """
 
 import os
+import typing
 import pathlib
 import time
 
@@ -28,11 +26,11 @@ class PrunerrDaemonTestException(BaseException):
     """
 
 
-def mock_poll_delay_response(
-    request=None,
-    context=None,
-    response_mock=None,
-):  # pylint: disable=unused-argument
+def mock_poll_delay_response(  # pylint: disable=missing-param-doc,missing-return-doc
+    request: dict,  # pylint: disable=unused-argument
+    context: dict,  # pylint: disable=unused-argument
+    response_mock: dict,
+) -> dict:
     """
     Sleep for more than the daemon loop poll time before sending response.
     """
@@ -40,10 +38,10 @@ def mock_poll_delay_response(
     return response_mock["from_mock_dir"]["json"]
 
 
-def mock_network_retry_response(
-    request=None,
-    context=None,
-    response_mock=None,
+def mock_network_retry_response(  # pylint: disable=missing-param-doc,missing-raises-doc
+    request: typing.Optional[dict] = None,
+    context: typing.Optional[dict] = None,
+    response_mock: typing.Optional[dict] = None,
 ):
     """
     Raise an exception while running `exec` that `daemon` catches.
@@ -51,10 +49,10 @@ def mock_network_retry_response(
     raise ConnectionError("Temporary network connection error")
 
 
-def mock_exit_daemon_response(
-    request=None,
-    context=None,
-    response_mock=None,
+def mock_exit_daemon_response(  # pylint: disable=missing-param-doc,missing-raises-doc
+    request: typing.Optional[dict] = None,
+    context: typing.Optional[dict] = None,
+    response_mock: typing.Optional[dict] = None,
 ):
     """
     Simulate an exception to exit the `daemon` sub-command.

@@ -432,8 +432,6 @@ include $(wildcard .env)
 # Finished with `$(shell)`, echo recipe commands going forward
 .SHELLFLAGS+= -x
 
-# <!--alex disable hooks-->
-
 
 ### Top-level targets:
 

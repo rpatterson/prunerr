@@ -5,8 +5,6 @@
 # Run all test, linters, and other code checks before committing and pushing.
 fail_fast: true
 repos:
-  # <!--alex disable hooks-->
-
   # Enforce conventional commit messages before pushing to a remote:
   - repo: "https://github.com/commitizen-tools/commitizen"
     rev: "v3.29.0"

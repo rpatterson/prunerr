@@ -30,7 +30,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
     CONFIG = test_downloaditem.PrunerrDownloadItemTests.CONFIG
     RESPONSES_DIR = test_downloaditem.PrunerrDownloadItemTests.RESPONSES_DIR
 
-    def setUp(self):  # pylint: disable=invalid-name
+    def setUp(self):
         """
         Assemble the components required to run operations.
         """
@@ -69,7 +69,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         Some operation configuration options conflict.
         """
         with self.assertRaises(
-            ValueError,
+            NotImplementedError,
             msg="Executing invalid operation options didn't raise an error",
         ):
             self.operations.exec_operations(
@@ -235,7 +235,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         Executing invalid files aggregation exist raises a clear error.
         """
         with self.assertRaises(
-            ValueError,
+            NotImplementedError,
             msg="Executing invalid files aggregation doesn't raise a clear error.",
         ):
             self.operations.exec_operations(

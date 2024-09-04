@@ -1,44 +1,59 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=missing-any-param-doc,magic-value-comparison,missing-raises-doc
-# pylint: disable=missing-return-doc,missing-return-type-doc,missing-param-doc
-# pylint: disable=missing-type-doc
-
 """
 Download item metadata operations used in Prunerr configuration.
 
 Used to determine item indexer priority, reviewing grabbed items, etc.
 """
 
+import typing
 import re
 import logging
 
 import jinja2.environment
 import jinja2.nativetypes
 
+from . import downloaditem
+
 logger = logging.getLogger(__name__)
 
 jinja_env = jinja2.nativetypes.NativeEnvironment()
 
+CONFIG_EQUAL_KEY = "equals"
+CONFIG_MINIMUM_KEY = "minimum"
+CONFIG_MAXIMUM_KEY = "maximum"
+CONFIG_PRIORITIES_KEY = "priorities"
+CONFIG_HOSTNAMES_KEY = "hostnames"
+CONFIG_AGGREGATION_PORTION = "portion"
 
-def parse_operation(operation_config):
+
+def parse_operation(operation_config: dict) -> dict:
     """
     Parse or compile any expressions in the configuration.
 
     Done for better speed when executing the same operation against multiple download
     items.
+
+    :param operation_config: The operation configuration from the Prunerr configuration.
+    :return: The operation configuration augmented with any pre-processing possible.
+    :raises NotImplementedError: The operation configuration YAML has a problem.
     """
-    if "equals" in operation_config and (
-        "minimum" in operation_config or "maximum" in operation_config
+    if CONFIG_EQUAL_KEY in operation_config and (
+        CONFIG_MINIMUM_KEY in operation_config or CONFIG_MAXIMUM_KEY in operation_config
     ):
-        raise ValueError(
+        raise NotImplementedError(
             f"Operation {operation_config['type']!r} "
             f"includes both `equals` and `minimum` or `maximum`"
         )
     operation_config.update(
         (key, jinja_env.from_string(operation_config[key]))
-        for key in ("template", "equals", "minimum", "maximum")
+        for key in (
+            "template",
+            CONFIG_EQUAL_KEY,
+            CONFIG_MINIMUM_KEY,
+            CONFIG_MAXIMUM_KEY,
+        )
         if key in operation_config and isinstance(operation_config[key], str)
     )
 
@@ -48,31 +63,52 @@ def parse_operation(operation_config):
     return operation_config
 
 
-def render_value(template, **context):
+def render_value(
+    template: typing.Optional[jinja2.environment.Template],
+    **context,
+) -> typing.Any:
     """
     Render a Jinja template string, or return directly if not a string.
+
+    :param template: The scalar YAML value or compiled Jinja template.
+    :param context: A mapping of what is available when rendering the template.
+    :return: The scalar YAML value or rendered template output.
     """
     if isinstance(template, jinja2.environment.Template):
         return template.render(**context)
     return template
 
 
-def apply_sort_value(operation_config, item, include, sort_value):
+def apply_sort_value(
+    operation_config: dict,
+    item: downloaditem.PrunerrDownloadItem,
+    include: bool,
+    sort_value: typing.Any,
+) -> tuple:
     """
     Apply any restrictions that can apply across different operation types.
+
+    :param operation_config: The operation configuration from the Prunerr configuration.
+    :param item: The download item to which to apply the operation.
+    :param include: Whether this download item should be included when filtering items.
+    :param sort_value: The values by which to sort download items.
+    :return: The applied ``include`` and ``sort_value`` per the ``operation_config``.
+    :raises NotImplementedError: The resulting sort value is not supported.
     """
     sort_bool = None
-    if "equals" in operation_config:
-        sort_bool = sort_value == render_value(operation_config["equals"], item=item)
+    if CONFIG_EQUAL_KEY in operation_config:
+        sort_bool = sort_value == render_value(
+            operation_config[CONFIG_EQUAL_KEY], item=item
+        )
     else:
-        if "minimum" in operation_config:
+        if CONFIG_MINIMUM_KEY in operation_config:
             sort_bool = sort_value >= render_value(
-                operation_config["minimum"],
+                operation_config[CONFIG_MINIMUM_KEY],
                 item=item,
             )
-        if "maximum" in operation_config and (sort_bool is None or sort_bool):
+        if CONFIG_MAXIMUM_KEY in operation_config and (sort_bool is None or sort_bool):
             sort_bool = sort_value <= render_value(
-                operation_config["maximum"],
+                operation_config[CONFIG_MAXIMUM_KEY],
                 item=item,
             )
     if sort_bool is not None:
@@ -109,14 +145,16 @@ class PrunerrOperations:
         self.download_client = download_client
         self.config = config
 
-        if "priorities" not in config:
+        if CONFIG_PRIORITIES_KEY not in config:
             # Load sample Prunerr config file and use for default "priorities" config
-            config["priorities"] = [
-                self.download_client.runner.example_confg["indexers"]["priorities"][-1]
+            config[CONFIG_PRIORITIES_KEY] = [
+                self.download_client.runner.example_confg["indexers"][
+                    CONFIG_PRIORITIES_KEY
+                ][-1]
             ]
         self.indexer_operations = {}
         for operations_type, indexer_configs in config.items():
-            if operations_type == "hostnames":
+            if operations_type == CONFIG_HOSTNAMES_KEY:
                 continue
             self.indexer_operations[operations_type] = {}
             for indexer_config in indexer_configs:
@@ -128,13 +166,23 @@ class PrunerrOperations:
 
         self.seen_empty_files = set()
 
-    def exec_indexer_operations(self, item, operations_type="priorities"):
+    def exec_indexer_operations(
+        self,
+        item: downloaditem.PrunerrDownloadItem,
+        operations_type: str = CONFIG_PRIORITIES_KEY,
+    ) -> tuple:
         """
-        Run indexer operations for the download item and return results.
+        Run operations for the download item, cache, and return results.
+
+        :param item: The download item to which to apply the operation.
+        :param operations_type: The key in the Prunerr configuration that contains the
+            operations configurations.
+        :return: Whether this download item should be included when filtering items and
+            the values by which to sort download items.
         """
-        cached_results = vars(item).setdefault("prunerr_operations_results", {})
+        cached_results = dict(vars(item)).setdefault("prunerr_operations_results", {})
         if operations_type in cached_results:
-            return cached_results[operations_type]
+            return cached_results[operations_type]  # pragma: no cover
 
         indexer_configs = self.indexer_operations.get(operations_type, {})
         if (indexer_name := item.match_indexer_urls()) not in indexer_configs:
@@ -146,12 +194,23 @@ class PrunerrOperations:
         cached_results[operations_type] = (include, (indexer_idx,) + sort_key)
         return cached_results[operations_type]
 
-    def exec_operations(self, operation_configs, item):
+    def exec_operations(
+        self,
+        operation_configs: list,
+        item: downloaditem.PrunerrDownloadItem,
+    ) -> tuple:
         """
         Execute each of the configured indexer priority operations.
+
+        :param operation_configs: The operation configurations from the Prunerr
+            configuration.
+        :param item: The download item to which to apply the operation.
+        :return: Whether this download item should be included when filtering items and
+            the values by which to sort download items.
+        :raises NotImplementedError: The operation configuration is invalid.
         """
         # TODO: Add `name` to operation configs and use in log/exc messages
-        sort_key = []
+        sort_key: list = []
         include = True
         for operation_config in operation_configs:
             executor = getattr(self, f"exec_operation_{operation_config['type']}", None)
@@ -175,19 +234,33 @@ class PrunerrOperations:
             sort_key.append(sort_value)
         return include, tuple(sort_key)
 
-    def exec_operation_value(  # noqa: V105, pylint: disable=no-self-use
+    def exec_operation_value(  # pylint: disable=no-self-use # noqa: V105
         self,
-        operation_config,
-        item,
-    ):
+        operation_config: dict,
+        item: downloaditem.PrunerrDownloadItem,
+    ) -> typing.Any:
         """
-        Return the attribute or key value for the download item.
+        Render the template or return the YAML scalar value.
+
+        :param operation_config: The operation configuration from the Prunerr
+            configuration.
+        :param item: The download item to which to apply the operation.
+        :return: The scalar YAML value or rendered template output.
         """
         return render_value(operation_config["template"], item=item)
 
-    def exec_operation_or(self, operation_config, item):  # noqa: V105
+    def exec_operation_or(  # noqa: V105
+        self,
+        operation_config: dict,
+        item: downloaditem.PrunerrDownloadItem,
+    ) -> typing.Any:
         """
         Return `True` if any of the nested operations return `True`.
+
+        :param operation_config: The operation configuration from the Prunerr
+            configuration.
+        :param item: The download item to which to apply the operation.
+        :return: The value of the nested operations if any are `True`.
         """
         _, sort_key = self.exec_operations(
             operation_config["operations"],
@@ -198,42 +271,61 @@ class PrunerrOperations:
                 return sort_value
         return sort_key[-1] if sort_key else False
 
-    def exec_operation_and(self, operation_config, download_item):  # noqa: V105
+    def exec_operation_and(  # noqa: V105
+        self,
+        operation_config: dict,
+        item: downloaditem.PrunerrDownloadItem,
+    ) -> typing.Any:
         """
         Return `False` if any of the nested operations return `False`.
+
+        :param operation_config: The operation configuration from the Prunerr
+            configuration.
+        :param item: The download item to which to apply the operation.
+        :return: The value of the nested operations if all are `True`.
         """
         _, sort_key = self.exec_operations(
             operation_config["operations"],
-            download_item,
+            item,
         )
         for sort_value in sort_key:
             if not sort_value:
                 return sort_value
         return sort_key[-1]
 
-    def exec_operation_files(self, operation_config, download_item):  # noqa: V105
+    def exec_operation_files(  # noqa: V105
+        self,
+        operation_config: dict,
+        item: downloaditem.PrunerrDownloadItem,
+    ) -> typing.Any:
         """
         Return aggregated values from item files.
+
+        :param operation_config: The operation configuration from the Prunerr
+            configuration.
+        :param item: The download item to which to apply the operation.
+        :return: The aggregated value.
+        :raises NotImplementedError: The operation configuration is invalid.
         """
         template = operation_config.get("template")
         filter_attrs = operation_config.get("filter-attrs", [])
         path_patterns = operation_config.get("path-patterns", [])
         aggregation = operation_config.get("aggregation")
-        if aggregation not in {None, "portion"}:
-            raise ValueError(f"Unknown item files aggregation {aggregation!r}")
+        if aggregation not in {None, CONFIG_AGGREGATION_PORTION}:
+            raise NotImplementedError(f"Unknown item files aggregation {aggregation!r}")
 
-        if not download_item.files:
-            if download_item.hashString.upper() not in self.seen_empty_files:
+        if not item.files:
+            if item.hashString.upper() not in self.seen_empty_files:
                 logger.debug(
                     "Download item contains no files: %r",
-                    download_item,
+                    item,
                 )
-                self.seen_empty_files.add(download_item.hashString.upper())
+                self.seen_empty_files.add(item.hashString.upper())
             return False
 
         wanted_files = matching_files = [
             item_file
-            for item_file in download_item.files
+            for item_file in item.files
             if item_file.selected and item_file.path.exists()
         ]
         for filter_attr in filter_attrs:
@@ -243,7 +335,7 @@ class PrunerrOperations:
                 if getattr(matching_file, filter_attr)
             ]
         if path_patterns:
-            pattern_files = []
+            pattern_files: list = []
             for pattern in path_patterns:
                 pattern_files.extend(
                     matching_file
@@ -258,13 +350,13 @@ class PrunerrOperations:
             else len(matching_files)
         )
 
-        if aggregation == "portion":
+        if aggregation == CONFIG_AGGREGATION_PORTION:
             if template:
                 total = sum(
                     template.render(file=wanted_file) for wanted_file in wanted_files
                 )
-            else:  # pragma: no cover
-                total = len(wanted_files)
+            else:
+                total = len(wanted_files)  # pragma: no cover
             sort_value = 0 if not total else sort_value / total
 
         return sort_value

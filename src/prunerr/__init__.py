@@ -35,7 +35,7 @@ try:
     from . import version
 except ImportError:  # pragma: no cover
     pass
-else:  # pragma: no cover
+else:
     __version__ = version.version
 
 # Add MIME types that may not be registered on all hosts
@@ -124,8 +124,8 @@ def move(  # pylint: disable=missing-function-docstring,missing-return-doc
 move.__doc__ = prunerr.runner.PrunerrRunner.move.__doc__
 parser_move = subparsers.add_parser(
     "move",
-    help=move.__doc__.strip(),  # type: ignore
-    description=move.__doc__.strip(),  # type: ignore
+    help=str(move.__doc__).strip(),
+    description=str(move.__doc__).strip(),
 )
 parser_move.set_defaults(command=move)
 
@@ -142,8 +142,8 @@ def review(  # pylint: disable=missing-function-docstring,missing-return-doc
 review.__doc__ = prunerr.runner.PrunerrRunner.review.__doc__
 parser_review = subparsers.add_parser(
     "review",
-    help=review.__doc__.strip(),  # type: ignore
-    description=review.__doc__.strip(),  # type: ignore
+    help=str(review.__doc__).strip(),
+    description=str(review.__doc__).strip(),
 )
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
@@ -162,8 +162,8 @@ def free_space(  # pylint: disable=missing-function-docstring,missing-return-doc
 free_space.__doc__ = prunerr.runner.PrunerrRunner.free_space.__doc__
 parser_free_space = subparsers.add_parser(
     "free-space",
-    help=free_space.__doc__.strip(),  # type: ignore
-    description=free_space.__doc__.strip(),  # type: ignore
+    help=str(free_space.__doc__).strip(),
+    description=str(free_space.__doc__).strip(),
 )
 parser_free_space.set_defaults(command=free_space)
 
@@ -180,8 +180,8 @@ def export(  # pylint: disable=missing-function-docstring,missing-return-doc
 export.__doc__ = prunerr.runner.PrunerrRunner.export.__doc__
 parser_export = subparsers.add_parser(
     "export",
-    help=export.__doc__.strip(),  # type: ignore
-    description=export.__doc__.strip(),  # type: ignore
+    help=str(export.__doc__).strip(),
+    description=str(export.__doc__).strip(),
 )
 parser_export.set_defaults(command=export)
 
@@ -198,8 +198,8 @@ def re_add(  # pylint: disable=missing-function-docstring,missing-return-doc
 re_add.__doc__ = prunerr.runner.PrunerrRunner.re_add.__doc__
 parser_re_add = subparsers.add_parser(
     "re-add",
-    help=re_add.__doc__.strip(),  # type: ignore
-    description=re_add.__doc__.strip(),  # type: ignore
+    help=str(re_add.__doc__).strip(),
+    description=str(re_add.__doc__).strip(),
 )
 parser_re_add.set_defaults(command=re_add)
 
@@ -226,8 +226,8 @@ def exec_(  # pylint: disable=missing-function-docstring,missing-return-doc
 exec_.__doc__ = prunerr.runner.PrunerrRunner.exec_.__doc__
 parser_exec = subparsers.add_parser(
     "exec",
-    help=exec_.__doc__.strip(),  # type: ignore
-    description=exec_.__doc__.strip(),  # type: ignore
+    help=str(exec_.__doc__).strip(),
+    description=str(exec_.__doc__).strip(),
 )
 parser_exec.set_defaults(command=exec_)
 
@@ -241,8 +241,8 @@ def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstri
 daemon.__doc__ = prunerr.runner.PrunerrRunner.daemon.__doc__
 parser_daemon = subparsers.add_parser(
     "daemon",
-    help=daemon.__doc__.strip(),  # type: ignore
-    description=daemon.__doc__.strip(),  # type: ignore
+    help=str(daemon.__doc__).strip(),
+    description=str(daemon.__doc__).strip(),
 )
 parser_daemon.set_defaults(command=daemon)
 # Register shell tab completion
@@ -267,8 +267,8 @@ def config_cli_logging(
     # If the command-line option wasn't specified, fallback to the environment variable:
     if log_level is None:
         log_level = "INFO"
-        if utils.DEBUG:  # pragma: no cover
-            log_level = "DEBUG"
+        if utils.DEBUG:
+            log_level = "DEBUG"  # pragma: no cover
     logger.setLevel(getattr(logging, log_level.strip().upper()))
     # Log a given message only once per daemon session, the first loop.
     logger.addFilter(utils.daemon_once_filter)

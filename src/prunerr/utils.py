@@ -1,8 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
-# pylint: disable=missing-return-doc,missing-return-type-doc,missing-type-doc
 
 """
 Utility functions or other shared constants and values.
@@ -31,23 +29,22 @@ try:
     # BBB: Python <3.10 compat
     import pathlib3x as pathlib  # pylint: disable=unused-import
 except ImportError:  # pragma: no cover
-    import pathlib  # type: ignore # pylint: disable=unused-import # noqa: F401
+    import pathlib  # pylint: disable=unused-import # noqa: F401
 
 try:
-    from functools import (  # type: ignore # pylint: disable=unused-import
+    from functools import (
         cached_property,
     )
 except ImportError:  # pragma: no cover
     # BBB: Python <3.8 compatibility
-    from backports.cached_property import cached_property  # type: ignore # noqa: F401
+    from backports.cached_property import cached_property  # type: ignore
 
 TRUE_STRS = {"1", "true", "yes", "on"}
-DEBUG = (  # noqa: F841
-    "DEBUG" in os.environ  # pylint: disable=magic-value-comparison
-    and os.environ["DEBUG"].strip().lower() in TRUE_STRS
-)
-POST_MORTEM = (  # noqa: F841
-    "POST_MORTEM" in os.environ  # pylint: disable=magic-value-comparison
+DEBUG_STR = "DEBUG"
+DEBUG = DEBUG_STR in os.environ and os.environ["DEBUG"].strip().lower() in TRUE_STRS
+POST_MORTEM_STR = "POST_MORTEM"
+POST_MORTEM = (
+    POST_MORTEM_STR in os.environ
     and os.environ["POST_MORTEM"].strip().lower() in TRUE_STRS
 )
 
@@ -61,6 +58,13 @@ RETRY_EXC_TYPES = (
     json.JSONDecodeError,
 )
 
+URL_SCHEME_HTTP = "http"
+URL_SCHEME_HTTPS = "https"
+URL_PORT_HTTP = 80
+URL_PORT_HTTPS = 443
+
+OS_NAME_NT = "nt"
+
 
 class PrunerrValidationError(Exception):
     """
@@ -68,18 +72,23 @@ class PrunerrValidationError(Exception):
     """
 
 
-def normalize_url(url):
+def normalize_url(url_str: str) -> str:
     """
     Return the given URL in the same form regardless of port or authentication.
 
     - Do *not* include a port if the port matches the scheme.
     - Strip the authentication password or passphrase.
+
+    :param url_str: The URL before normalization.
+    :return: The normalized URL.
+    :raises ValueError: Something is wrong with the given URL.
     """
-    url = urllib.parse.urlsplit(url)
-    netloc = url.hostname
+    url = urllib.parse.urlsplit(url_str)
+    if (netloc := url.hostname) is None:
+        raise ValueError(f"URL missing hostname: {url_str}")  # pragma: no cover
     if url.port and (
-        (url.scheme == "http" and url.port != 80)
-        or (url.scheme == "https" and url.port != 443)
+        (url.scheme == URL_SCHEME_HTTP and url.port != URL_PORT_HTTP)
+        or (url.scheme == URL_SCHEME_HTTPS and url.port != URL_PORT_HTTPS)
     ):
         netloc = f"{netloc}:{url.port}"
     if url.username:
@@ -100,9 +109,12 @@ class DaemonOnceFilter(logging.Filter):  # pylint: disable=too-few-public-method
 
         self.download_hashes = set()
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         """
         Check the record extra attributes to see if the runner has already looped once.
+
+        :param record: The log message.
+        :return: Whether or not to emit this log message.
         """
         download_hash = getattr(record, "download_hash", None)
         if (
@@ -144,21 +156,51 @@ class TitleFormatter(logging.Formatter):
 title_formatter = TitleFormatter()
 
 
-class NotifyHandler(logging.Handler):  # pylint: disable=too-few-public-methods
+class ProcessLogRecord(logging.LogRecord):  # pylint: disable=too-few-public-methods
+    """
+    A log message record augmented with context about this process.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Also add the process context.
+        """
+        super().__init__(*args, **kwargs)
+
+        # General process context:
+        # Thans to `./checkouts/ntfy/ntfy/__init__.py` for some of this:
+        self.argv = " ".join(sys.argv)
+        self.home = os.path.expanduser("~")
+        self.cwd = os.getcwd()
+        self.user = getpass.getuser()  # noqa: V101
+        self.hostname = socket.gethostname()
+        if os.name != OS_NAME_NT and self.cwd.startswith(self.home):  # pragma: no cover
+            self.cwd = os.path.join("~", self.cwd[len(self.home) + 1 :])
+
+
+class NotifyHandler(logging.Handler):
     """
     Log a given message only once per daemon session, the first loop.
     """
 
-    def format(self, record):
+    formatter: TitleFormatter
+
+    def format(self, record: logging.LogRecord) -> str:
         """
         Use a default formatter if none has been explicitly configured.
+
+        :param record: The log message to format.
+        :return: The formatted log message.
         """
         fmt = self.formatter if self.formatter else title_formatter
         return fmt.format(record)
 
-    def format_title(self, record):
+    def format_title(self, record: logging.LogRecord) -> str:
         """
         Format a title separately from the message.
+
+        :param record: The log message to format a title for.
+        :return: The formatted notification title.
         """
         fmt = self.formatter if self.formatter else title_formatter
         title_record = copy.copy(record)
@@ -169,32 +211,37 @@ class NotifyHandler(logging.Handler):  # pylint: disable=too-few-public-methods
         )
         return fmt.title_formatter.format(title_record)
 
-    def emit(self, record):
+    def emit(self, record: logging.LogRecord):
         """
         Send a notification for the record using the user's ``ntfy`` configuration.
+
+        :param record: The log message to send a notification for.
         """
         ntfy.notify(
             message=self.format(record),
             title=self.format_title(record),
         )
 
-    def handle(self, record):
+    def handle(self, record: logging.LogRecord) -> bool:
         """
         Add information about this process to the record.
-        """
-        # General process context:
-        # Thans to `./checkouts/ntfy/ntfy/__init__.py` for some of this:
-        vars(record).update(
-            argv=" ".join(sys.argv),
-            home=os.path.expanduser("~"),
-            cwd=os.getcwd(),
-            user=getpass.getuser(),
-            hostname=socket.gethostname(),
-        )
-        if os.name != "nt" and record.cwd.startswith(record.home):  # pragma: no cover
-            record.cwd = os.path.join("~", record.cwd[len(record.home) + 1 :])
 
-        super().handle(record)
+        :param record: The log message to add information for.
+        :return: Whether the message was emitted or not.
+        """
+        return super().handle(
+            ProcessLogRecord(
+                record.name,
+                record.levelno,
+                record.pathname,
+                record.lineno,
+                record.msg,
+                record.args,
+                record.exc_info,
+                func=record.funcName,
+                sinfo=record.stack_info,
+            ),
+        )
 
 
 notify_handler = NotifyHandler()
@@ -207,9 +254,11 @@ class PrunerrComponent:
     """
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         return {"id": id(self)}  # pragma: no cover
 
@@ -235,5 +284,3 @@ class PrunerrComponent:
         for attr_name in list(vars(self).keys()):
             if isinstance(getattr(type(self), attr_name, None), cached_property):
                 delattr(self, attr_name)
-            elif hasattr(getattr(self, attr_name, None), "cache_clear"):
-                getattr(self, attr_name).cache_clear()

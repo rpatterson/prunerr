@@ -1,9 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
-# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=missing-type-doc,missing-yield-doc,missing-yield-type-doc
 
 """
 Prunerr interaction with Servarr instances.
@@ -22,8 +19,6 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
     A specific Servar instance's individual download item.
     """
 
-    download_item = None
-
     def __init__(self, servarr_download_client, download_item):
         """
         Capture references to the servarr download client and the download item.
@@ -32,9 +27,11 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         self.download_item = download_item
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         return {
             "servarr": self.servarr_download_client.servarr.config.get("name"),
@@ -43,18 +40,22 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         }
 
     @cached_property
-    def queue(self):
+    def queue(self) -> dict:
         """
         Lookup this release's queue record from it's Servarr instance.
+
+        :return: The Servarr API ``queue`` endpoint JSON for this release.
         """
         return self.servarr_download_client.servarr.queue.get(
             self.download_item.hashString.upper(),
         )
 
     @cached_property
-    def history(self):
+    def history(self) -> list:
         """
         Lookup and collate this download item's Servarr history records.
+
+        :return: The Servarr API ``history`` endpoint JSON for this release.
         """
         return list(
             self.servarr_download_client.servarr.get_api_paged_records(

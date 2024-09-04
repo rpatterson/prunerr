@@ -1,9 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
-# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=missing-type-doc,missing-yield-doc,missing-yield-type-doc
 
 """
 Prunerr interaction with Servarr instances.
@@ -36,9 +33,11 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
         self.params = {f"{servarr.type_map['dir_type']}Id": root_id}
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         details = {"id": self.root_id}
         if vars(self).get("data"):
@@ -61,7 +60,7 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
         )
 
     @cached_property
-    def imported_items(self) -> dict[int, dict]:
+    def imported_items(self) -> dict:
         """
         Get and collate Servarr imported items and their files.
 

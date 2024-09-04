@@ -67,7 +67,7 @@ RUN \
 
 # Bake external build dependencies into the image:
 COPY [ "./bin/install-codecov.sh", "${HOME}/.local/bin/" ]
-# hadolint ignore=DL3042,DL4006,SC1091
+# hadolint ignore=SC1091,DL4006
 RUN --mount=type=cache,target=/root/.cache,sharing=locked \
     pipx install "tox==4.11.3" && \
     wget -qO- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh" | \

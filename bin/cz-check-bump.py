@@ -19,12 +19,12 @@ import logging
 
 import decli
 
-from commitizen import exceptions  # type: ignore # pylint: disable=import-error
-from commitizen import git  # pylint: disable=import-error
-from commitizen import bump  # pylint: disable=import-error
-from commitizen import config  # pylint: disable=import-error
-from commitizen import commands  # pylint: disable=import-error
-from commitizen import cli  # pylint: disable=import-error
+from commitizen import exceptions
+from commitizen import git
+from commitizen import bump
+from commitizen import config
+from commitizen import commands
+from commitizen import cli
 
 logger = logging.getLogger(pathlib.Path(sys.argv[0]).stem)
 
@@ -39,20 +39,20 @@ arg_parser.add_argument(
 )
 
 
-def main(args=None):  # pylint: disable=missing-function-docstring
+def main(args=None):
     logging.basicConfig(level=logging.INFO)
     parsed_args = arg_parser.parse_args(args=args)
     conf = config.read_cfg()
     # Inspecting "private" attributes makes code fragile, but reproducing cz's
     # command-line argument parsing also does. Ideally, the `argparse` library adds a
     # stable public API to introspect command-line arguments, but for now:
-    bump_cli_parser = decli.cli(  # pylint: disable=protected-access
+    bump_cli_parser = decli.cli(
         cli.data
     )._subparsers._group_actions[0].choices["bump"]
     # Reproduce `commitizen.commands.bump.Bump.__init__()`:
     arguments = {
         action.dest: action.default
-        for action in bump_cli_parser._actions  # pylint: disable=protected-access
+        for action in bump_cli_parser._actions
         if action.default != argparse.SUPPRESS
     }
     bump_cmd = commands.Bump(config=conf, arguments=arguments)

@@ -334,16 +334,16 @@ class PrunerrReviewTests(prunerrtests.PrunerrTestCase):
         )
         # Simulate a change in the configuration so that the reviews will be repeated:
         runner.config_file.touch()
-        if hasattr(self, "assertNoLogs"):  # pragma: no cover
-            with self.assertNoLogs(
+        if hasattr(self, "assertNoLogs"):
+            with self.assertNoLogs(  # pragma: no cover
                 prunerr.downloaditem.logger,
                 level=logging.WARNING,
             ):
                 runner.update()
                 runner.review()
-        else:  # pragma: no cover
+        else:
             # BBB: Python <3.10 compat
-            with self.assertRaises(AssertionError):
+            with self.assertRaises(AssertionError):  # pragma: no cover
                 with self.assertLogs(
                     prunerr.downloaditem.logger,
                     level=logging.WARNING,

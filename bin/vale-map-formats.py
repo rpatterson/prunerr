@@ -65,7 +65,7 @@ def iter_pattern_suffixes(config):
         )
 
 
-def main(args=None):  # pylint: disable=missing-function-docstring
+def main(args=None):
     parsed_args = arg_parser.parse_args(args=args)
 
     # Parse the Vale configurations:

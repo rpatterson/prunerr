@@ -100,9 +100,9 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
             elif history_record["eventType"] == self.GRAB_EVENT_TYPE:
                 self.update_grab_record(history_record)
 
-            else:  # pragma: no cover
+            else:
                 # Not an import or grab record, skip it:
-                continue
+                continue  # pragma: no cover
 
         # Next, map imported file paths missing download item IDs/hashes by further
         # methods now that all history data has been collated:
@@ -270,8 +270,8 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                         servarr_suffix,
                     ),
                 )
-            else:  # pragma: no cover
-                logger.error(
+            else:
+                logger.error(  # pragma: no cover
                     "Dropped path is parallel to multiple Servarr"
                     " download client directories: %s",
                     dropped_path,
@@ -334,8 +334,8 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
 
         if download_id := release_hashes_by_file.get("droppedRel", {}).get(
             dropped_relative
-        ):  # pragma: no cover
-            logger.debug(
+        ):
+            logger.debug(  # pragma: no cover
                 "Reusing previous dropped relative path lookup, %r: %s",
                 dropped_relative,
                 imported_item["file"]["path"],

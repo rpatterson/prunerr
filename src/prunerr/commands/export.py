@@ -106,7 +106,7 @@ class ExportServarrRootItem:
     def __init__(
         self,
         command_run,
-        root_item: prunerr.servarr.rootitem.PrunerrServarrRootItem,
+        root_item: "prunerr.servarr.rootitem.PrunerrServarrRootItem",
     ):
         """
         Capture references to this `export` sub-command run and Servarr series/movie.
@@ -255,10 +255,10 @@ def maybe_add_download_item(
                 paused=True,
                 download_dir=str(download_data["downloadClient"].seeding_dir),
             )
-        except (
+        except (  # pragma: no cover
             requests.exceptions.RequestException,
             transmission_rpc.error.TransmissionError,
-        ):  # pragma: no cover
+        ):
             # Tolerate exceptions adding torrents because the download
             # URL may no longer be valid, IOW 404:
             logger.exception(

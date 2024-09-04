@@ -9,7 +9,7 @@ Return the current version minus any pre-release suffix along with its type.
 
 Useful to get the final, stable version to bump a earlier pre-release to a final
 release.
-"""  # pylint: disable=invalid-name
+"""
 
 import sys
 import argparse
@@ -27,7 +27,7 @@ parser.add_argument(
 )
 
 
-def main(args=None):  # pylint: disable=missing-function-docstring
+def main(args=None):
     parsed_args = parser.parse_args(args=args)
     version = packaging.version.parse(parsed_args.version)
     if not version.is_prerelease:

@@ -1,15 +1,13 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=missing-any-param-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=magic-value-comparison,missing-param-doc,missing-type-doc
-
 """
 Tests for Prunerr.
 """
 
 import sys
 import os
+import typing
 import functools
 import re
 import subprocess  # nosec B404
@@ -23,31 +21,24 @@ import shutil
 import unittest
 
 import yaml
+import requests
 import requests_mock
 
 import prunerr
+from prunerr import utils
 from prunerr.utils import pathlib
 from prunerr.servarr import downloadclient
 
-
-def parse_content_type(content_type):  # pragma: no cover
-    """
-    Parse an RFC822-style `Content-Type` header.
-
-    Useful to safely extract the MIME type from the charset.
-    """
-    message = email.message.Message()
-    message["Content-Type"] = content_type
-    major_type, minor_type = message.get_params()[0][0].split("/")
-    return major_type, minor_type
+HTTP_HEADER_CONTENT_TYPE = "Content-Type"
+MIME_MINOR_JSON = "json"
 
 
-def mock_get_torrent_response(
-    fields,
-    request=None,
-    context=None,
-    response_mock=None,
-):  # pylint: disable=unused-argument
+def mock_get_torrent_response(  # pylint: disable=missing-param-doc,missing-return-doc
+    fields: list,
+    request: dict,  # pylint: disable=unused-argument
+    context: dict,  # pylint: disable=unused-argument
+    response_mock: dict,
+) -> dict:
     """
     Simulate a `torrent-get` request but modify the given fields.
 
@@ -55,11 +46,11 @@ def mock_get_torrent_response(
     files such as date/time values.
     """
     for torrent, torrent_fields in zip(
-        response_mock["from_mock_dir"]["json"]["arguments"]["torrents"],
+        response_mock["from_mock_dir"][MIME_MINOR_JSON]["arguments"]["torrents"],
         fields,
     ):
         torrent.update(torrent_fields)
-    return response_mock["from_mock_dir"]["json"]
+    return response_mock["from_mock_dir"][MIME_MINOR_JSON]
 
 
 class PrunerrTestCase(
@@ -146,7 +137,7 @@ class PrunerrTestCase(
         # Convenient access to parsed mocked API/RPC request responses
         self.servarr_download_client_responses = {}
         self.servarr_urls = []
-        if "servarrs" in self.config:
+        if self.runner.CONFIG_SERVARRS_KEY in self.config:
             self.servarr_urls = [
                 servarr_config["url"]
                 for servarr_config in self.config["servarrs"].values()
@@ -207,7 +198,9 @@ class PrunerrTestCase(
                 ]["torrents"][self.DOWNLOAD_ITEM_INDEX]["name"]
             )
 
-    def set_up_download_item(self, download_item_title):
+    def set_up_download_item(
+        self, download_item_title: str
+    ):  # pylint: disable=missing-param-doc
         """
         Set up a download item and convenience attributes for testing against.
         """
@@ -229,14 +222,22 @@ class PrunerrTestCase(
             / self.incomplete_item_file.name
         )
 
-    def set_up_download_item_files(self, download_client_url):
+    def set_up_download_item_files(
+        self,
+        download_client_url_str: str,
+    ):  # pylint: disable=missing-param-doc
         """
         Copy example files into place to represent download item files.
         """
-        download_client_url = urllib.parse.urlsplit(download_client_url)
+        download_client_url = urllib.parse.urlsplit(download_client_url_str)
         netloc = download_client_url.netloc
         if not download_client_url.port:
-            netloc = f"{netloc}:{80 if download_client_url.scheme == 'http' else 443}"
+            port = (
+                utils.URL_PORT_HTTP
+                if download_client_url.scheme == utils.URL_SCHEME_HTTP
+                else utils.URL_PORT_HTTPS
+            )
+            netloc = f"{netloc}:{port}"
         with (
             self.RESPONSES_DIR
             / download_client_url.scheme
@@ -255,7 +256,8 @@ class PrunerrTestCase(
             ]["arguments"]["torrents"]:
                 download_item_dir = (
                     self.tmp_path / download_item["downloadDir"].lstrip(os.path.sep)
-                    if download_item["status"] == 6
+                    if download_item["status"]
+                    == prunerr.downloaditem.PrunerrDownloadItem.STATUS_SEEDING_INT
                     else self.incomplete_dir
                 )
                 if download_item["files"]:
@@ -265,7 +267,10 @@ class PrunerrTestCase(
                     download_item_file.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copy2(self.EXAMPLE_VIDEO, download_item_file)
 
-    def patch_paths(self, data):
+    def patch_paths(  # pylint: disable=missing-param-doc,missing-return-doc
+        self,
+        data: typing.Union[list, dict],
+    ) -> typing.Union[list, dict]:
         """
         Adjust Servarr/transmission storage paths for testing.
         """
@@ -289,34 +294,36 @@ class PrunerrTestCase(
             (data,) = data
         return data
 
-    def mock_response_callback(
+    def mock_response_callback(  # pylint: disable=missing-param-doc,missing-return-doc
         self,
-        response_mock,
-        request,
-        context,
-    ):
+        response_mock: dict,
+        request: requests_mock.request._RequestObjectProxy,
+        context: dict,
+    ) -> typing.Optional[typing.Any]:
         """
         Assert that the request is as expected before mocking a response to a request.
         """
         if request.text:
             self.assertEqual(
-                response_mock["request"]["json"],
+                response_mock["request"][MIME_MINOR_JSON],
                 request.json(),
                 f"Wrong request body for {response_mock['response_dir']}",
             )
-        if callable(response_mock.get("json")):
-            return response_mock["json"](
+        if callable(response_mock.get(MIME_MINOR_JSON)):
+            return response_mock[MIME_MINOR_JSON](
                 request=request,
                 context=context,
                 response_mock=response_mock,
             )
-        return response_mock.get("json")
+        return response_mock.get(MIME_MINOR_JSON)
 
-    def mock_responses(
+    def mock_responses(  # noqa: MC0001
+        # pylint: disable=too-many-locals,too-complex
+        # pylint: disable=missing-param-doc,missing-return-doc
         self,
-        responses_dir=None,
-        manual_mocks=None,
-    ):  # pylint: disable=too-many-locals
+        responses_dir: pathlib.Path = None,
+        manual_mocks: typing.Optional[dict] = None,
+    ) -> dict:
         """
         Mock response responses from files in the given directory.
 
@@ -325,6 +332,8 @@ class PrunerrTestCase(
         - Better editor experience for response bodies (e.g. JSON)
         - More readable diffs in VCS
         - Potential to be re-used outside the test suite programming language
+
+        :raises ValueError: Something is wrong with a response mock.
         """
         if responses_dir is None:
             responses_dir = self.RESPONSES_DIR
@@ -340,11 +349,15 @@ class PrunerrTestCase(
         self.addCleanup(self.requests_mock.stop)
         self.requests_mock.start()
         # Mock requests in the directory
-        request_mocks = {}
+        request_mocks: dict = {}
         for request_headers_path in responses_dir.glob("**/request-headers.json"):
-            method = self.HTTP_METHODS_RE.match(request_headers_path.parent.name).group(
-                1
-            )
+            method_match = self.HTTP_METHODS_RE.match(request_headers_path.parent.name)
+            if method_match is None:  # pragma: no cover
+                raise ValueError(
+                    "Could not determine HTTP method"
+                    f": {request_headers_path.parent.name}",
+                )
+            method = method_match.group(1)
             url_unquoted_path = pathlib.PurePosixPath(
                 urllib.parse.unquote(
                     str(
@@ -383,22 +396,24 @@ class PrunerrTestCase(
                     timeval=response_stat.st_mtime,
                     usegmt=True,
                 )
-                response_mock["headers"]["Content-Type"] = mimetypes.guess_type(
-                    response_path.name
-                )[0]
+                response_mock["headers"][HTTP_HEADER_CONTENT_TYPE] = (
+                    mimetypes.guess_type(response_path.name)[0]
+                )
 
                 # Optionally read the expected response JSON from a sibling file
-                response_mock["request"] = {"json": {}}
+                response_mock["request"] = {MIME_MINOR_JSON: {}}
                 request_json_path = response_path.parent / "request.json"
                 if request_json_path.exists():
                     with request_json_path.open() as request_json_opened:
-                        response_mock["request"]["json"] = self.patch_paths(
+                        response_mock["request"][MIME_MINOR_JSON] = self.patch_paths(
                             json.load(request_json_opened),
                         )
 
                 # Patch transmission/Servarr storage paths if the body is JSON
                 if response_text := response_path.read_text().strip():
-                    response_mock["json"] = self.patch_paths(json.loads(response_text))
+                    response_mock[MIME_MINOR_JSON] = self.patch_paths(
+                        json.loads(response_text),
+                    )
 
                 responses[response_path.parent.name] = response_mock
 
@@ -424,7 +439,7 @@ class PrunerrTestCase(
                 response_list.append(
                     {
                         "headers": responses[mock_order]["headers"],
-                        "json": functools.partial(
+                        MIME_MINOR_JSON: functools.partial(
                             self.mock_response_callback,
                             responses[mock_order],
                         ),
@@ -445,7 +460,10 @@ class PrunerrTestCase(
             )
         return request_mocks
 
-    def assert_request_mocks(self, request_mocks):
+    def assert_request_mocks(  # pylint: disable=missing-param-doc
+        self,
+        request_mocks: dict,
+    ):
         """
         Assert that all request mocks have been called and each only once.
         """
@@ -453,43 +471,35 @@ class PrunerrTestCase(
             for request_mock, mock_responses in methods.values():
                 self.assert_request_mock(request_mock, mock_responses)
 
-    def assert_request_mock(self, request_mock, mock_responses):  # pragma: no cover
+    def assert_request_mock(  # pylint: disable=missing-param-doc
+        self,
+        request_mock: requests_mock.Mocker,
+        mock_responses: dict,
+    ):
         """
         Assert that one request mock has been called once for each response.
         """
-        mock_method = request_mock._method  # pylint: disable=protected-access
-        mock_url = request_mock._url  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        mock_method = request_mock._method  # type: ignore
+        mock_url = request_mock._url  # type: ignore
+        # pylint: enable=protected-access
         mock_response_values = list(mock_responses.values())
-        for response_params in mock_response_values:
-            for content_key in ("json", "text", "content"):
-                if content_key not in response_params:
-                    continue
-                if isinstance(
-                    response_params[content_key], (str, bytes)
-                ) and "Content-Type" in response_params.get("headers", {}):
-                    _, minor_type = parse_content_type(
-                        response_params["headers"]["Content-Type"],
-                    )
-                    if minor_type.lower() == "json":
-                        response_params[content_key] = json.loads(
-                            response_params[content_key],
-                        )
-        if request_mock.call_count < len(mock_responses):
+        if request_mock.call_count < len(mock_responses):  # pragma: no cover
             self.assertEqual(
                 mock_response_values,
                 mock_response_values[: request_mock.call_count],
                 f"Some response mocks not called: {mock_method} {mock_url}",
             )
-        elif request_mock.call_count > len(mock_responses):
+        elif request_mock.call_count > len(mock_responses):  # pragma: no cover
             self.assertEqual(
                 mock_response_values[: len(mock_responses)],
                 mock_response_values,
                 f"More requests than mocks: {mock_method} {mock_url}",
             )
 
-    def mock_download_client_complete_item(
+    def mock_download_client_complete_item(  # pylint: disable=missing-return-doc
         self,
-    ):
+    ) -> pathlib.Path:
         """
         Simulate the download client finishing a download by moving the item.
         """
@@ -499,12 +509,13 @@ class PrunerrTestCase(
         )
 
     def mock_move_torrent_response(
+        # pylint: disable=missing-param-doc,missing-return-doc
         self,
-        request=None,
-        context=None,
-        response_mock=None,
-        delay=0,
-    ):
+        request: requests.Request,
+        context: requests_mock.response._Context,
+        response_mock: dict,
+        delay: int = 0,
+    ) -> dict:
         """
         Simulate the download client changing a download items location.
         """
@@ -527,9 +538,13 @@ class PrunerrTestCase(
         else:
             self.downloaded_item.rename(dst)
         context.headers.update(response_mock.get("headers", {}))
-        return response_mock["from_mock_dir"]["json"]
+        return response_mock["from_mock_dir"][MIME_MINOR_JSON]
 
-    def mock_servarr_import_item(self, download_item=None):
+    def mock_servarr_import_item(
+        # pylint: disable=missing-param-doc,missing-return-doc
+        self,
+        download_item: typing.Optional[pathlib.Path] = None,
+    ) -> list:
         """
         Simulate Servarr importing a downloaded item, hardlink files into the library.
         """
@@ -548,7 +563,10 @@ class PrunerrTestCase(
                 imported_files.append(downloaded_item_imported_file)
         return imported_files
 
-    def mock_servarr_delete_file(self, imported_item_file=None):
+    def mock_servarr_delete_file(
+        self,
+        imported_item_file: typing.Optional[pathlib.Path] = None,
+    ):  # pylint: disable=missing-param-doc,missing-return-doc
         """
         Simulate Servarr deleting a file by deleting the file from the library.
 
@@ -556,4 +574,4 @@ class PrunerrTestCase(
         and a user deleting the file through the UI is in the Servarr history.
         """
         imported_item_file = self.imported_item_file
-        return imported_item_file.unlink()
+        imported_item_file.unlink()

@@ -1,15 +1,13 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
-# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=missing-type-doc
 
 """
 Prunerr interaction with download clients.
 """
 
 import typing
+import collections
 import re
 import datetime
 import shutil
@@ -59,15 +57,20 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         self.verifying_items = {}
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         return {"name": self.config.get("name")}
 
-    def update(self, config):  # pylint: disable=arguments-differ
+    def update(self, config: dict):  # type: ignore # pylint: disable=arguments-differ
         """
         Update configuration, connect the RPC client, and update the list of items.
+
+        :param config: The Prunerr configuration for this download client.
+        :raises utils.PrunerrValidationError: The YAML configuration file has a problem
         """
         super().update()
         self.config = config
@@ -108,12 +111,12 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         split_url = urllib.parse.urlsplit(self.config["url"])
         # Normalize the port for URLs without one specified:
         if not (port := split_url.port):
-            if split_url.scheme == "http":
-                port = 80
-            elif split_url.scheme == "https":
-                port = 443
+            if split_url.scheme == utils.URL_SCHEME_HTTP:
+                port = utils.URL_PORT_HTTP
+            elif split_url.scheme == utils.URL_SCHEME_HTTPS:
+                port = utils.URL_PORT_HTTPS
             else:
-                raise ValueError(
+                raise utils.PrunerrValidationError(
                     f"Could not guess port from URL: {self.config['url']}",
                 )
         logger.debug(
@@ -165,9 +168,11 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         return managed_dirs
 
     @cached_property
-    def items(self):
+    def items(self) -> list:
         """
         Request the download items from the client as needed and cache.
+
+        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
         """
         logger.debug(
             "Retrieving list of download items from download client: %s",
@@ -176,7 +181,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         items = [
             prunerr.downloaditem.PrunerrDownloadItem(
                 self,
-                torrent._client,  # pylint: disable=protected-access
+                torrent._client,
                 torrent,
             )
             # TODO: Reduce memory consumption, narrow the list of fields requested for
@@ -207,9 +212,12 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
     # Sub-commands
 
-    def review(self):
+    def review(self) -> dict:
         """
         Apply configured review operations to all download items.
+
+        :return: Map download item hash IDs to mappings describing the actions taken if
+            any.
         """
         # TODO: Maybe handle multiple downloading items for the
         # same Servarr item such as when trying several to see which
@@ -266,8 +274,8 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         re_add_results = []
         for item in reversed(self.items):
             # Skip items from the older full-list response first for speed:
-            if not item.re_add_check(self.seeding_dir):  # pragma: no cover
-                continue
+            if not item.re_add_check(self.seeding_dir):
+                continue  # pragma: no cover
             # Also get the latest item data in case it has finished verifying while
             # previous items were re-added:
             item.update()
@@ -282,9 +290,12 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
     # Other, non-sub-command methods
 
-    def sort_items_by_tracker(self, items):
+    def sort_items_by_tracker(self, items: collections.abc.Iterable) -> list:
         """
         Sort the given download items according to the indexer priority operations.
+
+        :param items: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
+        :return: The sorted ``items``.
         """
         return sorted(
             items,
@@ -295,14 +306,17 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
     # Methods used by the `free-space` sub-command
 
-    def delete_files(self, item):  # pylint: disable=too-complex # noqa: MC0001
+    def delete_files(
+        self,
+        item: typing.Union[prunerr.downloaditem.PrunerrDownloadItem, pathlib.Path],
+    ) -> int:
         """
         Delete all files and directories for the given path and stat or download item.
 
         First remove from the download client if given a download item.
 
-        :param item: A `pathlib.Path()` filesystem path or a download item to be
-            deleted.
+        :param item: A filesystem path or a download item to be deleted.
+        :return: The size of deleted files in bytes or B.
         """
         # Handle actual items recognized by the download client
         if isinstance(item, prunerr.downloaditem.PrunerrDownloadItem):
@@ -366,26 +380,29 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :param path: The filesystem path to a file to delete or a directory to
             recursively delete.
         :return: The filesystem paths for all parent directories that were also deleted.
+        :raises ValueError: The given ``path`` is not valid to delete.
         """
         # The path is not in one of our managed directories, this should never happen:
         for managed_dir in self.managed_dirs:
             if managed_dir in path.parents:
                 break
-        else:  # pragma: no cover
-            raise ValueError("Refusing to delete a path in an un-managed directory")
+        else:
+            raise ValueError(  # pragma: no cover
+                "Refusing to delete a path in an un-managed directory",
+            )
 
         # Delete the given path:
-        if path.is_dir():  # pragma: no cover
-            shutil.rmtree(path, onerror=log_rmtree_error)
+        if path.is_dir():
+            shutil.rmtree(path, onerror=log_rmtree_error)  # pragma: no cover
         elif path.exists():
             path.unlink()
-        else:  # pragma: no cover
+        else:
             # Under high download client load, the deletion from the client
             # sometimes seems to fail but Prunerr successfully deletes the data. On
             # the next `daemon` loop Prunerr will try to delete it from the client
             # again, which is correct, but then chokes on the missing files it
             # already deleted.
-            logger.error(
+            logger.error(  # pragma: no cover
                 "Path to be deleted doesn't exist: %s",
                 path,
             )
@@ -394,19 +411,24 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         removed_parents = []
         for relative_parent in path.relative_to(managed_dir).parents[:-1]:
             parent = managed_dir / relative_parent
-            if next(parent.iterdir(), None) is not None:  # pragma: no cover
+            if next(parent.iterdir(), None) is not None:
                 # Not empty, stop removing parents:
-                break
+                break  # pragma: no cover
             parent.rmdir()
             removed_parents.append(parent)
         return removed_parents
 
-    def try_delete_files(self, item):
+    def try_delete_files(
+        self,
+        item: typing.Union[prunerr.downloaditem.PrunerrDownloadItem, pathlib.Path],
+    ) -> int:
         """
         Attempt to delete a path or a download item, but tolerate and log failures.
 
         :param item: A `pathlib.Path()` filesystem path or a download item to be
             deleted.
+        :return: The size of deleted files in bytes or B.
+        :raises Exception: Deleting files raised an exception.
         """
         try:
             return self.delete_files(item)
@@ -430,12 +452,17 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             )
         return 0  # pragma: no cover
 
-    def free_space_check(self):
+    def free_space_check(self) -> bool:
         """
         Determine if there's sufficient free disk space.
+
+        :return: Whether or not free space is sufficient.
         """
         total_remaining_download = sum(
-            item.leftUntilDone for item in self.items if item.status == "downloading"
+            item.leftUntilDone
+            for item in self.items
+            if item.status
+            == prunerr.downloaditem.PrunerrDownloadItem.STATUS_DOWNLOADING
         )
         if total_remaining_download > self.client.session.download_dir_free_space:
             logger.debug(
@@ -489,12 +516,15 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         )
         return False
 
-    def find_unregistered(self):  # noqa: V105
+    def find_unregistered(self) -> list:  # noqa: V105
         """
         Filter already imported items that are no longer recognized by their tracker.
 
         For example, when a private tracker removes a duplicate/invalid/unauthorized
         item.
+
+        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances for
+            unregistered download items.
         """
         # TODO: Mark as failed in Servarr?
         seeding_dirs = [servarr.seeding_dir for servarr in self.servarrs.values()]
@@ -503,7 +533,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             for item in self.items
             if (
                 (
-                    item.status == "downloading"
+                    item.status == item.STATUS_DOWNLOADING
                     # Give seeding items time to be imported by Servarr since they've
                     # already been fully downloaded.
                     or [
@@ -512,37 +542,43 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                         if seeding_dir in item.path.parents
                     ]
                 )
-                and item.error == 2
+                and item.error == item.ERROR_TYPE_TRACKER_ERROR
                 and self.UNREGISTERED_ERROR_RE.match(item.errorString.lower())
                 is not None
             )
         )
 
-    def find_seeding(self):  # noqa: V105
+    def find_seeding(self) -> list:  # noqa: V105
         """
         Filter items that have not yet been imported by Servarr, order by priority.
+
+        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances of seeding
+            download items.
         """
         return self.sort_items_by_tracker(
             item
             for item in self.items
             # only those previously acted on by Servarr and moved
-            if item.status == "seeding"
+            if item.status == item.STATUS_SEEDING
             and self.seeding_dir in item.path.parents
             and self.operations.exec_indexer_operations(item)[0]
         )
 
-    def verify_corrupt_items(self):
+    def verify_corrupt_items(self) -> typing.Optional[list]:
         """
         Verify and resume download items flagged as having corrupt data.
+
+        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances of the
+            download items Prunerr started verifying.
         """
         corrupt_items = {
             item.hashString: item
             for item in self.items
             if item.hashString not in self.verifying_items
-            and item.error == 3
+            and item.error == item.ERROR_TYPE_LOCAL
             and (
-                "verif" in item.errorString.lower()
-                or "corrput" in item.errorString.lower()
+                item.ERROR_STR_CORRUPT in item.errorString.lower()
+                or item.ERROR_STR_VERIFY in item.errorString.lower()
             )
         }
         if corrupt_items:
@@ -555,9 +591,13 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             return list(corrupt_items.keys())
         return None
 
-    def resume_verified_items(self):
+    def resume_verified_items(self) -> dict:
         """
         Resume downloading any previously corrupt items that have finished verifying.
+
+        :return: Map download item hash IDs to the
+            ``prunerr.downloaditem.PrunerrDownloadItem()`` instances of the download
+            items that finished verifying.
         """
         for verifying_item in self.verifying_items.values():
             verifying_item.update()
@@ -576,19 +616,25 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 del self.verifying_items[item_hash]
         return verified_items
 
-    def add_torrent(self, download_url, **kwargs):
+    def add_torrent(
+        self,
+        download_url: str,
+        **kwargs,
+    ) -> prunerr.downloaditem.PrunerrDownloadItem:
         """
         Add a torrent to the download client and update instance state.
 
         :param download_url: The URL from which to download the torrent to add.
-        :return: The added ``prunerr.downloaditem.PrunerrDownloadItem()`` instance.
+        :param kwargs: Additional arguments passed onto
+            ``transmission_rpc.client.Client.add_torrent()``.
+        :return: The added download item.
         """
         logger.info("Downloading torrent: %s", download_url)
         response = requests.get(download_url, timeout=5, stream=True)
         response.raise_for_status()
         added_torrent = prunerr.downloaditem.PrunerrDownloadItem(
             self,
-            self.client,  # pylint: disable=protected-access
+            self.client,
             self.client.add_torrent(torrent=response.raw, **kwargs),
         )
         self.items.append(added_torrent)
@@ -599,18 +645,21 @@ class DownloadClientTimeout(Exception):
     """A download client operation took too long."""
 
 
-def config_from_url(auth_url):
+def config_from_url(auth_url: str) -> dict:
     """
     Normalize download client URLs for the port and without the password.
 
     Used for matching with Servarr download clients.
+
+    :param auth_url: The download client URL including authentication credentials.
+    :return: The Prunerr download client configuration.
     """
     auth_url_split = urllib.parse.urlsplit(auth_url)
     url = utils.normalize_url(auth_url)
     return {"url": url, "password": auth_url_split.password}
 
 
-def calc_free_space_margin(config):
+def calc_free_space_margin(config: dict) -> int:
     """
     Calculate an appropriate margin of disk space to keep free.
 
@@ -618,6 +667,9 @@ def calc_free_space_margin(config):
     `free-space` sub-command based on the maximum download bandwidth/speed in Mbps and
     the amount of time in seconds at that rate for which download clients should be able
     to continue downloading without exhausting disk space.
+
+    :param config: The Prunerr download client configuration.
+    :return: The free space margin in bytes or B.
     """
     return (
         (
@@ -638,13 +690,21 @@ def calc_free_space_margin(config):
 
 
 # TODO: Not sure how to test this, but if there's a way, we should add coverage
-def log_rmtree_error(function, path, excinfo):  # pragma: no cover
+def log_rmtree_error(
+    function: collections.abc.Callable,
+    path: pathlib.Path,
+    excinfo: tuple,
+):
     """
     Inform the user on errors deleting item files but also proceed to delete the rest.
 
     Error handler for `shutil.rmtree`.
+
+    :param function: See ``shutil.rmtree()`` in the Python standard library.
+    :param path: See ``shutil.rmtree()`` in the Python standard library.
+    :param excinfo: See ``shutil.rmtree()`` in the Python standard library.
     """
-    logger.error(
+    logger.error(  # pragma: no cover
         "Error removing %r (%s)",
         path,
         ".".join((function.__module__, function.__name__)),

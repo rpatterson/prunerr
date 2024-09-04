@@ -1,14 +1,11 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
-# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=missing-type-doc,missing-yield-doc,missing-yield-type-doc
-
 """
 Prunerr interaction with Servarr instances.
 """
 
+import collections
 import dataclasses
 import logging
 
@@ -31,16 +28,20 @@ class PrunerrServarrAPIClient:
     client: arrapi.apis.base.BaseAPI
 
     @property
-    def get(self):
+    def get(self) -> collections.abc.Callable:
         """
         Return the `arrapi` client private/internal `GET` method.
+
+        :return: The underlying ``arrapi.raws.base.BaseRawAPI._get()`` method.
         """
         return self.client._raw._get  # pylint: disable=protected-access
 
     @property
-    def delete(self):
+    def delete(self) -> collections.abc.Callable:
         """
         Return the `arrapi` client private/internal `DELETE` method.
+
+        :return: The underlying ``arrapi.raws.base.BaseRawAPI._delete()`` method.
         """
         return self.client._raw._delete  # pylint: disable=protected-access
 
@@ -82,6 +83,8 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         },
     }
     MAX_PAGE_SIZE = 250
+    EVENT_TYPE_GRABBED = "grabbed"
+    DOWNLOAD_CLIENT_IMPLEMENTATION_TRANSMISSION = "Transmission"
 
     def __init__(self, runner):
         """
@@ -95,18 +98,23 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_client_names = {}
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         return {"name": self.config.get("name")}
 
-    def update(self, config):  # pylint: disable=arguments-differ
+    def update(self, config: dict):  # type: ignore # pylint: disable=arguments-differ
         """
         Update configuration, connect the API client, and refresh Servarr API data.
 
-        Also retrieves any download clients defined in the Servarr settings and updates
+        Also retrieves any download clients defined in the Servarr settings and update
         the prunerr representations.
+
+        :param config: The configuration for this Servarr instance from the Prunerr
+            configuration.
         """
         super().update()
         self.config = config
@@ -133,10 +141,11 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         for servarr_download_client in self.client.get("downloadclient"):
             if (
                 not servarr_download_client["enable"]
-                or servarr_download_client["implementation"] != "Transmission"
-            ):  # pragma: no cover
+                or servarr_download_client["implementation"]
+                != self.DOWNLOAD_CLIENT_IMPLEMENTATION_TRANSMISSION
+            ):
                 # BBB: Why misidentified as not covered under Python 3.9?
-                continue
+                continue  # pragma: no cover
             download_client_config = downloadclient.deserialize_servarr_download_client(
                 servarr_download_client,
             )
@@ -152,16 +161,15 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_clients = download_clients
         self.download_client_names = download_client_names
 
-        return self.client
-
     @cached_property
-    def queue(self):
+    def queue(self) -> dict:
         """
         Retrieve the queue of downloading releases for this Servarr instance.
 
-        :return: Map The Servarr API JSON
+        :return: Map history record download item hash IDs to the de-serialized Servarr
+            API ``queue`` endpoint JSON records.
         """
-        queue = {}
+        queue: dict = {}
         for record in self.get_api_paged_records("queue"):
             record["servarr"] = self
             # `Pending` records have no download item hash ID yet and so are grouped
@@ -169,14 +177,25 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
             queue.setdefault(record.get("downloadId"), []).append(record)
         return queue
 
-    def get_api_paged_records(self, endpoint, page_number=1, **params):
+    def get_api_paged_records(
+        self,
+        endpoint: str,
+        page_number: int = 1,
+        **params,
+    ) -> collections.abc.Iterable:
         """
         Yield each page of the given paged endpoint until exhausted.
 
         Useful to continue only as far as needed in a large data set, such as Servarr
         history, but also useful to conveniently get all pages of a smaller data set.
+
+        :param endpoint: The Servarr API endpoint to request.
+        :param page_number: The page number to start with.
+        :param params: Additional parameters to pass onto the Servarr API endpoint
+            request.
+        :return: Yield each record from each page until there are no more pages.
         """
-        response = {}
+        response: dict = {}
         while (  # pylint: disable=while-used
             # First page, no response yet
             not response

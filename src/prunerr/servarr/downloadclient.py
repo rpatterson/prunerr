@@ -1,20 +1,17 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=magic-value-comparison,missing-any-param-doc,missing-param-doc
-# pylint: disable=missing-raises-doc,missing-return-doc,missing-return-type-doc
-# pylint: disable=missing-type-doc,missing-yield-doc,missing-yield-type-doc
-
 """
 Prunerr interaction with Servarr instances.
 """
 
+import typing
 import time
 import datetime
 import urllib.parse
 import logging
 
-import dateutil
+import dateutil.parser
 
 import prunerr.downloadclient
 import prunerr.downloaditem
@@ -25,6 +22,8 @@ from ..utils import cached_property
 from . import release as release_module
 
 logger = logging.getLogger(__name__)
+
+API_FIELDS_VALUE_KEY = "value"
 
 
 class PrunerrServarrDownloadClient(utils.PrunerrComponent):
@@ -47,18 +46,22 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         self.config = {}
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         return {
             "servarr": self.servarr.config.get("name"),
             "dowload_client": self.config.get("url"),
         }
 
-    def update(self, config):  # pylint: disable=arguments-differ
+    def update(self, config: dict):  # type: ignore # pylint: disable=arguments-differ
         """
         Update download client configuration specific to this Servarr instance.
+
+        :param config: The de-serialized Servarr API ``downloadclient`` endpoint JSON.
         """
         super().update()
         self.config = config
@@ -66,7 +69,6 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         self.download_dir = pathlib.Path(
             self.config["fieldValues"][self.servarr.type_map["download_dir_field"]]
         ).resolve()
-        return self.download_dir
 
     def update_download_client(
         self,
@@ -108,12 +110,18 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             releases.append(release)
         return releases
 
-    def add_torrent(self, download_url, **kwargs):
+    def add_torrent(
+        self,
+        download_url: str,
+        **kwargs,
+    ) -> "prunerr.servarr.release.PrunerrServarrRelease":
         """
         Add a torrent to the download client and update instance state.
 
         :param download_url: The URL from which to download the torrent to add.
-        :return: The added ``prunerr.downloaditem.PrunerrDownloadItem()`` instance.
+        :param kwargs: Additional arguments passed onto
+            ``transmission_rpc.client.Client.add_torrent()``.
+        :return: The added release.
         """
         added_item = prunerr.servarr.release.PrunerrServarrRelease(
             self,
@@ -121,7 +129,7 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         )
         return added_item
 
-    def move(self, move_timeout=5 * 60):
+    def move(self, move_timeout: int = 5 * 60) -> typing.Optional[list]:
         """
         Move download items that have been acted on by Servarr into the seeding dir.
 
@@ -130,19 +138,25 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         include items that have some Servarr history events other than `grabbed` to
         prevent moving manually grabbed items out from under Servarr before it's had a
         chance to recognize notice them.
+
+        :param move_timeout: How long to wait for the release to be moved in the
+            download client before continuing.
+        :return: The hash IDs of the download items that were moved.
+        :raises DownloadClientTimeout: Moving the download item took too long.
         """
         download_items = [
             download_item
             for download_item in self.download_client.items
             # Skip items still downloading
-            if download_item.status == "seeding"
+            if download_item.status == download_item.STATUS_SEEDING
             # Skip items known by a Servarr instance in it's queue
             and download_item.hashString.upper() not in self.servarr.queue
             # Skip items not in this Servarr instance's download directory for this
             # download client
             and self.download_dir in download_item.path.parents
             # Skip items with no history other than `grabbed` events:
-            and download_item.release.history[0]["eventType"] != "grabbed"
+            and download_item.release.history[0]["eventType"]
+            != self.servarr.EVENT_TYPE_GRABBED
             # Skip items whose most recent history other than `grabbed`, such as
             # `downloadFolderimported`, is too recent to avoid moving out from under
             # Servarr:
@@ -189,32 +203,41 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         # Update the download item's dir for subsequent operations, done manually to
         # minimize requests.
         for download_item in download_items:
-            download_item._fields[download_item.DOWNLOAD_DIR_FIELD] = (
-                download_item._fields[download_item.DOWNLOAD_DIR_FIELD]._replace(
+            download_item._fields[download_item.FIELD_DOWNLOAD_DIR] = (
+                download_item._fields[download_item.FIELD_DOWNLOAD_DIR]._replace(
                     value=self.seeding_dir
                 )
             )
             download_item.clear()
         return [download_item.hashString for download_item in download_items]
 
-    def delete(self, release, **params):
+    def delete(
+        self, release: "prunerr.servarr.release.PrunerrServarrRelease", **params
+    ):
         """
         Delete a release from the Servarr queue.
+
+        :param release: The Servarr release to delete.
+        :param params: Additional parameters to pass onto the Servarr API endpoint
+            request.
         """
-        return self.servarr.client.delete(
+        self.servarr.client.delete(
             f"queue/{release.queue[0].get('id')}",
             **params,
         )
 
 
-def deserialize_servarr_download_client(download_client_config):
+def deserialize_servarr_download_client(download_client_config: dict) -> dict:
     """
     Assemble field values and a URL for a Servarr download client configuration.
+
+    :param download_client_config: The download client settings from the Servarr API.
+    :return: The ``download_client_config`` augmented with the field values.
     """
     download_client_config["fieldValues"] = {
         download_client_config_field["name"]: download_client_config_field["value"]
         for download_client_config_field in download_client_config["fields"]
-        if "value" in download_client_config_field
+        if API_FIELDS_VALUE_KEY in download_client_config_field
     }
     netloc = f"{download_client_config['fieldValues']['host']}"
     if download_client_config["fieldValues"].get("port") is not None:

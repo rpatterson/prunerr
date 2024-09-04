@@ -1,13 +1,13 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-# pylint: disable=missing-any-param-doc,missing-param-doc,missing-return-doc
-# pylint: disable=missing-return-type-doc,missing-type-doc
 
 """
 Prunerr interaction with download clients.
 """
 
+import os
+import typing
 import time
 import urllib.parse
 import json
@@ -20,6 +20,9 @@ from . import utils
 from .utils import pathlib
 from .utils import cached_property
 
+if typing.TYPE_CHECKING:  # pragma: no cover
+    import prunerr.servarr.release
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,9 +34,16 @@ class PrunerrDownloadItem(
     Enrich download item data from the download client API.
     """
 
-    HASH_FIELD = "hashString"
-    DOWNLOAD_DIR_FIELD = "downloadDir"
-    CHECKING_STATUS = "checking"
+    FIELD_HASH = "hashString"
+    FIELD_DOWNLOAD_DIR = "downloadDir"
+    STATUS_DOWNLOADING = "downloading"
+    STATUS_SEEDING = "seeding"
+    STATUS_SEEDING_INT = 6
+    STATUS_CHECKING = "checking"
+    ERROR_TYPE_TRACKER_ERROR = 2
+    ERROR_TYPE_LOCAL = 3
+    ERROR_STR_CORRUPT = "corrput"
+    ERROR_STR_VERIFY = "verif"
 
     def __init__(self, download_client, client, torrent):
         """
@@ -49,15 +59,17 @@ class PrunerrDownloadItem(
         ]
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         details = {}
         if (name := self._get_name_string()) is not None:
             details["name"] = name
-        elif self.HASH_FIELD in self._fields:  # pragma: no cover
-            details["hash"] = self._fields[self.HASH_FIELD].value
+        elif self.FIELD_HASH in self._fields:  # pragma: no cover
+            details["hash"] = self._fields[self.FIELD_HASH].value
         else:  # pragma: no cover
             details["id"] = self._fields["id"].value
         details["indexer"] = self.match_indexer_urls()
@@ -93,20 +105,24 @@ class PrunerrDownloadItem(
             item_file.clear()
 
     @cached_property
-    def download_dir(self):
+    def download_dir(self) -> pathlib.Path:
         """
-        Assemble `pathlib.Path` object for the Transmission `download-dir`.
+        Assemble the Transmission `download-dir` path.
+
+        :return: The assembled path.
         """
         return pathlib.Path(super().download_dir).resolve()
 
     @cached_property
-    def root_name(self):
+    def root_name(self) -> str:
         """
-        Return the name of the first path element for all items in the download item.
+        Determine the name of the first path element for all items in the download item.
 
         Needed because it's not always the same as the item's name.  If the download
         item has multiple files, assumes that all files are under the same top-level
         directory.
+
+        :return: The resulting basename.
         """
         file_roots = list(
             {item_file.relative.parts[0]: None for item_file in self.files}
@@ -126,21 +142,24 @@ class PrunerrDownloadItem(
         return self.name
 
     @cached_property
-    def path(self):
+    def path(self) -> pathlib.Path:
         """
-        Return the root path for all files in the download item.
+        Assemble the root path for all files in the download item.
 
-        Needed because it's not always the same as the item's download directory plus
-        the item's name.
+        See ``self.root_name`` for more details.
+
+        :return: The resulting path object.
         """
         return self.download_dir / self.root_name
 
     @cached_property
-    def parents(self):
+    def parents(self) -> list:
         """
         Determine the directories that may contain item files.
 
         Include the `incomplete-dir` if enabled.
+
+        :return: The candidate path objects in order of precedence.
         """
         parents = [self.download_dir]
         if (
@@ -151,18 +170,22 @@ class PrunerrDownloadItem(
         return parents
 
     @cached_property  # noqa: V105
-    def age(self):
+    def age(self) -> int:
         """
         Determine the total time since the item was added.
+
+        :return: The duration in seconds.
         """
         return time.time() - self._fields["addedDate"].value
 
     @cached_property
-    def seconds_since_done(self):
+    def seconds_since_done(self) -> typing.Optional[int]:
         """
         Determine the number of seconds since the item was completely downloaded.
 
         Best available estimation of total seeding time.
+
+        :return: The duration in seconds.
         """
         if self._fields["leftUntilDone"].value or self._fields["percentDone"].value < 1:
             logger.warning(
@@ -206,11 +229,13 @@ class PrunerrDownloadItem(
         return None
 
     @cached_property
-    def seconds_downloading(self):
+    def seconds_downloading(self) -> int:
         """
         Determine the number of seconds spent downloading the item.
 
         Best available estimation of total downloading duration.
+
+        :return: The duration in seconds.
         """
         done_date = self._fields["doneDate"].value
         if done_date == self._fields["addedDate"].value:
@@ -254,9 +279,11 @@ class PrunerrDownloadItem(
         return done_date - self._fields["addedDate"].value
 
     @cached_property
-    def rate_total(self):
+    def rate_total(self) -> typing.Optional[float]:
         """
         Determine the total download rate across the whole download time.
+
+        :return: The rate in bytes per second or Bps.
         """
         if (seconds_downloading := self.seconds_downloading) <= 0:
             return None
@@ -265,27 +292,35 @@ class PrunerrDownloadItem(
         ) / seconds_downloading
 
     @cached_property
-    def disk_usage(self):
+    def disk_usage(self) -> int:
         """
         Calculate the real storage usage of all files.
 
         Considering hard links and sparse files.
+
+        :return: The size in bytes or B.
         """
         return sum(
             item_file.disk_usage for item_file in self.files if item_file.path.exists()
         )
 
     @cached_property
-    def log_path(self):
+    def log_path(self) -> pathlib.Path:
         """
         Assemble the path for the log file dedicated to this individual download item.
+
+        :return: The log file path object.
         """
         return pathlib.Path(self.download_dir, f"{self.hashString}-prunerr.log")
 
     @cached_property
-    def release(self):
+    def release(
+        self,
+    ) -> typing.Optional["prunerr.servarr.release.PrunerrServarrRelease"]:
         """
         Lookup the Servarr release corresponding to this download item if any.
+
+        :return: The Servarr release.
         """
         servarr_download_client = self.download_client.servarrs.get(self.download_dir)
         if servarr_download_client is not None:
@@ -295,9 +330,12 @@ class PrunerrDownloadItem(
             )
         return None  # pragma: no cover
 
-    def match_indexer_urls(self):
+    def match_indexer_urls(self) -> typing.Optional[str]:
         """
         Return the indexer name if the download item matches a configured tracker URL.
+
+        :return: The first indexer name from the Prunerr configuration that matched if
+            any.
         """
         for (
             possible_name,
@@ -314,13 +352,19 @@ class PrunerrDownloadItem(
                             return possible_name
         return None
 
-    def review(self):
+    def review(self, operations_type: str = "reviews", **context) -> list:
         """
         Apply review operations to this download item.
+
+        :param operations_type: The key in the Prunerr configuration containing the
+            operations.
+        :param context: The names and values available when rendering templates.
+        :return: Mappings describing the actions taken if any.
         """
         _, sort_key = self.download_client.operations.exec_indexer_operations(
             self,
-            operations_type="reviews",
+            operations_type=operations_type,
+            **context,
         )
         reviews_indxers = self.download_client.operations.config.get("reviews", [])
         indexer_config = reviews_indxers[sort_key[0]]
@@ -339,7 +383,7 @@ class PrunerrDownloadItem(
                     operation_config["type"],
                     self,
                 )
-                if self.release.queue is not None:
+                if self.release is not None and self.release.queue is not None:
                     delete_params = {}
                     if operation_config.get("blacklist", False):
                         delete_params["blacklist"] = "true"
@@ -390,16 +434,19 @@ class PrunerrDownloadItem(
         :param item_root_paths: Filesystem paths of existing download item data.
         :return: The best data path if the location was changed.
         """
-        if self.DOWNLOAD_DIR_FIELD not in self._fields:  # pragma: no cover
+        if self.FIELD_DOWNLOAD_DIR not in self._fields:  # pragma: no cover
             logger.debug(
                 "Missing download dir field, updating: %r",
                 self,
             )
             self.update()
 
-        def key(item_root_path):
+        def key(item_root_path: pathlib.Path) -> tuple:
             """
             Determine the size and modification date of this items data in the path.
+
+            :param item_root_path: A filesystem path of existing download item data.
+            :return: The values on which to sort this sequence item.
             """
             du_process = subprocess.run(  # nosec, pragmatic choice for performance
                 ["du", "-s", str(item_root_path)],
@@ -421,7 +468,7 @@ class PrunerrDownloadItem(
             )
             self.locate_data(item_root_path.parent)
             # Avoid another RPC request, update the field value using the internals:
-            self._fields[self.DOWNLOAD_DIR_FIELD] = transmission_rpc.lib_types.Field(
+            self._fields[self.FIELD_DOWNLOAD_DIR] = transmission_rpc.lib_types.Field(
                 str(item_root_path.parent),
                 False,
             )
@@ -437,10 +484,10 @@ class PrunerrDownloadItem(
 
     def link_imported_files(
         self,
-        item_root_paths,
-        imported_root,
-        imported_relatives,
-        need_verify=False,
+        item_root_paths: list,
+        imported_root: pathlib.Path,
+        imported_relatives: dict,
+        need_verify: bool = False,
     ):
         """
         Hard link imported files back into download items.
@@ -450,6 +497,8 @@ class PrunerrDownloadItem(
             relative imported file paths.
         :param imported_relatives: Map the relative paths of imported files to the
             corresponding paths within the download item.
+        :param need_verify: Optionally pass in whether the caller already knows this
+            item needs to be verified after linking.
         :return: The download item file paths of any imported files that were linked
             into the download item.
         :rtype: Iterator[]
@@ -457,7 +506,7 @@ class PrunerrDownloadItem(
         # Change the download item data path if a better one is found.  Collect
         # additional possible data paths from the import history records:
         if not (item_root_paths := list(item_root_paths)):
-            logger.debug(  # pragma: no cover
+            logger.debug(
                 "No existing download item location found for: %r",
                 self,
             )
@@ -473,7 +522,7 @@ class PrunerrDownloadItem(
                     dropped_data["droppedRel"],
                 )
                 continue
-            if self.DOWNLOAD_DIR_FIELD not in self._fields:  # pragma: no cover
+            if self.FIELD_DOWNLOAD_DIR not in self._fields:  # pragma: no cover
                 logger.debug(
                     "Missing download dir field, updating: %r",
                     self,
@@ -498,7 +547,7 @@ class PrunerrDownloadItem(
             )
             self.start()
 
-    def deselect_unimported_files(self):
+    def deselect_unimported_files(self) -> list:
         """
         For any unimported and incomplete files, deselect them for download.
 
@@ -528,7 +577,7 @@ class PrunerrDownloadItem(
             )
         return deselected_files
 
-    def re_add(self):
+    def re_add(self) -> "PrunerrDownloadItem":
         """
         Remove and re-add this download item with the same item files location.
 
@@ -559,7 +608,7 @@ class PrunerrDownloadItem(
         re_added.update()
         return re_added
 
-    def re_add_check(self, seeding_dir) -> bool:
+    def re_add_check(self, seeding_dir: pathlib.Path) -> bool:
         """
         Decide and log whether to re-add this download item.
 
@@ -567,7 +616,7 @@ class PrunerrDownloadItem(
             this directory should be re-added.
         :return: True if this item should be added, False otherwise.
         """
-        if self.status == self.CHECKING_STATUS:  # pragma: no cover
+        if self.status == self.STATUS_CHECKING:  # pragma: no cover
             logger.debug(
                 "Not re-adding download item being verified: %r",
                 self,
@@ -610,9 +659,11 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
             return getattr(self.stat, name)
 
     @property
-    def details(self):
+    def details(self) -> dict:
         """
         Assemble all available useful information.
+
+        :return: Map descriptive names to useful values.
         """
         details = self.rpc_file._asdict()
         details["disk_usage"] = self.disk_usage
@@ -620,39 +671,47 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
         return details
 
     @cached_property
-    def relative(self):
+    def relative(self) -> pathlib.Path:
         """
-        Assemble a `pathlib.Path` object for this item file relative to the item root.
+        Assemble the path for this item file relative to the item root.
+
+        :return: The assembled path.
         """
         return pathlib.Path(self.rpc_file.name)
 
     @cached_property
-    def path(self):
+    def path(self) -> pathlib.Path:
         """
         Determine this file's path, in the ``download-dir`` or ``incomplete-dir``.
+
+        :return: The path found for this file.
         """
         path = self.download_item.parents[0] / self.relative
         if path.exists():
             return path
-        for parent in self.download_item.parents[1:]:  # pragma: no cover
+        for parent in self.download_item.parents[1:]:
             other_path = parent / self.relative
             if other_path.exists():
                 return other_path
         return path
 
     @cached_property
-    def stat(self):
+    def stat(self) -> os.stat_result:
         """
         Lookup item file `stat` metadata only as needed and only once.
+
+        :return: The file's metadata.
         """
         return self.path.stat()
 
     @cached_property
-    def disk_usage(self):
+    def disk_usage(self) -> int:
         """
         Calculate the real storage usage of this file.
 
         Considering hard links and sparse files.
+
+        :return: The size in bytes or B.
         """
         return (
             (self.stat.st_blocks * 512)
@@ -660,15 +719,17 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
             else 0
         )
 
-    @cached_property  # noqa: V105
-    def is_imported(self):
+    @cached_property
+    def is_imported(self) -> bool:
         """
         Has this file been imported into the library by hard linking it elsewhere.
+
+        :return: Whether this file has more than one hard link.
         """
         return self.path.exists() and self.stat.st_nlink > 1
 
 
-def maybe_link_file(source, target):
+def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:
     """
     Link the source file to the target path if not already linked to it.
 

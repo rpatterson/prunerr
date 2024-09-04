@@ -188,6 +188,6 @@ Nice to have
 
 #. :Lint: Resolve ignored linter failures::
 
-            $ git grep -i -e 'alex disable hooks|hadolint ignore|pylint: disable|type: ignore' -- '*.py'
+            $ git grep -i -e 'alex disable hooks|hadolint ignore|pylint: disable|type: ignore|noqa|nosec' -- '*.py'
 
 #. :Lint: Re-enable the prose linters and address all failures.

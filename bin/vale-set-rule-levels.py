@@ -42,7 +42,7 @@ arg_parser.add_argument(
 )
 
 
-def main(args=None):  # pylint: disable=missing-function-docstring
+def main(args=None):
     parsed_args = arg_parser.parse_args(args=args)
 
     config = configobj.ConfigObj(parsed_args.input_, list_values=False)

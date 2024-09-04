@@ -32,6 +32,8 @@ class PrunerrRunner(utils.PrunerrComponent):
     """
 
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
+    CONFIG_SERVARRS_KEY = "servarrs"
+    CONFIG_REVIEWS_KEY = "reviews"
 
     config_stat: os.stat_result
     quiet = False
@@ -209,9 +211,7 @@ class PrunerrRunner(utils.PrunerrComponent):
         # Run `review` before `move` so it can make any changes to download items before
         # they're moved and excluded from future review.
         # Also run before `free-space` in case it removes items.
-        if "reviews" in self.config.get(  # pylint: disable=magic-value-comparison
-            "indexers", {}
-        ):
+        if self.CONFIG_REVIEWS_KEY in self.config.get("indexers", {}):
             if (review_results := self.review()) is not None:
                 results["review"] = review_results
 
@@ -427,17 +427,12 @@ class PrunerrRunner(utils.PrunerrComponent):
             # loop duration as accurate as possible.
             start = time.time()
 
-            try:  # pylint: disable=too-many-try-statements
-                # Refresh the list of download items
-                self.update()
-                # Resume any corrupt download items that have finished verifying
-                self.resume_verified_items()
-                # Run the `exec` sub-command as the inner loop
-                self.exec_()
-            except utils.RETRY_EXC_TYPES as exc:  # pragma: no cover
+            try:
+                self._daemon_inner()
+            except utils.RETRY_EXC_TYPES as exc:
                 # TODO: If `ValueError`, check if it's from `transmission_rpc` and
                 # related to an interrupted RPC response, otherwise re-raise.
-                logger.warning(
+                logger.warning(  # pragma: no cover
                     "Connection error while updating from server: %s",
                     exc,
                 )
@@ -616,6 +611,17 @@ class PrunerrRunner(utils.PrunerrComponent):
             if resumed_items:
                 resume_results[download_client_url] = resumed_items
         return resume_results
+
+    def _daemon_inner(self):
+        """
+        Prune download client items continuously.
+        """
+        # Refresh the list of download items
+        self.update()
+        # Resume any corrupt download items that have finished verifying
+        self.resume_verified_items()
+        # Run the `exec` sub-command as the inner loop
+        return self.exec_()
 
     def clear(self):
         """

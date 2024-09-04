@@ -455,15 +455,20 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         )
         with open(self.torrentFile, mode="r+b") as torrent_opened:
             self.download_client.client.remove_torrent(ids=[self.hashString])
-            re_added = self.download_client.client.add_torrent(
-                torrent=torrent_opened,
-                # These are the only fields from the `add_torrent()` call signature
-                # in the docs I could see corresponding fields for in the
-                # representation of a torrent.
-                bandwidthPriority=self.bandwidthPriority,
-                download_dir=self.download_dir,
-                peer_limit=self.peer_limit,
+            re_added = type(self)(
+                self.download_client,
+                self.download_client.client,
+                self.download_client.client.add_torrent(
+                    torrent=torrent_opened,
+                    # These are the only fields from the `add_torrent()` call signature
+                    # in the docs I could see corresponding fields for in the
+                    # representation of a torrent.
+                    bandwidthPriority=self.bandwidthPriority,
+                    download_dir=str(self.download_dir),
+                    peer_limit=self.peer_limit,
+                ),
             )
+        self.download_client.items.append(re_added)
         # Some fields seem not to be populated in the object returned from
         # `client.add_torrent()`:
         re_added.update()

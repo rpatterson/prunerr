@@ -64,6 +64,13 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         vars(self).pop("path", None)
 
     @cached_property
+    def download_dir(self):
+        """
+        Assemble `pathlib.Path` object for the Transmission `download-dir`.
+        """
+        return pathlib.Path(super().download_dir).resolve()
+
+    @cached_property
     def root_name(self):
         """
         Return the name of the first path element for all items in the download item.
@@ -94,25 +101,26 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
         Needed because it's not always the same as the item's download directory plus
         the item's name.
         """
-        return (pathlib.Path(self.download_dir) / self.root_name).resolve()
+        return self.download_dir / self.root_name
 
     @cached_property
-    def files_parent(self):
+    def parents(self):
         """
-        Determine the path in which the download item's files are currently stored.
+        Determine the directories that may contain item files.
 
-        This may be the `incomplete_dir` while the item is downloading.
+        Include the `incomplete-dir` if enabled.
         """
-        files_parent = pathlib.Path(self.download_dir) / self.root_name
+        parents = [self.download_dir]
         if (
             self.download_client.client.session.incomplete_dir_enabled
-            and not files_parent.exists()
-        ):
-            files_parent = (
-                pathlib.Path(self.download_client.client.session.incomplete_dir)
-                / files_parent.name
+            and self.download_client.client.session.incomplete_dir
+        ):  # pragma: no cover
+            parents.append(
+                pathlib.Path(
+                    self.download_client.client.session.incomplete_dir,
+                )
             )
-        return files_parent.resolve()
+        return parents
 
     @cached_property  # noqa: V105
     def age(self):
@@ -338,7 +346,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 self,
             )
             self.update()
-        if pathlib.Path(self.download_dir) != location:
+        if self.download_dir != location:
             logger.info(
                 "Changing download item location for %r: %s",
                 self,
@@ -350,6 +358,7 @@ class PrunerrDownloadItem(transmission_rpc.Torrent):
                 str(location),
                 False,
             )
+            del self.download_dir
             return location
 
         logger.debug(
@@ -528,38 +537,43 @@ class PrunerrDownloadItemFile:
         """
         try:
             return getattr(self.rpc_file, name)
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             return getattr(self.stat, name)
 
     @cached_property
     def relative(self):
         """
-        Assemble a `pathlib` path for this item file relative to the item root.
+        Assemble a `pathlib.Path` object for this item file relative to the item root.
         """
         return pathlib.Path(self.rpc_file.name)
 
     @cached_property
     def path(self):
         """
-        Assemble a `pathlib` path for this item file only as needed and only once.
+        Determine this file's path, in the ``download-dir`` or ``incomplete-dir``.
         """
-        return self.download_item.path.parent / self.relative
+        path = self.download_item.parents[0] / self.relative
+        if path.exists():
+            return path
+        for parent in self.download_item.parents[1:]:  # pragma: no cover
+            other_path = parent / self.relative
+            if other_path.exists():
+                return other_path
+        return path
 
     @cached_property
     def stat(self):
         """
         Lookup item file `stat` metadata only as needed and only once.
         """
-        if self.path.exists():
-            return self.path.stat()
-        return None
+        return self.path.stat()
 
     @cached_property  # noqa: V105
     def is_imported(self):
         """
         Has this file been imported into the library by hard linking it elsewhere.
         """
-        return self.stat is not None and self.st_nlink > 1
+        return self.path.exists() and self.stat.st_nlink > 1
 
 
 def maybe_link_file(source, target):

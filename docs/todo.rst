@@ -13,8 +13,6 @@ Known bugs and wanted features.
 Required
 ****************************************************************************************
 
-#. Not deleting orphans in ``**/incomplete/``?
-
 #. Revert Docker compose project to the latest Transmission image when `the upstream
    PUID regression
    <https://github.com/linuxserver/docker-transmission/issues/284#issue-2451398884>`_

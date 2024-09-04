@@ -263,7 +263,19 @@ class PrunerrDownloadClient:
                 timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
             )
             self.items.remove(item)
-            path = item.files_parent
+            # Remove each item file whether in the `download-dir` or the
+            # `incomplete-dir`:
+            for item_file in item.files:
+                if item_file.path.exists():  # pragma: no cover
+                    item_file.path.unlink()
+                # Also remove the ancestor directories if they're not empty:
+                file_parent = item_file.path.parent
+                while [  # pylint: disable=while-used
+                    parent for parent in item.parents if parent in file_parent.parents
+                ]:
+                    if next(file_parent.iterdir(), None) is None:  # pragma: no cover
+                        file_parent.rmdir()
+                    file_parent = file_parent.parent
 
         # Handle filesystem paths not recognized by the download client
         else:
@@ -280,24 +292,25 @@ class PrunerrDownloadClient:
                 ),
             )
 
-        # Delete the actual files ourselves to workaround Transmission hanging when
-        # deleting the data of large items: e.g. season packs.
-        if path.is_dir():
-            shutil.rmtree(path, onerror=log_rmtree_error)
-        elif path.exists():
-            path.unlink()
-        else:  # pragma: no cover
-            # Under high download client load, the deletion from the client sometimes
-            # seems to fail but Prunerr successfully deletes the data. On the next
-            # `daemon` loop Prunerr will try to delete it from the client again, which
-            # is correct, but then chokes on the missing files it already deleted.
-            logger.error(
-                "Path to be deleted doesn't exist: %s",
-                path,
-            )
-        if next(path.parent.iterdir(), None) is None:
-            # The directory containging the file is empty
-            path.parent.rmdir()
+            # Delete the actual files ourselves to workaround Transmission hanging when
+            # deleting the data of large items: e.g. season packs.
+            if path.is_dir():  # pragma: no cover
+                shutil.rmtree(path, onerror=log_rmtree_error)
+            elif path.exists():
+                path.unlink()
+            else:  # pragma: no cover
+                # Under high download client load, the deletion from the client
+                # sometimes seems to fail but Prunerr successfully deletes the data. On
+                # the next `daemon` loop Prunerr will try to delete it from the client
+                # again, which is correct, but then chokes on the missing files it
+                # already deleted.
+                logger.error(
+                    "Path to be deleted doesn't exist: %s",
+                    path,
+                )
+            if next(path.parent.iterdir(), None) is None:  # pragma: no cover
+                # The directory containging the file is empty
+                path.parent.rmdir()
 
         # Refresh the sessions data including free space.
         # TODO: Until we aggregate download client directories by `*.stat().st_dev`, we

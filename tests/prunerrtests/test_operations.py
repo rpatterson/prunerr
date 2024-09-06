@@ -50,6 +50,9 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             }
         )
         self.item = self.download_client.items[1]
+        self.operations_context = prunerr.operations.PrunerrOperationsContext(
+            self.operations, item=self.item
+        )
 
     def test_operation_invalid_executor(self):
         """
@@ -59,9 +62,8 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             NotImplementedError,
             msg="Executing an operation that doesn't exist didn't raise an error",
         ):
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [{"type": "foo"}],
-                self.item,
             )
 
     def test_operation_invalid_options(self):
@@ -72,7 +74,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             NotImplementedError,
             msg="Executing invalid operation options didn't raise an error",
         ):
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [
                     prunerr.operations.parse_operation(
                         {
@@ -83,7 +85,6 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                         },
                     ),
                 ],
-                self.item,
             )
 
     def test_operation_invalid_reversed(self):
@@ -94,7 +95,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             NotImplementedError,
             msg="Executing invalid operation reversal didn't raise an error",
         ):
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [
                     prunerr.operations.parse_operation(
                         {
@@ -104,7 +105,6 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                         },
                     ),
                 ],
-                self.item,
             )
 
     def test_operation_invalid_value(self):
@@ -112,7 +112,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         An operation for a non-existent attribute/property isn't included.
         """
         self.assertEqual(
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [
                     prunerr.operations.parse_operation(
                         {
@@ -121,7 +121,6 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                         },
                     ),
                 ],
-                self.item,
             )[1],
             (),
             "Wrong non-existent attribute/property result",
@@ -131,7 +130,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         """
         The `and` operation executes multiple operations and requires all to be True.
         """
-        include, sort_key = self.operations.exec_operations(
+        include, sort_key = self.operations_context.exec_operations(
             [
                 {
                     "type": "and",
@@ -153,7 +152,6 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                     ],
                 }
             ],
-            self.item,
         )
         self.assertEqual(
             (include, sort_key),
@@ -161,7 +159,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             "Wrong `and` operation `False` result",
         )
         # If all operations return `True` the value of the last one is returned
-        include, sort_key = self.operations.exec_operations(
+        include, sort_key = self.operations_context.exec_operations(
             [
                 {
                     "type": "and",
@@ -183,7 +181,6 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                     ],
                 }
             ],
-            self.item,
         )
         self.assertEqual(
             (include, sort_key),
@@ -196,13 +193,12 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         The files executor provides returns the count of item files.
         """
         self.assertEqual(
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [
                     {
                         "type": "files",
                     },
                 ],
-                self.item,
             )[
                 1
             ][0],
@@ -215,7 +211,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         The files executor provides returns the sum of item file sizes.
         """
         self.assertEqual(
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [
                     prunerr.operations.parse_operation(
                         {
@@ -224,7 +220,6 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
                         },
                     ),
                 ],
-                self.item,
             )[1][0],
             1073741824,
             "Wrong item files size sum",
@@ -238,45 +233,47 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             NotImplementedError,
             msg="Executing invalid files aggregation doesn't raise a clear error.",
         ):
-            self.operations.exec_operations(
+            self.operations_context.exec_operations(
                 [
                     {
                         "type": "files",
                         "aggregation": "foo",
                     },
                 ],
-                self.item,
             )
 
     def test_operation_executor_files_missing(self):
         """
         The files executor tolerates missing/empty item files.
         """
+        self.operations_context.context["item"] = self.download_client.items[0]
         with self.assertLogs(
             prunerr.operations.logger,
             level=logging.DEBUG,
         ) as logged_msgs:
             self.assertIs(
-                self.operations.exec_operations(
+                self.operations_context.exec_operations(
                     [
                         {
                             "type": "files",
                         },
                     ],
-                    self.download_client.items[0],
-                )[1][0],
+                )[
+                    1
+                ][0],
                 False,
                 "Wrong missing item files result",
             )
             self.assertIs(
-                self.operations.exec_operations(
+                self.operations_context.exec_operations(
                     [
                         {
                             "type": "files",
                         },
                     ],
-                    self.download_client.items[0],
-                )[1][0],
+                )[
+                    1
+                ][0],
                 False,
                 "Wrong missing item files result",
             )

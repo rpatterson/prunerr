@@ -362,7 +362,7 @@ class PrunerrDownloadItem(
         :return: Mappings describing the actions taken if any.
         """
         _, sort_key = self.download_client.operations.exec_indexer_operations(
-            self,
+            item=self,
             operations_type=operations_type,
             **context,
         )

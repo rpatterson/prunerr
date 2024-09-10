@@ -22,6 +22,12 @@ Required
 
    Remove the ``transmission-rpc<4`` version, upgrade it, test and resolve issues.
 
+#. :Exec:
+
+   Profile a real-world run of the ``exec`` sub-command, both when not deleting items
+   and when deleting items and see, among any other obvious optimizations, what of the
+   example Jinja templates should be moved into cached properties.
+
 #. Use YAML anchors and merge keys to demonstrate how to share configuration between
    indexers?
 
@@ -40,6 +46,8 @@ Required
 ****************************************************************************************
 High priority
 ****************************************************************************************
+
+#. :Operations: Extract indexer priorities from Servarr.
 
 #. :notify: Move ``ntfy`` logging handler into a PR or a separate package.
 
@@ -62,9 +70,6 @@ High priority
    free-space`` sub-command, avoid a heavily loaded client blocking deleting items by
    sending the ``remove_torrent()`` `request asynchronously
    <https://www.python-httpx.org/async/>`_.
-
-#. Allow grouping indexers/trackers. Refactor operations configuration to be by
-   arbitrary named groups that include multiple indexers/trackers.
 
 #. Document expected filesystem layout including Transmission global ``download-dir``,
    the per-client directory in the Servarr download client settings, and the expected
@@ -94,7 +99,13 @@ High priority
    <https://ntfy.readthedocs.io/en/latest/ntfy.html#ntfy.notify>`_ so might as well use
    that.
 
-#. Refactor per-indexer configuration to support sharing between indexers?
+#. :Operations:
+
+   See if Home Assistant is interested in breaking out their set of Jinja filters,
+   tests, etc., into a Jinja extension. Selected Home Assistant because it's Jinja
+   extensions are in wide use by similar types of users as Prunerr's intended users,
+   particularly technological enthusiast non-developers, and already has documentation
+   to that end.
 
 
 ****************************************************************************************

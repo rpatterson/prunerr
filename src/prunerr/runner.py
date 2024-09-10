@@ -33,7 +33,9 @@ class PrunerrRunner(utils.PrunerrComponent):
 
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
     CONFIG_SERVARRS_KEY = "servarrs"
+    CONFIG_DOWNLOAD_CLIENTS_KEY = "download-clients"
     CONFIG_REVIEWS_KEY = "reviews"
+    CONFIG_NO_DEFAULTS = (CONFIG_SERVARRS_KEY, CONFIG_DOWNLOAD_CLIENTS_KEY)
 
     config_stat: os.stat_result
     quiet = False
@@ -73,31 +75,40 @@ class PrunerrRunner(utils.PrunerrComponent):
             )
         self.config_stat = self.config_file.stat()
         with self.config_file.open(encoding="utf-8") as config_opened:
-            self.config = yaml.safe_load(config_opened)
+            config = yaml.safe_load(config_opened)
 
         # Avoid issues with empty keys having a `None` value in YAML:
         for top_key in self.example_confg.keys():
-            if top_key in self.config and self.config[top_key] is None:
+            if top_key in config and config[top_key] is None:
                 logger.debug(
                     "Top-level configuration key is empty: %s",
                     top_key,
                 )
-                self.config[top_key] = {}
+                config[top_key] = {}
 
         # Raise helpful errors for required values:
-        if not self.config.get("download-clients"):
+        if not config.get("download-clients"):
             raise utils.PrunerrValidationError(
                 "Configuration file must include at least one download client"
                 f" configuration under  `download-clients`: {self.config_file}"
             )
 
-        # Pull defaults from the example configuration:
-        self.config.setdefault("daemon", {}).setdefault(
-            "poll",
-            self.example_confg["daemon"]["poll"],
-        )
+        for indexer_name, indexer_config in config.setdefault(
+            "indexers",
+            {},
+        ).items():
+            indexer_config.setdefault("config", {})["name"] = indexer_name
 
-        return self.config
+        # Pull defaults from the example configuration:
+        for top_key, top_config in self.example_confg.items():
+            if top_key not in self.CONFIG_NO_DEFAULTS:
+                config.setdefault(top_key, top_config)
+        config["daemon"].setdefault("poll", self.example_confg["daemon"]["poll"])
+
+        # Compile Jinja templates:
+        config["operations"] = prunerr.operations.parse(config["operations"])
+
+        return config
 
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(utils.RETRY_EXC_TYPES),
@@ -211,7 +222,7 @@ class PrunerrRunner(utils.PrunerrComponent):
         # Run `review` before `move` so it can make any changes to download items before
         # they're moved and excluded from future review.
         # Also run before `free-space` in case it removes items.
-        if self.CONFIG_REVIEWS_KEY in self.config.get("indexers", {}):
+        if self.CONFIG_REVIEWS_KEY in self.config.get("operations", {}):
             if (review_results := self.review()) is not None:
                 results["review"] = review_results
 

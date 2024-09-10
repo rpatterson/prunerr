@@ -15,27 +15,20 @@ download-clients:
   Transmission:
     url: "http://transmission:secret@localhost:9091/transmission/"
 indexers:
-  hostnames:
-    ExamplePrivateTracker:
+  ExamplePrivateTracker:
+    hostnames:
       - "tracker.private.example.com"
+operations:
   reviews:
-    - name: "ExamplePrivateTracker"
-      operations:
-        - type: "or"
-          operations:
-            - type: "value"
-              template: "{{item.status}}"
-              equals: "seeding"
-            - type: "value"
-              template: "{{item.age}}"
-              maximum: 604800
-            - type: "value"
-              template: "{{item.seconds_downloading}}"
-              maximum: 0
-            - type: "value"
-              template: "{{item.rate_total}}"
-              minimum: 50
-          remove: true
-        - type: "value"
-          template: "{{item.bandwidthPriority}}"
-          equals: 1
+    stalled:
+      include: |
+        {%- set seconds_downloading = item.seconds_downloading -%}
+        {%- set age = item.age -%}
+        {%- set rate_total = item.rate_total -%}
+        {{-
+            item.status == "downloading"
+            and seconds_downloading > 604800
+            and age > 604800
+            and rate_total < 50
+        -}}
+      remove: true

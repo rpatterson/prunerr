@@ -99,6 +99,7 @@ class PrunerrTestCase(
         modulated by the class attributes they override.
         """
         super().setUp()
+        prunerr.operations.jinja_env.add_extension("jinja2.ext.debug")
 
         # Create a runner object to test the CLI entrypoint functions:
         self.runner = prunerr.runner.PrunerrRunner(self.CONFIG)

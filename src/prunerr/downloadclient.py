@@ -45,7 +45,6 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
     seeding_dir: pathlib.Path
     incomplete_dir: typing.Optional[pathlib.Path] = None
     items_requested: datetime.datetime
-    operations: prunerr.operations.PrunerrOperations
 
     def __init__(self, runner):
         """
@@ -102,10 +101,6 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         # Configuration specific to Prunerr, IOW not taken from the download client
         self.config["min-free-space"] = calc_free_space_margin(self.config)
-        self.operations = prunerr.operations.PrunerrOperations(
-            self,
-            self.runner.config.get("indexers", {}),
-        )
 
         # Connect to the download client's RPC API, also retrieves session data
         split_url = urllib.parse.urlsplit(self.config["url"])
@@ -207,7 +202,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         """
         super().clear()
         self.servarrs.clear()
-        for attr in ("config", "operations", "client"):
+        for attr in ("config", "client"):
             vars(self).pop(attr, None)
 
     # Sub-commands
@@ -290,7 +285,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
     # Other, non-sub-command methods
 
-    def sort_items_by_tracker(self, items: collections.abc.Iterable) -> list:
+    def sort_free_space_items(self, items: collections.abc.Iterable) -> list:
         """
         Sort the given download items according to the indexer priority operations.
 
@@ -300,7 +295,9 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         return sorted(
             items,
             # remove lowest priority and highest ratio first
-            key=lambda item: self.operations.exec_indexer_operations(item)[1],
+            key=lambda item: self.runner.config["operations"]["free-space"][
+                "sort"
+            ].render(item=item),
             reverse=True,
         )
 
@@ -321,7 +318,6 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         # Handle actual items recognized by the download client
         if isinstance(item, prunerr.downloaditem.PrunerrDownloadItem):
             size = item.disk_usage
-            self.operations.exec_indexer_operations(item)
             logger.info(
                 "Deleting %r: free space -> %0.2f %s",
                 item,
@@ -528,7 +524,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         """
         # TODO: Mark as failed in Servarr?
         seeding_dirs = [servarr.seeding_dir for servarr in self.servarrs.values()]
-        return self.sort_items_by_tracker(
+        return self.sort_free_space_items(
             item
             for item in self.items
             if (
@@ -555,13 +551,15 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances of seeding
             download items.
         """
-        return self.sort_items_by_tracker(
+        return self.sort_free_space_items(
             item
             for item in self.items
             # only those previously acted on by Servarr and moved
             if item.status == item.STATUS_SEEDING
             and self.seeding_dir in item.path.parents
-            and self.operations.exec_indexer_operations(item)[0]
+            and self.runner.config["operations"]["free-space"]["include"].render(
+                item=item,
+            )
         )
 
     def verify_corrupt_items(self) -> typing.Optional[list]:

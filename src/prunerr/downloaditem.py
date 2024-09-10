@@ -1,7 +1,6 @@
 # SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
 # SPDX-License-Identifier: MIT
 
-
 """
 Prunerr interaction with download clients.
 """
@@ -19,6 +18,7 @@ import transmission_rpc
 from . import utils
 from .utils import pathlib
 from .utils import cached_property
+from . import operations
 
 if typing.TYPE_CHECKING:  # pragma: no cover
     import prunerr.servarr.release
@@ -44,6 +44,8 @@ class PrunerrDownloadItem(
     ERROR_TYPE_LOCAL = 3
     ERROR_STR_CORRUPT = "corrput"
     ERROR_STR_VERIFY = "verif"
+    OPERATION_CHANGE = "change"
+    OPERATION_REMOVE = "remove"
 
     def __init__(self, download_client, client, torrent):
         """
@@ -72,7 +74,7 @@ class PrunerrDownloadItem(
             details["hash"] = self._fields[self.FIELD_HASH].value
         else:  # pragma: no cover
             details["id"] = self._fields["id"].value
-        details["indexer"] = self.match_indexer_urls()
+        details["indexer"] = self.indexer_config.get("name")
         details["size"] = self.disk_usage
         imported_portion = round(
             (
@@ -330,62 +332,58 @@ class PrunerrDownloadItem(
             )
         return None  # pragma: no cover
 
-    def match_indexer_urls(self) -> typing.Optional[str]:
+    @cached_property
+    def indexer_config(self) -> dict:
         """
         Return the indexer name if the download item matches a configured tracker URL.
 
         :return: The first indexer name from the Prunerr configuration that matched if
             any.
         """
-        for (
-            possible_name,
-            possible_hostnames,
-        ) in self.download_client.operations.config.get(
-            "hostnames",
-            {},
-        ).items():
-            for tracker in self.trackers:
-                for action in ("announce", "scrape"):
-                    tracker_url = urllib.parse.urlsplit(tracker[action])
-                    for indexer_hostname in possible_hostnames:
+        for tracker in self.trackers:
+            for action in ("announce", "scrape"):
+                tracker_url = urllib.parse.urlsplit(tracker[action])
+                for indexer_config in self.download_client.runner.config[
+                    "indexers"
+                ].values():
+                    for indexer_hostname in indexer_config["hostnames"]:
                         if tracker_url.hostname == indexer_hostname:
-                            return possible_name
-        return None
+                            return indexer_config["config"]
+        return {}
 
-    def review(self, operations_type: str = "reviews", **context) -> list:
+    def review(self, operations_type: str = "reviews", **context) -> dict:
         """
         Apply review operations to this download item.
 
         :param operations_type: The key in the Prunerr configuration containing the
             operations.
         :param context: The names and values available when rendering templates.
-        :return: Mappings describing the actions taken if any.
+        :return: Map review names to the actions taken if any.
         """
-        _, sort_key = self.download_client.operations.exec_indexer_operations(
-            item=self,
-            operations_type=operations_type,
-            **context,
-        )
-        reviews_indxers = self.download_client.operations.config.get("reviews", [])
-        indexer_config = reviews_indxers[sort_key[0]]
-        operation_configs = indexer_config.get("operations", [])
-
-        results = []
-        for operation_config, sort_value in zip(operation_configs, sort_key[1:]):
-            if sort_value:
-                # Sort value didn't match review operation requirements
+        results = {}
+        for review_name, review_operation in (
+            self.download_client.runner.config["operations"]
+            .get(operations_type, {})
+            .items()
+        ):
+            if not review_operation[operations.CONFIG_INCLUDE_KEY].render(
+                item=self,
+                **context,
+            ):
+                # Template evaluation excludes this item:
                 continue
+            result = {}
 
-            if operation_config.get("remove", False):
-                result = {"remove": True}
+            if review_operation.get(self.OPERATION_REMOVE, False):
+                result["remove"] = True
                 logger.info(
                     "Removing download item per %r review: %r",
-                    operation_config["type"],
+                    review_name,
                     self,
                 )
                 if self.release is not None and self.release.queue is not None:
                     delete_params = {}
-                    if operation_config.get("blacklist", False):
+                    if review_operation.get("blacklist", False):
                         delete_params["blacklist"] = "true"
                         result["blacklist"] = True
                     self.release.servarr_download_client.delete(
@@ -402,23 +400,26 @@ class PrunerrDownloadItem(
                         },
                     )
                 self.download_client.delete_files(self)
-                results.append(result)
                 # Avoid race conditions, perform no further operations on removed items
+                results[review_name] = result
                 break
 
-            if "change" in operation_config:  # pylint: disable=magic-value-comparison
+            if self.OPERATION_CHANGE in review_operation:
                 logger.info(
                     "Changing download item per %r review for %r: %s",
-                    operation_config["type"],
+                    review_name,
                     self,
-                    json.dumps(operation_config["change"]),
+                    json.dumps(review_operation["change"]),
                 )
                 self.download_client.client.change_torrent(
                     [self.hashString],
-                    **operation_config["change"],
+                    **review_operation["change"],
                 )
-                results.append(operation_config["change"])
+                result.update(review_operation["change"])
+                results[review_name] = result
                 self.update()
+            else:
+                pass  # pragma: no cover
 
         return results
 

@@ -11,59 +11,41 @@ servarrs:
     url: "http://localhost:7878"
     api-key: ""
     type: "radarr"
+
 download-clients:
   Transmission:
     url: "http://transmission:secret@localhost:9091/transmission/"
+    timeout: 30
     max-download-bandwidth: 100
-    min-download-time-margin: 600
+    min-download-time-margin: 480
+
 indexers:
   ExamplePrivateTracker:
     hostnames:
-      - "tracker.example.com"
+      - "tracker.private.example.com"
+      - "other.tracker.private.example.com"
+    config:
+      priority: 10
+      groups:
+        - "building-ratio"
+        - "private"
+      seeding-time: 864000
+      seeding-ratio: 1.0
+      bonus-minimum-size: 1073741824
+      bonus-maximum-size: 10737418240
+  OtherPrivateTracker:
+    hostnames:
+      - "tracker.foo.example.com"
+    config:
+      priority: 20
+      groups:
+        - "private"
+
 operations:
-  reviews:
-    archives:
-      include: |
-        {%- set wanted_sum = item.files|selectattr("selected")|sum("size") -%}
-        {%- set archive_portion = 0 -%}
-        {%- if wanted_sum -%}
-            {%-
-                set archive_portion = (
-                    wanted_files|selectattr(
-                        "path.suffix",
-                        "match",
-                        "rar|r[0-9]+|zip|zip\\.[0-9]+|gz|tgz|bz2",
-                    )|sum("size") / wanted_sum
-                )
-            -%}
-        {%- endif -%}
-        {{ archive_portion > 0.50 }}
-      remove: true
-      blacklist: true
-    stalled:
-      include: |
-        {{-
-            item.status == "downloading"
-            and item.seconds_downloading > 604800 and item.age > 604800
-            and item.rate_total < 50
-        -}}
-      remove: true
-      blacklist: true
-    bandwidth-private:
-      include: |
-        {{-
-            "private" in item.indexer_config["groups"]|default([])
-        -}}
-      change:
-        bandwidthPriority: 1
-    bandwidth-public:
-      include: |
-        {{- not item.indexer_config["groups"]|default([]) -}}
-      change:
-        bandwidthPriority: -1
   free-space:
     include: |
-      {%- set wanted_sum = item.files|selectattr("selected")|sum("size") -%}
+      {%- set wanted_files = item.files|selectattr("selected")|list -%}
+      {%- set wanted_sum = wanted_files|sum("size") -%}
       {%- set imported_portion = 0 -%}
       {%- if wanted_sum -%}
           {%-
@@ -74,16 +56,18 @@ operations:
           -%}
       {%- endif -%}
       {%- set seeding_time_margin = 24 * 60 * 60 -%}
+      {%- set seconds_since_done = item.seconds_since_done -%}
       {{
           imported_portion < 0.80
           and (
               item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
-              or item.seconds_since_done
+              or seconds_since_done
               >= item.indexer_config["seeding-time"]|default(0)
           )
       }}
     sort: |
-      {%- set wanted_sum = item.files|selectattr("selected")|sum("size") -%}
+      {%- set wanted_files = item.files|selectattr("selected")|list -%}
+      {%- set wanted_sum = wanted_files|sum("size") -%}
       {%- set imported_portion = 0 -%}
       {%- if wanted_sum -%}
           {%-
@@ -99,4 +83,3 @@ operations:
           -item.indexer_config["priority"]|default(45),
           imported_portion,
       ) -}}
-daemon:

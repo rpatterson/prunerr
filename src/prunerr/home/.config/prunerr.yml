@@ -2,10 +2,6 @@
 #
 # SPDX-License-Identifier: MIT
 
-daemon:
-  ## The number of seconds to wait between each loop of the order of operations.
-  ## Default: 60
-  poll: 60
 servarrs:
   ## The Servarr application instances, such as Sonarr or Radarr, whose download client
   ## items should be pruned.  At least one Servarr instance must be configured.
@@ -19,6 +15,7 @@ servarrs:
     url: "http://localhost:7878"
     api-key: ""
     type: "radarr"
+
 download-clients:
   Transmission:
     ## Authenticated URLs for all download clients.  These will be reconciled with the
@@ -44,201 +41,244 @@ download-clients:
     max-download-bandwidth: 100
     ## 4 x the worst case request processing time, 8 minutes * 60 seconds/minute:
     min-download-time-margin: 480
+
 indexers:
-  ## Determine the indexer/tracker for download items by matching the hostnames of
-  ## tracker announce and scrape URLs.  The matched indexer name,
-  ## `ExamplePrivateTracker` in this example, is then used to lookup the corresponding
-  ## `reviews` and `priorities` configurations by the corresponding `- name:
-  ## "ExamplePrivateTracker"` key:
-  hostnames:
-    ExamplePrivateTracker:
+  ## Lookup per-indexer configurations by matching the `hostnames` of tracker announce
+  ## and scrape URLs. If a download item's tracker URLs match multiple configurations,
+  ## only the first match is used. The `name` key is reserved in the resulting
+  ## configuration for the key names whose 'hostnames` matched, or
+  ## `ExamplePrivateTracker` in this example:
+  ExamplePrivateTracker:
+    hostnames:
       - "tracker.private.example.com"
       - "other.tracker.private.example.com"
-  ## Apply per-indexer maintenance operations to all download items, e.g.:
-  ## - adjust priorities
+    ## All keys and values here are arbitrary. The merged result is available in
+    ## templates as ``item.indexer_config``.
+    config:
+      ## In this example, arbitrary priorities are assigned, similar to Prowlarr. This
+      ## configuration prioritizes private trackers we've joined recently and on which
+      ## we are still building ratio:
+      priority: 10
+      ## If something should be applied to multiple indexers/trackers, but those
+      ## indexers also need their own individual configuration, users can use something
+      ## like this to group them:
+      groups:
+        - "building-ratio"
+        - "private"
+      ## 10 days * 24 hours * 60 minutes * 60 seconds
+      seeding-time: 864000
+      seeding-ratio: 1.0
+      ## Min bonus points rate: 1 GB * 1024 MB * 1024 KB * 1024 B
+      bonus-minimum-size: 1073741824
+      ## Max bonus points rate: 10 GB * 1024 MB * 1024 KB * 1024 B
+      bonus-maximum-size: 10737418240
+  OtherPrivateTracker:
+    hostnames:
+      - "tracker.foo.example.com"
+      ## Next, prioritize private trackers with well established ratios, leaving public
+      ## trackers as the lowest priority:
+    config:
+      priority: 20
+      groups:
+        - "private"
+      ## This tracker has no seeding requirements so no further configuration.
+
+operations:
+  ## Apply maintenance operations to queued download items, those download items whose
+  ## `downloadDir` a descendant of the session's `download-dir`. For example, if the
+  ## download client's `download-dir` is `/media/Library/downloads/` and the download
+  ## item's `downloadDir` is `/media/Library/downloads/Sonarr/Videos/Series/` then
+  ## Prunerr will consider it to be queued. These operations will only be applied once
+  ## per download item unless the Prunerr configuration file has changed. For example,
+  ## these operations can be used to:
+  ## - adjust bandwidth priorities
   ## - remove archives
+  ## - blacklist stalled releases
   ## - etc.
   reviews:
-    - name: "ExamplePrivateTracker"
-      operations:
-        ## Remove stalled download items whose progress is too slow.
-        ## Strike a balance between giving difficult to find items time to download
-        ## while also pruning items that will never be completed.
-        - type: "or"
-          operations:
-            - type: "value"
-              ## Don't consider completed torrents to be stalled.
-              ## If an item seems to be completely downloaded to the client but then
-              ## later it's verified and some last corrupted bits are re-downloaded,
-              ## it's `doneDate` will be updated.  This can really throw off the total
-              ## download rate, especially for small torrents:
-              template: "{{item.status}}"
-              equals: "seeding"
-            - type: "value"
-              template: "{{item.age}}"
-              # 1 week * 7 days * 24 hours * 60 minutes * 60 seconds
-              maximum: 604800
-            - type: "value"
-              template: "{{item.seconds_downloading}}"
-              # Don't remove items that haven't started downloading yet
-              maximum: 0
-            - type: "value"
-              template: "{{item.rate_total}}"
-              # Minimum Bps of total throughput before an item is considered stalled
-              minimum: 50
-          remove: true
-          blacklist: true
-        ## Remove download items containing archives to optimize seeding per disk space.
-        - type: "files"
-          ## The attribute of the download item's files whose value is the quantity to
-          ## measure:
-          template: "{{file.size}}"
-          ## Regular expressions matched against each file's path to decide which files
-          ## to measure:
-          path-patterns:
-            - ".+\\.rar$"
-            - ".+\\.r[0-9]+$"
-            - ".+\\.zip$"
-            - ".+\\.zip\\.[0-9]+$"
-            - ".+\\.gz$"
-            - ".+\\.tgz$"
-            - ".+\\.bz2$"
-          ## Calculate the portion of matching the download item's size compared to the
-          ## size of all the files:
-          aggregation: "portion"
-          ## TODO: Tune this value?
-          maximum: 0.50
-          remove: true
-          blacklist: true
-        ## Set download items from private indexers/trackers to high priority.
-        - type: "value"
-          template: "{{item.bandwidthPriority}}"
-          equals: 1
-          change:
-            bandwidthPriority: 1
-    - name: null # `null` matches all other indexers not specified in `operations`
-      operations:
-        ## Same rules for deleting items as for private indexers above
-        - type: "or"
-          operations:
-            - type: "value"
-              template: "{{item.status}}"
-              equals: "seeding"
-            - type: "value"
-              template: "{{item.age}}"
-              maximum: 604800
-            - type: "value"
-              template: "{{item.seconds_downloading}}"
-              maximum: 0
-            - type: "value"
-              template: "{{item.rate_total}}"
-              minimum: 50
-          remove: true
-          blacklist: true
-        - type: "files"
-          template: "{{file.size}}"
-          path-patterns:
-            - ".+\\.rar$"
-            - ".+\\.r[0-9]+$"
-            - ".+\\.zip$"
-            - ".+\\.zip\\.[0-9]+$"
-            - ".+\\.gz$"
-            - ".+\\.tgz$"
-            - ".+\\.bz2$"
-          aggregation: "portion"
-          maximum: 0.50
-          remove: true
-          blacklist: true
-        ## Set download items from public indexers/trackers to low priority.
-        - type: "value"
-          template: "{{item.bandwidthPriority}}"
-          equals: -1
-          change:
-            bandwidthPriority: -1
-  priorities:
-    ## Delete download items that are public torrents before those from private trackers
-    ## by putting the priority definitions of private tackers before the definition for
-    ## public torrents.
-    - name: "ExamplePrivateTracker"
-      ## Example for a private tracker with various rules that affect both whether
-      ## download items should be considered for deletion yet and which itmes should be
-      ## deleted first.
-      operations:
-        ## Have download items met the private tracker's minimum requirements for
-        ## snatched items.  In this case, until we've either reached a minimum ration
-        ## *or* seeded for a long enough amount of time.
-        - type: "or"
-          ## If download items that haven't meet those minimum requirements, exclude
-          ## them from considering for deletion.  As opposed to only sorting those items
-          ## that haven't met those requirements to be deleted last.
-          filter: true
-          operations:
-            - type: "value"
-              ## The amount of time that has passed since the item has been
-              ## completely downloaded.  Beware that this is not necessarily
-              ## the total sum of actively seeding time as seen by the
-              ## tracker.  For example:
-              ## 1. private tracker torrent is downloaded and seeds all of day 1
-              ## 2. you go on vacation and your client exits on day 2
-              ## 3. you return from vacation and restart your client on day 10
-              ## Then `seconds_since_done` is 10 days while the private
-              ## tracker only sees you as seeding for 1 day.  As such, be sure
-              ## to add a healthy margin for downtime lest Prunerr delete
-              ## torrents that haven't actually met the private trackers
-              ## seeding requirements.
-              template: "{{item.seconds_since_done}}"
-              ## 10 days * 24 hours * 60 minutes * 60 seconds
-              minimum: 864000
-            - type: "value"
-              template: "{{item.ratio}}"
-              minimum: 1.0
-        ## Perma-seeding, don't delete private tracker items that are currently imported
-        ## into the Servarr library.  Estimated as items 90+% whose size has been
-        ## imported, assumes that samples, extras, etc. won't consume more than 10% of
-        ## the item's total size.
-        - type: "files"
-          template: "{{file.size}}"
-          filter-attrs:
-            - "is_imported"
-          aggregation: "portion"
-          reversed: true
-          filter: true
-          minimum: 0.8
-        ## Maximize private tracker global user ratio, delete last torrents with the
-        ## most bytes uploaded because they may be most likely to keep accruing more
-        ## upload to your ratio. As opposed to sorting by individual download item
-        ## ratio.
-        - type: "value"
-          template: "{{item.uploadedEver}}"
-          reversed: true
-        ## For private trackers with a bonus system for seeding torrents, maximize bonus
-        ## points by deleting last the smallest download item that is also larger than
-        ## the size that qualifies for the maximum bonus rate.
-        - type: "value"
-          template: "{{item.size_when_done}}"
-          ## Max bonus points rate: 10 GB * 1024 MB * 1024 KB * 1024 B
-          minimum: 10737418240
-          ## Items that are smaller than the maximum bonus rate size should be
-          ## considered for deletion before those that are larger.
-          reversed: true
-        ## Items that are much larger than the maximum bonus rate size should be
-        ## considered for deletion before those that are greater than but also closest
-        ## to the maximum bonus rate size.
-        - type: "value"
-          template: "{{item.size_when_done}}"
-    ## Fallback for any download items whose indexer or tracker URLs don't match any
-    ## other priorities above.  For example, public torrents.
-    - name: null # `null` matches all other indexers not specified in `operations`
-      operations:
-        ## Delete download items that are the least imported into Servarr first.
-        - type: "files"
-          template: "{{file.size}}"
-          filter-attrs:
-            - "is_imported"
-          aggregation: "portion"
-          reversed: true
-        ## Delete popular download items with a healthy number of seeders before
-        ## obscure, less popular items to support the health and breadth of items
-        ## available to the community.
-        - type: "value"
-          template: "{{item.ratio}}"
+    ## Remove download items containing archives to optimize seeding per disk space:
+    archives:
+      ## Start with the only files selected for download. Then select those files whose
+      ## extension matches a regular expressions to identify archives.  Then calculate
+      ## the portion of matching the download item's size compared to the size of all
+      ## the files. If that proportion is greater than 50%, then apply this operations
+      ## actions:
+      include: |
+        {%- set wanted_files = item.files|selectattr("selected")|list -%}
+        {%- set wanted_sum = wanted_files|sum("size") -%}
+        {%- set archive_portion = 0 -%}
+        {%- if wanted_sum -%}
+            {%-
+                set archive_portion = (
+                    wanted_files|selectattr(
+                        "path.suffix",
+                        "match",
+                        "rar|r[0-9]+|zip|zip\\.[0-9]+|gz|tgz|bz2",
+                    )|sum("size") / wanted_sum
+                )
+            -%}
+        {%- endif -%}
+        {{ archive_portion > 0.50 }}
+      ## Delete the download item and it's files from the download client:
+      remove: true
+      ## Blacklist the release in Servarr to start a search for a replacement:
+      blacklist: true
+
+    ## Remove stalled download items whose progress is too slow:
+    stalled:
+      ## Strike a balance between giving difficult to find items time to download while
+      ## also pruning items that will never be completed. Only consider incomplete,
+      ## downloading torrents to be stalled. Give rare or unpopular items a week to get
+      ## started waiting for intermittent seeders to reappear: 1 week * 7 days * 24
+      ## hours * 60 minutes * 60 seconds. Apply this to both `item.seconds_downloading`
+      ## and `item.age` just as a double check. Finally, consider download items whose
+      ## total download rate in `Bps` is very low, to be stalled. If an item seems to be
+      ## completely downloaded to the client but then later it's verified and some last
+      ## corrupted bits are re-downloaded, it's `doneDate` will be updated. This can
+      ## really throw off the total download rate, especially for small torrents, so be
+      ## very conservative. The `item.rate_total` continues to drop over time for truly
+      ## stalled items so they'll eventually pass this threshold:
+      include: |
+        {{-
+            item.status == "downloading"
+            and item.seconds_downloading > 604800
+            and item.age > 604800
+            and item.rate_total < 50
+        -}}
+      remove: true
+      blacklist: true
+
+    ## Set download items from private indexers/trackers to high priority:
+    bandwidth-private:
+      include: |
+        {{-
+            "private" in item.indexer_config["groups"]|default([])
+        -}}
+      change:
+        bandwidthPriority: 1
+    ## Set download items from public indexers/trackers to low priority:
+    bandwidth-public:
+      ## Consider items whose tracker URLs match none of the groups of hostnames above
+      ## under `indexers` to be public items:
+      include: |
+        {{- not item.indexer_config["groups"]|default([]) -}}
+      change:
+        bandwidthPriority: -1
+
+  ## Define which items are available for deleting when free space drops below the
+  ## margin for the `free-space` sub-command:
+  free-space:
+    ## This Jinja template should render to false for items that should not be deleted:
+    ##
+    ## - First, exclude download items that are currently mostly imported into a Servarr
+    ##   library. Set a threshold at 80+% of item size that has been imported to allow
+    ##   for un-imported samples, extras, etc. but without wasting any more than 20% of
+    ##   its disk space usage.
+    ##
+    ## - Also exclude download items that haven't met their tracker's seeding, AKA Hit &
+    ##   Run, requirements, usually this is some number of days and maybe shortcut if a
+    ##   ratio is reached first. Beware that `seconds_since_done` is not necessarily the
+    ##   total sum of actively seeding time as seen by the tracker. For example:
+    ##   1. private tracker torrent is downloaded and seeds all of day 1
+    ##   2. you go on vacation and your client exits on day 2
+    ##   3. you return from vacation and restart your client on day 10
+    ##   Then `seconds_since_done` is 10 days while the private tracker only sees you as
+    ##   seeding for 1 day. As such, be sure to add a healthy margin for downtime lest
+    ##   Prunerr delete torrents that haven't actually met the private trackers seeding
+    ##   requirements.
+    ##
+    ## Prunerr already restricts the items considered for deletion to those that are
+    ## seeding and a descendant of the `seeding-dir` where it moves items after they're
+    ## imported by Servarr, for example `/media/Library/seeding/**`:
+    include: |
+      {%- set wanted_files = item.files|selectattr("selected")|list -%}
+      {%- set wanted_sum = wanted_files|sum("size") -%}
+      {%- set imported_portion = 0 -%}
+      {%- if wanted_sum -%}
+          {%-
+              set imported_portion = (
+                  wanted_files|selectattr("is_imported")|sum("size")
+                  / wanted_sum
+              )
+          -%}
+      {%- endif -%}
+      {%- set seeding_time_margin = 24 * 60 * 60 -%}
+      {{
+          imported_portion < 0.80
+          and (
+              item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
+              or item.seconds_since_done
+              >= item.indexer_config["seeding-time"]|default(0)
+          )
+      }}
+
+    ## This template should render to the value by which to sort this item when deleting
+    ## items. Render to a tuple to do multiple sort. This is the default template that
+    ## should work for the most common use cases:
+    ##
+    ## - Items with lower bandwidth priority before items with higher
+    ##   bandwidth priority. Per the `bandwidth-*` operations above under `reviews`,
+    ##   this should be roughly the same as delete public download items before private
+    ##   download items, unless the user has manually intervened in the bandwidth
+    ##   priorities.
+    ##
+    ## - Public items first, identified as items with no tracker URLs configured here as
+    ##   opposed to the arbitrary and thus unreliable public/private flag on the
+    ##   torrent.
+    ##
+    ## - Items from private trackers with well established ratios.  Next items from
+    ##   private trackers we've joined recently and are still building ratio. Accomplish
+    ##   these using the arbitrary `priority` integer values from `indexers` above but
+    ##   reverse them by making them negative so they sort correctly.
+    ##
+    ## - Maximize disk space usage by deleting items that are least imported first.
+    sort: |
+      {%- set wanted_files = item.files|selectattr("selected")|list -%}
+      {%- set wanted_sum = wanted_files|sum("size") -%}
+      {%- set imported_portion = 0 -%}
+      {%- if wanted_sum -%}
+          {%-
+              set imported_portion = (
+                  wanted_files|selectattr("is_imported")|sum("size")
+                  / wanted_sum
+              )
+          -%}
+      {%- endif -%}
+      {{- (
+          item.bandwidthPriority,
+          item.indexer_config is true,
+          -item.indexer_config["priority"]|default(45),
+          imported_portion,
+      ) -}}
+    ## This example further demonstrates the possibilities but note that any sort tuple
+    ## item past one with continuous, quantitative values is unlikely to have any
+    ## affect. For example, anything past the proportion imported will only ever take
+    ## effect if 2 items have the *exact* same proportion imported which will almost
+    ## never happen:
+    ##
+    ## - Maximize ratio by deleting items with the most size uploaded last under the
+    ##   assumption they're the most likely to continue contributing the most to the
+    ##   user's upload numbers.
+    ##
+    ## - Preserve the health and breadth of items available to the community by deleting
+    ##   popular items with a healthy number of seeders before obscure, less popular
+    ##   items. Accomplish this by deleting items with the lowest ratio last.
+    ##
+    ## - Maximize tracker bonus points by deleting items larger than the bonus points
+    ##   maximum size or items smaller than the minimum size before those items in
+    ##   between.
+    # sort: |
+    #     {{- (
+    #         item.uploadedEver,
+    #         -item.ratio,
+    #         item.size_when_done > item.indexer_config["bonus-minimum-size"]|default(0),
+    #         not item.indexer_config["bonus-maximum-size"]|default(0) or (
+    #             item.size_when_done
+    #             < item.indexer_config["bonus-maximum-size"]|default(0)
+    #         ),
+    #     ) -}}
+
+daemon:
+  ## The number of seconds to wait between each loop of the order of operations.
+  ## Default: 60
+  poll: 60

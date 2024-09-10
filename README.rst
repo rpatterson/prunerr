@@ -235,7 +235,7 @@ sub-command performs the following operations.
 
 #. Review download items, same as: ``$ prunerr review``:
 
-   Apply per-indexer review operations as configured under ``indexers/reviews`` in the
+   Apply per-indexer review operations as configured under ``operations/reviews`` in the
    configuration file to all download items.
 
 #. Move download items that have been acted on by Servarr to the ``*/seeding/*``
@@ -274,10 +274,10 @@ sub-command performs the following operations.
 
       IOW, download items that have been acted upon by Servarr and moved to the
       ``*/seeding/*`` directory by the ``$ prunerr move`` sub-command/operation
-      excluding those items filtered out according to the ``indexers/priorities``
-      operations with ``filter: true``. For example, don't delete currently imported
-      items (by hard link count) or items that haven't met private indexer seeding
-      requirements.
+      excluding those items filtered out according to the
+      ``operations/free-space/filter`` Jinja template. For example, don't delete
+      currently imported items (by hard link count) or items that haven't met private
+      indexer seeding requirements.
 
    For each of these groups in order, loop through each item in the group and:
 
@@ -292,8 +292,7 @@ sub-command performs the following operations.
    orphans.
 
    For the other groups delete items in the order determined by the configured
-   ``indexers/priorities`` indexer order then by the configured operations for that
-   item's indexer.
+   ``operations/free-space/sort`` sort value template.
 
    For those times when there's nothing Prunerr can delete to free disk space, most
    users' download clients should also probably pause downloading when disk space drops

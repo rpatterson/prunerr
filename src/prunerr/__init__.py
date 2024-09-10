@@ -269,7 +269,8 @@ def config_cli_logging(
         log_level = "INFO"
         if utils.DEBUG:
             log_level = "DEBUG"  # pragma: no cover
-    logger.setLevel(getattr(logging, log_level.strip().upper()))
+    log_level_int = getattr(logging, log_level.strip().upper())
+    logger.setLevel(log_level_int)
     # Log a given message only once per daemon session, the first loop.
     logger.addFilter(utils.daemon_once_filter)
     logging.getLogger(prunerr.runner.__name__).addFilter(
@@ -291,6 +292,10 @@ def config_cli_logging(
     # Avoid logging all JSON responses, particularly the very large history responses
     # from Servarr APIs
     logging.getLogger("arrapi.api").setLevel(logging.INFO)
+
+    # Also allow debugging Jinja templates:
+    if log_level_int <= logging.DEBUG:
+        prunerr.operations.jinja_env.add_extension("jinja2.ext.debug")
 
 
 def main(args=None):  # pylint: disable=missing-function-docstring

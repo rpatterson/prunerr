@@ -6,6 +6,7 @@ Prunerr removes imported items to free space according to configured rules.
 """
 
 import os
+import pathlib
 import shutil
 import logging
 
@@ -15,12 +16,19 @@ import prunerrtests
 
 import prunerr
 
+HOME = pathlib.Path(__file__).parent / "home" / "free-space"
+ENV = dict(prunerrtests.PrunerrTestCase.ENV, HOME=str(HOME))
+
 
 @mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
 class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
     """
     Prunerr removes imported items to free space according to configured rules.
     """
+
+    HOME = HOME
+    CONFIG = HOME / ".config" / "prunerr.yml"
+    ENV = ENV
 
     RESPONSES_DIR = (
         prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent
@@ -176,6 +184,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         #    deleted to free sufficient space.  Running the `free-space` sub-command
         #    deletes enough download items and their files to free sufficient space and
         #    resumed downloading.
+        self.imported_item_file.unlink()
         upgraded_insufficient_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-upgraded-insufficient",
         )

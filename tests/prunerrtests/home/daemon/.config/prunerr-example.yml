@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: MIT
 
-daemon:
-  poll: 1
 servarrs:
 download-clients:
   Transmission:
     max-download-bandwidth: 100
     min-download-time-margin: 3600
 indexers:
+daemon:
+  poll: 1

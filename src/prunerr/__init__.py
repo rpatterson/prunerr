@@ -107,6 +107,7 @@ parser_verify = subparsers.add_parser(
     "verify",
     help=str(verify.__doc__.strip()),
     description=str(verify.__doc__.strip()),
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser_verify.set_defaults(command=verify)
 

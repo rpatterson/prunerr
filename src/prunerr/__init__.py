@@ -8,14 +8,15 @@ Remove Servarr download client items to preserve disk space according to rules.
 """
 
 import sys
+import typing
 import contextlib
 import logging
 import pathlib  # TODO: replace os.path
 import argparse
+import re
 import mimetypes
 import json
 import pdb
-import typing
 
 import argcomplete
 
@@ -41,10 +42,27 @@ else:  # pragma: no cover
 mimetypes.add_type("video/x-divx", ".divx")
 mimetypes.add_type("text/x-nfo", ".nfo")
 
+API_DOCSTRING_RE = re.compile("^ *:[^:]+: ", re.MULTILINE)
+
+
+def strip_api_docstring(docstring: typing.Optional[str]) -> str:
+    """
+    Strip trailing API documentation reST field lists from docstrings if present.
+
+    :param docstring: The ``__doc__`` including API documentation field lists.
+    :return: The docstring without API documentation field lists.
+    :raises ValueError: Something is wrong with the ``docstring``.
+    """
+    if docstring is None:  # pragma: no cover
+        raise ValueError("Missing docstring")
+    if (api_docstring_match := API_DOCSTRING_RE.search(docstring)) is None:
+        return docstring
+    return docstring[: api_docstring_match.start(0)]
+
 
 # Define command line options and arguments
 parser = argparse.ArgumentParser(
-    description=__doc__.strip(),
+    description=strip_api_docstring(__doc__),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser.add_argument(
@@ -84,11 +102,11 @@ def verify(  # pylint: disable=missing-function-docstring,missing-return-doc
     return verify_results
 
 
-verify.__doc__ = prunerr.runner.PrunerrRunner.verify.__doc__
+verify.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.verify.__doc__)
 parser_verify = subparsers.add_parser(
     "verify",
-    help=verify.__doc__.strip(),  # type: ignore
-    description=verify.__doc__.strip(),  # type: ignore
+    help=str(verify.__doc__.strip()),
+    description=str(verify.__doc__.strip()),
 )
 parser_verify.set_defaults(command=verify)
 

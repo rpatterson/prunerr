@@ -2,11 +2,18 @@
 #
 # SPDX-License-Identifier: MIT
 
-servarrs:
+servarrs: {}
 download-clients:
   Transmission:
+    timeout: 30
     max-download-bandwidth: 100
     min-download-time-margin: 3600
-indexers:
+indexers: {}
+stages:
+  queued: {}
+  seeding: {}
+  free-space: {}
+  all: {}
+  orphans: {}
 daemon:
   poll: 1

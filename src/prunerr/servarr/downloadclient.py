@@ -5,8 +5,7 @@
 Prunerr interaction with Servarr instances.
 """
 
-import typing
-import time
+import collections.abc
 import datetime
 import urllib.parse
 import logging
@@ -129,87 +128,47 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         )
         return added_item
 
-    def move(self, move_timeout: int = 5 * 60) -> typing.Optional[list]:
+    def filter_seeding(self) -> collections.abc.Generator:
         """
-        Move download items that have been acted on by Servarr into the seeding dir.
+        Filter releases that have been acted on by Servarr.
 
-        Move all download items that are seeding, that are in this Servarr instance's
+        All download items that are seeding, that are in this Servarr instance's
         download directory, and aren't in this Servarr instance's queue.  Also only
         include items that have some Servarr history events other than `grabbed` to
         prevent moving manually grabbed items out from under Servarr before it's had a
         chance to recognize notice them.
 
-        :param move_timeout: How long to wait for the release to be moved in the
-            download client before continuing.
-        :return: The hash IDs of the download items that were moved.
-        :raises DownloadClientTimeout: Moving the download item took too long.
+        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
         """
-        download_items = [
-            download_item
-            for download_item in self.download_client.items
-            # Skip items still downloading
-            if download_item.status == download_item.STATUS_SEEDING
-            # Skip items known by a Servarr instance in it's queue
-            and download_item.hashString.upper() not in self.servarr.queue
-            # Skip items not in this Servarr instance's download directory for this
-            # download client
-            and self.download_dir in download_item.path.parents
-            # Skip items with no history other than `grabbed` events:
-            and download_item.release.history[0]["eventType"]
-            != self.servarr.EVENT_TYPE_GRABBED
-            # Skip items whose most recent history other than `grabbed`, such as
-            # `downloadFolderimported`, is too recent to avoid moving out from under
-            # Servarr:
-            # TODO: Make timezone aware:
-            # TODO: Add a separate configuration key for the wait period:
-            and (
-                datetime.datetime.now(datetime.timezone.utc)
-                - dateutil.parser.parse(download_item.release.history[0]["date"])
-            )
-            > datetime.timedelta(seconds=self.servarr.runner.config["daemon"]["poll"])
-        ]
-        if not download_items:
-            logger.debug(
-                "No %s download items to move",
-                self.servarr.config["name"],
-            )
-            return None
-        logger.info(
-            "Moving download items: %r -> %r\n  %s",
-            str(self.download_dir),
-            str(self.seeding_dir),
-            "\n  ".join(repr(download_item) for download_item in download_items),
+        # Avoid attribute and item lookup in the inner loop:
+        download_dir = self.download_dir
+        event_type_grabbed = self.servarr.EVENT_TYPE_GRABBED
+        now = datetime.datetime.now(datetime.timezone.utc)
+        dateutil_parse = dateutil.parser.parse
+        daemon_poll = datetime.timedelta(
+            seconds=self.servarr.runner.config["daemon"]["poll"],
         )
-        self.download_client.client.move_torrent_data(
-            ids=[download_item.hashString for download_item in download_items],
-            location=self.seeding_dir,
-        )
-        # Wait for a timeout for items to finish moving before proceeding.
-        start = time.time()
-        while next(  # pylint: disable=while-used
-            (
-                download_item
-                for download_item in download_items
-                if download_item.path.exists()
-            ),
-            None,
-        ):
-            if time.time() - start > move_timeout:
-                raise prunerr.downloadclient.DownloadClientTimeout(
-                    f"Timed out waiting for {self.servarr.config['name']} items "
-                    "to finish moving",
-                )
-            time.sleep(1)
-        # Update the download item's dir for subsequent operations, done manually to
-        # minimize requests.
-        for download_item in download_items:
-            download_item._fields[download_item.FIELD_DOWNLOAD_DIR] = (
-                download_item._fields[download_item.FIELD_DOWNLOAD_DIR]._replace(
-                    value=self.seeding_dir
-                )
-            )
-            download_item.clear()
-        return [download_item.hashString for download_item in download_items]
+
+        for download_item in self.download_client.items:
+            if (
+                # Skip items still downloading:
+                download_item.status == download_item.STATUS_SEEDING
+                # Skip items known by a Servarr instance in it's queue:
+                and download_item.hashString.upper() not in self.servarr.queue
+                # Skip items not in this Servarr instance's download directory for this
+                # download client:
+                and download_dir == download_item.download_dir
+                # Skip items with no history other than `grabbed` events:
+                and download_item.release.history[0]["eventType"] != event_type_grabbed
+                # Skip items whose most recent history other than `grabbed`, such as
+                # `downloadFolderimported`, is too recent to avoid moving out from under
+                # Servarr:
+                # TODO: Make timezone aware:
+                # TODO: Add a separate configuration key for the wait period:
+                and (now - dateutil_parse(download_item.release.history[0]["date"]))
+                > daemon_poll
+            ):
+                yield download_item
 
     def delete(
         self, release: "prunerr.servarr.release.PrunerrServarrRelease", **params

@@ -27,15 +27,15 @@ class PrunerrVerifyTests(prunerrtests.PrunerrTestCase):
         Prunerr verifies corrupt items and resumes them once verified.
         """
         verify_request_mocks = self.mock_responses()
-        prunerr.verify(self.runner)
+        prunerr.apply_(self.runner, stages=["all"])
         # All the effects of the `verify` sub-command take place in the download client
         # RPC requests and responses, so all the assertions are covered below
         self.assert_request_mocks(verify_request_mocks)
 
-    def test_verify_exec(self):
+    def test_verify_apply(self):
         """
-        Prunerr verifies corrupt items as a part of the `exec` sub-command.
+        Prunerr verifies corrupt items as a part of the `apply` sub-command.
         """
         verify_request_mocks = self.mock_responses()
-        prunerr.exec_(self.runner)
+        prunerr.apply_(self.runner)
         self.assert_request_mocks(verify_request_mocks)

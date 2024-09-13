@@ -7,21 +7,25 @@ Run Prunerr commands across multiple Servarr instances and download clients.
 
 import gc
 import os
+import collections.abc
+import typing
 import time
 import datetime
 import pathlib
+import shutil
 import logging
-import typing
 
 import yaml
 import tenacity
 import transmission_rpc
 
 import prunerr.downloadclient
+import prunerr.downloaditem
 import prunerr.servarr
 from . import utils
 from .utils import cached_property
 from .commands import export
+from . import operations
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +38,12 @@ class PrunerrRunner(utils.PrunerrComponent):
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
     CONFIG_SERVARRS_KEY = "servarrs"
     CONFIG_DOWNLOAD_CLIENTS_KEY = "download-clients"
-    CONFIG_REVIEWS_KEY = "reviews"
-    CONFIG_NO_DEFAULTS = (CONFIG_SERVARRS_KEY, CONFIG_DOWNLOAD_CLIENTS_KEY)
+    CONFIG_INDEXERS_KEY = "indexers"
+    CONFIG_NO_DEFAULTS = (
+        CONFIG_SERVARRS_KEY,
+        CONFIG_DOWNLOAD_CLIENTS_KEY,
+        CONFIG_INDEXERS_KEY,
+    )
 
     config_stat: os.stat_result
     quiet = False
@@ -97,7 +105,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             "indexers",
             {},
         ).items():
-            indexer_config.setdefault("config", {})["name"] = indexer_name
+            indexer_config.setdefault("config", {}).setdefault("name", indexer_name)
 
         # Pull defaults from the example configuration:
         for top_key, top_config in self.example_config.items():
@@ -106,7 +114,10 @@ class PrunerrRunner(utils.PrunerrComponent):
         config["daemon"].setdefault("poll", self.example_config["daemon"]["poll"])
 
         # Compile Jinja templates:
-        config["operations"] = prunerr.operations.parse(config["operations"])
+        config["stages"] = prunerr.operations.parse(
+            config["stages"],
+            self.example_config["stages"],
+        )
 
         return config
 
@@ -206,86 +217,33 @@ class PrunerrRunner(utils.PrunerrComponent):
 
     # Sub-commands
 
-    def exec_(self) -> typing.Optional[dict]:
+    def apply_(
+        self,
+        stages: collections.abc.Iterable = operations.STAGES_DEFAULT,
+    ) -> typing.Optional[dict]:
         """
-        Run the standard series of Prunerr operations once.
+        Apply configured operations for the stages to all download clients.
 
-        :return: Map exec operations to those operations' results
+        :param stages: The download item life-cycle stages whose operations to apply.
+        :return: Map stages to download client URLs to the results of any actions taken.
+        :raises ValueError: Something is wrong with the arguments.
         """
-        # Results relies on preserving key order
-        results = {}
+        if invalid_stages := set(stages).difference(self.config["stages"]):
+            raise ValueError(  # pragma: no cover
+                "Some passed stages are not in the configuration: "
+                f"{list(invalid_stages)!r}",
+            )
+        apply_results = {}
+        # Let the YAML order determine the order the stages are applied in:
+        for stage in self.config["stages"]:
+            if stage not in stages:
+                continue
 
-        # Start verifying corrupt torrents as early as possible to give them as much
-        # time to finish as possible.
-        self.verify()
+            if stage_results := self.apply_stage(stage):
+                apply_results[stage] = stage_results
 
-        # Run `review` before `move` so it can make any changes to download items before
-        # they're moved and excluded from future review.
-        # Also run before `free-space` in case it removes items.
-        if self.CONFIG_REVIEWS_KEY in self.config.get("operations", {}):
-            if (review_results := self.review()) is not None:
-                results["review"] = review_results
-
-        # Run `move` before `free-spacce` so that all download items that could be
-        # eligible for deletion are in the `seeding` directory.
-        if move_results := self.move():
-            results["move"] = move_results
-
-        if free_space_results := self.free_space():
-            results["free-space"] = free_space_results
-
-        if results:
-            return results
-        return None
-
-    def verify(self) -> typing.Optional[dict]:
-        """
-        Verify and resume download items flagged as having corrupt data.
-
-        :return: Map download client URLs to verified download items
-        """
-        verify_results = {}
-        for download_client_url, download_client in self.download_clients.items():
-            if verifying_items := download_client.verify_corrupt_items():
-                verify_results[download_client_url] = verifying_items
-        if verify_results:
-            return verify_results
-        return None
-
-    def move(self) -> typing.Optional[dict]:
-        """
-        Move download items that have been acted on by Servarr into the seeding dir.
-
-        :return: Map download client URLs to moved download items
-        """
-        move_results: dict = {}
-        for servarr_url, servarr in self.servarrs.items():
-            for (
-                download_client_url,
-                servarr_download_client,
-            ) in servarr.download_clients.items():
-                if download_client_results := servarr_download_client.move():
-                    move_results.setdefault(servarr_url, {})[
-                        download_client_url
-                    ] = download_client_results
-        if move_results:
-            return move_results
-        return None
-
-    def review(self) -> typing.Optional[dict]:
-        """
-        Apply configured review operations to all download items.
-
-        :return: Map download client URLs to the results of any review
-            actions taken
-        """
-        # Delegate the rest to the download client
-        review_results = {}
-        for download_client_url, download_client in self.download_clients.items():
-            if download_client_results := download_client.review():
-                review_results[download_client_url] = download_client_results
-        if review_results:
-            return review_results
+        if apply_results:
+            return apply_results
         return None
 
     def export(self) -> typing.Optional[dict]:
@@ -345,87 +303,6 @@ class PrunerrRunner(utils.PrunerrComponent):
             return re_add_results
         return None  # pragma: no cover
 
-    def free_space(self) -> typing.Optional[dict]:
-        """
-        If running out of disk space, delete some torrents until enough space is free.
-
-        Delete from the following groups of torrents in order:
-        - torrents no longer registered with the tracker
-        - orphaned paths not recognized by the download client or its items
-        - seeding torrents, that have been successfully imported
-
-        :return: Map download client URLs to removed download items
-        """
-        # Some parts of freeing space, such as finding orphans, have to aggregate
-        # download item details from all download clients.  Also, some operations for
-        # one download client may affect the free space for other download clients, such
-        # as deleting download items.  As such we can't delegate the whole process to
-        # the download clients, only some parts of it.
-
-        # TODO: Keep track of the required free space to decide when to stop deleting to
-        # reduce the number and time cost of download client session RPC requests?
-        # Premature optimization?
-
-        if not (download_clients := self.free_space_download_clients()):
-            return None
-
-        results: dict = {}
-
-        logger.info(
-            "Deleting download items no longer registered with tracker to free space",
-        )
-        # If there are items to delete, then after deleting each item, refresh the
-        # download client free space and list of download items and repeat until either
-        # there are no more download items to delete or the download client has
-        # sufficient free space.
-        if not (
-            download_clients := self.free_space_remove_items(
-                download_clients,
-                results,
-                "find_unregistered",
-            )
-        ):
-            return results
-
-        logger.info(
-            "Deleting orphaned files not belonging to any download item to free space",
-        )
-        for orphan_download_clients, file_path, file_stat in self.find_orphans():
-            first_download_client = next(iter(orphan_download_clients.values()))
-            first_download_client.try_delete_files((file_path, file_stat))
-            results.setdefault(
-                first_download_client.config["url"],
-                [],
-            ).append(str(file_path))
-            # Do any download clients still need to free space?
-            if not (download_clients := self.free_space_download_clients()):
-                return results
-
-        logger.info(
-            "Deleting seeding download items to free space",
-        )
-        download_clients = self.free_space_remove_items(download_clients, results)
-        if not download_clients:
-            return results
-
-        for download_client_url, download_client in download_clients.items():
-            # TODO: Send a notification [via
-            # ntfy](https://github.com/dschep/ntfy/issues/275#issuecomment-2307662650)
-            # when disk space is low and no download item can be deleted:
-            # TODO: Record that a notification has been sent for this "instance".
-            logger.error(
-                "Insufficient free space for %r but nothing can be deleted: %0.2f %s",
-                download_client_url,
-                *transmission_rpc.utils.format_size(
-                    download_client.config["min-free-space"]
-                    - download_client.client.session.download_dir_free_space,
-                ),
-            )
-
-        if results:
-            return results
-        return None
-
     def daemon(self):
         """
         Prune download client items continuously.
@@ -451,7 +328,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             else:
                 # Don't repeat noisy messages from now on.
                 self.quiet = True
-            logger.debug("Sub-command `exec` completed in %ss", time.time() - start)
+            logger.debug("Sub-command `apply` completed in %ss", time.time() - start)
 
             # Determine the poll interval before clearing the config
             poll = self.config["daemon"]["poll"]
@@ -459,72 +336,16 @@ class PrunerrRunner(utils.PrunerrComponent):
             # Free any memory possible between daemon loops
             self.clear()
 
-            # Wait for the next interval
+            # Wait for the next interval. Note that polling is required because there is
+            # no event we can subscribe to that reliably determines disk space margin
+            # *as* the download clients are downloading:
             if (time_left := poll - (time.time() - start)) > 0:
                 time.sleep(time_left)
             logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
 
-    # Other methods
+    # Methods to list the download items in each life-cycle stage:
 
-    def free_space_download_clients(self) -> dict:
-        """
-        Return all download clients that don't have sufficient free space.
-
-        :return: Map download client URLs to
-            ``prunerr.downloadclient.PrunerrDownloadClient`` instances without
-            sufficient free space
-        """
-        return {
-            download_client_url: download_client
-            for download_client_url, download_client in self.download_clients.items()
-            if not download_client.free_space_check()
-        }
-
-    def free_space_remove_items(
-        self,
-        download_clients: dict,
-        results: dict,
-        download_client_method: str = "find_seeding",
-    ) -> dict:
-        """
-        Delete download items until sufficient space is free the items are exhausted.
-
-        If there are items to delete, then after deleting each item, refresh the
-        download clients free space and lists of download items and repeat until either
-        there are no more download items to delete or all download clients have
-        sufficient free space.
-
-        :param download_clients: The download clients from which to delete download
-            items
-        :param results: Map download client URLs to deleted download item hashes
-        :param download_client_method: The
-            ``prunerr.downloadclient.PrunerrDownloadClient`` method from which to
-            retrieve download items to delete
-        :return: Map download client URLs to
-            ``prunerr.downloadclient.PrunerrDownloadClient`` instances that still have
-            insufficient free space
-        """
-        while download_clients:  # pylint: disable=while-used
-            for download_client_url, download_client in download_clients.items():
-                removed_size = None
-                for download_item in getattr(
-                    download_client,
-                    download_client_method,
-                )():
-                    removed_size = download_client.try_delete_files(download_item)
-                    results.setdefault(
-                        download_client_url,
-                        [],
-                    ).append(download_item.hashString)
-                    download_clients = self.free_space_download_clients()
-                    break
-                if removed_size:
-                    break
-            else:
-                break
-        return download_clients
-
-    def find_orphans(self) -> list:
+    def filter_orphans(self) -> collections.abc.Generator:  # noqa: V105
         """
         Find paths in download client directories that don't correspond to an item.
 
@@ -535,7 +356,7 @@ class PrunerrRunner(utils.PrunerrComponent):
         Useful to identify paths to delete when freeing disk space.  Returned sorted
         from paths that use the least disk space to the most.
 
-        :return: A list of orphaned filesystem paths
+        :return: The orphaned filesystem paths.
         """
         item_files: set = set()
         download_item_dirs: dict = {}
@@ -584,44 +405,74 @@ class PrunerrRunner(utils.PrunerrComponent):
         # files.  Also yield the download clients that the file's download item
         # directory use.  Also yield the `stat` syscall results for that file to reduce
         # such syscalls downstream.
-        orphans = []
-        for download_item_dir, download_clients in download_item_dirs.items():
+        for download_item_dir in download_item_dirs:
             for dirpath, _, filenames in os.walk(download_item_dir):
                 for filename in filenames:
                     file_path = download_item_dir / dirpath / filename
                     if file_path not in item_files:
-                        orphans.append(
-                            (download_clients, file_path, file_path.stat()),
-                        )
+                        yield file_path
 
-        # Order orphans by smallest size first.  Use this sort order to give the user as
-        # long as possible to rescue any larger, and thus harder to restore, files.
-        # Also cleans up noisy small file clutter first.
-        orphans.sort(
-            key=lambda orphan: (1 / orphan[2].st_nlink, orphan[2].st_blocks * 512),
+    def apply_remove(  # noqa: V105
+        self, operation: operations.PrunerrOperation, item: pathlib.Path
+    ) -> dict:
+        """
+        Remove this filesystem path according to the operation configuration.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :param item: The filesystem path to remove.
+        :return: A mapping describing the details of removal.
+        """
+        remove_result = {
+            operations.ACTION_REMOVE: operation.config[operations.ACTION_REMOVE]
+        }
+        stat = item.stat()
+        size = (stat.st_blocks * 512) if (stat.st_nlink == 1) else 0
+        logger.info(
+            "Deleting %r per %r operation, %0.2f %s: free space -> %0.2f %s",
+            str(item),
+            *(
+                transmission_rpc.utils.format_size(size)
+                + transmission_rpc.utils.format_size(os.statvfs(item).f_bavail + size)
+            ),
         )
+        self.delete_path(item)
 
-        return orphans
+        for download_client in self.download_clients.values():
+            download_client.client.get_session()
 
-    def resume_verified_items(self, wait: bool = False) -> dict:
+        return remove_result
+
+    # Other methods:
+
+    def apply_stage(
+        self,
+        stage: str = prunerr.operations.STAGE_QUEUED,
+    ) -> typing.Optional[dict]:
         """
-        Resume downloading any previously corrupt items that have finished verifying.
+        Apply configured operations for a life-cycle stage to all download client items.
 
-        Optionally wait until all verifying items have finished and resume them all.
-
-        :param wait: Whether to block until verifying items finish
-        :return: Map download client URLs to resumed download items
+        :param stage: The download item life-cycle stage whose operations to apply.
+        :return: Map download client URLs to download item hash IDs to mappings
+            describing the actions taken if any.
         """
-        resume_results = {}
-        for download_client_url, download_client in self.download_clients.items():
-            resumed_items = list(download_client.resume_verified_items().values())
-            if wait:
-                while download_client.verifying_items:  # pylint: disable=while-used
-                    time.sleep(1)
-                    resumed_items.extend(download_client.resume_verified_items())
-            if resumed_items:
-                resume_results[download_client_url] = resumed_items
-        return resume_results
+        if getattr(self, f"filter_{stage.replace('-', '_')}", None) is None:
+            stage_results = {}
+            for download_client in self.download_clients.values():
+                prunerr_stage = prunerr.operations.PrunerrStage(
+                    stage,
+                    self.config["stages"][stage],
+                    download_client,
+                )
+                if applier_results := prunerr_stage():
+                    stage_results[download_client.config["url"]] = applier_results
+        else:
+            prunerr_stage = prunerr.operations.PrunerrStage(
+                stage,
+                self.config["stages"][stage],
+                self,
+            )
+            stage_results = prunerr_stage()
+        return stage_results
 
     def _daemon_inner(self):
         """
@@ -629,10 +480,8 @@ class PrunerrRunner(utils.PrunerrComponent):
         """
         # Refresh the list of download items
         self.update()
-        # Resume any corrupt download items that have finished verifying
-        self.resume_verified_items()
-        # Run the `exec` sub-command as the inner loop
-        return self.exec_()
+        # Run the `apply` sub-command as the inner loop
+        return self.apply_()
 
     def clear(self):
         """
@@ -645,3 +494,97 @@ class PrunerrRunner(utils.PrunerrComponent):
             download_client.clear()
         # Tell Python it's a good time to free memory
         gc.collect()
+
+    @cached_property
+    def managed_dirs(self) -> list:
+        """
+        Determine which directories are the top-level ancestors of files and items.
+
+        Used to determine how far "up" the chain of ancestors to delete empty
+        directories when deleting items or orphans.
+
+        :return: The filesystem paths for the directories from deepest or most specific
+            to the top-level download client's ``downloadDir`` and it's siblings.
+        """
+        managed_dirs = []
+        for servarr in self.servarrs.values():
+            for servarr_download_client in servarr.download_clients.values():
+                managed_dirs.append(servarr_download_client.download_dir)
+                managed_dirs.append(servarr_download_client.seeding_dir)
+        for download_client in self.download_clients.values():
+            managed_dirs.append(download_client.download_dir)
+            managed_dirs.append(download_client.seeding_dir)
+            if download_client.incomplete_dir is not None:
+                managed_dirs.append(download_client.incomplete_dir)
+            else:  # pragma: no cover
+                pass
+        return managed_dirs
+
+    def delete_path(self, path: pathlib.Path) -> list:
+        """
+        Delete this file or directory and empty parent directories.
+
+        :param path: The filesystem path to a file to delete or a directory to
+            recursively delete.
+        :return: The filesystem paths for all parent directories that were also deleted.
+        :raises ValueError: The given ``path`` is not valid to delete.
+        """
+        # The path is not in one of our managed directories, this should never happen:
+        for managed_dir in self.managed_dirs:
+            if managed_dir in path.parents:
+                break
+        else:
+            raise ValueError(  # pragma: no cover
+                "Refusing to delete a path in an un-managed directory",
+            )
+
+        # Delete the given path:
+        if path.is_dir():
+            shutil.rmtree(path, onerror=log_rmtree_error)  # pragma: no cover
+        elif path.exists():
+            path.unlink()
+        else:
+            # Under high download client load, the deletion from the client
+            # sometimes seems to fail but Prunerr successfully deletes the data. On
+            # the next `daemon` loop Prunerr will try to delete it from the client
+            # again, which is correct, but then chokes on the missing files it
+            # already deleted.
+            logger.error(  # pragma: no cover
+                "Path to be deleted doesn't exist: %s",
+                path,
+            )
+
+        # Also remove the ancestor directories if they're not empty:
+        removed_parents = []
+        for relative_parent in path.relative_to(managed_dir).parents[:-1]:
+            parent = managed_dir / relative_parent
+            if parent.exists():
+                if next(parent.iterdir(), None) is not None:
+                    # Not empty, stop removing parents:
+                    break  # pragma: no cover
+                parent.rmdir()
+                removed_parents.append(parent)
+        return removed_parents
+
+
+# TODO: Not sure how to test this, but if there's a way, we should add coverage
+def log_rmtree_error(
+    function: collections.abc.Callable,
+    path: str,
+    excinfo: tuple,
+):
+    """
+    Inform the user on errors deleting item files but also proceed to delete the rest.
+
+    Error handler for `shutil.rmtree`.
+
+    :param function: See ``shutil.rmtree()`` in the Python standard library.
+    :param path: See ``shutil.rmtree()`` in the Python standard library.
+    :param excinfo: See ``shutil.rmtree()`` in the Python standard library.
+    """
+    logger.error(  # pragma: no cover
+        "Error removing %r (%s)",
+        path,
+        ".".join((function.__module__, function.__name__)),
+        exc_info=excinfo,
+    )

@@ -7,7 +7,6 @@ Prunerr removes imported items to free space according to configured rules.
 
 import os
 import pathlib
-import shutil
 import logging
 
 from unittest import mock
@@ -75,7 +74,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Not enough free space before 'imported sufficient' `free-space` run",
         )
-        prunerr.free_space(self.runner)
+        prunerr.apply_(self.runner, stages=["free-space"])
         self.assert_request_mocks(imported_sufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -112,7 +111,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Too much free space before 'imported insufficient' `free-space` run",
         )
-        prunerr.free_space(self.runner)
+        prunerr.apply_(self.runner, stages=["free-space"])
         self.assert_request_mocks(imported_insufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -136,54 +135,8 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             "Download item file not imported by Servarr",
         )
 
-        # 3. There's still not enough free space but now an orphan can be
+        # 3. There's still not enough free space but now a download item can be
         #    deleted. That's still not enough free space after deleting it.
-        # Add an orphan file to the download client seeding directory:
-        orphan_path = self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name
-        shutil.copy2(self.EXAMPLE_VIDEO, orphan_path)
-        orphans_insufficient_request_mocks = self.mock_responses(
-            self.RESPONSES_DIR.parent / "free-space-orphans-insufficient",
-        )
-        orphans_insufficient_before_session = orphans_insufficient_request_mocks[
-            "http://transmission:secret@localhost:9091/transmission/rpc"
-        ]["POST"][1]["00-session-get"]["json"]["arguments"]
-        self.assertLess(
-            orphans_insufficient_before_session["download-dir-free-space"],
-            self.min_free_space,
-            "Too much free space before 'orphans insufficient' `free-space` run",
-        )
-        prunerr.free_space(self.runner)
-        self.assert_request_mocks(orphans_insufficient_request_mocks)
-        self.assertFalse(
-            orphan_path.exists(),
-            "Orphan file exists after 'orphans insufficient' `free-space` run",
-        )
-        self.assertFalse(
-            self.incomplete_item.exists(),
-            "Item in incomplete dir after 'orphans insufficient' `free-space` run",
-        )
-        self.assertFalse(
-            self.downloaded_item.exists(),
-            "Item in downloading dir after 'orphans insufficient' `free-space` run",
-        )
-        self.assertTrue(
-            self.seeding_item.is_dir(),
-            "Seeding item not dir after 'orphans insufficient' `free-space` run",
-        )
-        self.assertTrue(
-            self.seeding_item_file.is_file(),
-            "Item file missing after 'orphans insufficient' `free-space` run",
-        )
-        self.assertEqual(
-            self.seeding_item_file.stat().st_nlink,
-            2,
-            "Download item file not imported by Servarr",
-        )
-
-        # 4. There's still not enough free space but now enough download items can be
-        #    deleted to free sufficient space.  Running the `free-space` sub-command
-        #    deletes enough download items and their files to free sufficient space and
-        #    resumed downloading.
         self.imported_item_file.unlink()
         upgraded_insufficient_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-upgraded-insufficient",
@@ -196,7 +149,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Too much free space before 'upgraded insufficient' `free-space` run",
         )
-        prunerr.free_space(self.runner)
+        prunerr.apply_(self.runner, stages=["free-space"])
         self.assert_request_mocks(upgraded_insufficient_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -207,115 +160,89 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             "Item in downloading dir after 'upgraded insufficient' `free-space` run",
         )
         self.assertFalse(
-            self.seeding_item.is_dir(),
-            "Seeding item still exists after 'upgraded insufficient' `free-space` run",
+            self.seeding_item.exists(),
+            "Seeding item still exists after 'upgraded break' `free-space` run",
         )
 
-    def test_free_space_exec(self):
+        # 4. There's still not enough free space but now enough download items can be
+        #    deleted to free sufficient space.  Running the `free-space` sub-command
+        #    deletes enough download items and their files to free sufficient space and
+        #    resumed downloading.
+        upgraded_break_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "free-space-upgraded-break",
+        )
+        upgraded_break_before_session = upgraded_break_request_mocks[
+            "http://transmission:secret@localhost:9091/transmission/rpc"
+        ]["POST"][1]["00-session-get"]["json"]["arguments"]
+        self.assertLess(
+            upgraded_break_before_session["download-dir-free-space"],
+            self.min_free_space,
+            "Too much free space before 'upgraded break' `free-space` run",
+        )
+        prunerr.apply_(self.runner, stages=["free-space"])
+        self.assert_request_mocks(upgraded_break_request_mocks)
+        self.assertFalse(
+            self.incomplete_item.exists(),
+            "Item in incomplete dir after 'upgraded break' `free-space` run",
+        )
+        self.assertFalse(
+            self.downloaded_item.exists(),
+            "Item in downloading dir after 'upgraded break' `free-space` run",
+        )
+        self.assertFalse(
+            self.seeding_item.exists(),
+            "Seeding item still exists after 'upgraded break' `free-space` run",
+        )
+
+    def test_free_space_apply(self):
         """
-        Prunerr deletes items to free space as a part of the `exec` sub-command.
+        Prunerr deletes items to free space as a part of the `apply` sub-command.
         """
         self.mock_responses(
-            self.RESPONSES_DIR.parent / "free-space-exec",
+            self.RESPONSES_DIR.parent / "free-space-apply",
         )
         runner = prunerr.runner.PrunerrRunner(self.CONFIG)
         runner.update()
-        exec_results = runner.exec_()
+        apply_results = runner.apply_(stages=["free-space"])
         self.assertIn(
-            "free-space",
-            exec_results,
-            "Free Space results missing from `exec` sub-command results",
+            prunerr.operations.STAGE_FREE_SPACE,
+            apply_results,
+            "Free Space results missing from `apply` sub-command results",
         )
         self.assertIn(
             prunerr.utils.normalize_url(self.download_client_urls[0]),
-            exec_results["free-space"],
-            "Download client free space results missing from `exec` results",
+            apply_results[prunerr.operations.STAGE_FREE_SPACE],
+            "Download client free space results missing from `apply` results",
         )
-        self.assertIsInstance(
-            exec_results["free-space"][
+        self.assertIn(
+            "prune",
+            apply_results[prunerr.operations.STAGE_FREE_SPACE][
                 prunerr.utils.normalize_url(self.download_client_urls[0])
             ],
-            list,
-            "Download client free space results wrong type from `exec` results",
+            "Download client free space results missing operation results",
+        )
+        self.assertIsInstance(
+            apply_results[prunerr.operations.STAGE_FREE_SPACE][
+                prunerr.utils.normalize_url(self.download_client_urls[0])
+            ]["prune"],
+            dict,
+            "Download client free space results operation results wrong type",
+        )
+        self.assertIsInstance(
+            apply_results[prunerr.operations.STAGE_FREE_SPACE][
+                prunerr.utils.normalize_url(self.download_client_urls[0])
+            ]["prune"],
+            dict,
+            "Download client free space results wrong type from `apply` results",
         )
         self.assertEqual(
             len(
-                exec_results["free-space"][
+                apply_results[prunerr.operations.STAGE_FREE_SPACE][
                     prunerr.utils.normalize_url(self.download_client_urls[0])
-                ]
+                ]["prune"]
             ),
             1,
             "Download client free space results wrong number of items",
-        )
-
-    def test_free_space_unregistered(self):
-        """
-        Prunerr deletes unregistered items to free space.
-        """
-        self.incomplete_dir.mkdir(parents=True, exist_ok=True)
-        self.seeding_item.rename(self.incomplete_dir / self.seeding_item.name)
-        unregistered_request_mocks = self.mock_responses(
-            self.RESPONSES_DIR.parent / "free-space-unregistered",
-        )
-        runner = prunerr.runner.PrunerrRunner(self.CONFIG)
-        runner.update()
-        unregistered_results = runner.free_space()
-        self.assert_request_mocks(unregistered_request_mocks)
-        self.assertIn(
-            prunerr.utils.normalize_url(self.download_client_urls[0]),
-            unregistered_results,
-            "Download client free space results missing from unregistered item results",
-        )
-        self.assertIsInstance(
-            unregistered_results[
-                prunerr.utils.normalize_url(self.download_client_urls[0])
-            ],
-            list,
-            "Download client free space results wrong unregistered item results type",
-        )
-        self.assertEqual(
-            len(
-                unregistered_results[
-                    prunerr.utils.normalize_url(self.download_client_urls[0])
-                ]
-            ),
-            1,
-            "Free space unregistered item results wrong number of items",
-        )
-
-    def test_free_space_orphans(self):
-        """
-        Prunerr deletes orphaned files to free space.
-        """
-        shutil.copy2(
-            self.EXAMPLE_VIDEO,
-            self.servarr_seeding_dir / self.EXAMPLE_VIDEO.name,
-        )
-        orphans_request_mocks = self.mock_responses(
-            self.RESPONSES_DIR.parent / "free-space-orphans",
-        )
-        runner = prunerr.runner.PrunerrRunner(self.CONFIG)
-        runner.update()
-        orphans_results = runner.free_space()
-        self.assert_request_mocks(orphans_request_mocks)
-        self.assertIn(
-            prunerr.utils.normalize_url(self.download_client_urls[0]),
-            orphans_results,
-            "Download client free space results missing from orphan results",
-        )
-        self.assertIsInstance(
-            orphans_results[prunerr.utils.normalize_url(self.download_client_urls[0])],
-            list,
-            "Download client free space results wrong orphan results type",
-        )
-        self.assertEqual(
-            len(
-                orphans_results[
-                    prunerr.utils.normalize_url(self.download_client_urls[0])
-                ]
-            ),
-            1,
-            "Free space orphan results wrong number of items",
         )
 
     def test_free_remaining_downloads(self):
@@ -329,10 +256,10 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             prunerr.downloadclient.logger,
             level=logging.DEBUG,
         ) as logged_msgs:
-            prunerr.free_space(self.runner)
+            prunerr.apply_(self.runner, stages=["free-space"])
         self.assert_request_mocks(remaining_downloads_request_mocks)
         self.assertIn(
             "greater than the available free",
-            logged_msgs.records[-2].message,
+            logged_msgs.records[-1].message,
             "Wrong logged record message",
         )

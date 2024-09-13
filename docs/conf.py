@@ -41,6 +41,9 @@ linkcheck_anchors_ignore = [
     "^!",
     # Tolerate links to source code lines in VCS provider web UIs:
     "^L[0-9]+",
+    # Rendered Markdown on GitHub includes anchors in the HTML but Sphinx still reports
+    # missing anchors:
+    "^user-content-"
 ]
 linkcheck_ignore = [
     "https://liberapay.com/.*",

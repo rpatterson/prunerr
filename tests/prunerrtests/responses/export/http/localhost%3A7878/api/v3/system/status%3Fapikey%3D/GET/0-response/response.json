@@ -1,6 +1,6 @@
 {
-  "appName": "Sonarr",
-  "instanceName": "Sonarr",
+  "appName": "Radarr",
+  "instanceName": "Radarr",
   "version": "3.0.9.1549",
   "buildTime": "2022-08-06T15:55:48Z",
   "isDebug": false,

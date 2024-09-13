@@ -284,3 +284,20 @@ class PrunerrComponent:
         for attr_name in list(vars(self).keys()):
             if isinstance(getattr(type(self), attr_name, None), cached_property):
                 delattr(self, attr_name)
+
+
+class PrunerrOperationsItem(PrunerrComponent):
+    """
+    An item to which life-cycle stage operations are applied.
+    """
+
+    @cached_property
+    def log_path(self) -> pathlib.Path:
+        """
+        Assemble the path for the log file dedicated to this individual item.
+
+        :raises NotImplementederror: A subclass doesn't override something.
+        """
+        raise NotImplementedError(
+            "Subclasses must override ``log_path``"
+        )  # pragma: no cover

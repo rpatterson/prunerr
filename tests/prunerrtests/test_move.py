@@ -15,6 +15,7 @@ from unittest import mock
 import prunerrtests
 
 import prunerr
+from prunerr import operations
 
 
 @mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
@@ -58,7 +59,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         #    isn't visible in the Servarr API yet.  Running the `move` sub-command
         #    results in no changes.
         ungrabbed_request_mocks = self.mock_responses()
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(ungrabbed_request_mocks)
         self.assertTrue(
             self.incomplete_item.is_dir(),
@@ -88,7 +89,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         grabbed_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-grabbed",
         )
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(grabbed_request_mocks)
         self.assertTrue(
             self.incomplete_item.is_dir(),
@@ -154,7 +155,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         )
         # Proceed with the `move` sub-command
         completed_request_mocks = self.mock_responses(completed_responses_dir)
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(completed_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -185,7 +186,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         completed_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-completed",
         )
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(completed_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -227,7 +228,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
                 },
             },
         )
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(import_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -258,7 +259,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         imported_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-imported",
         )
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(imported_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -287,7 +288,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         deleted_request_mocks = self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-deleted",
         )
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(deleted_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -334,7 +335,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
                 },
             },
         )
-        prunerr.move(self.runner)
+        prunerr.apply_(self.runner, stages=["seeding"])
         self.assert_request_mocks(imported_before_request_mocks)
         self.assertFalse(
             self.incomplete_item.exists(),
@@ -358,16 +359,16 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
             "Download item file wrong number of links after import",
         )
 
-    def test_move_exec(self):
+    def test_move_apply(self):
         """
-        Prunerr moves imported items as a part of the `exec` sub-command.
+        Prunerr moves imported items as a part of the `apply` sub-command.
         """
         self.mock_download_client_complete_item()
         self.mock_servarr_import_item()
         runner = prunerr.runner.PrunerrRunner(
             pathlib.Path(__file__).parent
             / "home"
-            / "move-exec"
+            / "move-apply"
             / ".config"
             / "prunerr.yml",
         )
@@ -385,35 +386,25 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
             },
         )
         runner.update()
-        exec_results = runner.exec_()
+        apply_results = runner.apply_(stages=[operations.STAGE_SEEDING])
+        self.assertIn(
+            "seeding",
+            apply_results,
+            "Stage results missing from `apply` sub-command results",
+        )
+        download_client_url = prunerr.utils.normalize_url(self.download_client_urls[0])
+        self.assertIn(
+            download_client_url,
+            apply_results["seeding"],
+            "Download client move results missing from `apply` sub-command results",
+        )
         self.assertIn(
             "move",
-            exec_results,
-            "Move results missing from `exec` sub-command results",
-        )
-        self.assertIn(
-            self.servarr_urls[0],
-            exec_results["move"],
-            "Servarr move results missing from `exec` sub-command results",
-        )
-        self.assertIn(
-            prunerr.utils.normalize_url(self.download_client_urls[0]),
-            exec_results["move"][self.servarr_urls[0]],
-            "Download client move results missing from `exec` sub-command results",
-        )
-        self.assertIsInstance(
-            exec_results["move"][self.servarr_urls[0]][
-                prunerr.utils.normalize_url(self.download_client_urls[0])
-            ],
-            list,
-            "Download client move results wrong type from `exec` sub-command results",
+            apply_results["seeding"][download_client_url],
+            "Move results missing from `apply` sub-command results",
         )
         self.assertEqual(
-            len(
-                exec_results["move"][self.servarr_urls[0]][
-                    prunerr.utils.normalize_url(self.download_client_urls[0])
-                ]
-            ),
+            len(apply_results["seeding"][download_client_url]["move"]),
             1,
             "Download client move results wrong number of items",
         )
@@ -447,4 +438,12 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
             prunerr.downloadclient.DownloadClientTimeout,
             msg="Long download item move did not time out",
         ):
-            list(servarr.download_clients.values())[0].move(move_timeout=0)
+            list(servarr.download_clients.values())[0].download_client.items[
+                0
+            ].apply_move(
+                operations.PrunerrOperation(
+                    None,
+                    runner.config["stages"]["seeding"]["move"],
+                ),
+                move_timeout=0,
+            )

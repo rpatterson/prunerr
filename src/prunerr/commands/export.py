@@ -126,7 +126,7 @@ class ExportServarrRootItem:
         :param data: The dictionary from the Servarr API JSON for the top-level
             library item, for example series or movie.
         """
-        # Assemble the series/movie that is different for `export` from `review`:
+        # Assemble the series/movie data that is different for `export` from `apply`:
         self.root_item.data = data
 
         # Now group the imported files under the download item IDs/hashes the come from

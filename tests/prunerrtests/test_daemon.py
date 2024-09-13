@@ -44,7 +44,7 @@ def mock_network_retry_response(  # pylint: disable=missing-param-doc,missing-ra
     response_mock: typing.Optional[dict] = None,
 ):
     """
-    Raise an exception while running `exec` that `daemon` catches.
+    Raise an exception while running `apply` that `daemon` catches.
     """
     raise ConnectionError("Temporary network connection error")
 

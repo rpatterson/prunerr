@@ -90,82 +90,36 @@ subparsers = parser.add_subparsers(
 )
 
 
-def verify(  # pylint: disable=missing-function-docstring,missing-return-doc
+def apply_(  # pylint: disable=missing-function-docstring,missing-return-doc
     runner,
     *args,
     **kwargs,
 ) -> dict:
     runner.update()
-    verify_results = runner.verify(*args, **kwargs)
-    # Wait for all verifying torrents to finish when doing a single `verify` run.
-    runner.resume_verified_items(wait=True)
-    return verify_results
+    return runner.apply_(*args, **kwargs)
 
 
-verify.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.verify.__doc__)
-parser_verify = subparsers.add_parser(
-    "verify",
-    help=str(verify.__doc__.strip()),
-    description=str(verify.__doc__.strip()),
+apply_.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.apply_.__doc__)
+parser_apply = subparsers.add_parser(
+    "apply",
+    help=str(apply_.__doc__).strip(),
+    description=str(apply_.__doc__).strip(),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
-parser_verify.set_defaults(command=verify)
-
-
-def move(  # pylint: disable=missing-function-docstring,missing-return-doc
-    runner,
-    *args,
-    **kwargs,
-) -> dict:
-    runner.update()
-    return runner.move(*args, **kwargs)
-
-
-move.__doc__ = prunerr.runner.PrunerrRunner.move.__doc__
-parser_move = subparsers.add_parser(
-    "move",
-    help=str(move.__doc__).strip(),
-    description=str(move.__doc__).strip(),
-)
-parser_move.set_defaults(command=move)
-
-
-def review(  # pylint: disable=missing-function-docstring,missing-return-doc
-    runner,
-    *args,
-    **kwargs,
-) -> dict:
-    runner.update()
-    return runner.review(*args, **kwargs)
-
-
-review.__doc__ = prunerr.runner.PrunerrRunner.review.__doc__
-parser_review = subparsers.add_parser(
-    "review",
-    help=str(review.__doc__).strip(),
-    description=str(review.__doc__).strip(),
+parser_apply.add_argument(
+    "--stage",
+    "-s",
+    dest="stages",
+    choices=prunerr.operations.STAGES,
+    nargs="*",
+    default=prunerr.operations.STAGES_DEFAULT,
+    help="""\
+The download item life-cycle stages to apply.
+""",
 )
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
-parser_review.set_defaults(command=review)
-
-
-def free_space(  # pylint: disable=missing-function-docstring,missing-return-doc
-    runner,
-    *args,
-    **kwargs,
-) -> dict:
-    runner.update()
-    return runner.free_space(*args, **kwargs)
-
-
-free_space.__doc__ = prunerr.runner.PrunerrRunner.free_space.__doc__
-parser_free_space = subparsers.add_parser(
-    "free-space",
-    help=str(free_space.__doc__).strip(),
-    description=str(free_space.__doc__).strip(),
-)
-parser_free_space.set_defaults(command=free_space)
+parser_apply.set_defaults(command=apply_)
 
 
 def export(  # pylint: disable=missing-function-docstring,missing-return-doc
@@ -177,11 +131,12 @@ def export(  # pylint: disable=missing-function-docstring,missing-return-doc
     return runner.export(*args, **kwargs)
 
 
-export.__doc__ = prunerr.runner.PrunerrRunner.export.__doc__
+export.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.export.__doc__)
 parser_export = subparsers.add_parser(
     "export",
     help=str(export.__doc__).strip(),
     description=str(export.__doc__).strip(),
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser_export.set_defaults(command=export)
 
@@ -195,41 +150,14 @@ def re_add(  # pylint: disable=missing-function-docstring,missing-return-doc
     return runner.re_add(*args, **kwargs)
 
 
-re_add.__doc__ = prunerr.runner.PrunerrRunner.re_add.__doc__
+re_add.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.re_add.__doc__)
 parser_re_add = subparsers.add_parser(
     "re-add",
     help=str(re_add.__doc__).strip(),
     description=str(re_add.__doc__).strip(),
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser_re_add.set_defaults(command=re_add)
-
-
-def exec_(  # pylint: disable=missing-function-docstring,missing-return-doc
-    runner,
-    *args,
-    **kwargs,
-) -> typing.Optional[dict]:
-    runner.update()
-    results = {}
-    if (exec_results := runner.exec_(*args, **kwargs)) is not None:
-        results.update(exec_results)
-
-    # Wait for all verifying torrents to finish when doing a single `exec` run.
-    if resume_results := runner.resume_verified_items(wait=True):
-        results["verify"] = resume_results
-
-    if results:
-        return results
-    return None  # pragma: no cover
-
-
-exec_.__doc__ = prunerr.runner.PrunerrRunner.exec_.__doc__
-parser_exec = subparsers.add_parser(
-    "exec",
-    help=str(exec_.__doc__).strip(),
-    description=str(exec_.__doc__).strip(),
-)
-parser_exec.set_defaults(command=exec_)
 
 
 def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
@@ -238,11 +166,12 @@ def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstri
     runner.daemon(*args, **kwargs)
 
 
-daemon.__doc__ = prunerr.runner.PrunerrRunner.daemon.__doc__
+daemon.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.daemon.__doc__)
 parser_daemon = subparsers.add_parser(
     "daemon",
     help=str(daemon.__doc__).strip(),
     description=str(daemon.__doc__).strip(),
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 parser_daemon.set_defaults(command=daemon)
 # Register shell tab completion

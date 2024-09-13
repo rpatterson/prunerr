@@ -1,0 +1,37 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+servarrs:
+  Sonarr:
+    url: "http://localhost:8989"
+    api-key: ""
+    type: "sonarr"
+  Radarr:
+    url: "http://localhost:7878"
+    api-key: ""
+    type: "radarr"
+download-clients:
+  Transmission:
+    url: "http://transmission:secret@localhost:9091/transmission/"
+indexers:
+  ExamplePrivateTracker:
+    hostnames:
+      - "tracker.private.example.com"
+stages:
+  queued:
+    archives:
+    stalled:
+      include: |
+        {%- set seconds_downloading = item.seconds_downloading -%}
+        {%- set age = item.age -%}
+        {%- set rate_total = item.rate_total -%}
+        {{-
+            item.status == "downloading"
+            and seconds_downloading > 604800
+            and age > 604800
+            and rate_total < 50
+        -}}
+      remove: true
+    bandwidth-private:
+    bandwidth-public:

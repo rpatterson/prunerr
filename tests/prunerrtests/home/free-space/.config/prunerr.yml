@@ -41,45 +41,49 @@ indexers:
       groups:
         - "private"
 
-operations:
+stages:
   free-space:
-    include: |
-      {%- set wanted_files = item.files|selectattr("selected")|list -%}
-      {%- set wanted_sum = wanted_files|sum("size") -%}
-      {%- set imported_portion = 0 -%}
-      {%- if wanted_sum -%}
-          {%-
-              set imported_portion = (
-                  wanted_files|selectattr("is_imported")|sum("size")
-                  / wanted_sum
-              )
-          -%}
-      {%- endif -%}
-      {%- set seeding_time_margin = 24 * 60 * 60 -%}
-      {%- set seconds_since_done = item.seconds_since_done -%}
-      {{
-          imported_portion < 0.80
-          and (
-              item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
-              or seconds_since_done
-              >= item.indexer_config["seeding-time"]|default(0)
-          )
-      }}
-    sort: |
-      {%- set wanted_files = item.files|selectattr("selected")|list -%}
-      {%- set wanted_sum = wanted_files|sum("size") -%}
-      {%- set imported_portion = 0 -%}
-      {%- if wanted_sum -%}
-          {%-
-              set imported_portion = (
-                  wanted_files|selectattr("is_imported")|sum("size")
-                  / wanted_sum
-              )
-          -%}
-      {%- endif -%}
-      {{- (
-          item.bandwidthPriority,
-          item.indexer_config is true,
-          -item.indexer_config["priority"]|default(45),
-          imported_portion,
-      ) -}}
+    prune:
+      include: |
+        {%- set wanted_files = item.files|selectattr("selected")|list -%}
+        {%- set wanted_sum = wanted_files|sum("size") -%}
+        {%- set imported_portion = 0 -%}
+        {%- if wanted_sum -%}
+            {%-
+                set imported_portion = (
+                    wanted_files|selectattr("is_imported")|sum("size")
+                    / wanted_sum
+                )
+            -%}
+        {%- endif -%}
+        {%- set seeding_time_margin = 24 * 60 * 60 -%}
+        {%- set seconds_since_done = item.seconds_since_done -%}
+        {{
+            imported_portion < 0.80
+            and (
+                item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
+                or seconds_since_done
+                >= item.indexer_config["seeding-time"]|default(0)
+            )
+        }}
+      sort: |
+        {%- set wanted_files = item.files|selectattr("selected")|list -%}
+        {%- set wanted_sum = wanted_files|sum("size") -%}
+        {%- set imported_portion = 0 -%}
+        {%- if wanted_sum -%}
+            {%-
+                set imported_portion = (
+                    wanted_files|selectattr("is_imported")|sum("size")
+                    / wanted_sum
+                )
+            -%}
+        {%- endif -%}
+        {{- (
+            item.bandwidthPriority,
+            item.indexer_config is true,
+            -item.indexer_config["priority"]|default(45),
+            imported_portion,
+        ) -}}
+      remove: true
+      break: |
+        {{ item.download_client.free_space_check() }}

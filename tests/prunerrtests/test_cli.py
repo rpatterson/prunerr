@@ -120,7 +120,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "exec"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "apply"]),
             "Wrong console script sub-command return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -132,7 +132,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         request_mocks = self.mock_responses()
         self.assertIsNone(
             prunerr.main(
-                args=["--log-level", "DEBUG", f"--config={self.CONFIG}", "exec"],
+                args=["--log-level", "DEBUG", f"--config={self.CONFIG}", "apply"],
             ),
             "Wrong console script options return value",
         )
@@ -145,7 +145,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         stderr = self.get_cli_error_messages(
             args=[
                 f"--config={self.CONFIG}",
-                "exec",
+                "apply",
                 "--non-existent-option",
             ]
         )
@@ -160,7 +160,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         The package supports running by using Python's `-m` command-line option.
         """
         module_main_process = subprocess.run(  # nosec B603
-            [sys.executable, "-m", "prunerr", "exec", "--help"],
+            [sys.executable, "-m", "prunerr", "apply", "--help"],
             check=False,
         )
         self.assertEqual(
@@ -199,7 +199,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
             raise ValueError(f"Couldn't find script prefix path: {sys.argv[0]}")
 
         script_process = subprocess.run(  # nosec B603
-            [prefix_path / "bin" / "prunerr", "exec", "--help"],
+            [prefix_path / "bin" / "prunerr", "apply", "--help"],
             check=False,
         )
         self.assertEqual(
@@ -215,7 +215,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         self.mock_responses()
         stdout_file = io.StringIO()
         with contextlib.redirect_stdout(stdout_file):
-            prunerr.main(args=[f"--config={self.CONFIG}", "verify"])
+            prunerr.main(args=[f"--config={self.CONFIG}", "apply", "--stage=all"])
         self.assertEqual(
             stdout_file.getvalue(),
             "",

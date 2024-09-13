@@ -13,6 +13,11 @@ Known bugs and wanted features.
 Required
 ****************************************************************************************
 
+#. :Orphans:
+
+   Once the ``log:`` action is implemented, add a note to the docs about how orphans are
+   already logged all at once and that using the ``log:`` action may be redundant.
+
 #. Revert Docker compose project to the latest Transmission image when `the upstream
    PUID regression
    <https://github.com/linuxserver/docker-transmission/issues/284#issue-2451398884>`_
@@ -22,14 +27,11 @@ Required
 
    Remove the ``transmission-rpc<4`` version, upgrade it, test and resolve issues.
 
-#. :Exec:
+#. :Apply:
 
-   Profile a real-world run of the ``exec`` sub-command, both when not deleting items
+   Profile a real-world run of the ``apply`` sub-command, both when not deleting items
    and when deleting items and see, among any other obvious optimizations, what of the
    example Jinja templates should be moved into cached properties.
-
-#. Use YAML anchors and merge keys to demonstrate how to share configuration between
-   indexers?
 
 #. Add torrent date handling to the ``export`` sub-command. Take the ``grabbed`` history
    record dates for the ``added-date`` and the ``downloadFolderImported`` record dates
@@ -55,14 +57,10 @@ High priority
    intervene before if possible. Also send notifications once we've decided on a way to
    do that.
 
-#. Move deleting unregistered items to a review.
-
-#. :review:
+#. :Apply:
 
    Find the grab history for unregistered items and make them as failed to start a
    search.
-
-#. Move deleting orphans to a separate sub-command.
 
 #. Deselect unimported files before deciding whether to delete?
 
@@ -71,22 +69,24 @@ High priority
    sending the ``remove_torrent()`` `request asynchronously
    <https://www.python-httpx.org/async/>`_.
 
-#. Document expected filesystem layout including Transmission global ``download-dir``,
-   the per-client directory in the Servarr download client settings, and the expected
-   parallel paths.
+#. :Apply:
 
-#. Add a review to exclude BluRay/DVD full disc rips.
+   Audit operation actions that call ``torrent.update()`` and see if it's possible to
+   avoid those RPC API calls.
+
+#. Add a ``queued:`` operation to blacklist BluRay/DVD full disc rips.
 
 #. Link the top-level docs for each sub-command into their runner API docs.
+
+#. Build example config into the built docs for stable line number links.
+
+#. Does Sphinx provide any way to render docs from the comments in the example config?
+   - `moderncmakedomain <https://github.com/scikit-build/moderncmakedomain>`_
+   - `yamldoc <https://chrisbcole.me/yamldoc/sphinx/>`_
 
 #. Investigate Transmission "Labels". They're not visible in the Transmission Remote GTK
    GUI but they are visible in the web UI. Should we replace the use of directories with
    labels?
-
-#. Well documented configuration snippets demonstrating all important use cases.
-
-#. Operations reference, perhaps done dynamically from the CLI help using operation
-   method docstrings.
 
 #. Any documentation improvements:
 
@@ -116,10 +116,6 @@ Nice to have
    Prunerr would make a change. Make the prompt a sub-class of ``pdb.Pdb`` for
    inspecting the context with additional commands for proceeding or skipping the given
    action.
-
-#. Maybe refactor everything to be centered around arbitrary phases and groups of
-   operations. Move what Prunerr does in the ``review`` and ``free-space`` sub-commands
-   and the order of operations in general into groups of operations.
 
 #. Also import `extras and such
    <https://jellyfin.org/docs/general/server/media/movies/#movie-extras>`_ that Servarr
@@ -202,3 +198,8 @@ Nice to have
             $ git grep -i -e 'alex disable hooks|hadolint ignore|pylint: disable|type: ignore|noqa|nosec' -- '*.py'
 
 #. :Lint: Re-enable the prose linters and address all failures.
+
+#. :Lint:
+
+   Add container type annotations, for example ``foo: dict[str, int]``, once Python 3.8
+   BBB support is dropped.

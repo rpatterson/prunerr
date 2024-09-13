@@ -76,7 +76,7 @@ class PrunerrRunnerTests(prunerrtests.PrunerrTestCase):
         default_request_mocks = self.mock_responses()
         runner.update()
         self.assertIsNone(
-            runner.exec_(),
-            "Wrong `exec` result from empty config file",
+            runner.apply_(),
+            "Wrong `apply` result from empty config file",
         )
         self.assert_request_mocks(default_request_mocks)

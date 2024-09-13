@@ -5,3 +5,5 @@
 download-clients:
   Transmission:
     url: "http://transmission:secret@localhost:9091/transmission/"
+stages:
+  queued: {}

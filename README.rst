@@ -80,23 +80,23 @@ Perma-seed Servarr media libraries
 TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
 
 - Delete torrents/items `only as disk space gets low
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L32-45>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L36-50>`_.
 - Don't delete `currently imported items
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L190-199>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L270-273>`_.
   IOW, only delete upgraded items.
 - Don't delete `private items that haven't met seeding requirements
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L162-189>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L275-290>`_.
 - Delete `public items first
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L154-156>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L318-320>`_.
 - Delete private items in `an order to maximize tracker ratio and/or bonuses
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L200-221>`_.
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L335-351>`_.
 - Delete `stalled items
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L63-89>`_
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L148-162>`_
   , and `items containing archives such as *.rar
   releases
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L90-109>`_
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L113-119>`_
   and `blacklist them
-  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L109>`_,
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L139-140>`_,
   AKA mark them as failed, in Servarr.
 - And more...
 
@@ -196,13 +196,13 @@ Usage
 Start by writing your ``~/.config/prunerr.yml`` `configuration file`_.
 
 Once configured, you may run individual sub-commands once, run all operations once as
-configured using the ``$ prunerr exec`` sub-command, or run all operations in a polling
-loop using the ``$ prunerr daemon`` sub-command. See the `Order of Operations`_ section
-for a detailed description of the operations. Use the CLI help to list the other
+configured using the ``$ prunerr apply`` sub-command, or run all operations in a polling
+loop using the ``$ prunerr daemon`` sub-command. See the `Download Item Life-cycle`_
+section for a detailed description of the stages. Use the CLI help to list the other
 sub-commands and to get help on the individual sub-commands::
 
   $ prunerr --help
-  $ prunerr exec --help
+  $ prunerr apply --help
 
 If using the Docker container image, the container can be run from the command-line as
 well::
@@ -214,91 +214,169 @@ well::
 Configuration File
 ****************************************************************************************
 
-See the comments in `the example configuration`_ for details and examples. Values are
-extracted from download items and their files for the ``template``, ``equals``,
-``minimum``, ``maximum`` keys using `Jinja templates`_. Note that `YAML types`_ in those
-keys other than strings, such as integers or floats, will not be rendered as templates.
-YAML strings without any template expressions in them will render to themselves, for
-example ``"template": "Some fixed string"`` renders to ``Some fixed string``.
+The default configuration file is ``~/.config/prunerr.yml``, or it can be specified as
+an option on the command line, for example::
+
+  $ prunerr --config="/srv/foo-compose-project/prunerr/config/prunerr.yml" ...
+
+See the comments in `the example configuration`_ for details and examples. What items to
+apply operations to and optionally how to sort the items to determine the order to apply
+actions are determined by rendering `Jinja templates`_.
+
+Users may sometimes want to apply different actions than those in the default
+configuration file, for example to review what Prunerr will delete in the ``free-space``
+stage or the orphaned files in the ``orphans`` stage without actually deleting them
+yet. Copy the configuration file, remove all actions and replace them with appropriate
+``log: "..."`` templates, and run Prunerr with that configuration file.
 
 
 ****************************************************************************************
-Order of Operations
+Download Item Life-cycle
 ****************************************************************************************
 
-Note that polling is required because there is no event we can subscribe to that
-reliably determines disk space margin *as* the download clients are downloading. Every
-run of the ``$ prunerr exec`` sub-command or every loop of the ``$ prunerr daemon``
-sub-command performs the following operations.
+Prunerr polls the download clients for all their items. It uses various internal means
+to identify which download items are at which point in the Servarr download item
+life-cycle or workflow:
 
-#. Verify and resume corrupt items, same as: ``$ prunerr verify``.
+The ``$ prunerr apply`` sub-command applies the operations configured for the
+life-cycle or workflow stage specified by the ``--stage=*`` option or applies all
+operations for the default stages without the ``--stage=*`` option. The ``$ prunerr
+daemon`` sub-command does the latter in a loop indefinitely. The default stages are the
+following except excluding the `Orphans Stage`_.
 
-#. Review download items, same as: ``$ prunerr review``:
+Queued Stage
+========================================================================================
 
-   Apply per-indexer review operations as configured under ``operations/reviews`` in the
-   configuration file to all download items.
+Items newly added to the download client. These items are identified as queued if `the
+download item's 'downloadDir'`_ is an ancestor of `the download client's
+'download-dir'`_.
 
-#. Move download items that have been acted on by Servarr to the ``*/seeding/*``
-   directory, same as: ``$ prunerr move``.
+.. note:
 
-   As Servarr acts on completed download items, be that importing files from them,
-   ignoring them, deleting them from the queue, etc., Prunerr moves those items from the
-   Servarr download client's ``Directory`` to a parallel ``*/seeding/*`` directory.
-   Then when deleting download items to free space, Prunerr only considers items under
-   that directory. This has the added benefit of reflecting which items have been acted
-   on by Servarr in the download client.
+   This means Prunerr depends on each Servarr instance using a directory under each
+   download client's ``download-dir`` in the corresponding Servarr download client
+   settings. This is the case when using the default for the ``Directory`` field under
+   the advanced settings, but if that setting is changed as in these examples, the path
+   must be a descendant of the download client's ``download-dir``.
 
-#. Delete download items if disk space is low, same as: ``$ prunerr free-space``.
+For example, if the download client's ``download-dir`` is ``/media/Library/downloads/``
+and Servarr sets the download item's ``downloadDir`` to
+``/media/Library/downloads/Sonarr/Videos/Series/`` when grabbing it, then Prunerr will
+consider it to be queued.
 
-   Consider items for deletion in different groups in this order:
+These operations will only be applied once per download item unless the Prunerr
+`configuration file`_ has changed. This is accomplished using a ``{{ item.downloadDir
+}}/{{ item.hashString }}-prunerr.log`` log file for each download item. To re-apply the
+``queued`` operations to all currently queued download items, modify the `configuration
+file`_ or just ``$ touch ~/.config/prunerr.yml``. To re-apply the ``queued`` operations
+to just one currently queued download item, delete or move aside that item's log file.
 
-   #. Download items no longer registered with tracker.
+For example, these operations can be used to:
 
-      IOW, items that can no longer be seeded at all first.
+- Adjust bandwidth priorities.
+- Remove and blacklist archives.
+- Remove and blacklist stalled releases.
+- etc.
 
-   #. Orphan files and directories not belonging to any download item
+Seeding Stage
+========================================================================================
 
-      Walk all the top-level directories used by each download client and identify which
-      paths don't correspond to a download client item.
+Items that Servarr has acted on and removed from its queue. Usually this happens when
+Servarr automatically imported files from the item, but it also happens if the user
+intervenes and removes the item from the Servarr queue. Usually, this includes only one
+operation, to move items to the parallel ``**/seeding/**`` directory. This path is
+assembled by replacing the last element of `the download client's 'download-dir'`_ path
+with ``seeding`` in `the download item's 'downloadDir'`_, for example
+``/media/Library/seeding/Sonarr/Videos/Series/``:
 
-      .. warning::
-         Stop Prunerr before moving any download items.
+.. note:
 
-         Prunerr uses the list of files for every download item to identify orphans. If
-         a user, or anything else other than Prunerr, moves or changes the location of a
-         download item while Prunerr is identifying orphans, Prunerr may identify the
-         *new* download item data path as an orphan and delete it out from under the
-         download item leading to data loss.
+   This means Prunerr depends on `the download client's 'download-dir'`_ not ending in
+   ``**/seeding/``.
 
-   #. Imported/seeding download items
+Free-space Stage
+========================================================================================
 
-      IOW, download items that have been acted upon by Servarr and moved to the
-      ``*/seeding/*`` directory by the ``$ prunerr move`` sub-command/operation
-      excluding those items filtered out according to the
-      ``operations/free-space/filter`` Jinja template. For example, don't delete
-      currently imported items (by hard link count) or items that haven't met private
-      indexer seeding requirements.
+Available disk space has dropped below the margin configured under ``{{
+config["download-clients"]["max-download-*"] }}``. Usually used to define which items
+are available for deleting and the order to delete them in. For example:
 
-   For each of these groups in order, loop through each item in the group and:
+- Don't delete currently imported items.
+- Don't delete private items that haven't met seeding requirements.
+- Delete public items first.
+- Delete private items in an order to maximize tracker ratio and/or bonuses.
+- etc.
 
-   #. Check disk space against the margin configured by
-      ``download-clients/*/max-download-bandwidth`` and
-      ``download-clients/*/min-download-time-margin``
+This stage is unique in that instead of applying the configured actions to all the
+``include:`` items, the ``free-space`` stage applies actions to the ``include:`` items
+in the ``sort:`` order **until** the available disk space has risen above the margin
+configured under ``{{ config["download-clients"]["max-download-*"] }}``.
 
-   #. If there's insufficient disk space, delete the item.
+For those times when there's nothing Prunerr can delete to free disk space, most users'
+download clients should probably also pause downloading when disk space drops
+significantly below this margin. Use `the provided Transmission pause download script`_
+and optionally `integrate it as a cron job`_ into your `Docker Compose project`_ or see
+those as examples.
 
-   For the orphans group, delete smaller items first to minimize the amount of
-   re-downloading needed should the user notice and correct any issues resulting in the
-   orphans.
+All Stage
+========================================================================================
 
-   For the other groups delete items in the order determined by the configured
-   ``operations/free-space/sort`` sort value template.
+Always run for all download items under the ``download-dir`` or it's parallel
+``**/seeding/`` directory in any stage of the Servarr life-cycle or workflow.
 
-   For those times when there's nothing Prunerr can delete to free disk space, most
-   users' download clients should also probably pause downloading when disk space drops
-   significantly below this margin. Use `the provided Transmission pause download
-   script`_ and, optionally, `integrate it into your Docker Compose project via a cron
-   job`_ or see those as examples.
+.. warning::
+
+   As such these operations can drastically affect Prunerr's run-time, so performance is
+   important. Be careful with the ``include`` template to be both efficient per-item and
+   to limit the operation to as few download items as possible.
+
+Usually only used to remove download items that are no longer registered with their
+indexer/tracker and to verify corrupt items, both of which can happen to any item at any
+time.
+
+.. note::
+
+   This stage excludes download items that have finished downloading and are complete
+   but are still in `the download client's 'download-dir'`_ to avoid clashes while
+   Servarr instances may be importing download item files.
+
+Orphans Stage
+========================================================================================
+
+Prunerr can also identify orphaned files, those not belonging to any download item, in
+`the download item's 'downloadDir'`_ and it's parallel parallel ``**/seeding/``
+directory. This requires walking all files in those directories and as such takes some
+time and shouldn't be run as a part of the ``$ prunerr daemon`` sub-command and as such
+is **not** one of the default stages for ``$ prunerr apply``.
+
+The orphans stage is also unique in that, by the nature of orphans, it deals with file
+paths instead of download items. Those paths are available in templates as ``{{ item
+}}``. As such, some actions cannot be used in operations under ``orphans``. The
+supported actions are:
+
+- ``remove: true``
+- ``log: "..."``
+
+When there are orphaned files, there can be a lot of orphaned files and dealing with
+them individually can be noisy without adding meaning. As such, this stage is also
+unique in that while the ``include:`` and ``sort:`` templates are still used to filter
+and order the file paths, the actions are applied to **all** orphaned files at once. Any
+templates in action configurations can access the orphaned files under the ``{{ paths
+}}`` name.
+
+Most users will probably want to use ``$ prunerr apply --stage="orphans"`` as a
+periodic maintenance task to report and/or automatically delete orphans, though less
+frequently than ``$ prunerr daemon`` would.
+
+.. warning::
+
+   Stop ``$ prunerr daemon`` while running ``$ prunerr apply --stage="orphans"``!
+
+   Prunerr uses the list of files for every download item to identify orphans. If a
+   user, Prunerr, or anything else, moves or changes the location of a download item
+   while Prunerr is identifying orphans, Prunerr may identify the *new* download item
+   data path as an orphan and delete it out from under the download item leading to data
+   loss.
 
 
 ****************************************************************************************
@@ -323,7 +401,8 @@ and branch. Install it's dependencies with the ``ntfy`` extra. for example ``$ p
 install --user prunerr[ntfy]``. Prunerr reproduces `ntfy's "extra" dependencies`_ for
 the specific back-ends, so see those extras and add them for the back-ends you use when
 installing Prunerr, for example ``$ pip3 install --user prunerr[ntfy,pid,matrix]``. `The
-Docker container`_ extras that are currently working for that image's Python version.
+Docker image`_ includes all extras that are currently working for that image's Python
+version.
 
 Then `configure ntfy`_. If using the Docker container, see `the ntfy comment in
 ./docker-compose.yml`_ for how to bind mount your user's configuration into the
@@ -382,16 +461,21 @@ References
 .. _`the example ./docker-compose.yml file`:
    https://gitlab.com/rpatterson/prunerr/-/blob/main/docker-compose.yml
 .. _the Docker image: https://hub.docker.com/r/merpatterson/prunerr
-.. _The Docker container: `Docker Container Image`_
 
 .. _`the example configuration`:
    https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
 .. _`Jinja templates`: https://jinja.palletsprojects.com/en/latest/templates/
-.. _`YAML types`: https://yaml.org/spec/1.2.2/#1021-tags
+
+.. _`the download item's 'downloadDir'`:
+   https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md#user-content-41-session-arguments
+.. _`the download client's 'download-dir'`:
+   https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md#user-content-33-torrent-accessor-torrent-get
+
 .. _`the provided Transmission pause download script`:
    https://gitlab.com/rpatterson/prunerr/blob/main/transmission/usr/local/bin/transmission-pause-download
-.. _`integrate it into your Docker Compose project via a cron job`:
+.. _`integrate it as a cron job`:
    https://gitlab.com/rpatterson/prunerr/blob/main/transmission/etc/crontabs/abc
+.. _`Docker Compose project`: `the example ./docker-compose.yml file`_
 
 .. _`ntfy`: https://ntfy.readthedocs.io/en/latest/
 .. _`ntfy's "extra" dependencies`: https://ntfy.readthedocs.io/en/latest/#extras

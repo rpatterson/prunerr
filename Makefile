@@ -17,7 +17,7 @@ NPM_SCOPE=rpattersonnet
 export DOCKER_USER=merpatterson
 GPG_SIGNING_KEYID=2EFF7CCE6828E359
 export DOWNLOAD_VOLUME=$(CHECKOUT_DIR)/var-docker/media/Library
-PRUNERR_CMD=exec
+PRUNERR_CMD=apply
 PRUNERR_ARGS=$(PRUNERR_CMD)
 
 # Option variables that control behavior:

@@ -9,7 +9,6 @@ import os
 import typing
 import time
 import urllib.parse
-import json
 import subprocess  # nosec, pragmatic choice for performance
 import logging
 
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class PrunerrDownloadItem(
-    utils.PrunerrComponent,
+    utils.PrunerrOperationsItem,
     transmission_rpc.Torrent,
 ):  # pylint: disable=too-many-public-methods
     """
@@ -40,12 +39,6 @@ class PrunerrDownloadItem(
     STATUS_SEEDING = "seeding"
     STATUS_SEEDING_INT = 6
     STATUS_CHECKING = "checking"
-    ERROR_TYPE_TRACKER_ERROR = 2
-    ERROR_TYPE_LOCAL = 3
-    ERROR_STR_CORRUPT = "corrput"
-    ERROR_STR_VERIFY = "verif"
-    OPERATION_CHANGE = "change"
-    OPERATION_REMOVE = "remove"
 
     def __init__(self, download_client, client, torrent):
         """
@@ -324,12 +317,15 @@ class PrunerrDownloadItem(
 
         :return: The Servarr release.
         """
-        servarr_download_client = self.download_client.servarrs.get(self.download_dir)
-        if servarr_download_client is not None:
-            return servarr_download_client.RELEASE_FACTORY(
-                servarr_download_client,
-                self,
-            )
+        for servarr_download_client in self.download_client.servarrs.values():
+            if self.download_dir in {
+                servarr_download_client.download_dir,
+                servarr_download_client.seeding_dir,
+            }:
+                return servarr_download_client.RELEASE_FACTORY(
+                    servarr_download_client,
+                    self,
+                )
         return None  # pragma: no cover
 
     @cached_property
@@ -351,77 +347,140 @@ class PrunerrDownloadItem(
                             return indexer_config["config"]
         return {}
 
-    def review(self, operations_type: str = "reviews", **context) -> dict:
-        """
-        Apply review operations to this download item.
+    # Methods involved in life-cycle stage operations:
 
-        :param operations_type: The key in the Prunerr configuration containing the
-            operations.
-        :param context: The names and values available when rendering templates.
-        :return: Map review names to the actions taken if any.
+    def apply_remove(  # noqa: V105
+        self, operation: operations.PrunerrOperation
+    ) -> dict:
         """
-        results = {}
-        for review_name, review_operation in (
-            self.download_client.runner.config["operations"]
-            .get(operations_type, {})
-            .items()
+        Remove this download item according to the operation configuration.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :return: A mapping describing the details of removal.
+        """
+        remove_result: dict = {operations.ACTION_REMOVE: str(self.path)}
+        logger.info(
+            "Removing download item per %r operation: %r",
+            operation.config["name"],
+            self,
+        )
+        if (
+            self.release is not None
+            and self.release.servarr_download_client.download_dir == self.download_dir
         ):
-            if not review_operation[operations.CONFIG_INCLUDE_KEY].render(
-                item=self,
-                **context,
-            ):
-                # Template evaluation excludes this item:
-                continue
-            result = {}
-
-            if review_operation.get(self.OPERATION_REMOVE, False):
-                result["remove"] = True
-                logger.info(
-                    "Removing download item per %r review: %r",
-                    review_name,
+            if self.release.queue is None:
+                logger.warning(
+                    "Download item missing from Servarr queue: %r",
                     self,
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hashString,
+                    },
                 )
-                if self.release is not None and self.release.queue is not None:
-                    delete_params = {}
-                    if review_operation.get("blacklist", False):
-                        delete_params["blacklist"] = "true"
-                        result["blacklist"] = True
-                    self.release.servarr_download_client.delete(
-                        self.release,
-                        **delete_params,
-                    )
-                else:
-                    logger.warning(
-                        "Download item not in any Servarr queue: %r",
-                        self,
-                        extra={
-                            "runner": self.download_client.runner,
-                            "download_hash": self.hashString,
-                        },
-                    )
-                self.download_client.delete_files(self)
-                # Avoid race conditions, perform no further operations on removed items
-                results[review_name] = result
-                break
-
-            if self.OPERATION_CHANGE in review_operation:
-                logger.info(
-                    "Changing download item per %r review for %r: %s",
-                    review_name,
-                    self,
-                    json.dumps(review_operation["change"]),
-                )
-                self.download_client.client.change_torrent(
-                    [self.hashString],
-                    **review_operation["change"],
-                )
-                result.update(review_operation["change"])
-                results[review_name] = result
-                self.update()
             else:
-                pass  # pragma: no cover
+                delete_params = {}
+                if operation.config.get(operations.ACTION_BLACKLIST, False):
+                    delete_params[operations.ACTION_BLACKLIST] = "true"
+                    remove_result[operations.ACTION_BLACKLIST] = True
+                self.release.servarr_download_client.delete(
+                    self.release,
+                    **delete_params,
+                )
+        self.download_client.delete_files(self)
+        operation.stage.items.remove(self)
+        return remove_result
 
-        return results
+    def apply_change(  # noqa: V105
+        self, operation: operations.PrunerrOperation
+    ) -> dict:
+        """
+        Change this download item's fields according to the operation configuration.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :return: A mapping describing the changes made.
+        """
+        change_result = {}
+        logger.info(
+            "Changing download item per %r operation for %r: %s",
+            operation.config["name"],
+            self,
+            repr(operation.config[operations.ACTION_CHANGE]),
+        )
+        self.download_client.client.change_torrent(
+            [self.hashString],
+            **operation.config[operations.ACTION_CHANGE],
+        )
+        change_result.update(operation.config[operations.ACTION_CHANGE])
+        self.update()
+        return change_result
+
+    def apply_move(  # noqa: V105
+        self,
+        operation: operations.PrunerrOperation,
+        move_timeout: int = 5 * 60,
+    ) -> dict:
+        """
+        Move this download item according to the operation configuration.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :param move_timeout: How long to wait for the release to be moved in the
+            download client before continuing.
+        :return: A mapping describing the changes made.
+        :raises DownloadClientTimeout: Moving the download item took too long.
+        """
+        new_download_dir = operation.config[operations.ACTION_MOVE].render(item=self)
+        move_result = {operations.ACTION_MOVE: str(new_download_dir)}
+        logger.info(
+            "Moving download item %r: %r -> %r",
+            self,
+            str(self.download_dir),
+            new_download_dir,
+        )
+        self.download_client.client.move_torrent_data(
+            ids=[self.hashString],
+            location=new_download_dir,
+        )
+        old_path = self.path
+        old_log_path = self.log_path
+        # Update the download item's dir for subsequent operations, done manually to
+        # minimize requests.
+        self._fields[self.FIELD_DOWNLOAD_DIR] = self._fields[
+            self.FIELD_DOWNLOAD_DIR
+        ]._replace(value=new_download_dir)
+        self.clear()
+        # Move any log files along with the item:
+        if old_log_path.exists():
+            old_log_path.rename(self.log_path)
+        # Wait for a timeout for items to finish moving before proceeding.
+        start = time.time()
+        while old_path.exists():  # pylint: disable=while-used
+            if time.time() - start > move_timeout:
+                raise self.download_client.TIMEOUT_EXCEPTION(
+                    f"Timed out waiting for {self!r} to finish moving",
+                )
+            time.sleep(1)
+        return move_result
+
+    def apply_verify(  # noqa: V105
+        self, operation: operations.PrunerrOperation
+    ) -> dict:
+        """
+        Verify corrupt data in this download item per the operation configuration.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :return: A mapping describing the verifys made.
+        """
+        verify_result = {
+            operations.ACTION_VERIFY: operation.config[operations.ACTION_VERIFY]
+        }
+        logger.info(
+            "Verifying corrupt download item: %r",
+            self,
+        )
+        self.download_client.client.verify_torrent([self.hashString])
+        return verify_result
+
+    # Other methods:
 
     def find_location(self, item_root_paths: list) -> pathlib.Path:
         """

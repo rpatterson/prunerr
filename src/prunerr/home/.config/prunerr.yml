@@ -15,11 +15,9 @@ servarrs:
   Sonarr:
     url: "http://localhost:8989"
     api-key: ""
-    type: "sonarr"
   Radarr:
     url: "http://localhost:7878"
     api-key: ""
-    type: "radarr"
 
 ## The download clients whose download items Prunerr manages. The user's configuration
 ## must include at least one download client under `download-clients:`:

@@ -6,11 +6,13 @@ Prunerr interaction with Servarr instances.
 """
 
 import collections
+import typing
 import dataclasses
 import logging
 
+import requests
 import arrapi
-import arrapi.apis.base
+import arrapi.raws.base
 
 from .. import utils
 from ..utils import cached_property
@@ -20,30 +22,43 @@ logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
-class PrunerrServarrAPIClient:
+class PrunerrServarrAPIClient(arrapi.raws.base.BaseRawAPI):
     """
-    Wrap the `arrapi` client private/internal bits we depend on.
+    Generic Servarr API client regardless of the Servarr application type.
     """
 
-    client: arrapi.apis.base.BaseAPI
+    system_status: dict
 
-    @property
-    def get(self) -> collections.abc.Callable:
-        """
-        Return the `arrapi` client private/internal `GET` method.
+    # Isolate the private instance attributes linter ignores in one location:
+    get = arrapi.raws.base.BaseRawAPI._get  # pylint: disable=protected-access
+    delete = arrapi.raws.base.BaseRawAPI._delete  # pylint: disable=protected-access
+    post = (  # noqa: V107
+        arrapi.raws.base.BaseRawAPI._post  # pylint: disable=protected-access
+    )
+    put = (  # noqa: V107
+        arrapi.raws.base.BaseRawAPI._put  # pylint: disable=protected-access
+    )
+    request = arrapi.raws.base.BaseRawAPI._request  # pylint: disable=protected-access
 
-        :return: The underlying ``arrapi.raws.base.BaseRawAPI._get()`` method.
+    def __init__(
+        self,
+        url: str,
+        apikey: str,
+        session: typing.Optional[requests.Session] = None,
+    ) -> None:
         """
-        return self.client._raw._get  # pylint: disable=protected-access
+        Implement the base class abstract method.
+        """
+        super().__init__(url, apikey, session=session)
 
-    @property
-    def delete(self) -> collections.abc.Callable:
+    def get_system_status(self) -> dict:
         """
-        Return the `arrapi` client private/internal `DELETE` method.
+        Capture the system status for identifying the Servarr application type.
 
-        :return: The underlying ``arrapi.raws.base.BaseRawAPI._delete()`` method.
+        :return: The deserialized Servarr API JSON.
         """
-        return self.client._raw._delete  # pylint: disable=protected-access
+        self.system_status = super().get_system_status()
+        return self.system_status
 
 
 class PrunerrServarrInstance(utils.PrunerrComponent):
@@ -119,18 +134,18 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         super().update()
         self.config = config
         self.config["url"] = utils.normalize_url(self.config["url"])
-        self.type_map = self.TYPE_MAPS[self.config["type"]]
 
         logger.debug(
             "Connecting to %s",
             self.config["name"],
         )
         self.client = PrunerrServarrAPIClient(
-            self.type_map["client"](
-                self.config["url"],
-                self.config["api-key"],
-            ),
+            self.config["url"],
+            self.config["api-key"],
         )
+        self.type_map = self.TYPE_MAPS[
+            self.client.system_status["appName"].strip().lower()
+        ]
 
         download_clients = {}
         download_client_names = {}

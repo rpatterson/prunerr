@@ -139,6 +139,13 @@ operations to the download items in each of those download clients. It can also 
 independently of any Servarr instances to optimize seeding for download items added by
 other means, e.g. `FlexGet`_.
 
+.. warning::
+
+   Keep regular backups of the ``/config/`` directory of your Transmission instances and
+   set up something to keep them from running out of space in ``/config/``. Be aware of
+   the risks of mis-configuring Prunerr detailed below. See `Caution`_ below for the
+   risks of using Prunerr and the precautions to take.
+
 See the `Usage`_ section below for full details.
 
 
@@ -378,6 +385,22 @@ frequently than ``$ prunerr daemon`` would.
    data path as an orphan and delete it out from under the download item leading to data
    loss.
 
+.. warning::
+
+   Ensure there's no corruption of your torrents in Transmssion before running ``$
+   prunerr apply --stage="orphans"``!
+
+   If torrents have lost track of their files, such as described in `Caution`_, if you
+   do anything that deletes files not belonging to any torrents, such as ``$ prunerr
+   apply --stage=orphans``, then you can permanently lose download progress for
+   incomplete torrents and the completed files of seeding torrents that aren't imported,
+   and thus hard linked, by Servarr, such as releases upgraded by other releases. Even
+   for seeding items currently imported by Servarr, it's much more work to restore than
+   just reconnecting torrents to their data before it was deleted as orphans. The
+   `Export Sub-command`_ sub-command can restore seeding torrents from much of imported
+   Servarr libraries, but it can't restore them all and still leaves much manual cleanup
+   to do.
+
 
 ****************************************************************************************
 Export sub-command
@@ -408,6 +431,41 @@ Then `configure ntfy`_. If using the Docker container, see `the ntfy comment in
 ./docker-compose.yml`_ for how to bind mount your user's configuration into the
 container by using a volume.
 
+
+****************************************************************************************
+Caution
+****************************************************************************************
+
+As of 2024-09-15 I'm the only Prunerr user I'm aware of. While mature and reliable for
+me, it's hard to call it stable without testing by other users. Please do try and use
+Prunerr and report your experiences, but understand the following risks, take the
+following precautions, test your configuration with caution, and use at your own risk.
+
+Most of the risks for data loss are because Transmission behaves poorly when the
+filesystem it stores the metadata for its torrents runs out of space. When that happens
+it can lose `the 'downloadDir' field value`_ and any other field values such as
+``bandwidthPriority`` for all torrents. When the user's Transmission usage involves
+storing torrent files in locations other than it's `global 'download-dir' field`_, which
+both Servarr and Prunerr require, this can cause all torrents to lose track of their
+files. This can be a lot of work to recover from.
+
+Make regular backups of your Transmission instances' ``/config/`` directories,
+particularly the ``/config/resume/`` directory. Keep backups far enough back to give you
+enough time to notice this has happened, free disk space and restore from backup.
+
+Set up something that prevents Transmission instances from running when their
+``/config/`` directory is out of space. Prunerr provides `a
+'transmission-config-space-shutdown' shell script`_ to do this and `commented example
+Docker volumes in ./docker-compose.yml`_ to run this script regularly.
+
+Finally, Prunerr can change torrent fields, move torrents, delete torrents. In Servarr,
+it can delete releases from the queue, and blacklist releases both in the queue and
+after importing. It will do so diligently as configured. Read `the example
+configuration`_ carefully, particularly the warning about ``{{ item.seconds_since_done
+}}`` under ``prune``. Be careful when customizing the configuration and test thoroughly
+before running ``$ prunerr daemon`` unattended.
+
+
 ****************************************************************************************
 Contributing
 ****************************************************************************************
@@ -429,9 +487,9 @@ threshold is a reverse indicator for items from private indexers vs items from p
 indexers. Items from private indexers with high ratios should be kept around as long as
 possible to build user total ratio whereas items from public indexers with low ratios
 should be kept around as long as possible to preserve access in the community/ecosystem.
-Finally, deleting any item still imported in the Servarr only because it hit the ratio
-threshold is the biggest waste since it doesn't free any space. So I wrote Prunerr to
-prune download items in the correct order.
+Finally, deleting any item still imported in a Servarr library only because it hit the
+ratio threshold is the biggest waste since it doesn't free any space. So I wrote Prunerr
+to prune download items in the correct order.
 
 The use case for Prunerr is not tracker ratio racing. It's goal is to seed as long as
 possible and to seed as much of your library as possible. This should have some
@@ -482,6 +540,13 @@ References
 .. _`configure ntfy`: https://ntfy.readthedocs.io/en/latest/#configuring-ntfy
 .. _`the ntfy comment in ./docker-compose.yml`:
    https://gitlab.com/rpatterson/prunerr/-/blob/main/docker-compose.yml#L101-103
+
+.. _`the 'downloadDir' field value`: `the download item's 'downloadDir'`_
+.. _`global 'download-dir' field`: `the download client's 'download-dir'`_
+.. _`a 'transmission-config-space-shutdown' shell script`:
+   https://gitlab.com/rpatterson/prunerr/blob/main/transmission/usr/local/bin/transmission-config-space-shutdown
+.. _`commented example Docker volumes in ./docker-compose.yml`:
+   https://gitlab.com/rpatterson/prunerr/-/blob/main/docker-compose.yml#L38-40
 
 .. _`GitLab hosts this project`:
    https://gitlab.com/rpatterson/prunerr

@@ -13,6 +13,11 @@ Known bugs and wanted features.
 Required
 ****************************************************************************************
 
+#. :Documentation:
+
+   Once the ``log:`` action is implemented, add a note under 'Caution' about using the
+   ``log:`` action to test Prunerr configuration.
+
 #. :Orphans:
 
    Once the ``log:`` action is implemented, add a note to the docs about how orphans are
@@ -40,9 +45,14 @@ Required
    <https://github.com/transmission/transmission/issues/4314#issuecomment-1336485761>`_
    if those dates are older than the current.
 
-#. :docs:
+#. :Documentation:
 
    Verify the `CI docs build <https://readthedocs.org/projects/prunerr/>`_.
+
+#. :Documentation:
+
+   Move as much as appropriate of ``./README.rst`` into separate ``./docs/*.rst`` files
+   after the CI docs build is working.
 
 
 ****************************************************************************************

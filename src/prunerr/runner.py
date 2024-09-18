@@ -45,7 +45,7 @@ class PrunerrRunner(utils.PrunerrComponent):
         Capture a reference to the global Prunerr configuration file.
         """
         with self.EXAMPLE_CONFIG.open() as config_opened:
-            self.example_confg = yaml.safe_load(config_opened)
+            self.example_config = yaml.safe_load(config_opened)
         self.config_file = pathlib.Path(config)
 
         # Initialize any local instance state
@@ -78,7 +78,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             config = yaml.safe_load(config_opened)
 
         # Avoid issues with empty keys having a `None` value in YAML:
-        for top_key in self.example_confg.keys():
+        for top_key in self.example_config.keys():
             if top_key in config and config[top_key] is None:
                 logger.debug(
                     "Top-level configuration key is empty: %s",
@@ -100,10 +100,10 @@ class PrunerrRunner(utils.PrunerrComponent):
             indexer_config.setdefault("config", {})["name"] = indexer_name
 
         # Pull defaults from the example configuration:
-        for top_key, top_config in self.example_confg.items():
+        for top_key, top_config in self.example_config.items():
             if top_key not in self.CONFIG_NO_DEFAULTS:
                 config.setdefault(top_key, top_config)
-        config["daemon"].setdefault("poll", self.example_confg["daemon"]["poll"])
+        config["daemon"].setdefault("poll", self.example_config["daemon"]["poll"])
 
         # Compile Jinja templates:
         config["operations"] = prunerr.operations.parse(config["operations"])

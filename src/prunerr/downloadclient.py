@@ -81,16 +81,16 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             )
 
         # Pull defaults from the example configuration:
-        example_confg = next(
-            iter(self.runner.example_confg["download-clients"].values()),
+        example_config = next(
+            iter(self.runner.example_config["download-clients"].values()),
         )
         self.config.setdefault(
             "max-download-bandwidth",
-            example_confg["max-download-bandwidth"],
+            example_config["max-download-bandwidth"],
         )
         self.config.setdefault(
             "min-download-time-margin",
-            example_confg["min-download-time-margin"],
+            example_config["min-download-time-margin"],
         )
 
         self.config.setdefault(

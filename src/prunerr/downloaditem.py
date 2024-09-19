@@ -49,9 +49,12 @@ class PrunerrDownloadItem(
             client,
             {field_name: field.value for field_name, field in torrent._fields.items()},
         )
-        self.files = [
-            PrunerrDownloadItemFile(self, rpc_file) for rpc_file in super().files()
-        ]
+        self.files = []
+        self.files_by_relative = {}
+        for rpc_file in super().files():
+            item_file = PrunerrDownloadItemFile(self, rpc_file)
+            self.files.append(item_file)
+            self.files_by_relative[item_file.relative] = item_file
 
     @property
     def details(self) -> dict:
@@ -69,18 +72,7 @@ class PrunerrDownloadItem(
             details["id"] = self._fields["id"].value
         details["indexer"] = self.indexer_config.get("name")
         details["size"] = self.disk_usage
-        imported_portion = round(
-            (
-                sum(
-                    item_file.size
-                    for item_file in self.files
-                    if item_file.selected and item_file.is_imported
-                )
-                / self._fields["sizeWhenDone"].value
-            )
-            * 100
-        )
-        details["imported"] = f"{imported_portion}%"
+        details["imported"] = f"{round(self.imported_portion) * 100}%"
         return details
 
     def update(self):
@@ -300,6 +292,26 @@ class PrunerrDownloadItem(
         )
 
     @cached_property
+    def imported_portion(self) -> float:
+        """
+        Calculate the portion of this item's size that is currently imported.
+
+        :return: The size in bytes or B.
+        """
+        return (
+            (
+                sum(
+                    item_file.size
+                    for item_file in self.files
+                    if item_file.selected and item_file.is_imported
+                )
+                / self._fields["sizeWhenDone"].value
+            )
+            if self._fields["sizeWhenDone"].value
+            else 0.0
+        )
+
+    @cached_property
     def log_path(self) -> pathlib.Path:
         """
         Assemble the path for the log file dedicated to this individual download item.
@@ -479,6 +491,34 @@ class PrunerrDownloadItem(
         )
         self.download_client.client.verify_torrent([self.hashString])
         return verify_result
+
+    def apply_log(self, operation: operations.PrunerrOperation) -> dict:  # noqa: V105
+        """
+        Log a message from a template per the operation configuration.
+
+        Usually, this is used to send a notification when `ntfy` is configured.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :return: A mapping describing the messages logged.
+        """
+        context = {"item": self}
+        log_result = {
+            "level": logging._nameToLevel[  # pylint: disable=protected-access
+                operation.config.get("level", "ERROR")
+            ],
+            "msg": operation.config[operations.ACTION_LOG].render(**context),
+            operations.ACTION_ARGS: (
+                operation.config[operations.ACTION_ARGS].render(**context)
+                if operations.ACTION_ARGS in operation.config
+                else context
+            ),
+        }
+        logger.log(
+            log_result["level"],
+            log_result["msg"],
+            log_result[operations.ACTION_ARGS],
+        )
+        return log_result
 
     # Other methods:
 
@@ -787,6 +827,23 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
         :return: Whether this file has more than one hard link.
         """
         return self.path.exists() and self.stat.st_nlink > 1
+
+    @cached_property
+    def queued_upgrades(self) -> dict:
+        """
+        Map the queued releases that will upgrade this file when imported.
+
+        Only available for download items in the ``upgraded`` stage.
+
+        :return: Map queued release download item hash IDs to the queued release item
+            files that will upgrade this file.
+        :raises NotImplementedError: There's a problem with the conditions that prevents
+            identifying queued upgrades.
+        """
+        raise NotImplementedError(
+            "Cannot identify queued upgrades outside the ``upgraded`` stage"
+            f": {self!r}",
+        )
 
 
 def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:

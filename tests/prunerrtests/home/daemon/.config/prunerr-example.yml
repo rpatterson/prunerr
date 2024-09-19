@@ -11,6 +11,7 @@ download-clients:
 indexers: {}
 stages:
   queued: {}
+  upgraded: {}
   seeding: {}
   free-space: {}
   all: {}

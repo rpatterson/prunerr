@@ -9,6 +9,7 @@ import os
 import functools
 import pathlib
 import datetime
+import shutil
 import logging
 
 from unittest import mock
@@ -351,3 +352,81 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
                 ):
                     runner.update()
                     runner.apply_(stages=["queued"])
+
+
+@mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+class PrunerrReviewUpgradedTests(prunerrtests.PrunerrTestCase):
+    """
+    Prunerr also applies operations to releases to be upgraded identified in history.
+    """
+
+    RESPONSES_DIR = (
+        prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "review-upgraded"
+    )
+
+    def test_review_upgraded_releases(self):
+        """
+        Prunerr also reviews imported releases that queued releases will upgrade.
+        """
+        # Start with a seeding download item with 2 imported files:
+        review_upgraded_request_mocks = self.mock_responses(
+            self.RESPONSES_DIR.parent / "review-upgraded",
+        )
+        self.runner.update()
+        releases = list(
+            list(self.runner.servarrs.values())[0].download_clients.values(),
+        )[0].releases
+        imported_release = releases[0]
+        self.imported_item_file.parent.mkdir(parents=True, exist_ok=True)
+        self.imported_item_file.hardlink_to(self.seeding_item_file)
+        second_seeding_item_file = imported_release.download_item.files[1].path
+        shutil.copy2(self.EXAMPLE_VIDEO, second_seeding_item_file)
+        second_imported_item_file = self.imported_item_file.with_name(
+            second_seeding_item_file.name,
+        )
+        second_imported_item_file.hardlink_to(second_seeding_item_file)
+        # And a queued release that will upgrade only one of the imported item's files:
+        downloading_release = releases[1]
+
+        # Verify initial conditions:
+        self.assertEqual(
+            imported_release.download_item.files[0].path.stat().st_nlink,
+            2,
+            "Imported release file wrong number of hard links",
+        )
+        self.assertEqual(
+            second_seeding_item_file.stat().st_nlink,
+            2,
+            "Second imported release file wrong number of hard links",
+        )
+        self.assertTrue(
+            imported_release.download_item.files[0].path.samefile(
+                self.imported_item_file,
+            ),
+            "Imported release file not same file as imported file",
+        )
+        self.assertEqual(
+            len(downloading_release.download_item.files),
+            1,
+            "Downloading release file wrong number of files",
+        )
+        self.assertEqual(
+            downloading_release.download_item.files[0].path.stat().st_nlink,
+            1,
+            "Downloading release file wrong number of hard links",
+        )
+
+        # Run the `review` sub-command:
+        with self.assertLogs(
+            prunerr.downloaditem.logger,
+            level=logging.ERROR,
+        ) as logged_msgs:
+            self.runner.apply_(stages=["upgraded"])
+        self.assert_request_mocks(review_upgraded_request_mocks)
+
+        # Verify that the review acted as expected:
+        self.assertIn(
+            "partially imported",
+            logged_msgs.records[0].message.lower(),
+            "Logged record message missing partially imported error",
+        )

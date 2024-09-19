@@ -190,6 +190,60 @@ stages: # (default)
       change:
         bandwidthPriority: -1
 
+  ## Apply operations to releases that will be upgraded by a currently downloading,
+  ## queued release. This can be used to, among other things, send a notification when
+  ## the upgraded release will be partially imported, for example when an individual
+  ## episode release upgrades one file in a season pack. The context for Jinja templates
+  ## and loge messages includes:
+  ##
+  ## - `{{ item }}`:
+  ##
+  ##   The download item that will be upgraded by the queued item.
+  ##
+  ## - `{{ item.release.upgraded_release.download_item }}`:
+  ##
+  ##   The download item but as it will be after it has been upgraded. For example, any
+  ##   download item file, `{% set item_file = item.files[#] }}`, that is currently
+  ##   imported might have `{{ item_file.is_imported is True }}`, but the simulated
+  ##   upgrade will have `{{
+  ##   item.release.upgraded_release.download_item.files[#].is_imported is False }}`.
+  ##
+  ## - `{{ item.release.queued_upgrades }}`:
+  ##
+  ##   Map the download item hash IDs to the
+  ##   Servarr releases that will upgrade that download item file.
+  ##
+  upgraded:
+    partially-imported:
+      ## Match if the upgraded release isn't either fully imported or not imported at
+      ## all, meaning if it's partially imported:
+      include: |
+        {%-
+            set upgraded_imported_portion =
+            item.release.upgraded_release.download_item.imported_portion
+        -%}
+        {{-
+            upgraded_imported_portion > 0.0
+            and upgraded_imported_portion < item.imported_portion
+        -}}
+      ## The log message here is first rendered as a Jinja template and then [`%`
+      ## formatted by the Python logging
+      ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
+      args: |
+        {{-
+            {
+                "release": item.release,
+                "queued_upgrades": item.release.queued_upgrades.values()|list,
+            }
+        -}}
+      log: |
+        Partially imported: %(queued_upgrades)r -> %(release)r
+      ## Defaults to `ERROR` which also sends a notification if `ntfy` is configured:
+      # level: "WARNING"
+      ## Demonstrate how to match on the same quality:
+      # include: |
+      #   {{ queued_item.release.quality == item.release.quality }}
+
   ## Apply operations once Servarr has acted on a queued download item, usually by
   ## importing files from it:
   seeding: # (default)
@@ -240,24 +294,14 @@ stages: # (default)
       ## item.release.servarr_download_client.seeding_dir }}` where it moves items after
       ## they're imported by Servarr, for example `/media/Library/seeding/**/`:
       include: |
-        {%- set wanted_files = item.files|selectattr("selected")|list -%}
-        {%- set wanted_sum = wanted_files|sum("size") -%}
-        {%- set imported_portion = 0 -%}
-        {%- if wanted_sum -%}
-            {%-
-                set imported_portion = (
-                    wanted_files|selectattr("is_imported")|sum("size")
-                    / wanted_sum
-                )
-            -%}
-        {%- endif -%}
         {%- set seeding_time_margin = 24 * 60 * 60 -%}
         {{-
-            imported_portion < 0.80
+            item.imported_portion < 0.80
             and (
                 item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
                 or item.seconds_since_done
-                >= item.indexer_config["seeding-time"]|default(0)
+                >= (item.indexer_config["seeding-time"] + seeding_time_margin)
+                |default(0)
             )
         -}}
 
@@ -282,22 +326,11 @@ stages: # (default)
       ##
       ## - Maximize disk space usage by deleting items that are least imported first.
       sort: |
-        {%- set wanted_files = item.files|selectattr("selected")|list -%}
-        {%- set wanted_sum = wanted_files|sum("size") -%}
-        {%- set imported_portion = 0 -%}
-        {%- if wanted_sum -%}
-            {%-
-                set imported_portion = (
-                    wanted_files|selectattr("is_imported")|sum("size")
-                    / wanted_sum
-                )
-            -%}
-        {%- endif -%}
         {{- (
             item.bandwidthPriority,
             item.indexer_config is true,
             -item.indexer_config["priority"]|default(45),
-            imported_portion,
+            item.imported_portion,
         ) -}}
       ## This example further demonstrates the possibilities but note that any sort tuple
       ## item past one with continuous, quantitative values is unlikely to have any

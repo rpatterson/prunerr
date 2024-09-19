@@ -192,10 +192,11 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         # Only store collated history for the most recent import that's in the library:
         if imported_relative in self.imported_items:  # pragma: no cover
             self.imported_relatives.setdefault(imported_relative, imported_collated)
-            self.dropped_relatives.setdefault(
-                dropped_relative,
-                history_record.get("downloadId"),
-            )
+            if history_record.get("downloadId"):
+                self.dropped_relatives.setdefault(
+                    dropped_relative,
+                    history_record["downloadId"],
+                )
 
     def update_grab_record(
         self,

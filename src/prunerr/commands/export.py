@@ -158,19 +158,19 @@ class ExportServarrRootItem:
         """
         # Add download items to the client now that we've done everything we can to
         # identify any download items that aren't already in the client:
+        added_items = {}
         for download_id in self.imported_download_ids:
             # Next, ensure all download hashes are in the download client, re-adding the
             # items if necessary:
-            need_verify = (
-                maybe_add_download_item(
-                    self.command_run.download_ids,
-                    download_id,
-                    self.root_item.history.download_ids.get(download_id, {}).get(
-                        "downloadUrl", {}
-                    ),
-                )
-                is not None
+            added_item = maybe_add_download_item(
+                self.command_run.download_ids,
+                download_id,
+                self.root_item.history.download_ids.get(download_id, {}).get(
+                    "downloadUrl", {}
+                ),
             )
+            if added_item is not None:
+                added_items[added_item.hashString] = added_item
 
         # As a last resort, map any imported paths without download item IDs by the
         # pre-existing download item names and root basenames in the client:
@@ -213,7 +213,7 @@ class ExportServarrRootItem:
                         item_root_paths,
                         pathlib.Path(self.root_item.data["path"]),
                         imported_relatives,
-                        need_verify=need_verify,
+                        need_verify=download_id.lower() in added_items,
                     ),
                 )
         return linked_files

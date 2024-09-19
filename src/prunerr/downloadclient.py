@@ -233,6 +233,30 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             ):
                 yield item
 
+    def filter_upgraded(self) -> collections.abc.Generator:  # noqa: V105
+        """
+        Filter queued items that will upgrade currently imported releases.
+
+        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
+        """
+        upgraded_releases: dict = {}
+        # TODO: This repeats the conditions evaluated for the ``queued`` stage. If that
+        # ever adds significant overhead, it may be worth adding a special case to pass
+        # the items from one stage to another:
+        for item in self.filter_queued():
+            if item.release is None:
+                logger.debug(
+                    "No ``upgraded`` stage items for items not in Servarr queue: %r",
+                    item,
+                )
+                continue
+            for imported_release in item.release.filter_upgraded():
+                upgraded_releases.setdefault(
+                    imported_release.hashString,
+                    imported_release,
+                )
+        yield from upgraded_releases.values()
+
     def filter_seeding(self) -> collections.abc.Generator:
         """
         Filter items that have been acted on by Servarr.

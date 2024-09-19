@@ -1,0 +1,36 @@
+[
+  {
+    "seriesId": 1,
+    "tvdbId": 0,
+    "episodeFileId": 1,
+    "seasonNumber": 1,
+    "episodeNumber": 1,
+    "title": "Corge Episode Title",
+    "airDate": "2020-06-05",
+    "airDateUtc": "1970-03-31T00:00:00Z",
+    "runtime": 22,
+    "overview": "This is the Corge Episode Title overview.",
+    "hasFile": true,
+    "monitored": true,
+    "absoluteEpisodeNumber": 1,
+    "unverifiedSceneNumbering": false,
+    "id": 1
+  },
+  {
+    "seriesId": 1,
+    "tvdbId": 0,
+    "episodeFileId": 2,
+    "seasonNumber": 1,
+    "episodeNumber": 2,
+    "title": "Grault Episode Title",
+    "airDate": "2020-06-05",
+    "airDateUtc": "1970-03-31T00:00:00Z",
+    "runtime": 22,
+    "overview": "This is the Grault Episode Title overview.",
+    "hasFile": true,
+    "monitored": true,
+    "absoluteEpisodeNumber": 2,
+    "unverifiedSceneNumbering": false,
+    "id": 2
+  }
+]

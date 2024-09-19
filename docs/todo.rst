@@ -63,9 +63,10 @@ High priority
 
 #. :notify: Move ``ntfy`` logging handler into a PR or a separate package.
 
-#. Report which seeding items will be deleted when space runs low so the user can
-   intervene before if possible. Also send notifications once we've decided on a way to
-   do that.
+#. :review:
+
+   Identify download items that will only be partially imported, for example
+   multi-season packs. Send a notification and move to ``**/importing/*``.
 
 #. :Apply:
 
@@ -86,7 +87,20 @@ High priority
 
 #. Add a ``queued:`` operation to blacklist BluRay/DVD full disc rips.
 
+#. :review:
+
+   Follow rename history for mapping imported files to their source releases. Also
+   relevant for ``export``.
+
 #. Link the top-level docs for each sub-command into their runner API docs.
+
+#. Link the top-level operations documentation to the ``prunerr.downloaditem`` API docs
+   for the download item and download item file properties. This may require refactoring
+   into base classes and/or separate modules to make the result more approachable. Add
+   explanations to the item and file class docstrings including links to the
+   Transmission RPC documentation for what fields are available in the item class and to
+   the Python ``transmission_rpc.lib_types.File`` documentation for what attributes are
+   available.
 
 #. Build example config into the built docs for stable line number links.
 

@@ -285,6 +285,33 @@ For example, these operations can be used to:
 - Remove and blacklist stalled releases.
 - etc.
 
+Upgraded Stage
+========================================================================================
+
+Items that will be upgraded by newly added items from the `Queued Stage`_. In other
+words, a queued item, when imported, may replace one or more of the files imported
+from the one or more other items. Those other items are the "upgraded items" in this
+stage.
+
+The most common use cases for this stage are a sort of semi-automated supplemental
+review of what Servarr queues for import. There are rare but significant cases where
+Servarr's logic may result in undesirable but automatic action, for example importing a
+single episode ``REPACK`` for another release over just one episode from a multiple
+episode season pack. This leaves the season pack partially imported and Prunerr may
+delete it even though most of it could still be seeding. The user may prefer the season
+pack over the single episode ``REPACK`` and want the chance to reverse this action by
+Servarr before Prunerr deletes the season pack.
+
+In this gray area beyond what Servarr can automate, asking the user to review every
+newly queued download can be too noisy and users may miss the cases the *do* want to
+catch. The same is true for asking the user to review every upgraded release prunerr
+will delete when storage space is low. In other words, either of those options removes
+the largely unattended automation which is the primary use case of Servarr and
+Prunerr. This stage provides the user a way to identify those newly queued releases they
+might want to intervene with based on arbitrary criteria from both the queued release
+and the release it will upgrade. Usually, this will be used with the ``log:`` action to
+send a notification.
+
 Seeding Stage
 ========================================================================================
 

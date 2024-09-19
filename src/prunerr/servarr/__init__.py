@@ -7,6 +7,7 @@ Prunerr interaction with Servarr instances.
 
 import collections
 import typing
+import functools
 import dataclasses
 import logging
 
@@ -17,6 +18,7 @@ import arrapi.raws.base
 from .. import utils
 from ..utils import cached_property
 from . import downloadclient
+from . import rootitem
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +193,37 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
             # under `None`:
             queue.setdefault(record.get("downloadId"), []).append(record)
         return queue
+
+    @functools.lru_cache(maxsize=None)  # pylint: disable=method-cache-max-size-none
+    def get_root_item(self, root_id: int) -> rootitem.PrunerrServarrRootItem:
+        """
+        Instantiate and cache Prunerr's representation of a root.
+
+        :param root_id: The DB ID of the root item in the Servarr API.
+        :return: The instance of Pruner's representation.
+        """
+        return rootitem.PrunerrServarrRootItem(self, root_id)
+
+    @cached_property
+    def releases_by_hash(self) -> dict:
+        """
+        Collate download item releases by their hash IDs across download clients.
+
+        :return: Map upper-case hash IDs to their Servarr download item releases.
+        """
+        releases_by_hash = {}
+        for servarr_download_client in self.download_clients.values():
+            for release in servarr_download_client.releases:
+                release_hash = release.download_item.hashString.upper()
+                if release_hash in releases_by_hash:
+                    logger.warning(
+                        "Download item hash ID in multiple Servarr download clients"
+                        ": %s",
+                        release.download_item.name,
+                    )
+                else:
+                    releases_by_hash[release_hash] = release
+        return releases_by_hash
 
     def get_api_paged_records(
         self,

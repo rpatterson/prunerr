@@ -38,6 +38,7 @@ class ExportCommandRun:
         Process command-line arguments and collate global download items data.
         """
         # Collect global download item data shared between series/movies:
+        # TODO: Re-use something in `pruner.servarr.*`?
         self.download_ids = {}
         for servarr_download_client in self.servarr.download_clients.values():
             for release in servarr_download_client.releases:
@@ -176,17 +177,12 @@ class ExportServarrRootItem:
         # pre-existing download item names and root basenames in the client:
         for releases in self.command_run.download_ids.values():
             for release in releases:
+                # TODO: Move to Servarr property?
                 for download_file in release.download_item.files:
-                    if (
-                        download_file.relative
-                        in self.root_item.history.dropped_relatives
-                        and not self.root_item.history.dropped_relatives[
-                            download_file.relative
-                        ]
-                    ):
-                        self.root_item.history.dropped_relatives[
-                            download_file.relative
-                        ] = release.download_item.hashString.upper()
+                    self.root_item.history.dropped_relatives.setdefault(
+                        download_file.relative,
+                        {},
+                    ).setdefault("downloadId", release.download_item.hashString.upper())
         for (
             download_id,
             imported_relatives,

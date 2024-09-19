@@ -186,7 +186,7 @@ class ExportServarrRootItem:
                     ):
                         self.root_item.history.dropped_relatives[
                             download_file.relative
-                        ] = release.download_item.hashString
+                        ] = release.download_item.hashString.upper()
         for (
             download_id,
             imported_relatives,

@@ -1,7 +1,7 @@
 {
   "arguments": {
     "bandwidthPriority": 1,
-    "ids": ["909C9B954B414A87B1DCF6E2FB09650FCC35DE57"]
+    "ids": ["909c9b954b414a87b1dcf6e2fb09650fcc35de57"]
   },
   "method": "torrent-set",
   "tag": 4

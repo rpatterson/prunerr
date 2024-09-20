@@ -430,3 +430,17 @@ class PrunerrReviewUpgradedTests(prunerrtests.PrunerrTestCase):
             logged_msgs.records[0].message.lower(),
             "Logged record message missing partially imported error",
         )
+
+        download_item = list(self.runner.download_clients.values())[0].items[0]
+        upgraded_file = download_item.release.upgraded_release.download_item.files[0]
+        self.assertIn(
+            "st_nlink=1",
+            repr(upgraded_file.stat),
+            "Simulated upgraded file stat missing patched field",
+        )
+        self.assertEqual(
+            upgraded_file.stat.st_ino,
+            download_item.files[0].stat.st_ino,
+            "Simulated upgraded file stat wrong original field value",
+        )
+        download_item.release.clear()

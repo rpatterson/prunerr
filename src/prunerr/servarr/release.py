@@ -45,6 +45,13 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             "torrent": self.download_item,
         }
 
+    def clear(self):
+        """
+        Reset derived attributes cached in this instance.
+        """
+        super().clear()
+        self.download_item.clear()
+
     @cached_property
     def queue(self) -> dict:
         """
@@ -82,7 +89,10 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         for queue_record in self.queue:
             if root_id is None:
                 root_id = queue_record[f"{servarr.type_map['dir_type']}Id"]
-            elif queue_record[f"{servarr.type_map['dir_type']}Id"] != root_id:
+            elif (
+                queue_record[f"{servarr.type_map['dir_type']}Id"]  # pragma: no cover
+                != root_id
+            ):
                 logger.error(
                     "Release queued for more than one Servarr root item: %r",
                     self,
@@ -90,7 +100,96 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 break
         if root_id is not None:
             return servarr.get_root_item(root_id)
-        return None
+        return None  # pragma: no cover
+
+    @cached_property
+    def imported_release_files(self) -> dict:
+        """
+        Collate the imported release files that this release will upgrade when imported.
+
+        :return:
+
+          Map imported release download item hash IDs to relative item file paths to the
+          download item files.
+
+        :raises ValueError:
+
+          Something in the Servarr data prevents collating release files.
+
+        """
+        imported_release_files: dict = {}
+        servarr = self.servarr_download_client.servarr
+        if self.root_item is None:
+            raise ValueError(  # pragma: no cover
+                f"No Servarr queue record for: {self!r}",
+            )
+        for queue_record in self.queue:
+            imported_item_id = queue_record[f"{servarr.type_map['item_type']}Id"]
+
+            # Sonarr seems to include `episodeHasFile` for all records, but the test
+            # fixture records do not indicating it may have been added recently. Radarr
+            # doesn't have `movieHasFile` at all. So use it if available but if not,
+            # assume it says nothing either way:
+            if not queue_record.get(  # pragma: no cover
+                f"{servarr.type_map['item_type']}HasFile",
+                True,
+            ):
+                # This episode/movie is not currently imported, there is no release that
+                # will be upgraded when this queued release is imported:
+                logger.debug(
+                    "No imported file %r for queued release %r: %s",
+                    imported_item_id,
+                    queue_record["title"],
+                    queue_record["downloadId"],
+                )
+                continue
+
+            imported_item = self.root_item.imported_items[imported_item_id]
+            imported_file_stat = imported_item["file"]["path"].stat()
+            if not imported_file_stat.st_nlink > 1:  # pragma: no cover
+                logger.warning(
+                    "Imported file has no hard links: %s",
+                    imported_item["file"]["relative"],
+                )
+                continue
+
+            if not (
+                dropped_relative := self.root_item.history.imported_relatives.get(
+                    imported_item["file"]["relative"],
+                    {},
+                ).get("droppedRel")
+            ):  # pragma: no cover
+                logger.warning(
+                    "No dropped path history for imported file: %s",
+                    imported_item["file"]["relative"],
+                )
+                continue
+
+            found_item_file = False
+            for servarr_download_client in servarr.download_clients.values():
+                client_item_files = (
+                    servarr_download_client.download_client.item_files.get(
+                        dropped_relative,
+                        {},
+                    )
+                )
+                for item_file in client_item_files.values():
+                    if item_file.path.samefile(imported_item["file"]["path"]):
+                        imported_release_files.setdefault(
+                            item_file.download_item.hashString,
+                            (item_file.download_item.release, {}),
+                        )[1][dropped_relative] = item_file
+                        found_item_file = True
+                    else:
+                        pass  # pragma: no cover
+            if not found_item_file:  # pragma: no cover
+                logger.warning(
+                    "No download item file for imported file: %s",
+                    imported_item["file"]["relative"],
+                )
+                continue
+
+        return imported_release_files
 
     @cached_property
     def queued_upgrades(self) -> dict:
@@ -104,7 +203,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         :raises NotImplementedError: There's a problem with the conditions that prevents
             identifying queued upgrades.
         """
-        raise NotImplementedError(
+        raise NotImplementedError(  # pragma: no cover
             f"Cannot identify queued upgrades outside the ``upgraded`` stage"
             f": {self!r}",
         )
@@ -120,7 +219,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         :raises NotImplementedError: There's a problem with the conditions that prevents
             simulating an upgrade.
         """
-        raise NotImplementedError(
+        raise NotImplementedError(  # pragma: no cover
             "Cannot simulate upgrade outside the ``upgraded`` life-cycle stage"
             f": {self!r}",
         )
@@ -133,7 +232,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         :raises ValueError: There's a problem identifying which items this item will
             upgrade.
         """
-        if self.root_item is None:
+        if self.root_item is None:  # pragma: no cover
             raise ValueError(
                 "Cannot review a release not connected to its root item: {self!r}",
             )
@@ -147,37 +246,17 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
 
         # First group the imported files that will be upgraded by the currently imported
         # releases they were imported from:
-        imported_by_release: dict = {}
-        servarr = self.servarr_download_client.servarr
-        for queue_record in self.queue:
-            imported_item_id = queue_record[f"{servarr.type_map['item_type']}Id"]
-            if not queue_record[f"{servarr.type_map['item_type']}HasFile"]:
-                # This episode/movie is not currently imported, there is no release that
-                # will be upgraded when this queued release is imported:
-                logger.debug(
-                    "No imported file %r for queued release %r: %s",
-                    imported_item_id,
-                    queue_record["title"],
-                    queue_record["downloadId"],
-                )
-                continue
-            imported_release = self.root_item.imported_releases.get(imported_item_id)
-            if imported_release is not None:
-                imported_by_release.setdefault(
-                    imported_release.download_item.hashString,
-                    (imported_release, {}),
-                )[1].setdefault(
-                    self.root_item.imported_items[imported_item_id]["file"]["relative"],
-                    None,
-                )
+        for imported_release, imported_files in self.imported_release_files.values():
 
-        # Now use the grouped imported files to simulate the state of the imported item
-        # after it has been upgraded by importing the queued release and review it:
-        for imported_release, imported_relatives in imported_by_release.values():
+            # Now use the grouped imported files to simulate the state of the imported
+            # item after it has been upgraded by importing the queued release and review
+            # it:
 
             # Share one simulated upgraded release for all the queued releases that will
             # upgrade it:
-            if imported_release.UPGRADED_RELEASE_ATTR not in vars(imported_release):
+            if imported_release.UPGRADED_RELEASE_ATTR not in vars(  # pragma: no cover
+                imported_release
+            ):
                 imported_release.upgraded_release = type(imported_release)(
                     imported_release.servarr_download_client,
                     type(imported_release.download_item)(
@@ -186,7 +265,9 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                         imported_release.download_item,
                     ),
                 )
-            if self.QUEUED_UPGRADES_ATTR not in vars(imported_release):
+            if self.QUEUED_UPGRADES_ATTR not in vars(  # pragma: no cover
+                imported_release
+            ):
                 imported_release.queued_upgrades = {}
             imported_release.queued_upgrades.setdefault(
                 self.download_item.hashString.upper(),
@@ -195,28 +276,23 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
 
             # Map the imported release's files to the queued releases that will upgrade
             # them:
-            for imported_relative in imported_relatives:
-                dropped_relative = self.root_item.history.imported_relatives[
-                    imported_relative
-                ]["droppedRel"]
-                item_file = imported_release.download_item.files_by_relative[
-                    dropped_relative
-                ]
-                if self.QUEUED_UPGRADES_ATTR not in vars(item_file):
-                    item_file.queued_upgrades = {}
-                item_file.queued_upgrades.setdefault(
-                    self.download_item.hashString.upper(),
-                    self,
+            for dropped_relative, imported_file in imported_files.items():
+                if self.QUEUED_UPGRADES_ATTR not in vars(  # pragma: no cover
+                    imported_file
+                ):
+                    imported_file.queued_upgrades = {}
+                imported_file.queued_upgrades[self.download_item.hashString.upper()] = (
+                    self
                 )
 
                 # Decrement the hard link count for all the files of the imported
                 # release that will be upgraded by this queued release and replace the
-                # cached `item_file.stat()` results:
+                # cached `imported_file.stat()` results:
                 imported_release.upgraded_release.download_item.files_by_relative[
                     dropped_relative
                 ].stat = PatchedStatResult(
-                    item_file.stat,
-                    st_nlink=item_file.stat.st_nlink - 1,
+                    imported_file.stat,
+                    st_nlink=imported_file.stat.st_nlink - 1,
                 )
 
             yield imported_release.download_item

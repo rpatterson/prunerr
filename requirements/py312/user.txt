@@ -94,3 +94,6 @@ typing-extensions==4.12.2
     #   transmission-rpc
 urllib3==2.2.2
     # via requests
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

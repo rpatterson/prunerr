@@ -120,7 +120,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "apply"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "apply", "--stage=queued"]),
             "Wrong console script sub-command return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -132,7 +132,13 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         request_mocks = self.mock_responses()
         self.assertIsNone(
             prunerr.main(
-                args=["--log-level", "DEBUG", f"--config={self.CONFIG}", "apply"],
+                args=[
+                    "--log-level",
+                    "DEBUG",
+                    f"--config={self.CONFIG}",
+                    "apply",
+                    "--stage=queued",
+                ],
             ),
             "Wrong console script options return value",
         )

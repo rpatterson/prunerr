@@ -116,22 +116,6 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
         return imported_items
 
     @cached_property
-    def imported_releases(self) -> dict:
-        """
-        Collate Servarr history to identify the Servarr release for each imported file.
-
-        :return: Map imported episode/movie DB IDs to their download item releases.
-        """
-        imported_releases = {}
-        for imported_item in self.imported_items.values():
-            imported_releases[imported_item["id"]] = self.servarr.releases_by_hash[
-                self.history.imported_relatives[imported_item["file"]["relative"]][
-                    "downloadId"
-                ]
-            ]
-        return imported_releases
-
-    @cached_property
     def history(self) -> history_module.PrunerrServarrHistory:
         """
         Map grab and import history records to download items by various means.

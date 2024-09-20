@@ -840,7 +840,7 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
         :raises NotImplementedError: There's a problem with the conditions that prevents
             identifying queued upgrades.
         """
-        raise NotImplementedError(
+        raise NotImplementedError(  # pragma: no cover
             "Cannot identify queued upgrades outside the ``upgraded`` stage"
             f": {self!r}",
         )

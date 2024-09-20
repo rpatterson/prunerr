@@ -204,27 +204,6 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         """
         return rootitem.PrunerrServarrRootItem(self, root_id)
 
-    @cached_property
-    def releases_by_hash(self) -> dict:
-        """
-        Collate download item releases by their hash IDs across download clients.
-
-        :return: Map upper-case hash IDs to their Servarr download item releases.
-        """
-        releases_by_hash = {}
-        for servarr_download_client in self.download_clients.values():
-            for release in servarr_download_client.releases:
-                release_hash = release.download_item.hashString.upper()
-                if release_hash in releases_by_hash:
-                    logger.warning(
-                        "Download item hash ID in multiple Servarr download clients"
-                        ": %s",
-                        release.download_item.name,
-                    )
-                else:
-                    releases_by_hash[release_hash] = release
-        return releases_by_hash
-
     def get_api_paged_records(
         self,
         endpoint: str,

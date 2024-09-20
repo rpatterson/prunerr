@@ -168,6 +168,51 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         return items
 
+    @cached_property
+    def item_files(self) -> dict:
+        """
+        Collate this download client's item files by each items relative file paths.
+
+        :return: Map file relative paths to the download item hash IDs to the files.
+        """
+        item_files: dict = {}
+        for item in self.items:
+            for item_file in item.files:
+                item_files.setdefault(item_file.relative, {})[
+                    item.hashString
+                ] = item_file
+        return item_files
+
+    @cached_property
+    def queued_items(self) -> list:
+        """
+        Filter items that have not yet been acted on by Servarr or Prunerr.
+
+        :return: The download items.
+        """
+        # Avoid attribute and item lookup in the inner loop:
+        download_dir = self.download_dir
+        config_mtime = self.runner.config_stat.st_mtime
+
+        queued_items = []
+        for item in self.items:
+            if (
+                # Only new items, IOW only those that haven't been imported yet:
+                (
+                    download_dir in item.download_dir.parents
+                    or download_dir == item.download_dir
+                )
+                # Only items once based on whether the log file has been written to more
+                # recently than the configuration has been modified:
+                and (
+                    not item.log_path.exists()
+                    or config_mtime > item.log_path.stat().st_mtime
+                )
+            ):
+                queued_items.append(item)
+
+        return queued_items
+
     def clear(self):
         """
         Reset derived attributes cached in this instance.
@@ -207,31 +252,13 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
     # Methods to list the download items in each life-cycle stage:
 
-    def filter_queued(self) -> collections.abc.Generator:  # noqa: V105
+    def filter_queued(self) -> list:  # noqa: V105
         """
         Filter items that have not yet been acted on by Servarr or Prunerr.
 
-        :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
+        :return: The download items.
         """
-        # Avoid attribute and item lookup in the inner loop:
-        download_dir = self.download_dir
-        config_mtime = self.runner.config_stat.st_mtime
-
-        for item in self.items:
-            if (
-                # Only new items, IOW only those that haven't been imported yet:
-                (
-                    download_dir in item.download_dir.parents
-                    or download_dir == item.download_dir
-                )
-                # Only items once based on whether the log file has been written to more
-                # recently than the configuration has been modified:
-                and (
-                    not item.log_path.exists()
-                    or config_mtime > item.log_path.stat().st_mtime
-                )
-            ):
-                yield item
+        return self.queued_items
 
     def filter_upgraded(self) -> collections.abc.Generator:  # noqa: V105
         """
@@ -240,11 +267,8 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
         """
         upgraded_releases: dict = {}
-        # TODO: This repeats the conditions evaluated for the ``queued`` stage. If that
-        # ever adds significant overhead, it may be worth adding a special case to pass
-        # the items from one stage to another:
-        for item in self.filter_queued():
-            if item.release is None:
+        for item in self.queued_items:
+            if item.release is None:  # pragma: no cover
                 logger.debug(
                     "No ``upgraded`` stage items for items not in Servarr queue: %r",
                     item,

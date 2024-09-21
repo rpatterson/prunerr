@@ -83,7 +83,7 @@ stages:
             -%}
         {%- endif -%}
         {{- (
-            item.bandwidthPriority,
+            item.bandwidth_priority,
             item.indexer_config is true,
             -item.indexer_config["priority"]|default(45),
             imported_portion,

@@ -261,7 +261,6 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                     imported_release.servarr_download_client,
                     type(imported_release.download_item)(
                         imported_release.download_item.download_client,
-                        imported_release.download_item.download_client.client,
                         imported_release.download_item,
                     ),
                 )

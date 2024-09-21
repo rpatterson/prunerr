@@ -4,6 +4,5 @@
     "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
     "paused": true
   },
-  "method": "torrent-add",
-  "tag": 2
+  "method": "torrent-add"
 }

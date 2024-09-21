@@ -1,5 +1,4 @@
 {
-  "tag": 2,
   "method": "torrent-remove",
   "arguments": {
     "delete-local-data": 0,

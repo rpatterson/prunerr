@@ -219,7 +219,7 @@ def maybe_add_download_item(
     download_items_by_id: dict,
     download_id: str,
     download_urls: dict,
-) -> transmission_rpc.Torrent:
+) -> typing.Optional[transmission_rpc.Torrent]:
     """
     Add a download item from the given URL if not already in the download client.
 

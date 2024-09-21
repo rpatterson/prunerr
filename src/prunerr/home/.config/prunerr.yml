@@ -367,7 +367,7 @@ stages: # (default)
       sort: |
         {{-
             (
-                item.bandwidthPriority,
+                item.bandwidth_priority,
                 item.indexer_config is true,
                 -item.indexer_config["priority"]|default(45),
                 item.imported_portion,
@@ -407,7 +407,7 @@ stages: # (default)
       include: |
         {{-
             item.error == 2
-            and item.errorString is search(".*(not |un)registered.*", ignorecase=True)
+            and item.error_string is search(".*(not |un)registered.*", ignorecase=True)
         -}}
       remove: true
       blacklist: true
@@ -417,7 +417,7 @@ stages: # (default)
       include: |
         {{-
             item.error == 3
-            and item.errorString is search(".*(corrput|verif).*", ignorecase=True)
+            and item.error_string is search(".*(corrput|verif).*", ignorecase=True)
         -}}
       verify: true
 

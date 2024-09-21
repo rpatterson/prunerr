@@ -35,11 +35,13 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
     An individual, specific download client that Prunerr interacts with.
     """
 
+    TRANSMISSION_PATH = "/transmission/"
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
     TIMEOUT_EXCEPTION = DownloadClientTimeout
 
     client: transmission_rpc.client.Client
+    session: dict
     download_dir: pathlib.Path
     seeding_dir: pathlib.Path
     incomplete_dir: typing.Optional[pathlib.Path] = None
@@ -120,15 +122,27 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             protocol=split_url.scheme,
             host=split_url.hostname,
             port=port,
-            path=split_url.path,
+            # Workaround `transmission_rpc`'s special case logic:
+            path=(
+                split_url.path
+                if split_url.path == self.TRANSMISSION_PATH
+                else f"{split_url.path}/rpc"
+            ),
             username=split_url.username,
             password=self.config["password"],
             timeout=self.config.get("timeout", example_config["timeout"]),
         )
-        self.download_dir = pathlib.Path(self.client.session.download_dir)
+        # Unfortunately, `transmission_rpc` now raises a `DeprecationWarning` when
+        # trying to access the session settings after the initial connection and the
+        # only way it provides is to send another, redundant request. Circumvent the
+        # deprecation warning:
+        self.session = vars(self.client)["_Client__raw_session"]
+        self.download_dir = pathlib.Path(self.session["download-dir"])
         self.seeding_dir = self.download_dir.with_name(self.SEEDING_DIR_BASENAME)
-        if self.client.session.incomplete_dir_enabled:  # pragma: no cover
-            self.incomplete_dir = pathlib.Path(self.client.session.incomplete_dir)
+        if self.session["incomplete-dir-enabled"]:  # pragma: no cover
+            self.incomplete_dir = pathlib.Path(
+                self.session["incomplete-dir"],
+            )
 
         # Update any Servarr references or data that depends on the download client
         # session data
@@ -150,7 +164,6 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         items = [
             prunerr.downloaditem.PrunerrDownloadItem(
                 self,
-                torrent._client,
                 torrent,
             )
             # TODO: Reduce memory consumption, CPU usage, and run-time by narrowing the
@@ -297,23 +310,23 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
         """
         total_remaining_download = sum(
-            item.leftUntilDone
+            item.fields["leftUntilDone"]
             for item in self.items
             if item.status
             == prunerr.downloaditem.PrunerrDownloadItem.STATUS_DOWNLOADING
         )
-        if total_remaining_download > self.client.session.download_dir_free_space:
+        if total_remaining_download > self.session["download-dir-free-space"]:
             logger.debug(
                 "Total size of remaining downloads is greater than the available free "
                 "space: %0.2f %s - %0.2f %s = %0.2f %s",
                 *(
                     transmission_rpc.utils.format_size(total_remaining_download)
                     + transmission_rpc.utils.format_size(
-                        self.client.session.download_dir_free_space
+                        self.session["download-dir-free-space"]
                     )
                     + transmission_rpc.utils.format_size(
                         total_remaining_download
-                        - self.client.session.download_dir_free_space
+                        - self.session["download-dir-free-space"]
                     )
                 ),
             )
@@ -366,7 +379,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             "Deleting %r: free space -> %0.2f %s",
             item,
             *transmission_rpc.utils.format_size(
-                self.client.session.download_dir_free_space + size,
+                self.session["download-dir-free-space"] + size,
             ),
         )
 
@@ -402,19 +415,19 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         :return: Whether or not free space is sufficient.
         """
-        if self.client.session.download_dir_free_space >= self.config["min-free-space"]:
+        if self.session["download-dir-free-space"] >= self.config["min-free-space"]:
             logger.debug(
                 "Sufficient free space to continue downloading: "
                 "%0.2f %s - %0.2f %s = %0.2f %s",
                 *(
                     transmission_rpc.utils.format_size(
-                        self.client.session.download_dir_free_space,
+                        self.session["download-dir-free-space"],
                     )
                     + transmission_rpc.utils.format_size(
                         self.config["min-free-space"],
                     )
                     + transmission_rpc.utils.format_size(
-                        self.client.session.download_dir_free_space
+                        self.session["download-dir-free-space"]
                         - self.config["min-free-space"],
                     )
                 ),
@@ -429,11 +442,11 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                     self.config["min-free-space"],
                 )
                 + transmission_rpc.utils.format_size(
-                    self.client.session.download_dir_free_space,
+                    self.session["download-dir-free-space"],
                 )
                 + transmission_rpc.utils.format_size(
                     self.config["min-free-space"]
-                    - self.client.session.download_dir_free_space,
+                    - self.session["download-dir-free-space"],
                 )
             ),
         )
@@ -457,7 +470,6 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         response.raise_for_status()
         added_torrent = prunerr.downloaditem.PrunerrDownloadItem(
             self,
-            self.client,
             self.client.add_torrent(torrent=response.raw, **kwargs),
         )
         self.items.append(added_torrent)

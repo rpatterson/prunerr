@@ -119,8 +119,9 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
             "Aggregated download clients missing URL",
         )
         download_client = runner.download_clients[download_client_url]
-        self.assertTrue(
-            hasattr(download_client.client.session, "version"),
+        self.assertIn(
+            "version",
+            download_client.session,
             "Aggregated download client not connected",
         )
         self.assertIn(

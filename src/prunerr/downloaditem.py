@@ -40,18 +40,15 @@ class PrunerrDownloadItem(
     STATUS_SEEDING_INT = 6
     STATUS_CHECKING = "checking"
 
-    def __init__(self, download_client, client, torrent):
+    def __init__(self, download_client, torrent):
         """
         Reconstitute the native Python representation.
         """
         self.download_client = download_client
-        super().__init__(
-            client,
-            {field_name: field.value for field_name, field in torrent._fields.items()},
-        )
+        super().__init__(fields=torrent.fields)
         self.files = []
         self.files_by_relative = {}
-        for rpc_file in super().files():
+        for rpc_file in super().get_files():
             item_file = PrunerrDownloadItemFile(self, rpc_file)
             self.files.append(item_file)
             self.files_by_relative[item_file.relative] = item_file
@@ -63,13 +60,13 @@ class PrunerrDownloadItem(
 
         :return: Map descriptive names to useful values.
         """
-        details = {}
-        if (name := self._get_name_string()) is not None:
+        details: dict = {}
+        if (name := self.name) is not None:
             details["name"] = name
-        elif self.FIELD_HASH in self._fields:  # pragma: no cover
-            details["hash"] = self._fields[self.FIELD_HASH].value
+        elif self.FIELD_HASH in self.fields:  # pragma: no cover
+            details["hash"] = self.fields[self.FIELD_HASH].value
         else:  # pragma: no cover
-            details["id"] = self._fields["id"].value
+            details["id"] = self.fields["id"]
         details["indexer"] = self.indexer_config.get("name")
         details["size"] = self.disk_usage
         details["imported"] = f"{round(self.imported_portion) * 100}%"
@@ -80,7 +77,11 @@ class PrunerrDownloadItem(
         Update cached values when this download item is updated.
         """
         super().update()
-        super(utils.PrunerrComponent, self).update()
+        super(utils.PrunerrComponent, self).__init__(
+            fields=self.download_client.client.get_torrent(
+                self.fields["hashString"],
+            ).fields,
+        )
         self.clear()
 
     def clear(self):
@@ -163,7 +164,7 @@ class PrunerrDownloadItem(
 
         :return: The duration in seconds.
         """
-        return time.time() - self._fields["addedDate"].value
+        return time.time() - self.fields["addedDate"]
 
     @cached_property
     def seconds_since_done(self) -> typing.Optional[int]:
@@ -174,7 +175,7 @@ class PrunerrDownloadItem(
 
         :return: The duration in seconds.
         """
-        if self._fields["leftUntilDone"].value or self._fields["percentDone"].value < 1:
+        if self.fields["leftUntilDone"] or self.fields["percentDone"] < 1:
             logger.warning(
                 "Can't determine seconds since done, not complete: %r",
                 self,
@@ -184,10 +185,7 @@ class PrunerrDownloadItem(
                 },
             )
             return 0
-        if (
-            not (done_date := self._fields["doneDate"].value)
-            and self._fields["addedDate"].value
-        ):
+        if not (done_date := self.fields["doneDate"]) and self.fields["addedDate"]:
             # I've seen cases where almost half of torrents that I confirmed were
             # complete and seeding have no `doneDate`. Maybe this happens when adding a
             # torrent when the local data is already complete, AKA adding a seed?
@@ -201,7 +199,7 @@ class PrunerrDownloadItem(
                     "download_hash": self.hashString,
                 },
             )
-            done_date = self._fields["addedDate"].value
+            done_date = self.fields["addedDate"]
         if done_date and done_date > 0:
             return time.time() - done_date
 
@@ -224,8 +222,8 @@ class PrunerrDownloadItem(
 
         :return: The duration in seconds.
         """
-        done_date = self._fields["doneDate"].value
-        if done_date == self._fields["addedDate"].value:
+        done_date = self.fields["doneDate"]
+        if done_date == self.fields["addedDate"]:
             logger.warning(
                 "Done date is the same as added date: %r",
                 self,
@@ -234,7 +232,7 @@ class PrunerrDownloadItem(
                     "download_hash": self.hashString,
                 },
             )
-        elif done_date < self._fields["addedDate"].value:
+        elif done_date < self.fields["addedDate"]:
             logger.warning(
                 "Done date is before added date: %r",
                 self,
@@ -245,7 +243,7 @@ class PrunerrDownloadItem(
             )
         if not done_date:
             done_date = time.time()
-            if done_date == self._fields["addedDate"].value:
+            if done_date == self.fields["addedDate"]:
                 logger.warning(  # pragma: no cover
                     "Added date is now: %r",
                     self,
@@ -254,7 +252,7 @@ class PrunerrDownloadItem(
                         "download_hash": self.hashString,
                     },
                 )
-            elif done_date < self._fields["addedDate"].value:
+            elif done_date < self.fields["addedDate"]:
                 logger.warning(
                     "Added date is in the future: %r",
                     self,
@@ -263,7 +261,7 @@ class PrunerrDownloadItem(
                         "download_hash": self.hashString,
                     },
                 )
-        return done_date - self._fields["addedDate"].value
+        return done_date - self.fields["addedDate"]
 
     @cached_property
     def rate_total(self) -> typing.Optional[float]:
@@ -275,7 +273,7 @@ class PrunerrDownloadItem(
         if (seconds_downloading := self.seconds_downloading) <= 0:
             return None
         return (
-            self._fields["sizeWhenDone"].value - self._fields["leftUntilDone"].value
+            self.fields["sizeWhenDone"] - self.fields["leftUntilDone"]
         ) / seconds_downloading
 
     @cached_property
@@ -305,9 +303,9 @@ class PrunerrDownloadItem(
                     for item_file in self.files
                     if item_file.selected and item_file.is_imported
                 )
-                / self._fields["sizeWhenDone"].value
+                / self.fields["sizeWhenDone"]
             )
-            if self._fields["sizeWhenDone"].value
+            if self.fields["sizeWhenDone"]
             else 0.0
         )
 
@@ -350,7 +348,7 @@ class PrunerrDownloadItem(
         """
         for tracker in self.trackers:
             for action in ("announce", "scrape"):
-                tracker_url = urllib.parse.urlsplit(tracker[action])
+                tracker_url = urllib.parse.urlsplit(getattr(tracker, action))
                 for indexer_config in self.download_client.runner.config[
                     "indexers"
                 ].values():
@@ -456,9 +454,7 @@ class PrunerrDownloadItem(
         old_log_path = self.log_path
         # Update the download item's dir for subsequent operations, done manually to
         # minimize requests.
-        self._fields[self.FIELD_DOWNLOAD_DIR] = self._fields[
-            self.FIELD_DOWNLOAD_DIR
-        ]._replace(value=new_download_dir)
+        self.fields[self.FIELD_DOWNLOAD_DIR] = new_download_dir
         self.clear()
         # Move any log files along with the item:
         if old_log_path.exists():
@@ -534,7 +530,7 @@ class PrunerrDownloadItem(
         :param item_root_paths: Filesystem paths of existing download item data.
         :return: The best data path if the location was changed.
         """
-        if self.FIELD_DOWNLOAD_DIR not in self._fields:  # pragma: no cover
+        if self.FIELD_DOWNLOAD_DIR not in self.fields:  # pragma: no cover
             logger.debug(
                 "Missing download dir field, updating: %r",
                 self,
@@ -566,12 +562,13 @@ class PrunerrDownloadItem(
                 self,
                 item_root_path.parent,
             )
-            self.locate_data(item_root_path.parent)
-            # Avoid another RPC request, update the field value using the internals:
-            self._fields[self.FIELD_DOWNLOAD_DIR] = transmission_rpc.lib_types.Field(
-                str(item_root_path.parent),
-                False,
+            self.download_client.client.move_torrent_data(
+                self.hashString,
+                item_root_path.parent,
+                move=False,
             )
+            # Avoid another RPC request, update the field value using the internals:
+            self.fields[self.FIELD_DOWNLOAD_DIR] = str(item_root_path.parent)
             del self.download_dir
             return item_root_path.parent
 
@@ -622,7 +619,7 @@ class PrunerrDownloadItem(
                     dropped_data["droppedRel"],
                 )
                 continue
-            if self.FIELD_DOWNLOAD_DIR not in self._fields:  # pragma: no cover
+            if self.FIELD_DOWNLOAD_DIR not in self.fields:  # pragma: no cover
                 logger.debug(
                     "Missing download dir field, updating: %r",
                     self,
@@ -645,7 +642,7 @@ class PrunerrDownloadItem(
             self.download_client.client.verify_torrent(
                 self.hashString,
             )
-            self.start()
+            self.download_client.client.start_torrent(self.hashString)
 
     def deselect_unimported_files(self) -> list:
         """
@@ -687,17 +684,16 @@ class PrunerrDownloadItem(
             "Re-adding download item to client: %r",
             self,
         )
-        with open(self.torrentFile, mode="r+b") as torrent_opened:
+        with open(self.torrent_file, mode="r+b") as torrent_opened:
             self.download_client.client.remove_torrent(ids=[self.hashString])
             re_added = type(self)(
                 self.download_client,
-                self.download_client.client,
                 self.download_client.client.add_torrent(
                     torrent=torrent_opened,
                     # These are the only fields from the `add_torrent()` call signature
                     # in the docs I could see corresponding fields for in the
                     # representation of a torrent.
-                    bandwidthPriority=self.bandwidthPriority,
+                    bandwidthPriority=self.bandwidth_priority,
                     download_dir=str(self.download_dir),
                     peer_limit=self.peer_limit,
                 ),

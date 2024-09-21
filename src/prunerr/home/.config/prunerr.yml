@@ -78,6 +78,7 @@ indexers:
       seeding-ratio: 1.0
       bonus-minimum-gb: 1
       bonus-maximum-gb: 10
+      bonus-by-size: false
   OtherPrivateTracker:
     hostnames:
       - "tracker.foo.example.com"
@@ -376,7 +377,11 @@ stages: # (default)
                 (not indexer_config["bonus-maximum-bytes"]) or (
                     item.size_when_done < indexer_config["bonus-maximum-bytes"]
                 ),
-                -item.size_when_done,
+                (
+                    item.indexer_config["bonus-by-size"]|default(False)
+                    and item.size_when_done
+                    or -item.size_when_done
+                ),
             )
         -}}
 

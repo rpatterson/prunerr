@@ -394,9 +394,16 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         # Delete the actual files ourselves to workaround Transmission hanging when
         # deleting the data of large items: e.g. season packs.
         for item_file in item.files:
-            # Remove each item file whether in the `download-dir` or the
-            # `incomplete-dir`:
-            self.runner.delete_path(item_file.path)
+            # Don't try to delete files for which nothing has been downloaded and this
+            # the file was never created:
+            if item_file.completed or item_file.path.exists():
+                # Remove each item file whether in the `download-dir` or the
+                # `incomplete-dir`:
+                self.runner.delete_path(item_file.path)
+            else:
+                pass  # pragma: no cover
+        if item.path.exists():
+            self.runner.delete_path(item.path)  # pragma: no cover
         if item.log_path.exists():  # pragma: no cover
             self.runner.delete_path(item.log_path)
 

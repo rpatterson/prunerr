@@ -77,8 +77,8 @@ services:
     image: "registry.gitlab.com/rpatterson/prunerr"
     container_name: "prunerr-daemon"
     # Uncomment and customize to your environment for more helpful notification titles:
-    # domainname: "example.comm"
-    # hostname: "prunerr.example.comm"
+    # domainname: "example.com"
+    # hostname: "prunerr.example.com"
     depends_on:
       - "transmission"
     environment:

@@ -122,6 +122,22 @@ The download item life-cycle stages to apply.
 parser_apply.set_defaults(command=apply_)
 
 
+def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
+    if utils.ntfy is not None:  # pragma: no cover
+        logger.addHandler(utils.notify_handler)
+    runner.daemon(*args, **kwargs)
+
+
+daemon.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.daemon.__doc__)
+parser_daemon = subparsers.add_parser(
+    "daemon",
+    help=str(daemon.__doc__).strip(),
+    description=str(daemon.__doc__).strip(),
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
+parser_daemon.set_defaults(command=daemon)
+
+
 def export(  # pylint: disable=missing-function-docstring,missing-return-doc
     runner,
     *args,
@@ -160,20 +176,6 @@ parser_re_add = subparsers.add_parser(
 parser_re_add.set_defaults(command=re_add)
 
 
-def daemon(runner, *args, **kwargs):  # pylint: disable=missing-function-docstring
-    if utils.ntfy is not None:  # pragma: no cover
-        logger.addHandler(utils.notify_handler)
-    runner.daemon(*args, **kwargs)
-
-
-daemon.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.daemon.__doc__)
-parser_daemon = subparsers.add_parser(
-    "daemon",
-    help=str(daemon.__doc__).strip(),
-    description=str(daemon.__doc__).strip(),
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-)
-parser_daemon.set_defaults(command=daemon)
 # Register shell tab completion
 argcomplete.autocomplete(parser)
 

@@ -325,18 +325,6 @@ stages: # (default)
       ##   reverse them by making them negative so they sort correctly.
       ##
       ## - Maximize disk space usage by deleting items that are least imported first.
-      sort: |
-        {{- (
-            item.bandwidthPriority,
-            item.indexer_config is true,
-            -item.indexer_config["priority"]|default(45),
-            item.imported_portion,
-        ) -}}
-      ## This example further demonstrates the possibilities but note that any sort tuple
-      ## item past one with continuous, quantitative values is unlikely to have any
-      ## affect. For example, anything past the proportion imported will only ever take
-      ## effect if 2 items have the *exact* same proportion imported which will almost
-      ## never happen:
       ##
       ## - Maximize ratio by deleting items with the most size uploaded last under the
       ##   assumption they're the most likely to continue contributing the most to the
@@ -348,18 +336,34 @@ stages: # (default)
       ##
       ## - Maximize tracker bonus points by deleting items larger than the bonus points
       ##   maximum size or items smaller than the minimum size before those items in
-      ##   between.
-      # sort: |
-      #     {{- (
-      #         item.uploadedEver,
-      #         -item.ratio,
-      #         item.size_when_done >
-      #         item.indexer_config["bonus-minimum-size"]|default(0),
-      #         not item.indexer_config["bonus-maximum-size"]|default(0) or (
-      #             item.size_when_done
-      #             < item.indexer_config["bonus-maximum-size"]|default(0)
-      #         ),
-      #     ) -}}
+      ##   between. It's often desirable to delete items smaller than the bonus points
+      ##   maximum but much larger than the bonus points minimum before deleting items
+      ##   much close to the bonus points minimum when the points accrue per-item and
+      ##   not per-size because seeding many more smaller items nets more bonus points
+      ##   than seeding many fewer larger items.
+      ##
+      ## - Further maximize tracker bonus points by deleting larger items first to keep
+      ##   more items seeding.
+      ##
+      ## Note that any sort tuple item past one with continuous, quantitative values is
+      ## unlikely to have any affect. For example, anything past `{{ item.size_when_done
+      ## }}` will only ever take effect if 2 items have the *exact* same size which will
+      ## almost never happen.
+      sort: |
+        {{- (
+            item.bandwidthPriority,
+            item.indexer_config is true,
+            -item.indexer_config["priority"]|default(45),
+            item.imported_portion,
+            item.uploadedEver,
+            -item.ratio,
+            item.size_when_done > item.indexer_config["bonus-minimum-size"]|default(0),
+            not item.indexer_config["bonus-maximum-size"]|default(0) or (
+                item.size_when_done
+                < item.indexer_config["bonus-maximum-size"]|default(0)
+            ),
+            -item.size_when_done,
+        ) -}}
 
       ## For most users this is the only action:
       remove: true

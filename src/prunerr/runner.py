@@ -39,6 +39,7 @@ class PrunerrRunner(utils.PrunerrComponent):
     CONFIG_SERVARRS_KEY = "servarrs"
     CONFIG_DOWNLOAD_CLIENTS_KEY = "download-clients"
     CONFIG_INDEXERS_KEY = "indexers"
+    CONFIG_INDEXERS_CONFIG_KEY = "indexers-config"
     CONFIG_NO_DEFAULTS = (
         CONFIG_SERVARRS_KEY,
         CONFIG_DOWNLOAD_CLIENTS_KEY,
@@ -101,17 +102,29 @@ class PrunerrRunner(utils.PrunerrComponent):
                 f" configuration under  `download-clients`: {self.config_file}"
             )
 
-        for indexer_name, indexer_config in config.setdefault(
-            "indexers",
-            {},
-        ).items():
-            indexer_config.setdefault("config", {}).setdefault("name", indexer_name)
-
         # Pull defaults from the example configuration:
         for top_key, top_config in self.example_config.items():
             if top_key not in self.CONFIG_NO_DEFAULTS:
                 config.setdefault(top_key, top_config)
         config["daemon"].setdefault("poll", self.example_config["daemon"]["poll"])
+
+        # Render derived indexer values:
+        indexers_config = config[self.CONFIG_INDEXERS_CONFIG_KEY] = {
+            indexers_key: operations.jinja_env.from_string(indexers_template)
+            for indexers_key, indexers_template in config.get(
+                self.CONFIG_INDEXERS_CONFIG_KEY, {}
+            ).items()
+        }
+        for indexer_name, indexer in config.setdefault(
+            self.CONFIG_INDEXERS_KEY,
+            {},
+        ).items():
+            indexer_config = indexer.setdefault("config", {})
+            indexer_config.setdefault("name", indexer_name)
+            for indexers_key, indexers_template in indexers_config.items():
+                indexer_config[indexers_key] = indexers_template.render(
+                    indexer_config=indexer_config,
+                )
 
         # Compile Jinja templates:
         config["stages"] = prunerr.operations.parse(

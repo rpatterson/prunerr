@@ -74,13 +74,10 @@ indexers:
       groups:
         - "building-ratio"
         - "private"
-      ## 10 days * 24 hours * 60 minutes * 60 seconds:
-      seeding-time: 864000
+      seeding-days: 10
       seeding-ratio: 1.0
-      ## Min bonus points rate: 1 GB * 1024 MB * 1024 KB * 1024 B:
-      bonus-minimum-size: 1073741824
-      ## Max bonus points rate: 10 GB * 1024 MB * 1024 KB * 1024 B:
-      bonus-maximum-size: 10737418240
+      bonus-minimum-gb: 1
+      bonus-maximum-gb: 10
   OtherPrivateTracker:
     hostnames:
       - "tracker.foo.example.com"
@@ -91,6 +88,23 @@ indexers:
       groups:
         - "private"
       ## This tracker has no seeding requirements so no further configuration.
+
+## Values derived from the `config:` mappings under `indexers:` above. Useful to set
+## user-friendly, per-indexer values above, but calculate derived values that will be
+## used in operation templates under `stages` below without calculating redundantly for
+## each download item. For example, convert values from tracker rules, such as days or
+## gigabytes, to the values used in operation templates, such as seconds or bytes. The
+## raw values for each indexer are available in `{{ indexer_config }}`:
+indexers-config: # (default)
+  seeding-seconds: |
+    {{- indexer_config["seeding-days"]|default(0) * 24 * 60 * 60 -}}
+  seeding-margin-seconds: |
+    {%- set seeding_margin_days = 1 -%}
+    {{- indexer_config["seeding-seconds"] + (seeding_margin_days * 24 * 60 * 60) -}}
+  bonus-minimum-bytes: |
+    {{- indexer_config["bonus-minimum-gb"]|default(0) * 1024 * 1024 * 1024 -}}
+  bonus-maximum-bytes: |
+    {{- indexer_config["bonus-maximum-gb"]|default(0) * 1024 * 1024 * 1024 -}}
 
 ## Configure which operations are applied to download items in each life-cycle stage.
 ##
@@ -294,14 +308,14 @@ stages: # (default)
       ## item.release.servarr_download_client.seeding_dir }}` where it moves items after
       ## they're imported by Servarr, for example `/media/Library/seeding/**/`:
       include: |
-        {%- set seeding_time_margin = 24 * 60 * 60 -%}
         {{-
             item.imported_portion < 0.80
             and (
                 item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
-                or item.seconds_since_done
-                >= (item.indexer_config["seeding-time"] + seeding_time_margin)
-                |default(0)
+                or (
+                    item.seconds_since_done
+                    >= item.indexer_config["seeding-margin-seconds"]
+                )
             )
         -}}
 
@@ -350,20 +364,21 @@ stages: # (default)
       ## }}` will only ever take effect if 2 items have the *exact* same size which will
       ## almost never happen.
       sort: |
-        {{- (
-            item.bandwidthPriority,
-            item.indexer_config is true,
-            -item.indexer_config["priority"]|default(45),
-            item.imported_portion,
-            item.uploadedEver,
-            -item.ratio,
-            item.size_when_done > item.indexer_config["bonus-minimum-size"]|default(0),
-            not item.indexer_config["bonus-maximum-size"]|default(0) or (
-                item.size_when_done
-                < item.indexer_config["bonus-maximum-size"]|default(0)
-            ),
-            -item.size_when_done,
-        ) -}}
+        {{-
+            (
+                item.bandwidthPriority,
+                item.indexer_config is true,
+                -item.indexer_config["priority"]|default(45),
+                item.imported_portion,
+                item.uploadedEver,
+                -item.ratio,
+                item.size_when_done > indexer_config["bonus-minimum-bytes"],
+                (not indexer_config["bonus-maximum-bytes"]) or (
+                    item.size_when_done < indexer_config["bonus-maximum-bytes"]
+                ),
+                -item.size_when_done,
+            )
+        -}}
 
       ## For most users this is the only action:
       remove: true

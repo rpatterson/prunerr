@@ -3,6 +3,5 @@
     "ids": ["8b8060bf22c942b1b6cabb8e5b840e445b840e44"],
     "files-unwanted": [1]
   },
-  "method": "torrent-set",
-  "tag": 6
+  "method": "torrent-set"
 }

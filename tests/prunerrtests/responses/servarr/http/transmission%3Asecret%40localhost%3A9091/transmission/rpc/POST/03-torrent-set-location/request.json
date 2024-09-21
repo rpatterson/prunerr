@@ -4,6 +4,5 @@
     "location": "/media/Library/seeding/Sonarr/Videos/Series",
     "move": false
   },
-  "method": "torrent-set-location",
-  "tag": 3
+  "method": "torrent-set-location"
 }

@@ -86,7 +86,7 @@ telegram-send==0.37
     # via prunerr (pyproject.toml)
 tenacity==9.0.0
     # via prunerr (pyproject.toml)
-transmission-rpc==3.4.2
+transmission-rpc==7.0.11
     # via prunerr (pyproject.toml)
 typing-extensions==4.12.2
     # via

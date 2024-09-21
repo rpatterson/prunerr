@@ -86,7 +86,7 @@ tomli==2.0.1
     #   build
     #   pip-tools
     #   pytest
-transmission-rpc==3.4.2
+transmission-rpc==7.0.11
     # via prunerr (pyproject.toml)
 typing-extensions==4.12.2
     # via transmission-rpc

@@ -1,5 +1,4 @@
 {
-  "tag": 10,
   "method": "torrent-start",
   "arguments": {
     "ids": [4]

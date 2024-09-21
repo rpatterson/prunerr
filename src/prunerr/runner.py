@@ -397,11 +397,9 @@ class PrunerrRunner(utils.PrunerrComponent):
             # some may be on different filesystems so we need to aggregate them all
             # across download clients but keep track of which download clients use which
             # directories.
-            if (
-                download_client.client.session.incomplete_dir_enabled
-            ):  # pragma: no cover
+            if download_client.session["incomplete-dir-enabled"]:  # pragma: no cover
                 download_item_dirs.setdefault(
-                    pathlib.Path(download_client.client.session.incomplete_dir),
+                    pathlib.Path(download_client.session["incomplete-dir"]),
                     {},
                 ).setdefault(download_client_url, download_client)
             for servarr_download_client in download_client.servarrs.values():

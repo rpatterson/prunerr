@@ -5,6 +5,5 @@
     "metainfo": "WyJFeGFtcGxlIHRvcnJlbnQgZm9yIHRlc3RpbmciXQ==",
     "peer-limit": 0
   },
-  "method": "torrent-add",
-  "tag": 4
+  "method": "torrent-add"
 }

@@ -104,10 +104,6 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                 # Not an import or grab record, skip it:
                 continue  # pragma: no cover
 
-        # Next, map imported file paths missing download item IDs/hashes by further
-        # methods now that all history data has been collated:
-        self.lookup_download_ids()
-
     def update_import_record(
         self,
         imported_relative: pathlib.Path,
@@ -280,87 +276,3 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     dropped_path,
                 )
         return dropped_relative
-
-    def lookup_download_ids(self) -> dict:
-        """
-        Lookup the download IDs for imported files without them by download item name.
-
-        :return: Map download item names and root basenames to download item hash IDs.
-        """
-        download_ids: dict = {}
-        release_hashes_by_file: dict = {}
-        for imported_relative, imported_item in self.imported_items.items():
-            download_id = self.imported_relatives.get(
-                imported_relative,
-                {},
-            ).get("downloadId")
-            if download_id:
-                # Already found a download item hash ID by better means:
-                continue
-
-            download_id = self.lookup_download_id(
-                release_hashes_by_file,
-                imported_relative,
-                imported_item,
-            )
-            if download_id:
-                download_ids.setdefault(download_id, {}).setdefault(
-                    imported_relative,
-                    self.imported_relatives.get(imported_relative, {}),
-                )
-                self.imported_relatives[imported_relative].setdefault(
-                    "downloadId",
-                    download_id,
-                )
-
-        return download_ids
-
-    def lookup_download_id(
-        self,
-        release_hashes_by_file: dict,
-        imported_relative: pathlib.Path,
-        imported_item: dict,
-    ) -> typing.Optional[str]:
-        """
-        Lookup the download IDs for imported files without them by download item name.
-
-        :param release_hashes_by_file: Map import names and root basenames to download
-            item hash IDs.
-        :param imported_relative: The relative path to the imported file within the
-            series/movie.
-        :param imported_item: The Servarr API JSON object for the imported item
-            annotated with the imported file object.
-        :return: The download item hash ID if one matched by name or root basename.
-        """
-        imported_collated = self.imported_relatives.get(imported_relative, {})
-        dropped_relative = imported_collated.get("droppedRel")
-
-        if download_id := release_hashes_by_file.get("droppedRel", {}).get(
-            dropped_relative
-        ):
-            logger.debug(  # pragma: no cover
-                "Reusing previous dropped relative path lookup, %r: %s",
-                dropped_relative,
-                imported_item["file"]["path"],
-            )
-        elif download_id := self.dropped_relatives.get(
-            dropped_relative,
-            {},
-        ).get("downloadId"):
-            logger.info(
-                "Matched download item by dropped relative path: %s",
-                dropped_relative,
-            )
-
-        if download_id:
-            release_hashes_by_file.setdefault("droppedRel", {}).setdefault(
-                dropped_relative,
-                download_id,
-            )
-            return download_id
-
-        logger.error(
-            "Could not lookup download item by names: %s",
-            imported_item["file"]["path"],
-        )
-        return None

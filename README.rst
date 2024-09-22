@@ -328,6 +328,28 @@ with ``seeding`` in `the download item's 'downloadDir'`_, for example
    This means Prunerr depends on `the download client's 'download-dir'`_ not ending in
    ``**/seeding/``.
 
+All Stage
+========================================================================================
+
+Always run for all download items under the ``download-dir`` or it's parallel
+``**/seeding/`` directory in any stage of the Servarr life-cycle or workflow.
+
+.. warning::
+
+   As such these operations can drastically affect Prunerr's run-time, so performance is
+   important. Be careful with the ``include`` template to be both efficient per-item and
+   to limit the operation to as few download items as possible.
+
+Usually only used to remove download items that are no longer registered with their
+indexer/tracker and to verify corrupt items, both of which can happen to any item at any
+time.
+
+.. note::
+
+   This stage excludes download items that have finished downloading and are complete
+   but are still in `the download client's 'download-dir'`_ to avoid clashes while
+   Servarr instances may be importing download item files.
+
 Free-space Stage
 ========================================================================================
 
@@ -351,28 +373,6 @@ download clients should probably also pause downloading when disk space drops
 significantly below this margin. Use `the provided Transmission pause download script`_
 and optionally `integrate it as a cron job`_ into your `Docker Compose project`_ or see
 those as examples.
-
-All Stage
-========================================================================================
-
-Always run for all download items under the ``download-dir`` or it's parallel
-``**/seeding/`` directory in any stage of the Servarr life-cycle or workflow.
-
-.. warning::
-
-   As such these operations can drastically affect Prunerr's run-time, so performance is
-   important. Be careful with the ``include`` template to be both efficient per-item and
-   to limit the operation to as few download items as possible.
-
-Usually only used to remove download items that are no longer registered with their
-indexer/tracker and to verify corrupt items, both of which can happen to any item at any
-time.
-
-.. note::
-
-   This stage excludes download items that have finished downloading and are complete
-   but are still in `the download client's 'download-dir'`_ to avoid clashes while
-   Servarr instances may be importing download item files.
 
 Orphans Stage
 ========================================================================================

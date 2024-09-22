@@ -276,6 +276,31 @@ stages: # (default)
       move: |
         {{- item.release.servarr_download_client.seeding_dir -}}
 
+  ## Apply operations all download items in any stage. See the warning under ["How it
+  ## Works"](https://gitlab.com/rpatterson/prunerr/-/blob/develop/README.rst#TODO):
+  all: # (default)
+    ## Remove and blacklist download items that are no longer registered with their
+    ## indexer/tracker:
+    un-regsitered: # (default)
+      ## Note that the more simple and more efficient test is first to short circuit the
+      ## more expensive next test if possible:
+      include: |
+        {{-
+            item.error == 2
+            and item.error_string is search(".*(not |un)registered.*", ignorecase=True)
+        -}}
+      remove: true
+      blacklist: true
+
+    ## Verify download items in whose data the download client has detected corruption:
+    verify: # (default)
+      include: |
+        {{-
+            item.error == 3
+            and item.error_string is search(".*(corrput|verif).*", ignorecase=True)
+        -}}
+      verify: true
+
   ## Apply operations when available disk space drops below the margin configured by the
   ## `max-download-*:` keys under `download-clients:`. Usually used to define which
   ## items are available for deleting and the order to delete them in:
@@ -397,31 +422,6 @@ stages: # (default)
       ## client's `{{ item.download_client.download_dir }}`:
       break: |
         {{- item.download_client.free_space_check() -}}
-
-  ## Apply operations all download items in any stage. See the warning under ["How it
-  ## Works"](https://gitlab.com/rpatterson/prunerr/-/blob/develop/README.rst#TODO):
-  all: # (default)
-    ## Remove and blacklist download items that are no longer registered with their
-    ## indexer/tracker:
-    un-regsitered: # (default)
-      ## Note that the more simple and more efficient test is first to short circuit the
-      ## more expensive next test if possible:
-      include: |
-        {{-
-            item.error == 2
-            and item.error_string is search(".*(not |un)registered.*", ignorecase=True)
-        -}}
-      remove: true
-      blacklist: true
-
-    ## Verify download items in whose data the download client has detected corruption:
-    verify: # (default)
-      include: |
-        {{-
-            item.error == 3
-            and item.error_string is search(".*(corrput|verif).*", ignorecase=True)
-        -}}
-      verify: true
 
   ## Apply operations orphaned files that don't belong to any download item:
   orphans: # (default)

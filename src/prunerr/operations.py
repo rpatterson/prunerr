@@ -23,15 +23,15 @@ logger = logging.getLogger(__name__)
 STAGE_QUEUED = "queued"
 STAGE_UPGRADED = "upgraded"
 STAGE_SEEDING = "seeding"
-STAGE_FREE_SPACE = "free-space"
 STAGE_ALL = "all"
+STAGE_FREE_SPACE = "free-space"
 STAGE_ORPHANS = "orphans"
 STAGES_DEFAULT = (
     STAGE_QUEUED,
     STAGE_UPGRADED,
     STAGE_SEEDING,
-    STAGE_FREE_SPACE,
     STAGE_ALL,
+    STAGE_FREE_SPACE,
 )
 STAGES = STAGES_DEFAULT + (STAGE_ORPHANS,)
 STAGES_SET = set(STAGES)

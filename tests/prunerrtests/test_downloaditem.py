@@ -109,7 +109,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         runner.update()
         download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
         self.assertGreater(
-            download_items[3].rate_total,
+            download_items[1].rate_total,
             0,
             "Wrong download item total download rate",
         )

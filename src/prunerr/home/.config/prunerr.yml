@@ -373,9 +373,9 @@ stages: # (default)
                 item.imported_portion,
                 item.uploadedEver,
                 -item.ratio,
-                item.size_when_done > indexer_config["bonus-minimum-bytes"],
-                (not indexer_config["bonus-maximum-bytes"]) or (
-                    item.size_when_done < indexer_config["bonus-maximum-bytes"]
+                item.size_when_done > item.indexer_config["bonus-minimum-bytes"],
+                (not item.indexer_config["bonus-maximum-bytes"]) or (
+                    item.size_when_done < item.indexer_config["bonus-maximum-bytes"]
                 ),
                 (
                     item.indexer_config["bonus-by-size"]|default(False)

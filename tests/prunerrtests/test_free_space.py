@@ -7,6 +7,7 @@ Prunerr removes imported items to free space according to configured rules.
 
 import os
 import pathlib
+import shutil
 import logging
 
 from unittest import mock
@@ -149,6 +150,11 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Too much free space before 'upgraded insufficient' `free-space` run",
         )
+        second_seeding_file = self.seeding_item_file.with_name(self.manual_import.name)
+        second_seeding_file.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(self.EXAMPLE_VIDEO, second_seeding_file)
+        self.manual_import.parent.mkdir(parents=True, exist_ok=True)
+        self.manual_import.hardlink_to(second_seeding_file)
         prunerr.apply_(self.runner, stages=["free-space"])
         self.assert_request_mocks(upgraded_insufficient_request_mocks)
         self.assertFalse(

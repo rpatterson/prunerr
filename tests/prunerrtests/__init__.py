@@ -222,6 +222,12 @@ class PrunerrTestCase(
             / self.SERVARR_IMPORT_PARENT_BASENAME
             / self.incomplete_item_file.name
         )
+        self.manual_import = self.imported_item_file.with_name(
+            self.imported_item_file.name.replace(
+                "S01E01",
+                "S01E03",
+            ).replace("Corge", "Garply"),
+        )
 
     def set_up_download_item_files(
         self,

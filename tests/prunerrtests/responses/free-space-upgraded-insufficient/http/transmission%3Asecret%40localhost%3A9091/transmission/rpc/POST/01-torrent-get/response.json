@@ -14,6 +14,11 @@
             "bytesCompleted": 1073741824,
             "length": 1073741824,
             "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+          },
+          {
+            "bytesCompleted": 1073741824,
+            "length": 1073741824,
+            "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E03.Garply.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
           }
         ],
         "fileStats": [
@@ -21,11 +26,16 @@
             "bytesCompleted": 1073741824,
             "priority": 0,
             "wanted": true
+          },
+          {
+            "bytesCompleted": 1073741824,
+            "priority": 0,
+            "wanted": true
           }
         ],
         "id": 1,
-        "isFinished": true,
-        "isStalled": false,
+        "isFinished": false,
+        "isStalled": true,
         "leftUntilDone": 0,
         "metadataPercentComplete": 1,
         "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
@@ -34,17 +44,17 @@
         "peersGettingFromUs": 0,
         "peersSendingToUs": 0,
         "percentDone": 1,
-        "priorities": [0],
+        "priorities": [0, 0],
         "queuePosition": 1,
         "rateDownload": 0,
         "rateUpload": 0,
         "recheckProgress": 0,
         "seedRatioLimit": 4,
         "seedRatioMode": 0,
-        "sizeWhenDone": 1073741824,
+        "sizeWhenDone": 2147483648,
         "startDate": 1,
         "status": 6,
-        "totalSize": 1073741824,
+        "totalSize": 2147483648,
         "trackers": [
           {
             "announce": "udp://tracker.foo.example.com:6969/announce",
@@ -53,9 +63,9 @@
             "tier": 0
           }
         ],
-        "uploadRatio": 1.5,
+        "uploadRatio": 0.5,
         "uploadedEver": 1073741824,
-        "wanted": [1],
+        "wanted": [1, 1],
         "webseedsSendingToUs": 0
       }
     ]

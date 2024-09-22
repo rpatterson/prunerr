@@ -374,26 +374,55 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :param item: A filesystem path or a download item to be deleted.
         :return: The size of deleted files in bytes or B.
         """
-        size = item.disk_usage
-        logger.info(
-            "Deleting %r: free space -> %0.2f %s",
-            item,
-            *transmission_rpc.utils.format_size(
-                self.session["download-dir-free-space"] + size,
-            ),
-        )
+        unimported_files = [
+            item_file
+            for item_file in item.files
+            if (not item_file.path.exists()) or item_file.stat.st_nlink <= 1
+        ]
+        if unimported_files and (len(unimported_files) < len(item.files)):
+            size = sum(item_file.disk_usage for item_file in unimported_files)
+            logger.info(
+                "Deleting un-imported %r files + %0.2f %s:\n  %s",
+                item,
+                *(
+                    transmission_rpc.utils.format_size(size)
+                    + (
+                        "\n  ".join(
+                            repr(unimported_file)
+                            for unimported_file in unimported_files
+                        ),
+                    )
+                ),
+            )
+            item.download_client.client.change_torrent(
+                [item.hashString],
+                files_unwanted=[
+                    unimported_file.id for unimported_file in unimported_files
+                ],
+                # When freeing disk space it's important not to get hung up waiting for
+                # a heavily loaded client. Be very defensive and proceed directly to
+                # deleting the data:
+                timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
+            )
+        else:
+            size = item.disk_usage
+            logger.info(
+                "Deleting %r + %0.2f %s",
+                item,
+                *transmission_rpc.utils.format_size(size),
+            )
+            self.client.remove_torrent(
+                [item.hashString],
+                # When freeing disk space it's important not to get hung up waiting for
+                # a heavily loaded client. Be very defensive and proceed directly to
+                # deleting the data:
+                timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
+            )
+            self.items.remove(item)
 
-        # When freeing disk space it's important not to get hung up waiting for a
-        # heavily loaded client. Be very defensive and proceed directly to deleting
-        # the data:
-        self.client.remove_torrent(
-            [item.hashString],
-            timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
-        )
-        self.items.remove(item)
         # Delete the actual files ourselves to workaround Transmission hanging when
         # deleting the data of large items: e.g. season packs.
-        for item_file in item.files:
+        for item_file in unimported_files:
             # Don't try to delete files for which nothing has been downloaded and this
             # the file was never created:
             if item_file.completed or item_file.path.exists():

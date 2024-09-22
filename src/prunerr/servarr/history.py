@@ -165,7 +165,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     logger.error(
                         "Duplicate hash IDs for dropped path, choosing older: %r -> %r",
                         download_id_collated["droppedRel"],
-                        dropped_relative,
+                        str(dropped_relative),
                     )
                     # When collating the older import history with the correct download
                     # item hash ID, remove the wrong download item hash ID from the data

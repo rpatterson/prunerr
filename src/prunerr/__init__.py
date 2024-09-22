@@ -38,6 +38,10 @@ except ImportError:  # pragma: no cover
 else:
     __version__ = version.version
 
+ARGPARSE_APPEND_DEFAULTS = {
+    "stages": prunerr.operations.STAGES_DEFAULT,
+}
+
 # Add MIME types that may not be registered on all hosts
 mimetypes.add_type("video/x-divx", ".divx")
 mimetypes.add_type("text/x-nfo", ".nfo")
@@ -95,8 +99,6 @@ def apply_(  # pylint: disable=missing-function-docstring,missing-return-doc
     *args,
     **kwargs,
 ) -> dict:
-    if not kwargs.get("stages"):
-        kwargs["stages"] = prunerr.operations.STAGES_DEFAULT
     runner.update()
     return runner.apply_(*args, **kwargs)
 
@@ -108,16 +110,17 @@ parser_apply = subparsers.add_parser(
     description=str(apply_.__doc__).strip(),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
-parser_apply.add_argument(
+stages_args = (
     "--stage",
     "-s",
-    dest="stages",
-    action="append",
-    choices=prunerr.operations.STAGES,
-    help="""\
-The download item life-cycle stages to apply.
-""",
 )
+stages_kwargs = {
+    "dest": "stages",
+    "action": "append",
+    "choices": prunerr.operations.STAGES,
+    "help": "The download item life-cycle stages to apply.",
+}
+parser_apply.add_argument(*stages_args, **stages_kwargs)  # type: ignore
 # Make the function for the sub-command specified in the CLI argument available in the
 # argument parser for delegation below.
 parser_apply.set_defaults(command=apply_)
@@ -136,6 +139,7 @@ parser_daemon = subparsers.add_parser(
     description=str(daemon.__doc__).strip(),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
+parser_daemon.add_argument(*stages_args, **stages_kwargs)  # type: ignore
 parser_daemon.set_defaults(command=daemon)
 
 
@@ -259,6 +263,14 @@ def _main(args=None):
     # Remove any meta options and arguments, those used to direct option and argument
     # handling:
     del cli_kwargs["command"]
+
+    # Workaround argparse's handling of `action="append"` and `default=`. If both are
+    # passed in, then any `--foo-option=...` given on the command line will be appended
+    # to the `default=` which is almost never what is intended:
+    for append_option, append_default in ARGPARSE_APPEND_DEFAULTS.items():
+        if append_option in cli_kwargs and cli_kwargs[append_option] is None:
+            cli_kwargs[append_option] = append_default  # pragma: no cover
+
     # Separate the arguments for the subcommand:
     prunerr_dests = {
         action.dest for action in parser._actions  # pylint: disable=protected-access

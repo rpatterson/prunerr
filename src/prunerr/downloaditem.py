@@ -272,9 +272,7 @@ class PrunerrDownloadItem(
         """
         if (seconds_downloading := self.seconds_downloading) <= 0:
             return None
-        return (
-            self.fields["sizeWhenDone"] - self.fields["leftUntilDone"]
-        ) / seconds_downloading
+        return (self.size_selected - self.fields["leftUntilDone"]) / seconds_downloading
 
     @cached_property
     def disk_usage(self) -> int:
@@ -290,24 +288,40 @@ class PrunerrDownloadItem(
         )
 
     @cached_property
+    def size_selected(self) -> float:
+        """
+        Calculate the total size of files that are selected or wanted for download.
+
+        Unfortunately, ``sizeWhenDone`` can't be used because it's the size of the files
+        that were selected when this item first finished downloading. So if files were
+        de-selected later, then ``sizeWhenDone`` is larger than the total size of
+        selected files.
+
+        :return: The total size in bytes or B.
+        """
+        return sum(item_file.size for item_file in self.files if item_file.selected)
+
+    @cached_property
+    def size_imported(self) -> float:
+        """
+        Calculate the total size of selected files that are hard lined elsewhere.
+
+        :return: The total size in bytes or B.
+        """
+        return sum(
+            item_file.size
+            for item_file in self.files
+            if item_file.selected and item_file.is_imported
+        )
+
+    @cached_property
     def imported_portion(self) -> float:
         """
         Calculate the portion of this item's size that is currently imported.
 
         :return: The size in bytes or B.
         """
-        return (
-            (
-                sum(
-                    item_file.size
-                    for item_file in self.files
-                    if item_file.selected and item_file.is_imported
-                )
-                / self.fields["sizeWhenDone"]
-            )
-            if self.fields["sizeWhenDone"]
-            else 0.0
-        )
+        return self.size_imported / self.size_selected if self.size_selected else 0.0
 
     @cached_property
     def log_path(self) -> pathlib.Path:

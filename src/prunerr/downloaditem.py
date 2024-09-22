@@ -69,7 +69,7 @@ class PrunerrDownloadItem(
             details["id"] = self.fields["id"]
         details["indexer"] = self.indexer_config.get("name")
         details["size"] = self.disk_usage
-        details["imported"] = f"{round(self.imported_portion) * 100}%"
+        details["imported"] = f"{round(self.imported_portion * 100)}%"
         return details
 
     def update(self):

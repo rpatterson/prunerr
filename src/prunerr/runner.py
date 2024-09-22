@@ -474,6 +474,7 @@ class PrunerrRunner(utils.PrunerrComponent):
                     self.config["stages"][stage],
                     download_client,
                 )
+                logger.debug("Applying %r", prunerr_stage)
                 if applier_results := prunerr_stage():
                     stage_results[download_client.config["url"]] = applier_results
         else:

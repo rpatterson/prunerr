@@ -6,6 +6,7 @@ Link imported files back into download items and verify, Servarr import inverse.
 """
 
 import typing
+import subprocess  # nosec, pragmatic choice for performance
 import logging
 
 import requests
@@ -13,6 +14,7 @@ import transmission_rpc
 
 import prunerr.servarr.rootitem
 from ..utils import pathlib
+from .. import downloaditem
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +132,10 @@ class ExportServarrRootItem:
         # Assemble the series/movie data that is different for `export` from `apply`:
         self.root_item.data = data
 
+        # Map imported file paths missing download item IDs/hashes by further
+        # methods with the collated history data:
+        self.lookup_download_ids()
+
         # Now group the imported files under the download item IDs/hashes the come from
         # them:
         self.imported_download_ids = {}
@@ -186,7 +192,7 @@ class ExportServarrRootItem:
         for (
             download_id,
             imported_relatives,
-        ) in self.root_item.history.lookup_download_ids().items():
+        ) in self.lookup_download_ids().items():
             self.imported_download_ids.setdefault(download_id, {}).update(
                 imported_relatives,
             )
@@ -205,7 +211,8 @@ class ExportServarrRootItem:
                     ),
                 )
                 linked_files.extend(
-                    release.download_item.link_imported_files(
+                    link_imported_files(
+                        release.download_item,
                         item_root_paths,
                         pathlib.Path(self.root_item.data["path"]),
                         imported_relatives,
@@ -213,6 +220,233 @@ class ExportServarrRootItem:
                     ),
                 )
         return linked_files
+
+    def lookup_download_ids(self) -> dict:
+        """
+        Lookup the download IDs for imported files without them by download item name.
+
+        :return: Map download item names and root basenames to download item hash IDs.
+        """
+        download_ids: dict = {}
+        release_hashes_by_file: dict = {}
+        for (
+            imported_relative,
+            imported_item,
+        ) in self.root_item.history.imported_items.items():
+            download_id = self.root_item.history.imported_relatives.get(
+                imported_relative,
+                {},
+            ).get("downloadId")
+            if download_id:
+                # Already found a download item hash ID by better means:
+                continue
+
+            download_id = self.lookup_download_id(
+                release_hashes_by_file,
+                imported_relative,
+                imported_item,
+            )
+            if download_id:
+                download_ids.setdefault(download_id, {}).setdefault(
+                    imported_relative,
+                    self.root_item.history.imported_relatives.get(
+                        imported_relative, {}
+                    ),
+                )
+                self.root_item.history.imported_relatives[imported_relative].setdefault(
+                    "downloadId",
+                    download_id,
+                )
+
+        return download_ids
+
+    def lookup_download_id(
+        self,
+        release_hashes_by_file: dict,
+        imported_relative: pathlib.Path,
+        imported_item: dict,
+    ) -> typing.Optional[str]:
+        """
+        Lookup the download IDs for imported files without them by download item name.
+
+        :param release_hashes_by_file: Map import names and root basenames to download
+            item hash IDs.
+        :param imported_relative: The relative path to the imported file within the
+            series/movie.
+        :param imported_item: The Servarr API JSON object for the imported item
+            annotated with the imported file object.
+        :return: The download item hash ID if one matched by name or root basename.
+        """
+        imported_collated = self.root_item.history.imported_relatives.get(
+            imported_relative, {}
+        )
+        dropped_relative = imported_collated.get("droppedRel")
+
+        if download_id := release_hashes_by_file.get("droppedRel", {}).get(
+            dropped_relative
+        ):
+            logger.debug(  # pragma: no cover
+                "Reusing previous dropped relative path lookup, %r: %s",
+                dropped_relative,
+                imported_item["file"]["path"],
+            )
+        elif download_id := self.root_item.history.dropped_relatives.get(
+            dropped_relative,
+            {},
+        ).get("downloadId"):
+            logger.info(
+                "Matched download item by dropped relative path: %s",
+                dropped_relative,
+            )
+
+        if download_id:
+            release_hashes_by_file.setdefault("droppedRel", {}).setdefault(
+                dropped_relative,
+                download_id,
+            )
+            return download_id
+
+        logger.error(
+            "Could not lookup download item by names: %s",
+            imported_item["file"]["path"],
+        )
+        return None
+
+
+def link_imported_files(
+    download_item: downloaditem.PrunerrDownloadItem,
+    item_root_paths: list,
+    imported_root: pathlib.Path,
+    imported_relatives: dict,
+    need_verify: bool = False,
+):
+    """
+    Hard link imported files back into download items.
+
+    :param download_item: The download item whose files to link.
+    :param item_root_paths: Filesystem paths of existing download item data.
+    :param imported_root: The path to the series/movie directory containing the
+        relative imported file paths.
+    :param imported_relatives: Map the relative paths of imported files to the
+        corresponding paths within the download item.
+    :param need_verify: Optionally pass in whether the caller already knows this
+        item needs to be verified after linking.
+    :return: The download item file paths of any imported files that were linked
+        into the download item.
+    :rtype: Iterator[]
+    """
+    # Change the download item data path if a better one is found.  Collect
+    # additional possible data paths from the import history records:
+    if not (item_root_paths := list(item_root_paths)):
+        logger.debug(
+            "No existing download item location found for: %r",
+            download_item,
+        )
+    elif find_location(download_item, item_root_paths):
+        need_verify = True
+
+    # Hard link imported files into the download item's location:
+    file_relatives = set(item_file.relative for item_file in download_item.files)
+    for imported_relative, dropped_data in imported_relatives.items():
+        if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
+            logger.error(
+                "Dropped path doesn't match download item file: %s",
+                dropped_data["droppedRel"],
+            )
+            continue
+        if (
+            download_item.FIELD_DOWNLOAD_DIR not in download_item.fields
+        ):  # pragma: no cover
+            logger.debug(
+                "Missing download dir field, updating: %r",
+                download_item,
+            )
+            download_item.update()
+        download_file_path = download_item.download_dir / dropped_data["droppedRel"]
+        if maybe_link_file(download_file_path, imported_root / imported_relative):
+            need_verify = True
+            yield str(download_file_path)
+
+    if need_verify:
+        # Deselect for download any remaining incomplete files:
+        download_item.clear()
+        deselect_unimported_files(download_item)
+
+        logger.info(
+            "Verifying and resuming download item: %r",
+            download_item,
+        )
+        download_item.download_client.client.verify_torrent(
+            download_item.hashString,
+        )
+        download_item.download_client.client.start_torrent(download_item.hashString)
+
+
+def find_location(
+    download_item: downloaditem.PrunerrDownloadItem, item_root_paths: list
+) -> pathlib.Path:
+    """
+    Find the most downloaded data path for this download item and set location.
+
+    The current implementation guesses the most downloaded path by sorting the
+    possible matches by size, largest first, and then modification date, most recent
+    first, and selects the first of those sorted paths. Anything more accurate
+    requires CPU intensive, time consuming verification.
+
+    :param download_item: The download item whose files to link.
+    :param item_root_paths: Filesystem paths of existing download item data.
+    :return: The best data path if the location was changed.
+    """
+    if download_item.FIELD_DOWNLOAD_DIR not in download_item.fields:  # pragma: no cover
+        logger.debug(
+            "Missing download dir field, updating: %r",
+            download_item,
+        )
+        download_item.update()
+
+    def key(item_root_path: pathlib.Path) -> tuple:
+        """
+        Determine the size and modification date of this items data in the path.
+
+        :param item_root_path: A filesystem path of existing download item data.
+        :return: The values on which to sort this sequence item.
+        """
+        du_process = subprocess.run(  # nosec, pragmatic choice for performance
+            ["du", "-s", str(item_root_path)],
+            capture_output=True,
+            check=True,
+        )
+        return (
+            int(du_process.stdout.strip().split()[0]),
+            item_root_path.stat().st_mtime,
+        )
+
+    item_root_path = sorted(item_root_paths, reverse=True, key=key)[0]
+
+    if download_item.download_dir != item_root_path.parent:
+        logger.info(
+            "Changing download item location for %r: %s",
+            download_item,
+            item_root_path.parent,
+        )
+        download_item.download_client.client.move_torrent_data(
+            download_item.hashString,
+            item_root_path.parent,
+            move=False,
+        )
+        # Avoid another RPC request, update the field value using the internals:
+        download_item.fields[download_item.FIELD_DOWNLOAD_DIR] = str(
+            item_root_path.parent
+        )
+        del download_item.download_dir
+        return item_root_path.parent
+
+    logger.debug(
+        "Download item location already best for %r: %s",
+        download_item,
+        item_root_path.parent,
+    )
+    return None
 
 
 def maybe_add_download_item(
@@ -246,7 +480,7 @@ def maybe_add_download_item(
     # Try each download URL from the grab history, most recent first:
     for download_url, download_data in download_urls.items():
         try:
-            release = download_data["downloadClient"].add_torrent(
+            added_item = download_data["downloadClient"].download_client.add_torrent(
                 download_url,
                 paused=True,
                 download_dir=str(download_data["downloadClient"].seeding_dir),
@@ -262,11 +496,93 @@ def maybe_add_download_item(
                 download_data.get("nzbInfoUrl") or download_url,
             )
             continue
-        else:
-            download_items_by_id.setdefault(
-                release.download_item.hashString.upper(),
-                [],
-            ).append(release)
-            return release.download_item
+
+        release = prunerr.servarr.release.PrunerrServarrRelease(
+            download_data["downloadClient"],
+            added_item,
+        )
+        download_items_by_id.setdefault(
+            release.download_item.hashString.upper(),
+            [],
+        ).append(release)
+        return added_item
 
     return None  # pragma: no cover
+
+
+def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:
+    """
+    Link the source file to the target path if not already linked to it.
+
+    :param source: The path of the file to hard link.
+    :param target: The path to hard link the file to.
+    :return: ``True`` if the source was hard linked.
+    """
+    try:
+        source.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:  # pragma: no cover
+        logger.exception(
+            "Error creating download item directory: %s",
+            source.parent,
+        )
+        return False
+    if source.parent.stat().st_dev != target.parent.stat().st_dev:  # pragma: no cover
+        logger.exception(
+            "Download item on different filesystem: %r -> %r",
+            str(source),
+            str(target),
+        )
+        return False
+    if source.exists():
+        if source.samefile(target):
+            logger.debug(
+                "Already hard linked to file: %r -> %r",
+                str(source),
+                str(target),
+            )
+            return False
+        logger.info(
+            "Deleting existing file: %s",
+            source,
+        )
+        source.unlink()
+    logger.info(
+        "Hard linking file: %r -> %r",
+        str(source),
+        str(target),
+    )
+    source.hardlink_to(target)
+    return True
+
+
+def deselect_unimported_files(download_item: downloaditem.PrunerrDownloadItem) -> list:
+    """
+    For any unimported and incomplete files, deselect them for download.
+
+    :param download_item: The download item whose files to link.
+    :return:
+        Map file indexes to ``prunerr.downloaditem.PrunerrDownloadItemFile()``
+        instances for any files that were deselected.
+    """
+    deselected_files = [
+        download_file
+        for download_file in download_item.files
+        if (
+            not download_file.path.exists()
+            or (
+                download_file.stat.st_nlink <= 1
+                and download_file.completed < download_file.size
+            )
+        )
+    ]
+    if deselected_files:
+        logger.info(
+            "Deselecting un-imported, incomplete download files for %r:\n  %s",
+            download_item,
+            "\n  ".join(repr(deselected_file) for deselected_file in deselected_files),
+        )
+        download_item.download_client.client.change_torrent(
+            [download_item.hashString],
+            files_unwanted=[deselected_file.id for deselected_file in deselected_files],
+        )
+    return deselected_files

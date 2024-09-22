@@ -109,25 +109,6 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             releases.append(release)
         return releases
 
-    def add_torrent(
-        self,
-        download_url: str,
-        **kwargs,
-    ) -> "prunerr.servarr.release.PrunerrServarrRelease":
-        """
-        Add a torrent to the download client and update instance state.
-
-        :param download_url: The URL from which to download the torrent to add.
-        :param kwargs: Additional arguments passed onto
-            ``transmission_rpc.client.Client.add_torrent()``.
-        :return: The added release.
-        """
-        added_item = prunerr.servarr.release.PrunerrServarrRelease(
-            self,
-            self.download_client.add_torrent(download_url, **kwargs),
-        )
-        return added_item
-
     def filter_seeding(self) -> collections.abc.Generator:
         """
         Filter releases that have been acted on by Servarr.

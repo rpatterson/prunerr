@@ -148,8 +148,10 @@ stages: # (default)
             -%}
         {%- endif -%}
         {{- archive_portion > 0.50 -}}
-      ## Delete the download item and it's files from the download client. All operation
-      ## configurations must include at least one action:
+      ## Delete the download item and it's files from the download client. If some of
+      ## the item's files are still imported, hard linked elsewhere, then this action
+      ## de-selects the un-imported files, marks them as unwanted, and deletes only
+      ## those files. All operation configurations must include at least one action:
       remove: true # (required)
       ## Blacklist the release in Servarr to start a search for a replacement. This
       ## action can only apply with `remove: true`:

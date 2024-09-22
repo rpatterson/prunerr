@@ -63,8 +63,6 @@ High priority
    Find the grab history for unregistered items and make them as failed to start a
    search.
 
-#. Deselect unimported files before deciding whether to delete?
-
 #. When removing download items from the client while running the ``$ prunerr
    free-space`` sub-command, avoid a heavily loaded client blocking deleting items by
    sending the ``remove_torrent()`` `request asynchronously

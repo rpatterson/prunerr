@@ -55,19 +55,13 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
 
         # A manual import of a 2nd file from a download item that was grabbed by Servarr
         # for just the 1st item:
-        manual_import = self.imported_item_file.with_name(
-            self.imported_item_file.name.replace(
-                "S01E01",
-                "S01E03",
-            ).replace("Corge", "Garply"),
-        )
-        shutil.copy2(self.EXAMPLE_VIDEO, manual_import)
+        shutil.copy2(self.EXAMPLE_VIDEO, self.manual_import)
         # Also use this file as a download item file that is left after removal from the
         # download client and is used as the best data path to change the download
         # item's location too:
         self.seeding_item_file.parent.mkdir(parents=True, exist_ok=True)
-        self.seeding_item_file.with_name(manual_import.name).hardlink_to(
-            manual_import,
+        self.seeding_item_file.with_name(self.manual_import.name).hardlink_to(
+            self.manual_import,
         )
 
         # An import download item all of whose download data files have been removed:

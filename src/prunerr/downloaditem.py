@@ -444,7 +444,7 @@ class PrunerrDownloadItem(
             "Moving download item %r: %r -> %r",
             self,
             str(self.download_dir),
-            new_download_dir,
+            str(new_download_dir),
         )
         self.download_client.client.move_torrent_data(
             ids=[self.hashString],

@@ -140,7 +140,11 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
                 # download client:
                 and download_dir == download_item.download_dir
                 # Skip items with no history other than `grabbed` events:
-                and download_item.release.history[0]["eventType"] != event_type_grabbed
+                and [
+                    history_record
+                    for history_record in download_item.release.history
+                    if history_record["eventType"] != event_type_grabbed
+                ]
                 # Skip items whose most recent history other than `grabbed`, such as
                 # `downloadFolderimported`, is too recent to avoid moving out from under
                 # Servarr:

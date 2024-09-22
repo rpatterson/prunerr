@@ -81,7 +81,7 @@ stages:
         {{- (
             item.bandwidth_priority,
             item.indexer_config is true,
-            -item.indexer_config["priority"]|default(45),
+            -item.indexer_config.get("priority", 45),
             imported_portion,
         ) -}}
       remove: true

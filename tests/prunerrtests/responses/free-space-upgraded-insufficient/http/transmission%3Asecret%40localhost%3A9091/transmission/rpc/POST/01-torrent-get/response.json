@@ -24,8 +24,8 @@
           }
         ],
         "id": 1,
-        "isFinished": false,
-        "isStalled": true,
+        "isFinished": true,
+        "isStalled": false,
         "leftUntilDone": 0,
         "metadataPercentComplete": 1,
         "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",

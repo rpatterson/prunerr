@@ -328,6 +328,11 @@ class PrunerrOperation(utils.PrunerrComponent):
         for action in self.config:
             if action not in ACTIONS:
                 continue
+            if OPERATION_BREAK in self.config and self.config[OPERATION_BREAK].render(
+                item=item
+            ):
+                break_applier = True
+                break
 
             action_apply = (
                 getattr(item, f"apply_{action.replace('-', '_')}")
@@ -339,11 +344,6 @@ class PrunerrOperation(utils.PrunerrComponent):
             )
             if action_results := action_apply(self, *action_args):
                 item_results.update(action_results)
-                if OPERATION_BREAK in self.config and self.config[
-                    OPERATION_BREAK
-                ].render(item=item):
-                    break_applier = True
-                    break
             else:
                 logger.debug(  # pragma: no cover
                     "No results for stage %r, operation %r, action: %s",

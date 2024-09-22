@@ -28,12 +28,6 @@ Required
    <https://github.com/linuxserver/docker-transmission/issues/284#issue-2451398884>`_
    has been fixed.
 
-#. :Apply:
-
-   Profile a real-world run of the ``apply`` sub-command, both when not deleting items
-   and when deleting items and see, among any other obvious optimizations, what of the
-   example Jinja templates should be moved into cached properties.
-
 #. Add torrent date handling to the ``export`` sub-command. Take the ``grabbed`` history
    record dates for the ``added-date`` and the ``downloadFolderImported`` record dates
    for the ``done-date`` and `set them in the Transmission '/config/resume/*.resume'

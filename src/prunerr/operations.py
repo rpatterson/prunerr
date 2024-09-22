@@ -185,7 +185,7 @@ class PrunerrStage(utils.PrunerrComponent):
             f"filter_{self.name.replace('-', '_')}",
         )
         if not (stage_items := list(stage_filter())):
-            logger.debug("No items in stage %r", self.name)
+            logger.debug("No items in %r", self)
         return stage_items
 
 
@@ -211,6 +211,7 @@ class PrunerrOperation(utils.PrunerrComponent):
         """
         operation_results = {}
         break_applier = False
+        logger.debug("Applying %r", self)
         for item in self.items:
             item_results = None
 
@@ -227,7 +228,7 @@ class PrunerrOperation(utils.PrunerrComponent):
             except CONTINUE_EXC_TYPES:
                 logger.exception(
                     "Error applying %r to item: %r",
-                    self.config["name"],
+                    self,
                     item,
                 )
             finally:
@@ -301,11 +302,7 @@ class PrunerrOperation(utils.PrunerrComponent):
             )
 
         if not operation_items:
-            logger.debug(
-                "No items for operation %r in stage %r",
-                self.config["name"],
-                self.stage.name,
-            )
+            logger.debug("No items for %r", self)
         return operation_items
 
     def apply_item(
@@ -342,13 +339,13 @@ class PrunerrOperation(utils.PrunerrComponent):
                 )
                 else getattr(self.stage.applier, f"apply_{action.replace('-', '_')}")
             )
+            logger.debug("Applying %r action: %s", self, action)
             if action_results := action_apply(self, *action_args):
                 item_results.update(action_results)
             else:
                 logger.debug(  # pragma: no cover
-                    "No results for stage %r, operation %r, action: %s",
-                    self.stage.name,
-                    self.config["name"],
+                    "No results for %r action: %s",
+                    self,
                     action,
                 )
 

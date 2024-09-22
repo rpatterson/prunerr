@@ -52,12 +52,7 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
 
         :return: The Servarr API JSON object representing this movie/series.
         """
-        return self.servarr.client.get(
-            self.servarr.type_map["dir_type"],
-            **{
-                f"{self.servarr.type_map['dir_type']}Id": self.root_id,
-            },
-        )
+        return self.servarr.dir_items[self.root_id]
 
     @cached_property
     def imported_items(self) -> dict:
@@ -87,7 +82,7 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
         # Is there a 2nd level to get to files, for example series -> episode ->
         # file as opposed to just movie -> file:
         items = (
-            [self.data]
+            [self.servarr.dir_items[self.root_id]]
             if self.servarr.type_map["file_depth"] == 1
             else self.servarr.client.get(
                 self.servarr.type_map["item_type"],

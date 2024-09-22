@@ -223,3 +223,5 @@ Nice to have
 
    Add container type annotations, for example ``foo: dict[str, int]``, once Python 3.8
    BBB support is dropped.
+
+#. Rename ``dir_*`` to ``lib_*`` throughout the code base.

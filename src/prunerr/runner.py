@@ -316,9 +316,14 @@ class PrunerrRunner(utils.PrunerrComponent):
             return re_add_results
         return None  # pragma: no cover
 
-    def daemon(self):
+    def daemon(
+        self,
+        stages: collections.abc.Iterable = operations.STAGES_DEFAULT,
+    ):
         """
         Prune download client items continuously.
+
+        :param stages: The download item life-cycle stages whose operations to apply.
         """
         # Log only once at the start messages that would be noisy if repeated for every
         # daemon poll loop.
@@ -329,7 +334,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             start = time.time()
 
             try:
-                self._daemon_inner()
+                self._daemon_inner(stages)
             except utils.RETRY_EXC_TYPES as exc:
                 # TODO: If `ValueError`, check if it's from `transmission_rpc` and
                 # related to an interrupted RPC response, otherwise re-raise.
@@ -486,14 +491,19 @@ class PrunerrRunner(utils.PrunerrComponent):
             stage_results = prunerr_stage()
         return stage_results
 
-    def _daemon_inner(self):
+    def _daemon_inner(
+        self,
+        stages: collections.abc.Iterable = operations.STAGES_DEFAULT,
+    ):
         """
         Prune download client items continuously.
+
+        :param stages: The download item life-cycle stages whose operations to apply.
         """
         # Refresh the list of download items
         self.update()
         # Run the `apply` sub-command as the inner loop
-        return self.apply_()
+        return self.apply_(stages)
 
     def clear(self):
         """

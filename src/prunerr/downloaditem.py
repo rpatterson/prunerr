@@ -516,16 +516,15 @@ class PrunerrDownloadItem(
                 operation.config.get("level", "ERROR")
             ],
             "msg": operation.config[operations.ACTION_LOG].render(**context),
-            operations.ACTION_ARGS: (
-                operation.config[operations.ACTION_ARGS].render(**context)
-                if operations.ACTION_ARGS in operation.config
-                else context
-            ),
         }
         logger.log(
             log_result["level"],
             log_result["msg"],
-            log_result[operations.ACTION_ARGS],
+            (
+                operation.config[operations.ACTION_ARGS].render(**context)
+                if operations.ACTION_ARGS in operation.config
+                else context
+            ),
         )
         return log_result
 

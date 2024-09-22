@@ -95,6 +95,8 @@ def apply_(  # pylint: disable=missing-function-docstring,missing-return-doc
     *args,
     **kwargs,
 ) -> dict:
+    if not kwargs.get("stages"):
+        kwargs["stages"] = prunerr.operations.STAGES_DEFAULT
     runner.update()
     return runner.apply_(*args, **kwargs)
 
@@ -110,9 +112,8 @@ parser_apply.add_argument(
     "--stage",
     "-s",
     dest="stages",
+    action="append",
     choices=prunerr.operations.STAGES,
-    nargs="*",
-    default=prunerr.operations.STAGES_DEFAULT,
     help="""\
 The download item life-cycle stages to apply.
 """,

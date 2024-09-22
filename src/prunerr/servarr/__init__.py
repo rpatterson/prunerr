@@ -179,6 +179,18 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_client_names = download_client_names
 
     @cached_property
+    def dir_items(self) -> dict:
+        """
+        Retrieve all the series/movies in this Servarr instance.
+
+        :return: Map the items' DB IDs to the Servarr API JSON data for each item.
+        """
+        return {
+            dir_item["id"]: dir_item
+            for dir_item in self.client.get(self.type_map["dir_type"])
+        }
+
+    @cached_property
     def queue(self) -> dict:
         """
         Retrieve the queue of downloading releases for this Servarr instance.

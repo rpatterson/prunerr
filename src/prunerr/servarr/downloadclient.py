@@ -53,7 +53,11 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         """
         return {
             "servarr": self.servarr.config.get("name"),
-            "dowload_client": self.config.get("url"),
+            "dowload_client": (
+                self.download_client.config["name"]
+                if hasattr(self, "download_client")
+                else self.config.get("url")
+            ),
         }
 
     def update(self, config: dict):  # type: ignore # pylint: disable=arguments-differ

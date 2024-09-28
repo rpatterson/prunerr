@@ -39,11 +39,16 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
 
         :return: Map descriptive names to useful values.
         """
-        return {
+        details = {
             "servarr": self.servarr_download_client.servarr.config.get("name"),
-            "dowload_client": self.servarr_download_client.config.get("url"),
-            "torrent": self.download_item,
+            "dowload_client": (
+                self.servarr_download_client.download_client.config["name"]
+                if hasattr(self.servarr_download_client, "download_client")
+                else self.servarr_download_client.config.get("url")
+            ),
         }
+        details.update(self.download_item.details)
+        return details
 
     def clear(self):
         """

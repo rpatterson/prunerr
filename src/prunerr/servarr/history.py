@@ -149,9 +149,10 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
                 if (
-                    download_id_collated.get("droppedRel")
-                    and dropped_relative != download_id_collated["droppedRel"]
-                ):  # pragma: no cover
+                    download_id_collated.get("droppedRootName")
+                    and dropped_relative.parts[0]
+                    != download_id_collated["droppedRootName"]
+                ):
                     # Corrupt Servarr release history where the same download item hash
                     # ID is on the import history records from different download
                     # items. The only cases of this I've seen are when more recent
@@ -160,8 +161,8 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     # is the correct download item hash ID:
                     logger.error(
                         "Duplicate hash IDs for dropped path, choosing older: %r -> %r",
-                        download_id_collated["droppedRel"],
-                        str(dropped_relative),
+                        download_id_collated["droppedRootName"],
+                        str(dropped_relative.parts[0]),
                     )
                     # When collating the older import history with the correct download
                     # item hash ID, remove the wrong download item hash ID from the data
@@ -178,7 +179,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     download_id_collated.pop("importedRel", None)
                 # Also map the download item hash ID to the root basename for comparison
                 # with older history later to identify incorrect download item hash IDs:
-                download_id_collated["droppedRel"] = dropped_relative
+                download_id_collated["droppedRootName"] = dropped_relative.parts[0]
 
             # Earlier, when collating the newer import history with the incorrect
             # download item hash ID, store a reference so we can remove that hash ID

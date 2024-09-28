@@ -33,11 +33,11 @@
       "preferredWordScore": "0",
       "releaseGroup": "RELEASER"
     },
-    "id": 1
+    "id": 2
   },
   {
     "movieId": 1,
-    "sourceTitle": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
+    "sourceTitle": "Qux.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
     "language": {
       "id": 1,
       "name": "English"
@@ -55,32 +55,20 @@
         "isRepack": false
       }
     },
-    "customFormats": [],
-    "customFormatScore": 0,
     "qualityCutoffNotMet": true,
+    "languageCutoffNotMet": false,
     "date": "2021-04-22T00:00:00Z",
     "downloadId": "909C9B954B414A87B1DCF6E2FB09650FCC35DE57",
-    "eventType": "grabbed",
+    "eventType": "downloadFolderImported",
     "data": {
-      "indexer": "Plugh Indexer",
-      "nzbInfoUrl": "https://plugh.example.com/torrent/1",
-      "releaseGroup": "RELEASER",
-      "age": "365",
-      "ageHours": "8760.00000000000",
-      "ageMinutes": "525600.00000000",
-      "publishedDate": "2021-08-14T00:00:00Z",
+      "fileId": "1",
+      "droppedPath": "/media/Library/downloads/Radarr/Videos/Movies/Qux.Movie.1980.WEB-DL.x265.HEVC-RELEASER/Qux.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
+      "importedPath": "/media/Library/Videos/Movies/Qux Movie (1980) [tvdbid-1]/Qux.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv",
       "downloadClient": "Transmission",
       "downloadClientName": "transmission",
-      "size": "1073741824",
-      "downloadUrl": "http://localhost:9696/1/download?apikey=&link=&file=Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER",
-      "guid": "https://plugh.example.com/download/5/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.torrent",
-      "tvdbId": "0",
-      "tvRageId": "0",
-      "protocol": "2",
       "preferredWordScore": "0",
-      "movieMatchType": "Title",
-      "torrentInfoHash": ""
+      "releaseGroup": "RELEASER"
     },
-    "id": 2
+    "id": 1
   }
 ]

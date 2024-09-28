@@ -470,7 +470,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             )
             # TODO: Clear the record of whether a notification was previously sent.
             return True
-        logger.debug(
+        logger.error(
             "Insufficient free space to continue downloading: "
             "%0.2f %s - %0.2f %s = %0.2f %s",
             *(
@@ -485,6 +485,10 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                     - self.session["download-dir-free-space"],
                 )
             ),
+            extra={
+                "runner": self.runner,
+                "download_hash": None,
+            },
         )
         return False
 

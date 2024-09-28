@@ -209,9 +209,20 @@ class PrunerrOperation(utils.PrunerrComponent):
         """
         Apply this stage operation to the appliers items.
         """
-        operation_results = {}
+        operation_results: dict = {}
         break_applier = False
         logger.debug("Applying %r", self)
+
+        # Check if we even need to render the `include:` and `sort:` templates:
+        if (
+            OPERATION_BREAK in self.config
+            and self.stage.items
+            and self.config[OPERATION_BREAK].render(item=self.stage.items[0])
+        ):
+            break_applier = True
+            return break_applier, operation_results
+
+        # Render the `include:` and `sort:` templates:
         for item in self.items:
             item_results = None
 
@@ -325,11 +336,6 @@ class PrunerrOperation(utils.PrunerrComponent):
         for action in self.config:
             if action not in ACTIONS:
                 continue
-            if OPERATION_BREAK in self.config and self.config[OPERATION_BREAK].render(
-                item=item
-            ):
-                break_applier = True
-                break
 
             action_apply = (
                 getattr(item, f"apply_{action.replace('-', '_')}")
@@ -342,6 +348,11 @@ class PrunerrOperation(utils.PrunerrComponent):
             logger.debug("Applying %r action: %s", self, action)
             if action_results := action_apply(self, *action_args):
                 item_results.update(action_results)
+                if OPERATION_BREAK in self.config and self.config[
+                    OPERATION_BREAK
+                ].render(item=item):
+                    break_applier = True
+                    break
             else:
                 logger.debug(  # pragma: no cover
                     "No results for %r action: %s",

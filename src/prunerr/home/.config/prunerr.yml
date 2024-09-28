@@ -98,14 +98,14 @@ indexers:
 ## raw values for each indexer are available in `{{ indexer_config }}`:
 indexers-config: # (default)
   seeding-seconds: |
-    {{- indexer_config["seeding-days"]|default(0) * 24 * 60 * 60 -}}
+    {{- indexer_config.get("seeding-days", 0) * 24 * 60 * 60 -}}
   seeding-margin-seconds: |
     {%- set seeding_margin_days = 1 -%}
     {{- indexer_config["seeding-seconds"] + (seeding_margin_days * 24 * 60 * 60) -}}
   bonus-minimum-bytes: |
-    {{- indexer_config["bonus-minimum-gb"]|default(0) * 1024 * 1024 * 1024 -}}
+    {{- indexer_config.get("bonus-minimum-gb", 0) * 1024 * 1024 * 1024 -}}
   bonus-maximum-bytes: |
-    {{- indexer_config["bonus-maximum-gb"]|default(0) * 1024 * 1024 * 1024 -}}
+    {{- indexer_config.get("bonus-maximum-gb", 0) * 1024 * 1024 * 1024 -}}
 
 ## Configure which operations are applied to download items in each life-cycle stage.
 ##
@@ -166,7 +166,7 @@ stages: # (default)
     bandwidth-private: # (default)
       include: |
         {{-
-            "private" in item.indexer_config["groups"]|default([])
+            "private" in item.indexer_config.get("groups", [])
         -}}
       ## The `change:` action takes the field names and values from the mapping it
       ## contains and [applies them to the download
@@ -178,7 +178,7 @@ stages: # (default)
       ## Consider items whose tracker URLs match none of the groups of hostnames above
       ## under `indexers:` to be public items:
       include: |
-        {{- not item.indexer_config["groups"]|default([]) -}}
+        {{- not item.indexer_config.get("groups", []) -}}
       change:
         bandwidthPriority: -1
 
@@ -349,10 +349,10 @@ stages: # (default)
         {{-
             item.imported_portion < 0.80
             and (
-                item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
+                item.ratio >= item.indexer_config.get("seeding-ratio", 0.0)
                 and (
                     item.seconds_since_done
-                    >= item.indexer_config["seeding-margin-seconds"]
+                    > item.indexer_config.get("seeding-margin-seconds", 0.0)
                 )
             )
         -}}
@@ -406,16 +406,19 @@ stages: # (default)
             (
                 item.bandwidth_priority,
                 item.indexer_config is true,
-                -item.indexer_config["priority"]|default(45),
+                -item.indexer_config.get("priority", 45),
                 item.imported_portion,
                 item.uploadedEver,
                 -item.ratio,
-                item.size_when_done > item.indexer_config["bonus-minimum-bytes"],
-                (not item.indexer_config["bonus-maximum-bytes"]) or (
+                item.size_when_done > item.indexer_config.get(
+                    "bonus-minimum-bytes",
+                    -1,
+                ),
+                (not item.indexer_config.get("bonus-maximum-bytes")) or (
                     item.size_when_done < item.indexer_config["bonus-maximum-bytes"]
                 ),
                 (
-                    item.indexer_config["bonus-by-size"]|default(False)
+                    item.indexer_config.get("bonus-by-size", False)
                     and item.size_when_done
                     or -item.size_when_done
                 ),

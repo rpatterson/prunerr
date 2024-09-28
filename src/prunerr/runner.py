@@ -381,7 +381,7 @@ class PrunerrRunner(utils.PrunerrComponent):
         """
         item_files: set = set()
         download_item_dirs: dict = {}
-        for download_client_url, download_client in self.download_clients.items():
+        for download_client in self.download_clients.values():
 
             # Collect all the download item files that actually exist currently
             for download_item in download_client.items:
@@ -403,22 +403,14 @@ class PrunerrRunner(utils.PrunerrComponent):
             # Aggregate all the download item directories across all download clients.
             # Some download item directories may be shared across download clients and
             # some may be on different filesystems so we need to aggregate them all
-            # across download clients but keep track of which download clients use which
-            # directories.
+            # across download clients:
+            download_item_dirs.setdefault(download_client.download_dir, None)
+            download_item_dirs.setdefault(download_client.seeding_dir, None)
             if download_client.session["incomplete-dir-enabled"]:  # pragma: no cover
                 download_item_dirs.setdefault(
                     pathlib.Path(download_client.session["incomplete-dir"]),
-                    {},
-                ).setdefault(download_client_url, download_client)
-            for servarr_download_client in download_client.servarrs.values():
-                for download_item_dir in (
-                    servarr_download_client.download_dir,
-                    servarr_download_client.seeding_dir,
-                ):
-                    download_item_dirs.setdefault(download_item_dir, {}).setdefault(
-                        download_client_url,
-                        download_client,
-                    )
+                    None,
+                )
 
         # Collect any files in any download item directories that aren't download item
         # files.  Also yield the download clients that the file's download item

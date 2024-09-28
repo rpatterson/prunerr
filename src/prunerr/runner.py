@@ -444,12 +444,10 @@ class PrunerrRunner(utils.PrunerrComponent):
         stat = item.stat()
         size = (stat.st_blocks * 512) if (stat.st_nlink == 1) else 0
         logger.info(
-            "Deleting %r per %r operation, %0.2f %s: free space -> %0.2f %s",
+            "Deleting for %r: %r -> %0.2f %s",
+            operation,
             str(item),
-            *(
-                transmission_rpc.utils.format_size(size)
-                + transmission_rpc.utils.format_size(os.statvfs(item).f_bavail + size)
-            ),
+            *transmission_rpc.utils.format_size(size),
         )
         self.delete_path(item)
 

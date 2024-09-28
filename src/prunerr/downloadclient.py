@@ -381,7 +381,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         ]
         if unimported_files and (len(unimported_files) < len(item.files)):
             size = sum(item_file.disk_usage for item_file in unimported_files)
-            logger.info(
+            logger.debug(
                 "Deleting un-imported %(item)r files + %(size)s:"
                 "\n  %(unimported_files)s",
                 {
@@ -404,13 +404,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             )
         else:
             size = item.disk_usage
-            logger.info(
-                "Deleting %(item)r + %(size)s",
-                {
-                    "item": item,
-                    "size": utils.format_size(size),
-                },
-            )
+            logger.debug("Deleting %(item)r", {"item": item})
             self.client.remove_torrent(
                 [item.hashString],
                 # When freeing disk space it's important not to get hung up waiting for

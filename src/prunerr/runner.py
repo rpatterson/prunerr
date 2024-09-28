@@ -578,7 +578,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             # the next `daemon` loop Prunerr will try to delete it from the client
             # again, which is correct, but then chokes on the missing files it
             # already deleted.
-            logger.error(  # pragma: no cover
+            logger.warning(  # pragma: no cover
                 "Path to be deleted doesn't exist: %s",
                 path,
             )

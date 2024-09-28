@@ -134,7 +134,28 @@ indexers-config: # (default)
 ##   item_idx == 0 }}`, the second stage item is `{{ item_idx == 1 }}`, and so on. Not
 ##   available in the `include:` and `sort:` templates.
 ##
+## For technical reasons, the order that stages are executed in is different from the
+## order download items tend to proceed through their life-cycle. For example, execute
+## the `seeding:` stage before the `queued:` stage so that operations in the `queued:`
+## stage aren't applied to items that the `move:` operation in the `seeding:` stage
+## would move and thus exclude from the `queued:` stage:
+##
 stages: # (default)
+  ## Apply operations once Servarr has acted on a queued download item, usually by
+  ## importing files from it:
+  seeding: # (default)
+    ## Move items to the parallel `{{ item.release.servarr_download_client.seeding_dir
+    ## }}`, for example `/media/Library/seeding/**/`. For most users, this will be the
+    ## only operation under `seeding:`. When deleting download items to free space,
+    ## Prunerr only considers items under this parallel directory, so this is
+    ## effectively required. This has the added benefit of reflecting which items have
+    ## been acted on by Servarr in the download client:
+    move: # (default)
+      ## Always move all items that Servarr has acted on and removed from the
+      ## queue. Omit the `include:` key to apply to all items:
+      move: |
+        {{- item.release.servarr_download_client.seeding_dir -}}
+
   ## Apply maintenance operations to newly added, queued download items:
   queued: # (default)
     ## Remove download items containing archives to optimize seeding per disk space:
@@ -258,21 +279,6 @@ stages: # (default)
       ## Demonstrate how to match on the same quality:
       # include: |
       #   {{ queued_item.release.quality == item.release.quality }}
-
-  ## Apply operations once Servarr has acted on a queued download item, usually by
-  ## importing files from it:
-  seeding: # (default)
-    ## Move items to the parallel `{{ item.release.servarr_download_client.seeding_dir
-    ## }}`, for example `/media/Library/seeding/**/`. For most users, this will be the
-    ## only operation under `seeding:`. When deleting download items to free space,
-    ## Prunerr only considers items under this parallel directory, so this is
-    ## effectively required. This has the added benefit of reflecting which items have
-    ## been acted on by Servarr in the download client:
-    move: # (default)
-      ## Always move all items that Servarr has acted on and removed from the
-      ## queue. Omit the `include:` key to apply to all items:
-      move: |
-        {{- item.release.servarr_download_client.seeding_dir -}}
 
   ## Apply operations all download items in any stage. See the warning under ["How it
   ## Works"](https://gitlab.com/rpatterson/prunerr/-/blob/develop/README.rst#TODO):

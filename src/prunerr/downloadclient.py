@@ -317,18 +317,18 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         )
         if total_remaining_download > self.session["download-dir-free-space"]:
             logger.debug(
-                "Total size of remaining downloads is greater than the available free "
-                "space: %0.2f %s - %0.2f %s = %0.2f %s",
-                *(
-                    transmission_rpc.utils.format_size(total_remaining_download)
-                    + transmission_rpc.utils.format_size(
-                        self.session["download-dir-free-space"]
-                    )
-                    + transmission_rpc.utils.format_size(
+                "Total size of remaining downloads is greater than the available free"
+                " space: %(remaining)s - %(free)s = %(deficit)s",
+                {
+                    "remaining": utils.format_size(
+                        total_remaining_download,
+                    ),
+                    "free": utils.format_size(self.session["download-dir-free-space"]),
+                    "deficit": utils.format_size(
                         total_remaining_download
                         - self.session["download-dir-free-space"]
-                    )
-                ),
+                    ),
+                },
             )
 
         # Avoid attribute and item lookup in the inner loop:
@@ -382,17 +382,15 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         if unimported_files and (len(unimported_files) < len(item.files)):
             size = sum(item_file.disk_usage for item_file in unimported_files)
             logger.info(
-                "Deleting un-imported %r files + %0.2f %s:\n  %s",
-                item,
-                *(
-                    transmission_rpc.utils.format_size(size)
-                    + (
-                        "\n  ".join(
-                            repr(unimported_file)
-                            for unimported_file in unimported_files
-                        ),
-                    )
-                ),
+                "Deleting un-imported %(item)r files + %(size)s:"
+                "\n  %(unimported_files)s",
+                {
+                    "item": item,
+                    "size": utils.format_size(size),
+                    "unimported_files": "\n  ".join(
+                        repr(unimported_file) for unimported_file in unimported_files
+                    ),
+                },
             )
             item.download_client.client.change_torrent(
                 [item.hashString],
@@ -407,9 +405,11 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         else:
             size = item.disk_usage
             logger.info(
-                "Deleting %r + %0.2f %s",
-                item,
-                *transmission_rpc.utils.format_size(size),
+                "Deleting %(item)r + %(size)s",
+                {
+                    "item": item,
+                    "size": utils.format_size(size),
+                },
             )
             self.client.remove_torrent(
                 [item.hashString],
@@ -454,37 +454,33 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         if self.session["download-dir-free-space"] >= self.config["min-free-space"]:
             logger.debug(
                 "Sufficient free space to continue downloading: "
-                "%0.2f %s - %0.2f %s = %0.2f %s",
-                *(
-                    transmission_rpc.utils.format_size(
-                        self.session["download-dir-free-space"],
-                    )
-                    + transmission_rpc.utils.format_size(
+                "%(free)s - %(minimum)s = %(surplus)s",
+                {
+                    "free": utils.format_size(self.session["download-dir-free-space"]),
+                    "minimum": utils.format_size(
                         self.config["min-free-space"],
-                    )
-                    + transmission_rpc.utils.format_size(
+                    ),
+                    "surplus": utils.format_size(
                         self.session["download-dir-free-space"]
                         - self.config["min-free-space"],
-                    )
-                ),
+                    ),
+                },
             )
             # TODO: Clear the record of whether a notification was previously sent.
             return True
-        logger.error(
+        logger.debug(
             "Insufficient free space to continue downloading: "
-            "%0.2f %s - %0.2f %s = %0.2f %s",
-            *(
-                transmission_rpc.utils.format_size(
+            "%(minimum)s - %(free)s = %(deficit)s",
+            {
+                "minimum": utils.format_size(
                     self.config["min-free-space"],
-                )
-                + transmission_rpc.utils.format_size(
-                    self.session["download-dir-free-space"],
-                )
-                + transmission_rpc.utils.format_size(
+                ),
+                "free": utils.format_size(self.session["download-dir-free-space"]),
+                "deficit": utils.format_size(
                     self.config["min-free-space"]
                     - self.session["download-dir-free-space"],
-                )
-            ),
+                ),
+            },
             extra={
                 "runner": self.runner,
                 "download_hash": None,

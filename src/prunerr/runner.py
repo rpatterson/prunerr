@@ -17,7 +17,6 @@ import logging
 
 import yaml
 import tenacity
-import transmission_rpc
 
 import prunerr.downloadclient
 import prunerr.downloaditem
@@ -429,12 +428,16 @@ class PrunerrRunner(utils.PrunerrComponent):
                         yield file_path
 
     def apply_remove(  # noqa: V105
-        self, operation: operations.PrunerrOperation, item: pathlib.Path
+        self,
+        operation: operations.PrunerrOperation,
+        item: pathlib.Path,
+        **context,  # pylint: disable=unused-argument
     ) -> dict:
         """
         Remove this filesystem path according to the operation configuration.
 
         :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
         :param item: The filesystem path to remove.
         :return: A mapping describing the details of removal.
         """
@@ -444,10 +447,12 @@ class PrunerrRunner(utils.PrunerrComponent):
         stat = item.stat()
         size = (stat.st_blocks * 512) if (stat.st_nlink == 1) else 0
         logger.info(
-            "Deleting for %r: %r -> %0.2f %s",
-            operation,
-            str(item),
-            *transmission_rpc.utils.format_size(size),
+            "Deleting for %(operation)r: %(item)r -> %(size)s",
+            {
+                "operation": operation,
+                "item": str(item),
+                "size": utils.format_size(size),
+            },
         )
         self.delete_path(item)
 

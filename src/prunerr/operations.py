@@ -44,7 +44,7 @@ ACTION_CHANGE = "change"
 ACTION_MOVE = "move"
 ACTION_VERIFY = "verify"
 ACTION_LOG = "log"
-ACTION_ARGS = "args"
+ACTION_ARG = "arg"
 ACTIONS = {ACTION_REMOVE, ACTION_CHANGE, ACTION_MOVE, ACTION_VERIFY, ACTION_LOG}
 TEMPLATE_KEYS = (
     OPERATION_INCLUDE,
@@ -52,7 +52,7 @@ TEMPLATE_KEYS = (
     OPERATION_BREAK,
     ACTION_MOVE,
     ACTION_LOG,
-    ACTION_ARGS,
+    ACTION_ARG,
 )
 CONTINUE_EXC_TYPES = utils.RETRY_EXC_TYPES + (OSError,)
 
@@ -213,17 +213,8 @@ class PrunerrOperation(utils.PrunerrComponent):
         break_applier = False
         logger.debug("Applying %r", self)
 
-        # Check if we even need to render the `include:` and `sort:` templates:
-        if (
-            OPERATION_BREAK in self.config
-            and self.stage.items
-            and self.config[OPERATION_BREAK].render(item=self.stage.items[0])
-        ):
-            break_applier = True
-            return break_applier, operation_results
-
         # Render the `include:` and `sort:` templates:
-        for item in self.items:
+        for item_idx, item in enumerate(self.items):
             item_results = None
 
             # Special case for orphaned files:
@@ -235,7 +226,7 @@ class PrunerrOperation(utils.PrunerrComponent):
                 root_logger.addHandler(item_handler)
 
             try:
-                break_applier, item_results = self.apply_item(item)
+                break_applier, item_results = self.apply_item(item_idx, item)
             except CONTINUE_EXC_TYPES:
                 logger.exception(
                     "Error applying %r to item: %r",
@@ -318,13 +309,19 @@ class PrunerrOperation(utils.PrunerrComponent):
 
     def apply_item(
         self,
+        item_idx: int,
         item: typing.Union[utils.PrunerrComponent, pathlib.Path],
     ) -> tuple:
         """
         Apply the operations for this life-cycle stage to a download item.
 
-        :param item: The item to apply the operations to. Usually this is a
-            download item but is the file path for an orphaned file.
+        :param item_idx:
+            The position of the item in this stage's items starting from ``0``.
+
+        :param item:
+            The item to apply the operations to. Usually this is a download item but is
+            the file path for an orphaned file.
+
         :return: Map operation names to the actions taken if any.
         """
         break_applier = False
@@ -344,11 +341,11 @@ class PrunerrOperation(utils.PrunerrComponent):
                 else getattr(self.stage.applier, f"apply_{action.replace('-', '_')}")
             )
             logger.debug("Applying %r action: %s", self, action)
-            if action_results := action_apply(self, *action_args):
+            if action_results := action_apply(self, *action_args, item_idx=item_idx):
                 item_results.update(action_results)
                 if OPERATION_BREAK in self.config and self.config[
                     OPERATION_BREAK
-                ].render(item=item):
+                ].render(item_idx=item_idx, item=item):
                     break_applier = True
                     break
             else:
@@ -465,5 +462,6 @@ jinja_env.filters["regex_replace"] = regex_replace
 jinja_env.filters["regex_search"] = regex_search
 jinja_env.filters["regex_findall"] = regex_findall
 jinja_env.filters["regex_findall_index"] = regex_findall_index
+jinja_env.filters["format_size"] = utils.format_size
 jinja_env.tests["match"] = regex_match
 jinja_env.tests["search"] = regex_search

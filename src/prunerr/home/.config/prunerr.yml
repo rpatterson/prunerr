@@ -121,7 +121,19 @@ indexers-config: # (default)
 ## the default operation configuration from here to their file and then modify them. To
 ## disable any of the default operations defined here, the user's configuration should
 ## include an empty key for that operation. See the commented example below under
-## `archives:`:
+## `archives:`. Templates, unless noted otherwise below, have access to the following
+## context:
+##
+## - `{{ item }}`:
+##
+##   The download client item from this stage's items.
+##
+## - `{{ item_idx }}`:
+##
+##   The position of the item in this stage's items. The first stage item is `{{
+##   item_idx == 0 }}`, the second stage item is `{{ item_idx == 1 }}`, and so on. Not
+##   available in the `include:` and `sort:` templates.
+##
 stages: # (default)
   ## Apply maintenance operations to newly added, queued download items:
   queued: # (default)
@@ -221,7 +233,7 @@ stages: # (default)
       ## The log message here is first rendered as a Jinja template and then [`%`
       ## formatted by the Python logging
       ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
-      args: |
+      arg: |
         {{-
             {
                 "release": item.release,
@@ -427,6 +439,26 @@ stages: # (default)
 
       ## For most users this is the only action:
       remove: true
+
+    ## Send a notification when there's still not enough free space after removing all
+    ## items that can be removed because this operation will only be run if the `break:`
+    ## template under the `prune:` operation above never renders `True`:
+    notify:
+      break: |
+        {{- item_idx > 1 -}}
+      arg: |
+        {{-
+            {
+                "download_client": item.download_client.config["name"],
+                "deficit": (
+                    item.download_client.config["min-free-space"]
+                    - item.download_client.session["download-dir-free-space"]
+                )|format_size,
+            }
+        -}}
+      log: >-
+        Insufficient free space for %(download_client)r but nothing can be deleted:
+        %(deficit)s
 
   ## Apply operations orphaned files that don't belong to any download item:
   orphans: # (default)

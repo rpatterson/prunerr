@@ -37,5 +37,5 @@ class PrunerrVerifyTests(prunerrtests.PrunerrTestCase):
         Prunerr verifies corrupt items as a part of the `apply` sub-command.
         """
         verify_request_mocks = self.mock_responses()
-        prunerr.apply_(self.runner)
+        prunerr.apply_(self.runner, stages=["all"])
         self.assert_request_mocks(verify_request_mocks)

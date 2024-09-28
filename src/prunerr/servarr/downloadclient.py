@@ -132,28 +132,31 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
 
         for download_item in self.download_client.items:
             if (
-                # Skip items still downloading:
-                download_item.status == download_item.STATUS_SEEDING
-                # Skip items known by a Servarr instance in it's queue:
-                and download_item.hashString.upper() not in self.servarr.queue
                 # Skip items not in this Servarr instance's download directory for this
                 # download client:
-                and download_dir == download_item.download_dir
-                # Skip items with no history other than `grabbed` events:
-                and [
-                    history_record
-                    for history_record in download_item.release.history
-                    if history_record["eventType"] != event_type_grabbed
-                ]
-                # Skip items whose most recent history other than `grabbed`, such as
-                # `downloadFolderimported`, is too recent to avoid moving out from under
-                # Servarr:
-                # TODO: Make timezone aware:
-                # TODO: Add a separate configuration key for the wait period:
-                and (now - dateutil_parse(download_item.release.history[0]["date"]))
-                > daemon_poll
+                download_dir == download_item.download_dir
+                # Skip items known by a Servarr instance in it's queue:
+                and download_item.hashString.upper() not in self.servarr.queue
             ):
-                yield download_item
+                for history_record in download_item.release.history:
+                    if history_record["eventType"] != event_type_grabbed:
+                        break
+                    pass  # pragma: no cover  # pylint: disable=unnecessary-pass
+                else:
+                    history_record = None  # pragma: no cover
+                if (
+                    # Skip items with no history other than `grabbed` events:
+                    history_record is not None
+                    # Skip items whose most recent history other than `grabbed`, such as
+                    # `downloadFolderimported`, is too recent to avoid moving out from
+                    # under Servarr:
+                    # TODO: Make timezone aware:
+                    # TODO: Add a separate configuration key for the wait period:
+                    and (now - dateutil_parse(history_record["date"])) > daemon_poll
+                ):
+                    yield download_item
+                else:
+                    pass  # pragma: no cover
 
     def delete(
         self, release: "prunerr.servarr.release.PrunerrServarrRelease", **params

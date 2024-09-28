@@ -1,0 +1,7 @@
+---
+backends:
+    - "matrix"
+matrix:
+  url: "https://matrix-client.matrix.org"
+  token: "..."
+  roomId: "..."

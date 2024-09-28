@@ -218,6 +218,8 @@ transmission-rpc==7.0.11
     # via prunerr (pyproject.toml)
 trove-classifiers==2024.7.2
     # via pyroma
+types-appdirs==1.4.3.5
+    # via prunerr (pyproject.toml)
 types-python-dateutil==2.9.0.20240821
     # via prunerr (pyproject.toml)
 types-pyyaml==6.0.12.20240808

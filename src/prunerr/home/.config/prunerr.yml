@@ -234,14 +234,25 @@ stages: # (default)
       ## formatted by the Python logging
       ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
       arg: |
+        {%- set remaining_files = item.release.upgraded_release.download_item.files
+            |selectattr("is_imported")|join("\n    ")
+        -%}
         {{-
             {
                 "release": item.release,
-                "queued_upgrades": item.release.queued_upgrades.values()|list,
+                "queued_upgrades": item.release.queued_upgrades.values()
+                    |join("\n    "),
+                "remaining_files": remaining_files,
             }
         -}}
       log: |
-        Partially imported: %(queued_upgrades)r -> %(release)r
+        Partially imported:
+          Queued upgrades:
+            %(queued_upgrades)s
+          Will upgrade:
+            %(release)r
+          Leaving imported files:
+            %(remaining_files)s
       ## Defaults to `ERROR` which also sends a notification if `ntfy` is configured:
       # level: "WARNING"
       ## Demonstrate how to match on the same quality:

@@ -120,7 +120,7 @@ class DaemonOnceFilter(logging.Filter):  # pylint: disable=too-few-public-method
         if (
             (runner := getattr(record, "runner", None)) is not None
             and runner.quiet
-            and download_hash is not None
+            and hasattr(record, "download_hash")
             and download_hash in self.download_hashes
         ):
             return False

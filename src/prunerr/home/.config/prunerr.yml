@@ -306,6 +306,16 @@ stages: # (default)
   ## items are available for deleting and the order to delete them in:
   free-space: # (default)
     prune: # (default)
+      ## Don't proceed with further with any operations for any download items in this
+      ## stage after this operation. Continue to the next stage. Usually used to signal
+      ## that a life-cycle stage has completed it's work with this item. For example
+      ## here, stop deleting items once there's sufficient free space in its download
+      ## client's `{{ item.download_client.download_dir }}`. This is also rendered
+      ## before the first download item in this operation's stage to avoid rendering the
+      ## `include:` and `sort:` templates when not necessary:
+      break: |
+        {{- item.download_client.free_space_check() -}}
+
       ## This Jinja template should render a false value for items that should not be
       ## deleted:
       ##
@@ -414,14 +424,6 @@ stages: # (default)
 
       ## For most users this is the only action:
       remove: true
-
-      ## Don't proceed with further with any operations for any download items in this
-      ## stage after this operation. Continue to the next stage. Usually used to signal
-      ## that a life-cycle stage has completed it's work with this item. For example
-      ## here, stop deleting items once there's sufficient free space in its download
-      ## client's `{{ item.download_client.download_dir }}`:
-      break: |
-        {{- item.download_client.free_space_check() -}}
 
   ## Apply operations orphaned files that don't belong to any download item:
   orphans: # (default)

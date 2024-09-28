@@ -162,31 +162,6 @@ stages: # (default)
     ## Or:
     # archives: {}
 
-    ## Remove stalled download items whose progress is too slow:
-    stalled: # (default)
-      ## Strike a balance between giving difficult to find items time to download while
-      ## also pruning items that will never be completed. Only consider incomplete,
-      ## downloading torrents to be stalled. Give rare or unpopular items a week to get
-      ## started waiting for intermittent seeders to reappear: 1 week * 7 days * 24
-      ## hours * 60 minutes * 60 seconds. Apply this to both `{{
-      ## item.seconds_downloading }}` and `{{ item.age }}` just as a double
-      ## check. Finally, consider download items whose total download rate in `Bps` is
-      ## very low, to be stalled. If an item seems to be completely downloaded to the
-      ## client but then later it's verified and some last corrupted bits are
-      ## re-downloaded, it's `{{ item.doneDate }}` will be updated. This can really
-      ## throw off the total download rate, especially for small torrents, so be very
-      ## conservative. The `{{ item.rate_total }}` continues to drop over time for truly
-      ## stalled items so they'll eventually pass this threshold:
-      include: |
-        {{-
-            item.status == "downloading"
-            and item.seconds_downloading > 604800
-            and item.age > 604800
-            and item.rate_total < 50
-        -}}
-      remove: true
-      blacklist: true
-
     ## Set download items from private indexers/trackers to high priority:
     bandwidth-private: # (default)
       include: |
@@ -300,6 +275,31 @@ stages: # (default)
             and item.error_string is search(".*(corrput|verif).*", ignorecase=True)
         -}}
       verify: true
+
+    ## Remove stalled download items whose progress is too slow:
+    stalled: # (default)
+      ## Strike a balance between giving difficult to find items time to download while
+      ## also pruning items that will never be completed. Only consider incomplete,
+      ## downloading torrents to be stalled. Give rare or unpopular items a week to get
+      ## started waiting for intermittent seeders to reappear: 1 week * 7 days * 24
+      ## hours * 60 minutes * 60 seconds. Apply this to both `{{
+      ## item.seconds_downloading }}` and `{{ item.age }}` just as a double
+      ## check. Finally, consider download items whose total download rate in `Bps` is
+      ## very low, to be stalled. If an item seems to be completely downloaded to the
+      ## client but then later it's verified and some last corrupted bits are
+      ## re-downloaded, it's `{{ item.doneDate }}` will be updated. This can really
+      ## throw off the total download rate, especially for small torrents, so be very
+      ## conservative. The `{{ item.rate_total }}` continues to drop over time for truly
+      ## stalled items so they'll eventually pass this threshold:
+      include: |
+        {{-
+            item.status == "downloading"
+            and item.seconds_downloading > 604800
+            and item.age > 604800
+            and item.rate_total < 50
+        -}}
+      remove: true
+      blacklist: true
 
   ## Apply operations when available disk space drops below the margin configured by the
   ## `max-download-*:` keys under `download-clients:`. Usually used to define which

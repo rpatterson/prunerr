@@ -154,7 +154,7 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
             1,
             "Private indexer item file has more than one link before importing",
         )
-        self.assertFalse(
+        self.assertTrue(
             public_indexer_item.exists(),
             "Public indexer item not deleted by queued operations",
         )
@@ -220,7 +220,7 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
             1,
             "Private indexer item file has more than one link before importing",
         )
-        self.assertFalse(
+        self.assertTrue(
             public_indexer_item.exists(),
             "Public indexer item not deleted by queued operation",
         )

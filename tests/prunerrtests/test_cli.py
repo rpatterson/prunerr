@@ -120,7 +120,7 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         """
         request_mocks = self.mock_responses()
         self.assertIsNone(
-            prunerr.main(args=[f"--config={self.CONFIG}", "apply", "--stage=queued"]),
+            prunerr.main(args=[f"--config={self.CONFIG}", "apply"]),
             "Wrong console script sub-command return value",
         )
         self.assert_request_mocks(request_mocks)
@@ -137,7 +137,6 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
                     "DEBUG",
                     f"--config={self.CONFIG}",
                     "apply",
-                    "--stage=queued",
                 ],
             ),
             "Wrong console script options return value",
@@ -221,9 +220,9 @@ class PrunerrCLITests(prunerrtests.PrunerrTestCase):
         self.mock_responses()
         stdout_file = io.StringIO()
         with contextlib.redirect_stdout(stdout_file):
-            prunerr.main(args=[f"--config={self.CONFIG}", "apply", "--stage=all"])
+            prunerr.main(args=[f"--config={self.CONFIG}", "apply", "--stage=seeding"])
         self.assertEqual(
             stdout_file.getvalue(),
             "",
-            "Verify sub-command with empty results printed something to ``stdout``",
+            "Sub-command with empty results printed something to ``stdout``",
         )

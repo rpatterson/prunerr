@@ -13,6 +13,10 @@ Known bugs and wanted features.
 Required
 ****************************************************************************************
 
+#. Do away with the ``./Videos/Series/`` and  ``./Videos/Movies/`` path parts. Now that
+   I understand why full renaming of imported files is important, the ``rsync`` benefits
+   of matching my library paths is moot.
+
 #. :Documentation:
 
    Once the ``log:`` action is implemented, add a note under 'Caution' about using the
@@ -48,6 +52,28 @@ Required
 ****************************************************************************************
 High priority
 ****************************************************************************************
+
+#. :Cross-seeding:
+
+   Figure out how to handle multiple items with the same file paths, in particular for
+   the ``move:`` and ``remove:`` actions. If multiple download items have the same file
+   relative paths, then there are a number of issues. When one finishes downloading,
+   Servarr imports it, and then Prunerr moves it, the others now have no data. I haven't
+   observed it, but I imagine a similar thing happens when deleting one. It's also
+   inefficient to let them download at the same time, wasted download and ratio.
+
+   Maybe add a ``cross-seed:`` operation in the ``queued:`` stage to identify such
+   items, hard link the files into ``**/Sonarr/Foo Indexer/**`` sub-directories of the
+   Servarr directory and change the newer items' ``downloadDir`` fields. Then add logic
+   to the ``move:`` and ``remove:`` actions to also handle those duplicate items. Maybe
+   also pause downloading for all items but the one with the most seeders and resume
+   after the downloading one is imported.
+
+   I might be observing this issue because I've mis-configured Sonarr and/or
+   autobrr. Wait to observe more instances and investigate further before choosing an
+   approach. Research how `the cross-seed app <https://www.cross-seed.org/>`_ works
+   first and be sure that Prunerr's solution doesn't conflict with or reproduce its
+   work.
 
 #. :Operations: Extract indexer priorities from Servarr.
 

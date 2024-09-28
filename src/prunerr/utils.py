@@ -303,3 +303,14 @@ class PrunerrOperationsItem(PrunerrComponent):
         raise NotImplementedError(
             "Subclasses must override ``log_path``"
         )  # pragma: no cover
+
+
+def format_size(size: int) -> str:
+    """
+    Format a size in a form that is readable for humans.
+
+    :param size: The size to format in bytes.
+    :return: The human readable format.
+    """
+    number, unit = transmission_rpc.utils.format_size(size)
+    return f"{number:0.2f} {unit}"

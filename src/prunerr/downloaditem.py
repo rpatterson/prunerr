@@ -67,8 +67,7 @@ class PrunerrDownloadItem(
         else:  # pragma: no cover
             details["id"] = self.fields["id"]
         details["indexer"] = self.indexer_config.get("name")
-        du_number, du_unit = transmission_rpc.utils.format_size(self.disk_usage)
-        details["disk_usage"] = f"{du_number:0.2f} {du_unit}"
+        details["disk_usage"] = utils.format_size(self.disk_usage)
         details["imported"] = f"{round(self.imported_portion * 100)}%"
         return details
 
@@ -374,12 +373,15 @@ class PrunerrDownloadItem(
     # Methods involved in life-cycle stage operations:
 
     def apply_remove(  # noqa: V105
-        self, operation: operations.PrunerrOperation
+        self,
+        operation: operations.PrunerrOperation,
+        **context,  # pylint: disable=unused-argument
     ) -> dict:
         """
         Remove this download item according to the operation configuration.
 
         :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
         :return: A mapping describing the details of removal.
         """
         remove_result: dict = {operations.ACTION_REMOVE: str(self.path)}
@@ -415,12 +417,15 @@ class PrunerrDownloadItem(
         return remove_result
 
     def apply_change(  # noqa: V105
-        self, operation: operations.PrunerrOperation
+        self,
+        operation: operations.PrunerrOperation,
+        **context,  # pylint: disable=unused-argument
     ) -> dict:
         """
         Change this download item's fields according to the operation configuration.
 
         :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
         :return: A mapping describing the changes made.
         """
         change_result = {}
@@ -442,17 +447,22 @@ class PrunerrDownloadItem(
         self,
         operation: operations.PrunerrOperation,
         move_timeout: int = 5 * 60,
+        **context,
     ) -> dict:
         """
         Move this download item according to the operation configuration.
 
         :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
         :param move_timeout: How long to wait for the release to be moved in the
             download client before continuing.
         :return: A mapping describing the changes made.
         :raises DownloadClientTimeout: Moving the download item took too long.
         """
-        new_download_dir = operation.config[operations.ACTION_MOVE].render(item=self)
+        new_download_dir = operation.config[operations.ACTION_MOVE].render(
+            item=self,
+            **context,
+        )
         move_result = {operations.ACTION_MOVE: str(new_download_dir)}
         logger.info(
             "Moving download item %r: %r -> %r",
@@ -484,12 +494,15 @@ class PrunerrDownloadItem(
         return move_result
 
     def apply_verify(  # noqa: V105
-        self, operation: operations.PrunerrOperation
+        self,
+        operation: operations.PrunerrOperation,
+        **context,  # pylint: disable=unused-argument
     ) -> dict:
         """
         Verify corrupt data in this download item per the operation configuration.
 
         :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
         :return: A mapping describing the verifys made.
         """
         verify_result = {
@@ -502,16 +515,21 @@ class PrunerrDownloadItem(
         self.download_client.client.verify_torrent([self.hashString])
         return verify_result
 
-    def apply_log(self, operation: operations.PrunerrOperation) -> dict:  # noqa: V105
+    def apply_log(  # noqa: V105
+        self,
+        operation: operations.PrunerrOperation,
+        **context,
+    ) -> dict:
         """
         Log a message from a template per the operation configuration.
 
         Usually, this is used to send a notification when `ntfy` is configured.
 
         :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
         :return: A mapping describing the messages logged.
         """
-        context = {"item": self}
+        context["item"] = self
         log_result = {
             "level": logging._nameToLevel[  # pylint: disable=protected-access
                 operation.config.get("level", "ERROR")
@@ -522,8 +540,8 @@ class PrunerrDownloadItem(
             log_result["level"],
             log_result["msg"],
             (
-                operation.config[operations.ACTION_ARGS].render(**context)
-                if operations.ACTION_ARGS in operation.config
+                operation.config[operations.ACTION_ARG].render(**context)
+                if operations.ACTION_ARG in operation.config
                 else context
             ),
         )
@@ -619,8 +637,7 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
         :return: Map descriptive names to useful values.
         """
         details = self.rpc_file._asdict()
-        du_number, du_unit = transmission_rpc.utils.format_size(self.disk_usage)
-        details["disk_usage"] = f"{du_number:0.2f} {du_unit}"
+        details["disk_usage"] = utils.format_size(self.disk_usage)
         details["imported"] = self.is_imported
         return details
 

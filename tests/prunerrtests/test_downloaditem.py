@@ -127,3 +127,8 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
             repr(download_items[1].files[0]),
             "Download item string representation missing its name",
         )
+        self.assertIn(
+            " KiB'",
+            repr(download_items[1].files[0]),
+            "Download item string representation missing its name",
+        )

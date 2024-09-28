@@ -340,7 +340,7 @@ stages: # (default)
             item.imported_portion < 0.80
             and (
                 item.ratio >= item.indexer_config["seeding-ratio"]|default(0.0)
-                or (
+                and (
                     item.seconds_since_done
                     >= item.indexer_config["seeding-margin-seconds"]
                 )

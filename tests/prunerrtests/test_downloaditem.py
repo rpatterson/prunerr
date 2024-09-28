@@ -123,7 +123,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         runner.update()
         download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
         self.assertIn(
-            "name=",
+            "path=",
             repr(download_items[1].files[0]),
             "Download item string representation missing its name",
         )

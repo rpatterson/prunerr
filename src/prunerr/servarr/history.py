@@ -41,7 +41,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
 
         :return: Map descriptive names to useful values.
         """
-        return {"root_item": self.root_item}
+        return self.root_item.details
 
     def update(self):
         """

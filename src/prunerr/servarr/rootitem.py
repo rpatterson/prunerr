@@ -39,10 +39,12 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
 
         :return: Map descriptive names to useful values.
         """
-        details = {"id": self.root_id}
+        details = {"servarr": self.servarr.config["name"]}
         if vars(self).get("data"):
             details["title"] = self.data["title"]
             details["year"] = self.data["year"]
+        else:
+            details["id"] = self.root_id
         return details
 
     @cached_property

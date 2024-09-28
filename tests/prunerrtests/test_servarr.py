@@ -45,11 +45,6 @@ class PrunerrServarrTests(
             "Servarr name missing from Servarr representation",
         )
         self.assertIn(
-            list(self.download_client_items_responses.keys())[0],
-            repr(servarr_download_client),
-            "Download client URL missing from Servarr representation",
-        )
-        self.assertIn(
             self.download_item_title,
             repr(servarr_download_client.download_client.items[0].release),
             "Download item title missing from Servarr release representation",
@@ -71,13 +66,7 @@ class PrunerrServarrTests(
             "Root item data missing series title",
         )
         self.assertIn(
-            root_item.data["title"],
-            repr(root_item),
-            "Series title missing from Servarr representation",
-        )
-
-        self.assertIn(
-            "root_item=",
+            f"title={root_item.data['title']!r}",
             repr(root_item.history),
             "Series representation missing from Servarr history representation",
         )

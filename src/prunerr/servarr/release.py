@@ -13,6 +13,7 @@ import logging
 from .. import utils
 from ..utils import cached_property
 from . import rootitem
+from . import history
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,23 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 downloadId=self.download_item.hashString.upper(),
             ),
         )
+
+    @cached_property
+    def grabbed(self) -> typing.Optional[dict]:
+        """
+        Collate the history records to identify the most recent grabbed record.
+
+        :return: The Servarr API JSON record if found.
+        """
+        for history_record in self.history:
+            if (  # pylint: disable=no-else-return
+                history_record["eventType"]
+                == history.PrunerrServarrHistory.GRAB_EVENT_TYPE
+            ):
+                return history_record
+            else:
+                pass  # pragma: no cover
+        return None  # pragma: no cover
 
     @cached_property
     def root_item(self) -> typing.Optional[rootitem.PrunerrServarrRootItem]:
@@ -304,6 +322,19 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 )
 
             yield imported_release.download_item
+
+    def fail(self) -> dict:
+        """
+        Mark this release as failed in Servarr and start a search for a replacement.
+
+        :return: The deserialized JSON response.
+        :raises ValueError: Something went wrong sending the API request.
+        """
+        if self.grabbed is None:
+            raise ValueError(f"No grab history for: {self!r}")  # pragma: no cover
+        return self.servarr_download_client.servarr.client.post(
+            f"history/failed/{self.grabbed['id']}",
+        )
 
 
 class PatchedStatResult(utils.PrunerrComponent):

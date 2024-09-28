@@ -68,7 +68,7 @@
         "dateCreated": 0,
         "desiredAvailable": 0,
         "doneDate": 0,
-        "downloadDir": "/media/Library/downloads/Sonarr/Videos/Series",
+        "downloadDir": "/media/Library/seeding/Sonarr/Videos/Series",
         "downloadLimit": 0,
         "downloadLimited": false,
         "downloadedEver": 2145386496,

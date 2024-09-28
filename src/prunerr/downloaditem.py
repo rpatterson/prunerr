@@ -390,28 +390,35 @@ class PrunerrDownloadItem(
             operation.config["name"],
             self,
         )
-        if (
-            self.release is not None
-            and self.release.servarr_download_client.download_dir == self.download_dir
-        ):
-            if self.release.queue is None:
-                logger.warning(
-                    "Download item missing from Servarr queue: %r",
-                    self,
-                    extra={
-                        "runner": self.download_client.runner,
-                        "download_hash": self.hashString,
-                    },
-                )
-            else:
+        if self.release is not None:
+            blacklist = operation.config.get(operations.ACTION_BLACKLIST, False)
+            if (
+                self.release.servarr_download_client.download_dir == self.download_dir
+                and self.release.queue is not None
+            ):
                 delete_params = {}
-                if operation.config.get(operations.ACTION_BLACKLIST, False):
+                if blacklist:
                     delete_params[operations.ACTION_BLACKLIST] = "true"
                     remove_result[operations.ACTION_BLACKLIST] = True
                 self.release.servarr_download_client.delete(
                     self.release,
                     **delete_params,
                 )
+            elif blacklist and self.release.grabbed is not None:
+                remove_result[operations.ACTION_BLACKLIST] = True
+                self.release.fail()
+            else:
+                logger.warning(
+                    "Download item missing from Servarr queue and history: %r",
+                    self,
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hashString,
+                    },
+                )
+        else:
+            pass  # pragma: no cover
+
         self.download_client.delete_files(self)
         operation.stage.items.remove(self)
         return remove_result

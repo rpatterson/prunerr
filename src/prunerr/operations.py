@@ -227,7 +227,7 @@ class PrunerrOperation(utils.PrunerrComponent):
             item_results = None
 
             # Special case for orphaned files:
-            if isinstance(self.items[0], utils.PrunerrOperationsItem):
+            if isinstance(item, utils.PrunerrOperationsItem):
                 # Log messages specific to this download item to a dedicated log file:
                 item.log_path.parent.mkdir(parents=True, exist_ok=True)
                 item_handler = logging.FileHandler(item.log_path)
@@ -243,13 +243,13 @@ class PrunerrOperation(utils.PrunerrComponent):
                     item,
                 )
             finally:
-                if isinstance(self.items[0], utils.PrunerrOperationsItem):
+                if isinstance(item, utils.PrunerrOperationsItem):
                     root_logger.removeHandler(item_handler)
                     item_handler.acquire()
                     item_handler.flush()
                     item_handler.close()
             if item_results:
-                if isinstance(self.items[0], utils.PrunerrOperationsItem):
+                if isinstance(item, utils.PrunerrOperationsItem):
                     operation_results[item.hashString] = item_results
                 else:
                     operation_results[str(item)] = item_results
@@ -328,9 +328,7 @@ class PrunerrOperation(utils.PrunerrComponent):
         :return: Map operation names to the actions taken if any.
         """
         break_applier = False
-        action_args = (
-            () if isinstance(self.items[0], utils.PrunerrOperationsItem) else (item,)
-        )
+        action_args = () if isinstance(item, utils.PrunerrOperationsItem) else (item,)
         item_results = {}
         # Let the YAML key order dictate operation order:
         for action in self.config:
@@ -340,7 +338,7 @@ class PrunerrOperation(utils.PrunerrComponent):
             action_apply = (
                 getattr(item, f"apply_{action.replace('-', '_')}")
                 if isinstance(
-                    self.items[0],
+                    item,
                     utils.PrunerrOperationsItem,
                 )
                 else getattr(self.stage.applier, f"apply_{action.replace('-', '_')}")

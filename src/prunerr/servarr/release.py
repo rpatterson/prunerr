@@ -130,10 +130,15 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             # fixture records do not indicating it may have been added recently. Radarr
             # doesn't have `movieHasFile` at all. So use it if available but if not,
             # assume it says nothing either way:
-            if not queue_record.get(  # pragma: no cover
-                f"{servarr.type_map['item_type']}HasFile",
-                True,
-            ):
+            if not (
+                queue_record.get(
+                    f"{servarr.type_map['item_type']}HasFile",
+                    True,
+                )
+            ) or (
+                (imported_item := self.root_item.imported_items.get(imported_item_id))
+                is None
+            ):  # pragma: no cover
                 # This episode/movie is not currently imported, there is no release that
                 # will be upgraded when this queued release is imported:
                 logger.debug(
@@ -144,7 +149,6 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 )
                 continue
 
-            imported_item = self.root_item.imported_items[imported_item_id]
             imported_file_stat = imported_item["file"]["path"].stat()
             if not imported_file_stat.st_nlink > 1:  # pragma: no cover
                 logger.warning(

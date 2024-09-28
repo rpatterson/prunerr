@@ -341,10 +341,7 @@ class PrunerrDownloadItem(
         :return: The Servarr release.
         """
         for servarr_download_client in self.download_client.servarrs.values():
-            if self.download_dir in {
-                servarr_download_client.download_dir,
-                servarr_download_client.seeding_dir,
-            }:
+            if servarr_download_client.is_release(self):
                 return servarr_download_client.RELEASE_FACTORY(
                     servarr_download_client,
                     self,

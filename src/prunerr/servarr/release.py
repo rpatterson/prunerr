@@ -201,7 +201,9 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                     )
                 )
                 for item_file in client_item_files.values():
-                    if item_file.path.samefile(imported_item["file"]["path"]):
+                    if item_file.download_item.release and item_file.path.samefile(
+                        imported_item["file"]["path"]
+                    ):
                         imported_release_files.setdefault(
                             item_file.download_item.hashString,
                             (item_file.download_item.release, {}),

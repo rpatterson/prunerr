@@ -93,6 +93,26 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
             self.download_dir_suffix,
         )
 
+    def is_release(
+        self,
+        download_item: prunerr.downloaditem.PrunerrDownloadItem,
+    ) -> bool:
+        """
+        Is this download client item a release managed by this Servarr instance.
+
+        :param download_item:
+            The download item to check.
+        :return:
+            Whether the item's ``downloadDir`` is parallel to this Servarr download
+            client's ``download-dir``.
+        """
+        return (
+            download_item.download_dir.relative_to(
+                download_item.download_client.download_dir.parent,
+            ).parts[1:]
+            == self.download_dir_suffix.parts
+        )
+
     @cached_property
     def releases(self) -> list:
         """

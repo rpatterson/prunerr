@@ -67,7 +67,8 @@ class PrunerrDownloadItem(
         else:  # pragma: no cover
             details["id"] = self.fields["id"]
         details["indexer"] = self.indexer_config.get("name")
-        details["size"] = self.disk_usage
+        du_number, du_unit = transmission_rpc.utils.format_size(self.disk_usage)
+        details["disk_usage"] = f"{du_number:0.2f} {du_unit}"
         details["imported"] = f"{round(self.imported_portion * 100)}%"
         return details
 
@@ -618,7 +619,8 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
         :return: Map descriptive names to useful values.
         """
         details = self.rpc_file._asdict()
-        details["disk_usage"] = self.disk_usage
+        du_number, du_unit = transmission_rpc.utils.format_size(self.disk_usage)
+        details["disk_usage"] = f"{du_number:0.2f} {du_unit}"
         details["imported"] = self.is_imported
         return details
 

@@ -208,22 +208,12 @@ def config_cli_logging(
     log_level_int = getattr(logging, log_level.strip().upper())
     logger.setLevel(log_level_int)
     # Log a given message only once per daemon session, the first loop.
-    logger.addFilter(utils.daemon_once_filter)
-    logging.getLogger(prunerr.runner.__name__).addFilter(
-        utils.daemon_once_filter,
-    )
-    logging.getLogger(prunerr.downloadclient.__name__).addFilter(
-        utils.daemon_once_filter,
-    )
-    logging.getLogger(prunerr.downloaditem.__name__).addFilter(
-        utils.daemon_once_filter,
-    )
-    logging.getLogger(prunerr.operations.__name__).addFilter(
-        utils.daemon_once_filter,
-    )
-    logging.getLogger(prunerr.servarr.__name__).addFilter(
-        utils.daemon_once_filter,
-    )
+    for logger_name, package_logger in logging.Logger.manager.loggerDict.items():
+        if logger_name == __name__ or logger_name.startswith(f"{__name__}."):
+            if hasattr(package_logger, "addFilter"):
+                package_logger.addFilter(utils.daemon_once_filter)
+            for mapped_logger in getattr(package_logger, "loggerMap", {}).keys():
+                mapped_logger.addFilter(utils.daemon_once_filter)
 
     # Avoid logging all JSON responses, particularly the very large history responses
     # from Servarr APIs

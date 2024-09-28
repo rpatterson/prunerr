@@ -135,9 +135,13 @@ class PrunerrRunner(utils.PrunerrComponent):
 
     @tenacity.retry(
         retry=tenacity.retry_if_exception_type(utils.RETRY_EXC_TYPES),
-        wait=tenacity.wait_fixed(1),
+        # Match the default daemon poll wait. It might be better to take this value from
+        # the user's configuration file, but we shouldn't parse YAML at import-time and
+        # it's not worth refactoring and the trade off in simplicity to use `tenacity`
+        # at run-time:
+        wait=tenacity.wait_fixed(60),
         reraise=True,
-        before_sleep=tenacity.before_sleep_log(logger, logging.ERROR),
+        before_sleep=tenacity.before_sleep_log(logger, logging.WARNING),
     )
     def update(self) -> dict:
         """

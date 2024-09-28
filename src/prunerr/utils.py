@@ -15,15 +15,21 @@ import socket
 import getpass
 import json
 import urllib.parse
+import html
 import logging
 
 import transmission_rpc
 import arrapi
 
+import appdirs
+from ruamel import yaml
+
 try:
     import ntfy
 except ImportError:  # pragma: no cover
     ntfy = None  # type: ignore
+else:
+    import ntfy.default_config
 
 try:
     # BBB: Python <3.10 compat
@@ -38,6 +44,8 @@ try:
 except ImportError:  # pragma: no cover
     # BBB: Python <3.8 compatibility
     from backports.cached_property import cached_property  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 TRUE_STRS = {"1", "true", "yes", "on"}
 DEBUG_STR = "DEBUG"
@@ -183,7 +191,33 @@ class NotifyHandler(logging.Handler):
     Log a given message only once per daemon session, the first loop.
     """
 
+    NTFY_BACKEND_MATRIX = "matrix"
+
     formatter: TitleFormatter
+
+    def __init__(self, *args, **kwargs):
+        """
+        Prepare anything specific to ``ntfy`` backends.
+        """
+        super().__init__(*args, **kwargs)
+
+    @cached_property
+    def ntfy_config(self) -> dict:
+        """
+        Deserialize the user's ``ntfy`` configuration.
+
+        :return: The deserialized ``ntfy`` YAML configuration.
+        """
+        # Unfortunately, `ntfy.config.load_config()` leaks the file handle for the
+        # configuration file so deserialize the configuration ourselves:
+        config_path = pathlib.Path(
+            appdirs.user_config_dir("ntfy", "dschep"), "ntfy.yml"
+        ).expanduser()
+        if config_path.exists():
+            yaml_loader = yaml.YAML(typ="safe", pure=True)
+            with open(config_path, encoding="utf-8") as ntfy_config_opened:
+                return yaml_loader.load(ntfy_config_opened)
+        return ntfy.default_config.config  # pragma: no cover
 
     def format(self, record: logging.LogRecord) -> str:
         """
@@ -215,12 +249,25 @@ class NotifyHandler(logging.Handler):
         """
         Send a notification for the record using the user's ``ntfy`` configuration.
 
+        Both the formatted title and the formatted message are escaped using
+        ``html.escape()``.
+
         :param record: The log message to send a notification for.
         """
-        ntfy.notify(
-            message=self.format(record),
-            title=self.format_title(record),
-        )
+        title = self.format_title(record)
+        message = self.format(record)
+        if self.NTFY_BACKEND_MATRIX in self.ntfy_config.get("backends", ["default"]):
+            # Unfortunately, `ntfy` doesn't provide a way to pass in both the plain and
+            # HTML versions of Matrix messages, so we either have to live with ugly HTML
+            # formatting or hard-code a Matrix-specific format:
+            title = html.escape(title)
+            message = f"<pre>{html.escape(message)}</pre>"
+        else:
+            logger.debug(  # pragma: no cover
+                "Not adding notification markup: %r",
+                record,
+            )
+        ntfy.notify(title=title, message=message)
 
     def handle(self, record: logging.LogRecord) -> bool:
         """

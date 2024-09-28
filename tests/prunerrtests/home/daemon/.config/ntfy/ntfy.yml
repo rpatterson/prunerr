@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+---
+backends:
+  - "matrix"
+matrix:
+  url: "https://matrix-client.matrix.org"
+  token: "..."
+  roomId: "..."

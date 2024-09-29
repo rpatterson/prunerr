@@ -147,8 +147,13 @@ class PrunerrStage(utils.PrunerrComponent):
         """
         Apply the operations for this stage to the appliers items.
         """
-        stage_results = {}
+        stage_results: dict = {}
+        if self.config and not self.items:
+            logger.debug("No items in stage: %r", self)
+            return stage_results
+
         break_applier = False
+        logger.debug("Applying %r", self)
         for operation_name, operation_config in self.config.items():
             if operation_config is None:
                 # The user disabled a default operation from the example configuration:
@@ -211,9 +216,23 @@ class PrunerrOperation(utils.PrunerrComponent):
         """
         operation_results: dict = {}
         break_applier = False
-        logger.debug("Applying %r", self)
+        if (
+            OPERATION_BREAK in self.config
+            and self.stage.items
+            and self.config[OPERATION_BREAK].render(
+                item_idx=0, item=self.stage.items[0]
+            )
+        ):
+            logger.debug(
+                "Stopping further operations after %r: %r",
+                self,
+                self.stage.items[0],
+            )
+            break_applier = True
+            return break_applier, operation_results
 
         # Render the `include:` and `sort:` templates:
+        logger.debug("Applying %r", self)
         for item_idx, item in enumerate(self.items):
             item_results = None
 
@@ -324,9 +343,22 @@ class PrunerrOperation(utils.PrunerrComponent):
 
         :return: Map operation names to the actions taken if any.
         """
+        item_results: dict = {}
         break_applier = False
+        if (
+            item_idx > 0
+            and OPERATION_BREAK in self.config
+            and self.config[OPERATION_BREAK].render(item_idx=item_idx, item=item)
+        ):  # pragma: no cover
+            logger.debug(
+                "Stopping further operations after %r: %r",
+                self,
+                item,
+            )
+            break_applier = True
+            return break_applier, item_results
+
         action_args = () if isinstance(item, utils.PrunerrOperationsItem) else (item,)
-        item_results = {}
         # Let the YAML key order dictate operation order:
         for action in self.config:
             if action not in ACTIONS:

@@ -18,11 +18,11 @@ import urllib.parse
 import html
 import logging
 
+import yaml
+import appdirs
 import transmission_rpc
 import arrapi
-
-import appdirs
-from ruamel import yaml
+import ruamel.yaml
 
 try:
     import ntfy
@@ -62,6 +62,9 @@ RETRY_EXC_TYPES = (
     # response:
     ValueError,
     json.JSONDecodeError,
+    # Don't crash the `$ prunerr daemon` sub-command when the user is editing the
+    # configuration file:
+    yaml.parser.ParserError,
 )
 
 URL_SCHEME_HTTP = "http"
@@ -212,7 +215,7 @@ class NotifyHandler(logging.Handler):
             appdirs.user_config_dir("ntfy", "dschep"), "ntfy.yml"
         ).expanduser()
         if config_path.exists():
-            yaml_loader = yaml.YAML(typ="safe", pure=True)
+            yaml_loader = ruamel.yaml.YAML(typ="safe", pure=True)
             with open(config_path, encoding="utf-8") as ntfy_config_opened:
                 return yaml_loader.load(ntfy_config_opened)
         return ntfy.default_config.config  # pragma: no cover

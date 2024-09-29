@@ -335,13 +335,20 @@ stages: # (default)
   ## items are available for deleting and the order to delete them in:
   free-space: # (default)
     prune: # (default)
-      ## Don't proceed with further with any operations for any download items in this
-      ## stage after this operation. Continue to the next stage. Usually used to signal
-      ## that a life-cycle stage has completed it's work with this item. For example
-      ## here, stop deleting items once there's sufficient free space in its download
-      ## client's `{{ item.download_client.download_dir }}`. This is also rendered
-      ## before the first download item in this operation's stage to avoid rendering the
-      ## `include:` and `sort:` templates when not necessary:
+      ## When this template renders ``True``, don't proceed with further with any
+      ## operations for any download items in this stage after this operation. Continue
+      ## to the next stage. Usually used to signal that a life-cycle stage has completed
+      ## it's work with this item. For example here, stop deleting items once there's
+      ## sufficient free space in its download client's `{{
+      ## item.download_client.download_dir }}`.
+      ##
+      ## Using the ``sort:`` template means that the ``include:`` and ``sort:``
+      ## templates must be rendered for every item in the stage, which can be quite
+      ## expensive. To avoid this when unnecessary, the first time this ``break:``
+      ## template is rendered it's rendered with the first ``{{ item }}`` in the
+      ## download client, regardless of stage or ``include:`` template. In practice,
+      ## this means user's writing custom ``break:`` templates may need to reproduce
+      ## some of the ``include:`` and ``sort:`` conditions:
       break: |
         {{- item.download_client.free_space_check() -}}
 

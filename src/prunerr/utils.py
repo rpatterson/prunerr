@@ -341,7 +341,7 @@ class PrunerrOperationsItem(PrunerrComponent):
     An item to which life-cycle stage operations are applied.
     """
 
-    hashString: str  # noqa: N815
+    hash_string: str  # noqa: N815
 
     @cached_property
     def log_path(self) -> pathlib.Path:

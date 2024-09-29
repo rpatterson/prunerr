@@ -122,7 +122,7 @@ class PrunerrDownloadItem(
                     file_roots[0],
                     extra={
                         "runner": self.download_client.runner,
-                        "download_hash": self.hashString,
+                        "download_hash": self.hash_string,
                     },
                 )
             return file_roots[0]
@@ -180,7 +180,7 @@ class PrunerrDownloadItem(
                 self,
                 extra={
                     "runner": self.download_client.runner,
-                    "download_hash": self.hashString,
+                    "download_hash": self.hash_string,
                 },
             )
             return 0
@@ -195,7 +195,7 @@ class PrunerrDownloadItem(
                 self,
                 extra={
                     "runner": self.download_client.runner,
-                    "download_hash": self.hashString,
+                    "download_hash": self.hash_string,
                 },
             )
             done_date = self.fields["addedDate"]
@@ -207,7 +207,7 @@ class PrunerrDownloadItem(
             self,
             extra={
                 "runner": self.download_client.runner,
-                "download_hash": self.hashString,
+                "download_hash": self.hash_string,
             },
         )
         return None
@@ -228,7 +228,7 @@ class PrunerrDownloadItem(
                 self,
                 extra={
                     "runner": self.download_client.runner,
-                    "download_hash": self.hashString,
+                    "download_hash": self.hash_string,
                 },
             )
         elif done_date < self.fields["addedDate"]:
@@ -237,7 +237,7 @@ class PrunerrDownloadItem(
                 self,
                 extra={
                     "runner": self.download_client.runner,
-                    "download_hash": self.hashString,
+                    "download_hash": self.hash_string,
                 },
             )
         if not done_date:
@@ -248,7 +248,7 @@ class PrunerrDownloadItem(
                     self,
                     extra={
                         "runner": self.download_client.runner,
-                        "download_hash": self.hashString,
+                        "download_hash": self.hash_string,
                     },
                 )
             elif done_date < self.fields["addedDate"]:
@@ -257,7 +257,7 @@ class PrunerrDownloadItem(
                     self,
                     extra={
                         "runner": self.download_client.runner,
-                        "download_hash": self.hashString,
+                        "download_hash": self.hash_string,
                     },
                 )
         return done_date - self.fields["addedDate"]
@@ -329,7 +329,7 @@ class PrunerrDownloadItem(
 
         :return: The log file path object.
         """
-        return pathlib.Path(self.download_dir, f"{self.hashString}-prunerr.log")
+        return pathlib.Path(self.download_dir, f"{self.hash_string}-prunerr.log")
 
     @cached_property
     def release(
@@ -410,7 +410,7 @@ class PrunerrDownloadItem(
                     self,
                     extra={
                         "runner": self.download_client.runner,
-                        "download_hash": self.hashString,
+                        "download_hash": self.hash_string,
                     },
                 )
         else:
@@ -447,7 +447,7 @@ class PrunerrDownloadItem(
             repr(operation.config[operations.ACTION_CHANGE]),
         )
         self.download_client.client.change_torrent(
-            [self.hashString],
+            [self.hash_string],
             **operation.config[operations.ACTION_CHANGE],
         )
         change_result.update(operation.config[operations.ACTION_CHANGE])
@@ -482,7 +482,7 @@ class PrunerrDownloadItem(
             str(new_download_dir),
         )
         self.download_client.client.move_torrent_data(
-            ids=[self.hashString],
+            ids=[self.hash_string],
             location=new_download_dir,
         )
         old_path = self.path
@@ -523,7 +523,7 @@ class PrunerrDownloadItem(
             "Verifying corrupt download item: %r",
             self,
         )
-        self.download_client.client.verify_torrent([self.hashString])
+        self.download_client.client.verify_torrent([self.hash_string])
         return verify_result
 
     def apply_log(  # noqa: V105
@@ -571,7 +571,7 @@ class PrunerrDownloadItem(
             self,
         )
         with open(self.torrent_file, mode="r+b") as torrent_opened:
-            self.download_client.client.remove_torrent(ids=[self.hashString])
+            self.download_client.client.remove_torrent(ids=[self.hash_string])
             re_added = type(self)(
                 self.download_client,
                 self.download_client.client.add_torrent(

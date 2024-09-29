@@ -45,7 +45,7 @@ class ExportCommandRun:
         for servarr_download_client in self.servarr.download_clients.values():
             for release in servarr_download_client.releases:
                 self.download_ids.setdefault(
-                    release.download_item.hashString.upper(),
+                    release.download_item.hash_string.upper(),
                     [],
                 ).append(release)
 
@@ -177,7 +177,7 @@ class ExportServarrRootItem:
                 ),
             )
             if added_item is not None:
-                added_items[added_item.hashString] = added_item
+                added_items[added_item.hash_string] = added_item
 
         # As a last resort, map any imported paths without download item IDs by the
         # pre-existing download item names and root basenames in the client:
@@ -188,7 +188,9 @@ class ExportServarrRootItem:
                     self.root_item.history.dropped_relatives.setdefault(
                         download_file.relative,
                         {},
-                    ).setdefault("downloadId", release.download_item.hashString.upper())
+                    ).setdefault(
+                        "downloadId", release.download_item.hash_string.upper()
+                    )
         for (
             download_id,
             imported_relatives,
@@ -377,9 +379,9 @@ def link_imported_files(
             download_item,
         )
         download_item.download_client.client.verify_torrent(
-            download_item.hashString,
+            download_item.hash_string,
         )
-        download_item.download_client.client.start_torrent(download_item.hashString)
+        download_item.download_client.client.start_torrent(download_item.hash_string)
 
 
 def find_location(
@@ -430,7 +432,7 @@ def find_location(
             item_root_path.parent,
         )
         download_item.download_client.client.move_torrent_data(
-            download_item.hashString,
+            download_item.hash_string,
             item_root_path.parent,
             move=False,
         )
@@ -502,7 +504,7 @@ def maybe_add_download_item(
             added_item,
         )
         download_items_by_id.setdefault(
-            release.download_item.hashString.upper(),
+            release.download_item.hash_string.upper(),
             [],
         ).append(release)
         return added_item
@@ -582,7 +584,7 @@ def deselect_unimported_files(download_item: downloaditem.PrunerrDownloadItem) -
             "\n  ".join(repr(deselected_file) for deselected_file in deselected_files),
         )
         download_item.download_client.client.change_torrent(
-            [download_item.hashString],
+            [download_item.hash_string],
             files_unwanted=[deselected_file.id for deselected_file in deselected_files],
         )
     return deselected_files

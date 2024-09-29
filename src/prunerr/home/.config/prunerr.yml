@@ -316,7 +316,7 @@ stages: # (default)
       ## check. Finally, consider download items whose total download rate in `Bps` is
       ## very low, to be stalled. If an item seems to be completely downloaded to the
       ## client but then later it's verified and some last corrupted bits are
-      ## re-downloaded, it's `{{ item.doneDate }}` will be updated. This can really
+      ## re-downloaded, it's `{{ item.done_date }}` will be updated. This can really
       ## throw off the total download rate, especially for small torrents, so be very
       ## conservative. The `{{ item.rate_total }}` continues to drop over time for truly
       ## stalled items so they'll eventually pass this threshold:
@@ -437,7 +437,7 @@ stages: # (default)
                 item.indexer_config is true,
                 -item.indexer_config.get("priority", 45),
                 item.imported_portion,
-                item.uploadedEver,
+                item.uploaded_ever,
                 -item.ratio,
                 item.size_when_done > item.indexer_config.get(
                     "bonus-minimum-bytes",

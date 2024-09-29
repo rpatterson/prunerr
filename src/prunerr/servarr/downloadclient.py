@@ -160,7 +160,7 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
                 # download client:
                 download_dir == download_item.download_dir
                 # Skip items known by a Servarr instance in it's queue:
-                and download_item.hashString.upper() not in self.servarr.queue
+                and download_item.hash_string.upper() not in self.servarr.queue
             ):
                 for history_record in download_item.release.history:
                     if history_record["eventType"] != event_type_grabbed:

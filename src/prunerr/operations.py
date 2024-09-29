@@ -241,7 +241,7 @@ class PrunerrOperation(utils.PrunerrComponent):
                     item_handler.close()
             if item_results:
                 if isinstance(item, utils.PrunerrOperationsItem):
-                    operation_results[item.hashString] = item_results
+                    operation_results[item.hash_string] = item_results
                 else:
                     operation_results[str(item)] = item_results
 

@@ -272,8 +272,8 @@ and Servarr sets the download item's ``downloadDir`` to
 consider it to be queued.
 
 These operations will only be applied once per download item unless the Prunerr
-`configuration file`_ has changed. This is accomplished using a ``{{ item.downloadDir
-}}/{{ item.hashString }}-prunerr.log`` log file for each download item. To re-apply the
+`configuration file`_ has changed. This is accomplished using a ``{{ item.download_dir
+}}/{{ item.hash_string }}-prunerr.log`` log file for each download item. To re-apply the
 ``queued`` operations to all currently queued download items, modify the `configuration
 file`_ or just ``$ touch ~/.config/prunerr.yml``. To re-apply the ``queued`` operations
 to just one currently queued download item, delete or move aside that item's log file.

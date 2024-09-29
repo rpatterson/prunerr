@@ -66,7 +66,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         :return: The Servarr API ``queue`` endpoint JSON for this release.
         """
         return self.servarr_download_client.servarr.queue.get(
-            self.download_item.hashString.upper(),
+            self.download_item.hash_string.upper(),
         )
 
     @cached_property
@@ -79,7 +79,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         return list(
             self.servarr_download_client.servarr.get_api_paged_records(
                 "history",
-                downloadId=self.download_item.hashString.upper(),
+                downloadId=self.download_item.hash_string.upper(),
             ),
         )
 
@@ -205,7 +205,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                         imported_item["file"]["path"]
                     ):
                         imported_release_files.setdefault(
-                            item_file.download_item.hashString,
+                            item_file.download_item.hash_string,
                             (item_file.download_item.release, {}),
                         )[1][dropped_relative] = item_file
                         found_item_file = True
@@ -298,7 +298,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             ):
                 imported_release.queued_upgrades = {}
             imported_release.queued_upgrades.setdefault(
-                self.download_item.hashString.upper(),
+                self.download_item.hash_string.upper(),
                 self,
             )
 
@@ -309,9 +309,9 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                     imported_file
                 ):
                     imported_file.queued_upgrades = {}
-                imported_file.queued_upgrades[self.download_item.hashString.upper()] = (
-                    self
-                )
+                imported_file.queued_upgrades[
+                    self.download_item.hash_string.upper()
+                ] = self
 
                 # Decrement the hard link count for all the files of the imported
                 # release that will be upgraded by this queued release and replace the

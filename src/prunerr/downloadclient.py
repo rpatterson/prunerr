@@ -192,7 +192,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         for item in self.items:
             for item_file in item.files:
                 item_files.setdefault(item_file.relative, {})[
-                    item.hashString
+                    item.hash_string
                 ] = item_file
         return item_files
 
@@ -289,7 +289,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 continue
             for imported_release in item.release.filter_upgraded():
                 upgraded_releases.setdefault(
-                    imported_release.hashString,
+                    imported_release.hash_string,
                     imported_release,
                 )
         yield from upgraded_releases.values()
@@ -393,7 +393,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 },
             )
             item.download_client.client.change_torrent(
-                [item.hashString],
+                [item.hash_string],
                 files_unwanted=[
                     unimported_file.id for unimported_file in unimported_files
                 ],
@@ -406,7 +406,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             size = item.disk_usage
             logger.debug("Deleting %(item)r", {"item": item})
             self.client.remove_torrent(
-                [item.hashString],
+                [item.hash_string],
                 # When freeing disk space it's important not to get hung up waiting for
                 # a heavily loaded client. Be very defensive and proceed directly to
                 # deleting the data:

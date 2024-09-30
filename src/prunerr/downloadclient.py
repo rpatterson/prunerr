@@ -163,8 +163,8 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
         """
         logger.debug(
-            "Retrieving list of download items from download client: %s",
-            self.config["url"],
+            "Retrieving list of download items from: %r",
+            self,
         )
         items = [
             prunerr.downloaditem.PrunerrDownloadItem(

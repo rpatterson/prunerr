@@ -1,0 +1,419 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+## The defaults for configuration not overridden by the user's configuration file. The
+## comments here are also the reference documentation for configuring Prunerr.
+
+## Values derived from the `config:` mappings under `indexers:` above. Useful to set
+## user-friendly, per-indexer values above, but calculate derived values that will be
+## used in operation templates under `stages` below without calculating redundantly for
+## each download item. For example, convert values from tracker rules, such as days or
+## gigabytes, to the values used in operation templates, such as seconds or bytes. The
+## raw values for each indexer are available in `{{ indexer_config }}`:
+indexers-config:
+  seeding-seconds: |
+    {{- indexer_config.get("seeding-days", 0) * 24 * 60 * 60 -}}
+  seeding-margin-seconds: |
+    {%- set seeding_margin_days = 1 -%}
+    {{- indexer_config["seeding-seconds"] + (seeding_margin_days * 24 * 60 * 60) -}}
+  bonus-minimum-bytes: |
+    {{- indexer_config.get("bonus-minimum-gb", 0) * 1024 * 1024 * 1024 -}}
+  bonus-maximum-bytes: |
+    {{- indexer_config.get("bonus-maximum-gb", 0) * 1024 * 1024 * 1024 -}}
+
+## Configure which operations are applied to download items in each life-cycle stage.
+##
+## For example, the `queued:` stage below includes the `archives:`, and `bandwidth-*:`
+## operations. The keys immediately under `stages:` here are the only valid stages. Each
+## stage takes each operation from here as defaults. For example, if the user's
+## configuration includes the `queued:` stage which includes only a `my-operation:`
+## operation, Prunerr will still *also* apply the `archives:`, and `bandwidth-*:`
+## operations configured here. If the user's configuration includes any of the
+## operations defined here, then they will completely override the configurations of
+## those operations and nothing will be taken from here for that operation. To modify or
+## extend any of the default operations defined here, the user's configuration must copy
+## the default operation configuration from here to their file and then modify them. To
+## disable any of the default operations defined here, the user's configuration should
+## include an empty key for that operation. See the commented example below under
+## `archives:`. Templates, unless noted otherwise below, have access to the following
+## context:
+##
+## - `{{ item }}`:
+##
+##   The download client item from this stage's items.
+##
+## - `{{ item_idx }}`:
+##
+##   The position of the item in this stage's items. The first stage item is `{{
+##   item_idx == 0 }}`, the second stage item is `{{ item_idx == 1 }}`, and so on. Not
+##   available in the `include:` and `sort:` templates.
+##
+## For technical reasons, the order that stages are executed in is different from the
+## order download items tend to proceed through their life-cycle. For example, execute
+## the `seeding:` stage before the `queued:` stage so that operations in the `queued:`
+## stage aren't applied to items that the `move:` operation in the `seeding:` stage
+## would move and thus exclude from the `queued:` stage:
+##
+stages:
+  ## Apply operations once Servarr has acted on a queued download item, usually by
+  ## importing files from it:
+  seeding:
+    ## Move items to the parallel `{{ item.release.servarr_download_client.seeding_dir
+    ## }}`, for example `/media/Library/seeding/**/`. For most users, this will be the
+    ## only operation under `seeding:`. When deleting download items to free space,
+    ## Prunerr only considers items under this parallel directory, so this is
+    ## effectively required. This has the added benefit of reflecting which items have
+    ## been acted on by Servarr in the download client:
+    move:
+      ## Always move all items that Servarr has acted on and removed from the
+      ## queue. Omit the `include:` key to apply to all items:
+      move: |
+        {{- item.release.servarr_download_client.seeding_dir -}}
+
+  ## Apply maintenance operations to newly added, queued download items:
+  queued:
+    ## Remove download items containing archives to optimize seeding per disk space:
+    archives:
+      ## Start with the only files selected for download. Then select those files whose
+      ## extension matches a regular expressions to identify archives.  Then calculate
+      ## the portion of matching the download item's size compared to the size of all
+      ## the files. If that proportion is greater than 50%, then apply this operations
+      ## actions:
+      include: |
+        {%- set wanted_files = item.files|selectattr("selected")|list -%}
+        {%- set wanted_sum = wanted_files|sum("size") -%}
+        {%- set archive_portion = 0 -%}
+        {%- if wanted_sum -%}
+            {%-
+                set archive_portion = (
+                    wanted_files|selectattr(
+                        "path.suffix",
+                        "match",
+                        "rar|r[0-9]+|zip|zip\\.[0-9]+|gz|tgz|bz2",
+                    )|sum("size") / wanted_sum
+                )
+            -%}
+        {%- endif -%}
+        {{- archive_portion > 0.50 -}}
+      ## Delete the download item and it's files from the download client. If some of
+      ## the item's files are still imported, hard linked elsewhere, then this action
+      ## de-selects the un-imported files, marks them as unwanted, and deletes only
+      ## those files. All operation configurations must include at least one action:
+      remove: true # (required)
+      ## Blacklist the release in Servarr to start a search for a replacement. This
+      ## action can only apply with `remove: true`:
+      blacklist: true
+    ## To disable a default operation the user's configuration file should include
+    ## *just* the operation's name with nothing indented under it, for example:
+    # archives:
+    ## Or:
+    # archives: {}
+
+    ## Set download items from private indexers/trackers to high priority:
+    bandwidth-private:
+      include: |
+        {{-
+            "private" in item.indexer_config.get("groups", [])
+        -}}
+      ## The `change:` action takes the field names and values from the mapping it
+      ## contains and [applies them to the download
+      ## item](https://github.com/transmission/transmission/blob/main/docs/rpc-spec.md#32-torrent-mutator-torrent-set) in the download client:
+      change:
+        bandwidthPriority: 1
+    ## Set download items from public indexers/trackers to low priority:
+    bandwidth-public:
+      ## Consider items whose tracker URLs match none of the groups of hostnames above
+      ## under `indexers:` to be public items:
+      include: |
+        {{- not item.indexer_config.get("groups", []) -}}
+      change:
+        bandwidthPriority: -1
+
+  ## Apply operations to releases that will be upgraded by a currently downloading,
+  ## queued release. This can be used to, among other things, send a notification when
+  ## the upgraded release will be partially imported, for example when an individual
+  ## episode release upgrades one file in a season pack. The context for Jinja templates
+  ## and loge messages includes:
+  ##
+  ## - `{{ item }}`:
+  ##
+  ##   The download item that will be upgraded by the queued item.
+  ##
+  ## - `{{ item.release.upgraded_release.download_item }}`:
+  ##
+  ##   The download item but as it will be after it has been upgraded. For example, any
+  ##   download item file, `{% set item_file = item.files[#] }}`, that is currently
+  ##   imported might have `{{ item_file.is_imported is True }}`, but the simulated
+  ##   upgrade will have `{{
+  ##   item.release.upgraded_release.download_item.files[#].is_imported is False }}`.
+  ##
+  ## - `{{ item.release.queued_upgrades }}`:
+  ##
+  ##   Map the download item hash IDs to the
+  ##   Servarr releases that will upgrade that download item file.
+  ##
+  upgraded:
+    partially-imported:
+      ## Match if the upgraded release isn't either fully imported or not imported at
+      ## all, meaning if it's partially imported:
+      include: |
+        {%-
+            set upgraded_imported_portion =
+            item.release.upgraded_release.download_item.imported_portion
+        -%}
+        {{-
+            upgraded_imported_portion > 0.0
+            and upgraded_imported_portion < item.imported_portion
+        -}}
+      ## The log message here is first rendered as a Jinja template and then [`%`
+      ## formatted by the Python logging
+      ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
+      arg: |
+        {%- set remaining_files = item.release.upgraded_release.download_item.files
+            |selectattr("is_imported")|rejectattr("is_servarr_extra")|join("\n    ")
+        -%}
+        {{-
+            {
+                "release": item.release,
+                "queued_upgrades": item.release.queued_upgrades.values()
+                    |join("\n    "),
+                "remaining_files": remaining_files,
+            }
+        -}}
+      log: |
+        Partially imported:
+          Queued upgrades:
+            %(queued_upgrades)s
+          Will upgrade:
+            %(release)r
+          Leaving imported files:
+            %(remaining_files)s
+      ## Defaults to `ERROR` which also sends a notification if `ntfy` is configured:
+      # level: "WARNING"
+      ## Demonstrate how to match on the same quality:
+      # include: |
+      #   {{ queued_item.release.quality == item.release.quality }}
+
+  ## Apply operations all download items in any stage. See the warning under ["How it
+  ## Works"](https://gitlab.com/rpatterson/prunerr/-/blob/develop/README.rst#TODO):
+  all:
+    ## Remove and blacklist download items that are no longer registered with their
+    ## indexer/tracker:
+    un-regsitered:
+      ## Note that the more simple and more efficient test is first to short circuit the
+      ## more expensive next test if possible:
+      include: |
+        {{-
+            item.error == 2
+            and item.error_string is search(".*(not |un)registered.*", ignorecase=True)
+        -}}
+      remove: true
+      blacklist: true
+
+    ## Verify download items in whose data the download client has detected corruption:
+    verify:
+      include: |
+        {{-
+            item.error == 3
+            and item.error_string is search(".*(corrput|verif).*", ignorecase=True)
+        -}}
+      verify: true
+
+    ## Remove stalled download items whose progress is too slow:
+    stalled:
+      ## Strike a balance between giving difficult to find items time to download while
+      ## also pruning items that will never be completed. Only consider incomplete,
+      ## downloading torrents to be stalled. Give rare or unpopular items a week to get
+      ## started waiting for intermittent seeders to reappear: 1 week * 7 days * 24
+      ## hours * 60 minutes * 60 seconds. Apply this to both `{{
+      ## item.seconds_downloading }}` and `{{ item.age }}` just as a double
+      ## check. Finally, consider download items whose total download rate in `Bps` is
+      ## very low, to be stalled. If an item seems to be completely downloaded to the
+      ## client but then later it's verified and some last corrupted bits are
+      ## re-downloaded, it's `{{ item.done_date }}` will be updated. This can really
+      ## throw off the total download rate, especially for small torrents, so be very
+      ## conservative. The `{{ item.rate_total }}` continues to drop over time for truly
+      ## stalled items so they'll eventually pass this threshold:
+      include: |
+        {{-
+            item.status == "downloading"
+            and item.seconds_downloading > 604800
+            and item.age > 604800
+            and item.rate_total < 50
+        -}}
+      remove: true
+      blacklist: true
+
+  ## Apply operations when available disk space drops below the margin configured by the
+  ## `max-download-*:` keys under `download-clients:`. Usually used to define which
+  ## items are available for deleting and the order to delete them in:
+  free-space:
+    prune:
+      ## When this template renders ``True``, don't proceed with further with any
+      ## operations for any download items in this stage after this operation. Continue
+      ## to the next stage. Usually used to signal that a life-cycle stage has completed
+      ## it's work with this item. For example here, stop deleting items once there's
+      ## sufficient free space in its download client's `{{
+      ## item.download_client.download_dir }}`.
+      ##
+      ## Using the ``sort:`` template means that the ``include:`` and ``sort:``
+      ## templates must be rendered for every item in the stage, which can be quite
+      ## expensive. To avoid this when unnecessary, the first time this ``break:``
+      ## template is rendered it's rendered with the first ``{{ item }}`` in the
+      ## download client, regardless of stage or ``include:`` template. In practice,
+      ## this means user's writing custom ``break:`` templates may need to reproduce
+      ## some of the ``include:`` and ``sort:`` conditions:
+      break: |
+        {{- item.download_client.free_space_check() -}}
+
+      ## This Jinja template should render a false value for items that should not be
+      ## deleted:
+      ##
+      ## - First, exclude download items that are currently mostly imported into a Servarr
+      ##   library. Set a threshold at 80+% of item size that has been imported to allow
+      ##   for un-imported samples, extras, etc. but without wasting any more than 20% of
+      ##   its disk space usage.
+      ##
+      ## - Also exclude download items that haven't met their tracker's seeding, AKA Hit
+      ##   & Run, requirements, usually this is some number of days and maybe shortcut
+      ##   if a ratio is reached first. Beware that `{{ item.seconds_since_done }}` is
+      ##   not necessarily the total sum of actively seeding time as seen by the
+      ##   tracker. For example:
+      ##
+      ##   1. private tracker torrent is downloaded and seeds all of day 1
+      ##
+      ##   2. The user goes on vacation and their client exits on day 2
+      ##
+      ##   3. They return from vacation and restart their client on day 10
+      ##
+      ##   Then `{{ item.seconds_since_done }}` is 10 days while the private tracker
+      ##   only sees them as seeding for 1 day. As such, be sure to add a healthy margin
+      ##   for downtime lest Prunerr delete torrents that haven't actually met the
+      ##   private trackers seeding requirements.
+      ##
+      ## Prunerr already restricts the items considered for deletion to those that are
+      ## seeding and a descendant of the `{{
+      ## item.release.servarr_download_client.seeding_dir }}` where it moves items after
+      ## they're imported by Servarr, for example `/media/Library/seeding/**/`:
+      include: |
+        {{-
+            item.imported_portion < 0.80
+            and (
+                item.ratio >= item.indexer_config.get("seeding-ratio", 0.0)
+                and (
+                    item.seconds_since_done
+                    > item.indexer_config.get("seeding-margin-seconds", 0.0)
+                )
+            )
+        -}}
+
+      ## This template should render to the value by which to sort this item when
+      ## deleting items. Render to a tuple to do multiple sort. This template should
+      ## work for the most common use cases:
+      ##
+      ## - Items with lower bandwidth priority before items with higher bandwidth
+      ##   priority. Per the `bandwidth-*:` operations above under `queued:`, this
+      ##   should be roughly the same as "delete public download items before private
+      ##   download items", unless the user has manually intervened in the bandwidth
+      ##   priorities.
+      ##
+      ## - Public items first, identified as items with no tracker URLs configured here as
+      ##   opposed to the arbitrary and thus unreliable public/private flag on the
+      ##   torrent.
+      ##
+      ## - Items from private trackers with well established ratios.  Next items from
+      ##   private trackers we've joined recently and are still building ratio. Accomplish
+      ##   these using the arbitrary `{{ item.priority }}` integer values from `{{ item.indexers }}` above but
+      ##   reverse them by making them negative so they sort correctly.
+      ##
+      ## - Maximize disk space usage by deleting items that are least imported first.
+      ##
+      ## - Maximize ratio by deleting items with the most size uploaded last under the
+      ##   assumption they're the most likely to continue contributing the most to the
+      ##   user's upload numbers.
+      ##
+      ## - Preserve the health and breadth of items available to the community by deleting
+      ##   popular items with a healthy number of seeders before obscure, less popular
+      ##   items. Accomplish this by deleting items with the lowest ratio last.
+      ##
+      ## - Maximize tracker bonus points by deleting items larger than the bonus points
+      ##   maximum size or items smaller than the minimum size before those items in
+      ##   between. It's often desirable to delete items smaller than the bonus points
+      ##   maximum but much larger than the bonus points minimum before deleting items
+      ##   much close to the bonus points minimum when the points accrue per-item and
+      ##   not per-size because seeding many more smaller items nets more bonus points
+      ##   than seeding many fewer larger items.
+      ##
+      ## - Further maximize tracker bonus points by deleting larger items first to keep
+      ##   more items seeding.
+      ##
+      ## Note that any sort tuple item past one with continuous, quantitative values is
+      ## unlikely to have any affect. For example, anything past `{{ item.size_when_done
+      ## }}` will only ever take effect if 2 items have the *exact* same size which will
+      ## almost never happen.
+      sort: |
+        {{-
+            (
+                item.bandwidth_priority,
+                item.indexer_config is true,
+                -item.indexer_config.get("priority", 45),
+                item.imported_portion,
+                item.uploaded_ever,
+                -item.ratio,
+                item.size_when_done > item.indexer_config.get(
+                    "bonus-minimum-bytes",
+                    -1,
+                ),
+                (not item.indexer_config.get("bonus-maximum-bytes")) or (
+                    item.size_when_done < item.indexer_config["bonus-maximum-bytes"]
+                ),
+                (
+                    item.indexer_config.get("bonus-by-size", False)
+                    and item.size_when_done
+                    or -item.size_when_done
+                ),
+            )
+        -}}
+
+      ## For most users this is the only action:
+      remove: true
+
+    ## Send a notification when there's still not enough free space after removing all
+    ## items that can be removed because this operation will only be run if the `break:`
+    ## template under the `prune:` operation above never renders `True`:
+    notify:
+      ## Apply only once, to the first item in the stage:
+      break: |
+        {{-
+            (
+                item.download_client.session.get("previous")
+                and not item.download_client.free_space_check(
+                    item.download_client.session["previous"],
+                )
+            )
+            or item_idx > 0
+        -}}
+      arg: |
+        {{-
+            {
+                "download_client": item.download_client.config["name"],
+                "deficit": (
+                    item.download_client.config["min-free-space"]
+                    - item.download_client.session["download-dir-free-space"]
+                )|format_size,
+            }
+        -}}
+      log: >-
+        Insufficient free space for %(download_client)r but nothing can be deleted:
+        %(deficit)s
+
+  ## Apply operations orphaned files that don't belong to any download item:
+  orphans:
+    ## Delete orphaned files automatically:
+    prune:
+      remove: true
+
+daemon:
+  ## The minimum number of seconds to wait between each loop of the order of operations:
+  poll: 60

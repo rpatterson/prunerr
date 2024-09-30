@@ -415,7 +415,6 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         """
         self.mock_download_client_complete_item()
         self.mock_servarr_import_item()
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses(
             prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "move-import",
             # Insert a dynamic response mock to handle moving imported download items
@@ -432,8 +431,8 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
                 },
             },
         )
-        runner.update()
-        servarr = list(runner.servarrs.values())[0]
+        self.runner.update()
+        servarr = list(self.runner.servarrs.values())[0]
         with self.assertRaises(
             prunerr.downloadclient.DownloadClientTimeout,
             msg="Long download item move did not time out",
@@ -443,7 +442,7 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
             ].apply_move(
                 operations.PrunerrOperation(
                     None,
-                    runner.config["stages"]["seeding"]["move"],
+                    self.runner.config["stages"]["seeding"]["move"],
                 ),
                 move_timeout=0,
             )

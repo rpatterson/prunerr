@@ -28,11 +28,10 @@ class PrunerrServarrTests(
         """
         The Servarr representations provide useful information for debugging.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses()
-        runner.update()
+        self.runner.update()
 
-        servarr = list(runner.servarrs.values())[0]
+        servarr = list(self.runner.servarrs.values())[0]
         self.assertIn(
             servarr.config["name"],
             repr(servarr),

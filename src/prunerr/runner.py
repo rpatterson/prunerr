@@ -587,7 +587,7 @@ def log_rmtree_error(
     :param path: See ``shutil.rmtree()`` in the Python standard library.
     :param excinfo: See ``shutil.rmtree()`` in the Python standard library.
     """
-    logger.error(  # pragma: no cover
+    logger.warning(  # pragma: no cover
         "Error removing %r (%s)",
         path,
         ".".join((function.__module__, function.__name__)),

@@ -5,7 +5,6 @@
 Run Prunerr commands across multiple Servarr instances and download clients.
 """
 
-import gc
 import os
 import collections.abc
 import typing
@@ -208,7 +207,7 @@ class PrunerrRunner(utils.PrunerrComponent):
                 )
 
         # Update the download clients, instantiating if newly defined
-        self.download_clients = {}
+        download_clients: dict = {}
         for (
             download_client_url,
             download_client_config,
@@ -220,7 +219,7 @@ class PrunerrRunner(utils.PrunerrComponent):
                 # Instantiate newly defined download clients
                 else prunerr.downloadclient.PrunerrDownloadClient(self)
             )
-            self.download_clients[download_client_url] = download_client
+            download_clients[download_client_url] = download_client
             # Associate with Servarr instances
             for servarr_download_client in download_client_config.get(
                 "servarrs",
@@ -228,6 +227,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             ).values():
                 servarr_download_client.download_client = download_client
             download_client.update(download_client_config)
+        self.download_clients = download_clients
 
         return self.download_clients
 
@@ -353,9 +353,6 @@ class PrunerrRunner(utils.PrunerrComponent):
 
             # Determine the poll interval before clearing the config
             poll = self.config["daemon"]["poll"]
-
-            # Free any memory possible between daemon loops
-            self.clear()
 
             # Wait for the next interval. Note that polling is required because there is
             # no event we can subscribe to that reliably determines disk space margin
@@ -502,18 +499,6 @@ class PrunerrRunner(utils.PrunerrComponent):
         self.update()
         # Run the `apply` sub-command as the inner loop
         return self.apply_(stages)
-
-    def clear(self):
-        """
-        Free any memory possible between daemon loops.
-        """
-        super().clear()
-        self.servarrs.clear()
-        # Clear discreet download client caches to preserve verifying download items
-        for _, download_client in self.download_clients.items():
-            download_client.clear()
-        # Tell Python it's a good time to free memory
-        gc.collect()
 
     @cached_property
     def managed_dirs(self) -> list:

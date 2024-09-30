@@ -71,6 +71,9 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :param config: The Prunerr configuration for this download client.
         :raises utils.PrunerrValidationError: The YAML configuration file has a problem
         """
+        # Support comparing changes since the last `$ prunerr daemon` loop:
+        previous_session = vars(self).get("session", {})
+        previous_session.pop("previous", None)
         super().update()
         self.config = config
 
@@ -114,6 +117,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 raise utils.PrunerrValidationError(
                     f"Could not guess port from URL: {self.config['url']}",
                 )
+
         logger.debug(
             "Connecting to download client: %s",
             self.config["url"],
@@ -137,6 +141,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         # only way it provides is to send another, redundant request. Circumvent the
         # deprecation warning:
         self.session = vars(self.client)["_Client__raw_session"]
+        self.session["previous"] = previous_session
         self.download_dir = pathlib.Path(self.session["download-dir"])
         self.seeding_dir = self.download_dir.with_name(self.SEEDING_DIR_BASENAME)
         if self.session["incomplete-dir-enabled"]:  # pragma: no cover
@@ -330,6 +335,36 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                     ),
                 },
             )
+        if self.free_space_check():
+            logger.debug(
+                "Sufficient free space to continue downloading: "
+                "%(free)s - %(minimum)s = %(surplus)s",
+                {
+                    "free": utils.format_size(self.session["download-dir-free-space"]),
+                    "minimum": utils.format_size(
+                        self.config["min-free-space"],
+                    ),
+                    "surplus": utils.format_size(
+                        self.session["download-dir-free-space"]
+                        - self.config["min-free-space"],
+                    ),
+                },
+            )
+        else:
+            logger.debug(
+                "Insufficient free space to continue downloading: "
+                "%(minimum)s - %(free)s = %(deficit)s",
+                {
+                    "minimum": utils.format_size(
+                        self.config["min-free-space"],
+                    ),
+                    "free": utils.format_size(self.session["download-dir-free-space"]),
+                    "deficit": utils.format_size(
+                        self.config["min-free-space"]
+                        - self.session["download-dir-free-space"],
+                    ),
+                },
+            )
 
         # Avoid attribute and item lookup in the inner loop:
         seeding_dir = self.seeding_dir
@@ -439,47 +474,20 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         return size
 
-    def free_space_check(self) -> bool:  # noqa: V105
+    def free_space_check(  # noqa: V105
+        self,
+        session: typing.Optional[dict] = None,
+    ) -> bool:
         """
         Determine if there's sufficient free disk space.
 
+        :param session: The Transmission RPC session data.
         :return: Whether or not free space is sufficient.
         """
-        if self.session["download-dir-free-space"] >= self.config["min-free-space"]:
-            logger.debug(
-                "Sufficient free space to continue downloading: "
-                "%(free)s - %(minimum)s = %(surplus)s",
-                {
-                    "free": utils.format_size(self.session["download-dir-free-space"]),
-                    "minimum": utils.format_size(
-                        self.config["min-free-space"],
-                    ),
-                    "surplus": utils.format_size(
-                        self.session["download-dir-free-space"]
-                        - self.config["min-free-space"],
-                    ),
-                },
-            )
-            # TODO: Clear the record of whether a notification was previously sent.
+        if session is None:
+            session = self.session
+        if session["download-dir-free-space"] >= self.config["min-free-space"]:
             return True
-        logger.debug(
-            "Insufficient free space to continue downloading: "
-            "%(minimum)s - %(free)s = %(deficit)s",
-            {
-                "minimum": utils.format_size(
-                    self.config["min-free-space"],
-                ),
-                "free": utils.format_size(self.session["download-dir-free-space"]),
-                "deficit": utils.format_size(
-                    self.config["min-free-space"]
-                    - self.session["download-dir-free-space"],
-                ),
-            },
-            extra={
-                "runner": self.runner,
-                "download_hash": None,
-            },
-        )
         return False
 
     def add_torrent(

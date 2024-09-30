@@ -468,8 +468,15 @@ stages: # (default)
     ## items that can be removed because this operation will only be run if the `break:`
     ## template under the `prune:` operation above never renders `True`:
     notify:
+      ## Apply only once, to the first item in the stage:
       break: |
-        {{- item_idx > 1 -}}
+        {{-
+            item.download_client.session.get("previous")
+            and not item.download_client.free_space_check(
+                item.download_client.session["previous"],
+            )
+            or item_idx > 0
+        -}}
       arg: |
         {{-
             {

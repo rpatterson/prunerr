@@ -149,7 +149,7 @@ class PrunerrStage(utils.PrunerrComponent):
         """
         stage_results: dict = {}
         if self.config and not self.items:
-            logger.debug("No items in stage: %r", self)
+            # Avoid misleading logging noise:
             return stage_results
 
         break_applier = False
@@ -185,12 +185,13 @@ class PrunerrStage(utils.PrunerrComponent):
 
         :return: The items to apply this stage's operations to.
         """
+        logger.debug("Filtering items for: %r", self)
         stage_filter = getattr(
             self.applier,
             f"filter_{self.name.replace('-', '_')}",
         )
         if not (stage_items := list(stage_filter())):
-            logger.debug("No items in %r", self)
+            logger.debug("No items in: %r", self)
         return stage_items
 
 
@@ -285,6 +286,7 @@ class PrunerrOperation(utils.PrunerrComponent):
 
         :return: The items to apply this operations to.
         """
+        logger.debug("Filtering items for: %r", self)
         assemble_context = getattr(
             self.stage.applier,
             f"assemble_context_{self.config['name'].replace('-', '_')}",
@@ -310,6 +312,7 @@ class PrunerrOperation(utils.PrunerrComponent):
             else list(self.stage.items)
         )
         if OPERATION_SORT in self.config:
+            logger.debug("Sorting items for: %r", self)
             # The configuration specifies a sort:
             operation_items.sort(
                 key=lambda item: self.config[OPERATION_SORT].render(

@@ -100,12 +100,6 @@ High priority
    Docs benefit most from fresh eyes. If you find anything confusing, ask for help. When
    you understand better, contribute changes to the docs to help others.
 
-#. Send a notification when disk space is low and no download item can be deleted. The
-   Servarr API doesn't provide an endpoint for sending notifications that I can find, so
-   we'll need to adopt a tool or framework. I already use and love `ntfy
-   <https://ntfy.readthedocs.io/en/latest/ntfy.html#ntfy.notify>`_ so might as well use
-   that.
-
 #. :Operations:
 
    See if Home Assistant is interested in breaking out their set of Jinja filters,

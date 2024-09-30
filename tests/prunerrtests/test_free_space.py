@@ -35,7 +35,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         / "free-space-imported-sufficient"
     )
 
-    def test_free_space_workflow(self):
+    def test_free_space_workflow(self):  # pylint: disable=too-many-statements
         """
         Prunerr removes imported items to free space according to configured rules.
         """
@@ -112,6 +112,15 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.min_free_space,
             "Too much free space before 'imported insufficient' `free-space` run",
         )
+        imported_seeding_item = self.seeding_item.with_name(
+            self.seeding_item_file.name.replace("S01E01", "S01E02").replace(
+                "Corge",
+                "Grault",
+            ),
+        )
+        shutil.copy2(self.EXAMPLE_VIDEO, imported_seeding_item)
+        seeding_import = self.manual_import.parent.with_name(imported_seeding_item.name)
+        seeding_import.hardlink_to(imported_seeding_item)
         prunerr.apply_(self.runner, stages=["free-space"])
         self.assert_request_mocks(imported_insufficient_request_mocks)
         self.assertFalse(
@@ -137,7 +146,7 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         )
 
         # 3. There's still not enough free space but now a download item can be
-        #    deleted. That's still not enough free space after deleting it.
+        #    deleted. There's still not enough free space after deleting it.
         self.imported_item_file.unlink()
         upgraded_insufficient_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-upgraded-insufficient",
@@ -266,6 +275,6 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
         self.assert_request_mocks(remaining_downloads_request_mocks)
         self.assertIn(
             "greater than the available free",
-            logged_msgs.records[-1].message,
+            logged_msgs.records[-2].message,
             "Wrong logged record message",
         )

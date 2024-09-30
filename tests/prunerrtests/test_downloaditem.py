@@ -50,7 +50,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         runner.update()
         with self.assertLogs(
             prunerr.downloaditem.logger,
-            level=logging.ERROR,
+            level=logging.WARNING,
         ) as logged_msgs:
             root_name = (
                 runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[1].root_name

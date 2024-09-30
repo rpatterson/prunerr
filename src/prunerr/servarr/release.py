@@ -116,7 +116,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 queue_record[f"{servarr.type_map['dir_type']}Id"]  # pragma: no cover
                 != root_id
             ):
-                logger.error(
+                logger.warning(
                     "Release queued for more than one Servarr root item: %r",
                     self,
                 )

@@ -116,7 +116,7 @@ class PrunerrDownloadItem(
         )
         if file_roots:
             if len(set(file_roots)) > 1:
-                logger.error(
+                logger.warning(
                     "Files in %r have multiple roots, using: %s",
                     self.name,
                     file_roots[0],

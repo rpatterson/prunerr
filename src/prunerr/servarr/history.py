@@ -124,7 +124,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         # Determine which part of the paths are from the download item:
         dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
         if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
-            logger.error(
+            logger.warning(
                 "No relative dropped path found: %s",
                 dropped_path,
             )
@@ -159,7 +159,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     # manual imports seem to get the download item hash ID from the
                     # previous automated import they upgrade, so assume the older record
                     # is the correct download item hash ID:
-                    logger.error(
+                    logger.warning(
                         "Duplicate hash IDs for dropped path, choosing older: %r -> %r",
                         download_id_collated["droppedRootName"],
                         str(dropped_relative.parts[0]),
@@ -271,7 +271,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     ),
                 )
             else:
-                logger.error(  # pragma: no cover
+                logger.warning(  # pragma: no cover
                     "Dropped path is parallel to multiple Servarr"
                     " download client directories: %s",
                     dropped_path,

@@ -32,11 +32,10 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         """
         Download items default to the item's name for the root if it has no files.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses()
-        runner.update()
+        self.runner.update()
         self.assertEqual(
-            runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[0].root_name,
+            self.runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[0].root_name,
             "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
             "Wrong root name for download item with no files",
         )
@@ -45,15 +44,16 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         """
         Download items log an error if the item has multiple root directories.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses()
-        runner.update()
+        self.runner.update()
         with self.assertLogs(
             prunerr.downloaditem.logger,
             level=logging.WARNING,
         ) as logged_msgs:
             root_name = (
-                runner.download_clients[self.DOWNLOAD_CLIENT_URL].items[1].root_name
+                self.runner.download_clients[self.DOWNLOAD_CLIENT_URL]
+                .items[1]
+                .root_name
             )
         self.assertEqual(
             len(logged_msgs.records),
@@ -75,10 +75,9 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         """
         Download items provide access to the time duration since finished downloading.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses()
-        runner.update()
-        download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
+        self.runner.update()
+        download_items = self.runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
         self.assertGreater(
             download_items[0].seconds_since_done,
             0,
@@ -104,10 +103,9 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         """
         Download items provide access to the total download rate.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses()
-        runner.update()
-        download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
+        self.runner.update()
+        download_items = self.runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
         self.assertGreater(
             download_items[1].rate_total,
             0,
@@ -118,10 +116,9 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         """
         Download item files provide useful debugging and introspection details.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.mock_responses()
-        runner.update()
-        download_items = runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
+        self.runner.update()
+        download_items = self.runner.download_clients[self.DOWNLOAD_CLIENT_URL].items
         self.assertIn(
             "path=",
             repr(download_items[1].files[0]),

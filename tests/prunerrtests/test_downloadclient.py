@@ -50,15 +50,14 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         """
         Download client configurations are aggregated from Servarr and the config file.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
         self.assertFalse(
-            getattr(runner, "download_clients", None),
+            getattr(self.runner, "download_clients", None),
             "Download clients aggregated before `runner.update(...)`",
         )
 
         request_mocks = self.mock_responses()
-        runner.update()
-        for download_client in runner.download_clients.values():
+        self.runner.update()
+        for download_client in self.runner.download_clients.values():
             self.assertIsInstance(
                 download_client.items,
                 list,
@@ -67,35 +66,35 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         self.assert_request_mocks(request_mocks)
         self.assertIn(
             "download_clients",
-            dir(runner),
+            dir(self.runner),
             "Download clients missing after `runner.update(...)`",
         )
         self.assertIsInstance(
-            runner.download_clients,
+            self.runner.download_clients,
             dict,
             "Wrong aggregated download clients type",
         )
         for download_client_url in self.DOWNLOAD_CLIENT_URLS:
             with self.subTest(download_client_url=download_client_url):
-                self.assert_download_client(runner, download_client_url)
+                self.assert_download_client(self.runner, download_client_url)
 
         # Ensure the same remote API/RPC client instances are used across download
         # client and servarr instance combinations to reduce requests and preserve any
         # caching the clients may do
         self.assertIs(
-            runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[0]]
+            self.runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[0]]
             .servarrs[self.servarr_downloaded_dir]
             .servarr.client,
-            runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[1]]
+            self.runner.download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[1]]
             .servarrs[self.servarr_downloaded_dir]
             .servarr.client,
             "Servarr instance client not re-used across download clients",
         )
         self.assertIs(
-            runner.servarrs[self.servarr_urls[0]]
+            self.runner.servarrs[self.servarr_urls[0]]
             .download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[0]]
             .download_client.client,
-            runner.servarrs[self.servarr_urls[1]]
+            self.runner.servarrs[self.servarr_urls[1]]
             .download_clients[self.SERVARR_DOWNLOAD_CLIENT_URLS[0]]
             .download_client.client,
             "Download client's RPC client not re-used across Servarr instances",
@@ -191,8 +190,7 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         """
         The download client representation provides useful information for debugging.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
-        download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
+        download_client = prunerr.downloadclient.PrunerrDownloadClient(self.runner)
         download_client.config = {"name": "Transmission"}
         self.assertIn(
             download_client.config["name"],
@@ -204,9 +202,8 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         """
         The download client informs the user with an error if the port can't be guessed.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
-        runner.config = self.config
-        download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
+        self.runner.config = self.config
+        download_client = prunerr.downloadclient.PrunerrDownloadClient(self.runner)
         with self.assertRaises(
             utils.PrunerrValidationError,
             msg="Download client URL without port did not raise and error",
@@ -217,8 +214,7 @@ class PrunerrDownloadClientTests(prunerrtests.PrunerrTestCase):
         """
         The download client informs the user with an error if no url is configured.
         """
-        runner = prunerr.runner.PrunerrRunner(config=self.CONFIG)
-        download_client = prunerr.downloadclient.PrunerrDownloadClient(runner)
+        download_client = prunerr.downloadclient.PrunerrDownloadClient(self.runner)
         with self.assertRaises(
             prunerr.utils.PrunerrValidationError,
             msg="Wrong missing config URL validation exception type",

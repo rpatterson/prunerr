@@ -256,7 +256,7 @@ stages: # (default)
       ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
       arg: |
         {%- set remaining_files = item.release.upgraded_release.download_item.files
-            |selectattr("is_imported")|join("\n    ")
+            |selectattr("is_imported")|rejectattr("is_servarr_extra")|join("\n    ")
         -%}
         {{-
             {

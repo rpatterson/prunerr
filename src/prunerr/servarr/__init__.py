@@ -179,6 +179,29 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         self.download_client_names = download_client_names
 
     @cached_property
+    def media_management(self) -> dict:
+        """
+        Retrieve the "Media Management" settings for this Servarr instance.
+
+        :return: The Servarr API JSON.
+        """
+        return self.client.get("config/mediamanagement")
+
+    @cached_property
+    def extra_file_suffixes(self) -> dict:
+        """
+        Assemble file extensions that Servarr imports if enabled.
+
+        :return: Map the extensions to ``None`` to preserve order.
+        """
+        if self.media_management["importExtraFiles"]:
+            return {
+                f".{suffix.strip().lstrip('.')}": None
+                for suffix in self.media_management["extraFileExtensions"].split(",")
+            }
+        return {}  # pragma: no cover
+
+    @cached_property
     def dir_items(self) -> dict:
         """
         Retrieve all the series/movies in this Servarr instance.

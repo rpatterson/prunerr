@@ -251,7 +251,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             )
         apply_results = {}
         # Let the YAML order determine the order the stages are applied in:
-        for stage in self.config["stages"]:
+        for stage in self.example_config["stages"]:
             if stage not in stages:
                 continue
 

@@ -471,9 +471,11 @@ stages: # (default)
       ## Apply only once, to the first item in the stage:
       break: |
         {{-
-            item.download_client.session.get("previous")
-            and not item.download_client.free_space_check(
-                item.download_client.session["previous"],
+            (
+                item.download_client.session.get("previous")
+                and not item.download_client.free_space_check(
+                    item.download_client.session["previous"],
+                )
             )
             or item_idx > 0
         -}}

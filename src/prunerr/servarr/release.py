@@ -59,14 +59,15 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         self.download_item.clear()
 
     @cached_property
-    def queue(self) -> dict:
+    def queue(self) -> list:
         """
-        Lookup this release's queue record from it's Servarr instance.
+        Lookup this release's queue records from it's Servarr instance.
 
         :return: The Servarr API ``queue`` endpoint JSON for this release.
         """
         return self.servarr_download_client.servarr.queue.get(
             self.download_item.hash_string.upper(),
+            [],
         )
 
     @cached_property

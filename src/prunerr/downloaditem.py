@@ -391,7 +391,7 @@ class PrunerrDownloadItem(
             blacklist = operation.config.get(operations.ACTION_BLACKLIST, False)
             if (
                 self.release.servarr_download_client.download_dir == self.download_dir
-                and self.release.queue is not None
+                and self.release.queue
             ):
                 delete_params = {}
                 if blacklist:

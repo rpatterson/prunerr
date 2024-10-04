@@ -45,13 +45,8 @@ class PrunerrDownloadItem(
         Reconstitute the native Python representation.
         """
         self.download_client = download_client
-        super().__init__(fields=torrent.fields)
-        self.files = []
-        self.files_by_relative = {}
-        for rpc_file in super().get_files():
-            item_file = PrunerrDownloadItemFile(self, rpc_file)
-            self.files.append(item_file)
-            self.files_by_relative[item_file.relative] = item_file
+        super(utils.PrunerrComponent, self).__init__(fields=torrent.fields)
+        self.update(torrent)
 
     @property
     def details(self) -> dict:
@@ -73,17 +68,26 @@ class PrunerrDownloadItem(
         details["imported"] = f"{round(self.imported_portion * 100)}%"
         return details
 
-    def update(self):
+    def update(self, torrent: typing.Optional[transmission_rpc.Torrent] = None):
         """
         Update cached values when this download item is updated.
+
+        :param torrent: The underlying torrent object from ``transmission_rpc``.
         """
-        super().update()
-        super(utils.PrunerrComponent, self).__init__(
-            fields=self.download_client.client.get_torrent(
+        if torrent is None:
+            torrent = self.download_client.client.get_torrent(
                 self.fields["hashString"],
-            ).fields,
-        )
-        self.clear()
+            )
+            super(utils.PrunerrComponent, self).__init__(fields=torrent.fields)
+
+        self.files = []
+        self.files_by_relative = {}
+        for rpc_file in super().get_files():
+            item_file = PrunerrDownloadItemFile(self, rpc_file)
+            self.files.append(item_file)
+            self.files_by_relative[item_file.relative] = item_file
+
+        super().update()
 
     def clear(self):
         """

@@ -511,6 +511,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             self,
             self.client.add_torrent(torrent=response.raw, **kwargs),
         )
+        added_torrent.update()
         self.items.append(added_torrent)
         return added_torrent
 

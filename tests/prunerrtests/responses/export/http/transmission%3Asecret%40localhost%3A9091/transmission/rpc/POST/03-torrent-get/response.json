@@ -1,0 +1,74 @@
+{
+  "arguments": {
+    "torrents": [
+      {
+        "addedDate": 0,
+        "bandwidthPriority": 0,
+        "doneDate": 0,
+        "downloadDir": "/media/Library/seeding/Sonarr/Videos/Series",
+        "error": 0,
+        "errorString": "",
+        "eta": -1,
+        "files": [
+          {
+            "bytesCompleted": 0,
+            "length": 1073741824,
+            "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
+          },
+          {
+            "bytesCompleted": 0,
+            "length": 10240,
+            "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER.nfo"
+          }
+        ],
+        "fileStats": [
+          {
+            "bytesCompleted": 0,
+            "priority": 0,
+            "wanted": true
+          },
+          {
+            "bytesCompleted": 0,
+            "priority": 0,
+            "wanted": true
+          }
+        ],
+        "id": 2,
+        "isFinished": false,
+        "isStalled": true,
+        "leftUntilDone": 0,
+        "metadataPercentComplete": 1,
+        "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+        "hashString": "8b8060bf22c942b1b6cabb8e5b840e445b840e44",
+        "peersConnected": 0,
+        "peersGettingFromUs": 0,
+        "peersSendingToUs": 0,
+        "percentDone": 1,
+        "priorities": [0, 0],
+        "queuePosition": 2,
+        "rateDownload": 0,
+        "rateUpload": 0,
+        "recheckProgress": 0,
+        "seedRatioLimit": 4,
+        "seedRatioMode": 0,
+        "sizeWhenDone": 1073741824,
+        "startDate": 0,
+        "status": 6,
+        "totalSize": 1073741824,
+        "trackers": [
+          {
+            "announce": "udp://tracker.private.example.com:6969/announce",
+            "id": 0,
+            "scrape": "udp://tracker.private.example.com:6969/scrape",
+            "tier": 0
+          }
+        ],
+        "uploadRatio": 0,
+        "uploadedEver": 0,
+        "wanted": [1, 1],
+        "webseedsSendingToUs": 0
+      }
+    ]
+  },
+  "result": "success"
+}

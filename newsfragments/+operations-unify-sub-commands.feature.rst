@@ -1,5 +1,4 @@
 :Operations:
-
    Unify the sub-commands that were run as a part of ``$ prunerr exec`` as different
    download item life-cycle stage operations. This is a major,
    breaking change and existing users need to:

@@ -1,1 +1,2 @@
-:free-space: Too broad socket connection error exception catch.
+:Free-space:
+   Too broad socket connection error exception catch.

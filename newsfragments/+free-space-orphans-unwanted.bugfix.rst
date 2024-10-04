@@ -1,1 +1,2 @@
-:free-space: Also consider unselected/unwanted download item files as orphans to delete.
+:Free-space:
+   Also consider unselected/unwanted download item files as orphans to delete.

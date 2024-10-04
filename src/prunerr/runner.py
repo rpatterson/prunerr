@@ -34,6 +34,9 @@ class PrunerrRunner(utils.PrunerrComponent):
     """
 
     EXAMPLE_CONFIG = pathlib.Path(__file__).parent / "home" / ".config" / "prunerr.yml"
+    DEFAULTS_CONFIG = EXAMPLE_CONFIG.with_name(
+        f"{EXAMPLE_CONFIG.stem}-defaults{EXAMPLE_CONFIG.suffix}",
+    )
     CONFIG_SERVARRS_KEY = "servarrs"
     CONFIG_DOWNLOAD_CLIENTS_KEY = "download-clients"
     CONFIG_INDEXERS_KEY = "indexers"
@@ -53,6 +56,8 @@ class PrunerrRunner(utils.PrunerrComponent):
         """
         with self.EXAMPLE_CONFIG.open() as config_opened:
             self.example_config = yaml.safe_load(config_opened)
+        with self.DEFAULTS_CONFIG.open() as defaults_opened:
+            self.example_config.update(yaml.safe_load(defaults_opened))
         self.config_file = pathlib.Path(config)
 
         # Initialize any local instance state

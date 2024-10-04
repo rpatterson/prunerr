@@ -66,6 +66,7 @@ class PrunerrTestCase(
     HTTP_METHODS_RE = re.compile("^(GET|HEAD|POST|OPTIONS|PATCH|PUT|DELETE|TRACE)")
 
     CONFIG = prunerr.runner.PrunerrRunner.EXAMPLE_CONFIG
+    DEFAULTS_CONFIG = prunerr.runner.PrunerrRunner.DEFAULTS_CONFIG
     HOME = CONFIG.parents[1]
     ENV = {
         "HOME": str(HOME),
@@ -126,6 +127,8 @@ class PrunerrTestCase(
         # Convenient access to the parsed configuration file
         with self.CONFIG.open(encoding="utf-8") as config_opened:
             self.config = yaml.safe_load(config_opened)
+        with self.DEFAULTS_CONFIG.open() as defaults_opened:
+            self.config.update(yaml.safe_load(defaults_opened))
         if self.config.get("download-clients"):
             download_client_config = next(
                 iter(

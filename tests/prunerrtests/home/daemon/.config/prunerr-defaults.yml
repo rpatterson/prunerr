@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: 2023 Ross Patterson <me@rpatterson.net>
+#
+# SPDX-License-Identifier: MIT
+
+stages:
+  queued: {}
+  upgraded: {}
+  seeding: {}
+  free-space: {}
+  all: {}
+  orphans: {}
+daemon:
+  poll: 1

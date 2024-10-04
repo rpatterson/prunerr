@@ -65,6 +65,10 @@ def mock_exit_daemon_response(  # pylint: disable=missing-param-doc,missing-rais
     "prunerr.runner.PrunerrRunner.EXAMPLE_CONFIG",
     HOME / ".config" / "prunerr-example.yml",
 )
+@mock.patch(
+    "prunerr.runner.PrunerrRunner.DEFAULTS_CONFIG",
+    HOME / ".config" / "prunerr-defaults.yml",
+)
 class PrunerrDaemonTests(prunerrtests.PrunerrTestCase):
     """
     Tests covering the Prunerr `daemon` sub-command.

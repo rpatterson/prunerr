@@ -33,6 +33,7 @@ class PrunerrDownloadItem(
     """
 
     FIELD_HASH = "hashString"
+    FIELD_TRACKERS = "trackers"
     FIELD_DOWNLOAD_DIR = "downloadDir"
     STATUS_DOWNLOADING = "downloading"
     STATUS_SEEDING = "seeding"
@@ -66,7 +67,8 @@ class PrunerrDownloadItem(
             details["hash"] = self.fields[self.FIELD_HASH].value
         else:  # pragma: no cover
             details["id"] = self.fields["id"]
-        details["indexer"] = self.indexer_config.get("name")
+        if self.FIELD_TRACKERS in self.fields:  # pragma: no cover
+            details["indexer"] = self.indexer_config.get("name")
         details["disk_usage"] = utils.format_size(self.disk_usage)
         details["imported"] = f"{round(self.imported_portion * 100)}%"
         return details

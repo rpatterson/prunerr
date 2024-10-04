@@ -85,17 +85,15 @@ stages:
       ## the files. If that proportion is greater than 50%, then apply this operations
       ## actions:
       include: |
-        {%- set wanted_files = item.files|selectattr("selected")|list -%}
-        {%- set wanted_sum = wanted_files|sum("size") -%}
         {%- set archive_portion = 0 -%}
-        {%- if wanted_sum -%}
+        {%- if item.size_selected -%}
             {%-
                 set archive_portion = (
-                    wanted_files|selectattr(
+                    item.files|selectattr("selected")|selectattr(
                         "path.suffix",
                         "match",
-                        "rar|r[0-9]+|zip|zip\\.[0-9]+|gz|tgz|bz2",
-                    )|sum("size") / wanted_sum
+                        "\\.(rar|r[0-9]+|zip|zip\\.[0-9]+|gz|tgz|bz2)",
+                    )|sum("size") / item.size_selected
                 )
             -%}
         {%- endif -%}

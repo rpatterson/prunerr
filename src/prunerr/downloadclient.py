@@ -412,7 +412,8 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         unimported_files = [
             item_file
             for item_file in item.files
-            if (not item_file.path.exists()) or item_file.stat.st_nlink <= 1
+            if ((not item_file.path.exists()) or item_file.stat.st_nlink <= 1)
+            and not item_file.is_servarr_extra
         ]
         if unimported_files and (len(unimported_files) < len(item.files)):
             size = sum(item_file.disk_usage for item_file in unimported_files)

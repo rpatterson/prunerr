@@ -206,11 +206,3 @@ Nice to have
    BBB support is dropped.
 
 #. Rename ``dir_*`` to ``lib_*`` throughout the code base.
-
-#. :Upgraded:
-
-       Exclude download item files with extensions in Servarr's ``extraFileExtensions``
-       under "Settings" -> "Media Management" -> "Importing" from the partially imported
-       notifications. Not a high priority for now because so far I don't mind having a
-       chance to see if I care about any of those files, but this may become a higher
-       priority if users find it too noisy over time.

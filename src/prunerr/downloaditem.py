@@ -710,7 +710,21 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
 
         :return: Whether this file has more than one hard link.
         """
-        return self.path.exists() and self.stat.st_nlink > 1
+        return (
+            self.path.exists() and self.stat.st_nlink > 1 and not self.is_servarr_extra
+        )
+
+    @cached_property
+    def is_servarr_extra(self) -> bool:
+        """
+        Is this an extra file that Servarr imports.
+
+        :return: Whether this file is a Servarr extra import.
+        """
+        if self.download_item.release is not None:
+            servarr = self.download_item.release.servarr_download_client.servarr
+            return self.relative.suffix in servarr.extra_file_suffixes
+        return False  # pragma: no cover
 
     @cached_property
     def queued_upgrades(self) -> dict:

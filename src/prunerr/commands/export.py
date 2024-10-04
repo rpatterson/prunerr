@@ -234,7 +234,7 @@ class ExportServarrRootItem:
         :return: Map download item names and root basenames to download item hash IDs.
         """
         download_ids: dict = {}
-        release_hashes_by_file: dict = {}
+        release_hashes_by_root: set = set()
         for (
             imported_relative,
             imported_item,
@@ -248,7 +248,7 @@ class ExportServarrRootItem:
                 continue
 
             download_id = self.lookup_download_id(
-                release_hashes_by_file,
+                release_hashes_by_root,
                 imported_relative,
                 imported_item,
             )
@@ -268,15 +268,15 @@ class ExportServarrRootItem:
 
     def lookup_download_id(
         self,
-        release_hashes_by_file: dict,
+        release_hashes_by_root: set,
         imported_relative: pathlib.Path,
         imported_item: dict,
     ) -> typing.Optional[str]:
         """
         Lookup the download IDs for imported files without them by download item name.
 
-        :param release_hashes_by_file: Map import names and root basenames to download
-            item hash IDs.
+        :param release_hashes_by_root:
+            The dropped path root basenames that have already been matched.
         :param imported_relative: The relative path to the imported file within the
             series/movie.
         :param imported_item: The Servarr API JSON object for the imported item
@@ -288,28 +288,23 @@ class ExportServarrRootItem:
         )
         dropped_relative = imported_collated.get("droppedRel")
 
-        if download_id := release_hashes_by_file.get("droppedRel", {}).get(
-            dropped_relative
-        ):
-            logger.debug(  # pragma: no cover
-                "Reusing previous dropped relative path lookup, %r: %s",
-                dropped_relative,
-                imported_item["file"]["path"],
-            )
-        elif download_id := self.root_item.history.dropped_relatives.get(
+        if download_id := self.root_item.history.dropped_relatives.get(
             dropped_relative,
             {},
         ).get("downloadId"):
-            logger.info(
-                "Matched download item by dropped relative path: %s",
-                dropped_relative,
-            )
+            if dropped_relative.parts[0] in release_hashes_by_root:
+                logger.debug(  # pragma: no cover
+                    "Matched download item by dropped relative path: %s",
+                    dropped_relative,
+                )
+            else:
+                logger.info(
+                    "Matched download item by dropped relative path: %s",
+                    dropped_relative,
+                )
 
         if download_id:
-            release_hashes_by_file.setdefault("droppedRel", {}).setdefault(
-                dropped_relative,
-                download_id,
-            )
+            release_hashes_by_root.add(dropped_relative.parts[0])
             return download_id
 
         logger.error(

@@ -287,11 +287,19 @@ stages: # (default)
     ## indexer/tracker:
     un-regsitered: # (default)
       ## Note that the more simple and more efficient test is first to short circuit the
-      ## more expensive next test if possible:
+      ## more expensive next tests if possible. Only apply to items from private
+      ## indexers/trackers because it's common for only one of many public trackers for
+      ## a given item to respond with error messages while the rest of the trackers are
+      ## working just fine:
       include: |
         {{-
             item.error == 2
-            and item.error_string is search(".*(not |un)registered.*", ignorecase=True)
+            and item.error_string is search(
+                "((not |un-?)(registered|authorized)|deleted)",
+                ignorecase=True,
+            )
+            and item.indexer_config is true
+
         -}}
       remove: true
       blacklist: true

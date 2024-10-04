@@ -126,6 +126,9 @@ ENV
 # Emacs editor settings
 /.dir-locals.el
 
+# Python debugger configuration:
+/.pdbrc
+
 # `${HOME}/**` artifacts:
 **/.*_history
 **/.*hst

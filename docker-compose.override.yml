@@ -39,6 +39,10 @@ services:
         PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
         PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
+    volumes:
+      # Support re-using `(Pdb) alias ...`, `(Pdb) break ...`, etc. debugger commands
+      # between containers:
+      - "~/.pdbrc:/home/prunerr/.pdbrc"
 
   ## Contianers used for development and release:
 
@@ -98,6 +102,9 @@ services:
       - "${CHECKOUT_DIR:-.}/var-docker/${PYTHON_ENV:-py311}\
         /prunerr.egg-info/\
         :/usr/local/src/prunerr/src/prunerr.egg-info/"
+      # Support re-using `(Pdb) alias ...`, `(Pdb) break ...`, etc. debugger commands
+      # between containers:
+      - "~/.pdbrc:/home/prunerr/.pdbrc"
 
   # https://github.com/hadolint/hadolint#how-to-use
   hadolint:

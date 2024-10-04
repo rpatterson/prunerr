@@ -176,6 +176,12 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                             {},
                         )
                         old_imported_collated.pop("downloadId", None)
+                        if old_imported_collated.get("droppedRel"):
+                            self.dropped_relatives[
+                                old_imported_collated["droppedRel"]
+                            ].pop("downloadId", None)
+                        else:
+                            pass  # pragma: no cover
                     download_id_collated.pop("importedRel", None)
                 # Also map the download item hash ID to the root basename for comparison
                 # with older history later to identify incorrect download item hash IDs:

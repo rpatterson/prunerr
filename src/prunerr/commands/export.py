@@ -320,7 +320,7 @@ def link_imported_files(
     imported_root: pathlib.Path,
     imported_relatives: dict,
     need_verify: bool = False,
-):
+) -> list:
     """
     Hard link imported files back into download items.
 
@@ -334,7 +334,6 @@ def link_imported_files(
         item needs to be verified after linking.
     :return: The download item file paths of any imported files that were linked
         into the download item.
-    :rtype: Iterator[]
     """
     # Change the download item data path if a better one is found.  Collect
     # additional possible data paths from the import history records:
@@ -348,6 +347,7 @@ def link_imported_files(
 
     # Hard link imported files into the download item's location:
     file_relatives = set(item_file.relative for item_file in download_item.files)
+    linked_files = []
     for imported_relative, dropped_data in imported_relatives.items():
         if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
             logger.error(
@@ -366,21 +366,30 @@ def link_imported_files(
         download_file_path = download_item.download_dir / dropped_data["droppedRel"]
         if maybe_link_file(download_file_path, imported_root / imported_relative):
             need_verify = True
-            yield str(download_file_path)
+            linked_files.append(str(download_file_path))
 
     if need_verify:
         # Deselect for download any remaining incomplete files:
         download_item.clear()
-        deselect_unimported_files(download_item)
+        deselected_files = deselect_unimported_files(download_item)
+        if len(deselected_files) == len(download_item.files):
+            logger.error(  # pragma: no cover
+                "No files imported, not verifying or resuming: %r",
+                download_item,
+            )
+        else:
+            logger.info(
+                "Verifying and resuming download item: %r",
+                download_item,
+            )
+            download_item.download_client.client.verify_torrent(
+                download_item.hash_string,
+            )
+            download_item.download_client.client.start_torrent(
+                download_item.hash_string
+            )
 
-        logger.info(
-            "Verifying and resuming download item: %r",
-            download_item,
-        )
-        download_item.download_client.client.verify_torrent(
-            download_item.hash_string,
-        )
-        download_item.download_client.client.start_torrent(download_item.hash_string)
+    return linked_files
 
 
 def find_location(

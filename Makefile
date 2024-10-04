@@ -1118,9 +1118,10 @@ devel-upgrade-branch: ./var/log/gpg-import.log \
 	git add --update './requirements/*/*.txt' "./.pre-commit-config.yaml" \
 	    "./.vale.ini" "./styles/"
 # Commit the upgrade changes
-	echo "Upgrade all requirements to the most recent versions as of" \
-	    >"./newsfragments/+upgrade-requirements.bugfix.rst"
-	echo "$${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
+	echo ":Python:" >"./newsfragments/+upgrade-requirements.bugfix.rst"
+	echo "   Upgrade all requirements to the most recent versions as of" \
+	    >>"./newsfragments/+upgrade-requirements.bugfix.rst"
+	echo "   $${now}." >>"./newsfragments/+upgrade-requirements.bugfix.rst"
 	git add "./newsfragments/+upgrade-requirements.bugfix.rst"
 	git_commit_args="--all --gpg-sign"
 ifeq ($(CI),true)

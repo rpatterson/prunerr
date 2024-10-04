@@ -14,6 +14,7 @@ import transmission_rpc
 
 import prunerr.servarr.rootitem
 from ..utils import pathlib
+from .. import utils
 from .. import downloaditem
 
 logger = logging.getLogger(__name__)
@@ -206,10 +207,13 @@ class ExportServarrRootItem:
                 download_id,
                 [],
             ):
+                item_suffix_path = (
+                    release.servarr_download_client.download_dir_suffix
+                    / release.download_item.root_name
+                )
                 item_root_paths = list(
                     release.download_item.download_client.download_dir.parent.glob(
-                        f"*/{release.servarr_download_client.download_dir_suffix}"
-                        f"/{release.download_item.root_name}",
+                        f"*/{utils.fnmatch_escape(str(item_suffix_path))}",
                     ),
                 )
                 linked_files.extend(

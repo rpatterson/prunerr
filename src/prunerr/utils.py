@@ -10,6 +10,7 @@ Useful to avoid circular imports.
 
 import sys
 import os
+import re
 import copy
 import socket
 import getpass
@@ -75,6 +76,8 @@ URL_PORT_HTTP = 80
 URL_PORT_HTTPS = 443
 
 OS_NAME_NT = "nt"
+
+FNMATCH_CHRS_RE = re.compile("([][*?!])")
 
 
 class PrunerrValidationError(Exception):
@@ -374,3 +377,14 @@ def format_size(size: int) -> str:
     """
     number, unit = transmission_rpc.utils.format_size(size)
     return f"{number:0.2f} {unit}"
+
+
+def fnmatch_escape(orig_str: str) -> str:
+    """
+    Escape any characters that would be interpreted as patterns by ``fnmatch``.
+
+    :param orig_str:
+        The original string that may contain ``fnmatch`` pattern characters.
+    :return: The string that will not match on pattern characters.
+    """
+    return FNMATCH_CHRS_RE.sub(r"[\1]", orig_str)

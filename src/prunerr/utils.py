@@ -195,6 +195,14 @@ class NotifyHandler(logging.Handler):
     """
 
     NTFY_BACKEND_MATRIX = "matrix"
+    # Avoid Matrix `M_TOO_LARGE` API error responses. Testing of one case that
+    # reproduced the error found that `round(65535 / (2 + (1/32)))` reproduces the error
+    # but `round(65535 / (2 + (1/16)))` does not. But the title length can also vary so
+    # choose a conservative default given that longer messages are probably not more
+    # helpful to users:
+    # https://github.com/element-hq/element-web/issues/19330#issuecomment-938680899
+    # Presumably, other backends have limits, so use this limit for all messages:
+    MESSAGE_LIMIT = round(65535 / 3)
 
     formatter: TitleFormatter
 
@@ -270,6 +278,8 @@ class NotifyHandler(logging.Handler):
                 "Not adding notification markup: %r",
                 record,
             )
+        if len(message) > self.MESSAGE_LIMIT:
+            message = f"{message[:self.MESSAGE_LIMIT]}\n..."  # pragma: no cover
         ntfy.notify(title=title, message=message)
 
     def handle(self, record: logging.LogRecord) -> bool:

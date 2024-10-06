@@ -212,7 +212,7 @@ stages:
                 "((not |un-?)(registered|authorized)|deleted)",
                 ignorecase=True,
             )
-            and item.indexer_config is true
+            and item.indexer_config
         -}}
       remove: true
       blacklist: true

@@ -409,13 +409,20 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         :param item: A filesystem path or a download item to be deleted.
         :return: The size of deleted files in bytes or B.
         """
+        imported_files = [
+            item_file
+            for item_file in item.files
+            if not item_file.is_servarr_extra
+            and item_file.path.exists()
+            and item_file.stat.st_nlink > 1
+        ]
         unimported_files = [
             item_file
             for item_file in item.files
-            if ((not item_file.path.exists()) or item_file.stat.st_nlink <= 1)
-            and not item_file.is_servarr_extra
+            if not item_file.path.exists() or item_file.stat.st_nlink == 1
         ]
-        if unimported_files and (len(unimported_files) < len(item.files)):
+
+        if imported_files and unimported_files:
             size = sum(item_file.disk_usage for item_file in unimported_files)
             logger.debug(
                 "Deleting un-imported %(item)r files + %(size)s:"
@@ -438,7 +445,18 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 # deleting the data:
                 timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
             )
+
         else:
+            if imported_files:
+                logger.warning(
+                    "Deleting %(item)r with imported files:\n %(imported_files)s",
+                    {
+                        "item": item,
+                        "imported_files": "\n  ".join(
+                            str(imported_file.path) for imported_file in imported_files
+                        ),
+                    },
+                )
             size = item.disk_usage
             logger.debug("Deleting %(item)r", {"item": item})
             self.client.remove_torrent(
@@ -451,19 +469,17 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             self.items.remove(item)
 
         # Delete the actual files ourselves to workaround Transmission hanging when
-        # deleting the data of large items: e.g. season packs.
+        # deleting the data of large items: e.g. season packs:
         for item_file in unimported_files:
-            # Don't try to delete files for which nothing has been downloaded and this
-            # the file was never created:
+            # Don't try to delete files for which nothing has been downloaded and
+            # thus the file was never created:
             if item_file.completed or item_file.path.exists():
                 # Remove each item file whether in the `download-dir` or the
                 # `incomplete-dir`:
                 self.runner.delete_path(item_file.path)
             else:
                 pass  # pragma: no cover
-        if item.path.exists():
-            self.runner.delete_path(item.path)  # pragma: no cover
-        if item.log_path.exists():  # pragma: no cover
+        if not imported_files and item.log_path.exists():  # pragma: no cover
             self.runner.delete_path(item.log_path)
 
         # Refresh the sessions data including free space.

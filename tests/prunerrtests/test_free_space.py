@@ -174,15 +174,16 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.downloaded_item.exists(),
             "Item in downloading dir after 'upgraded insufficient' `free-space` run",
         )
-        self.assertFalse(
+        self.assertTrue(
             self.seeding_item.exists(),
-            "Seeding item still exists after 'upgraded break' `free-space` run",
+            "Partially imported deleted in 'upgraded insufficient' `free-space` run",
         )
 
         # 4. There's still not enough free space but now enough download items can be
         #    deleted to free sufficient space.  Running the `free-space` sub-command
         #    deletes enough download items and their files to free sufficient space and
         #    resumed downloading.
+        self.manual_import.unlink()
         upgraded_break_request_mocks = self.mock_responses(
             self.RESPONSES_DIR.parent / "free-space-upgraded-break",
         )

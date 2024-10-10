@@ -11,7 +11,6 @@ import typing
 import time
 import datetime
 import pathlib
-import shutil
 import logging
 
 import yaml
@@ -526,8 +525,8 @@ class PrunerrRunner(utils.PrunerrComponent):
             managed_dirs.append(download_client.seeding_dir)
             if download_client.incomplete_dir is not None:
                 managed_dirs.append(download_client.incomplete_dir)
-            else:  # pragma: no cover
-                pass
+            else:
+                pass  # pragma: no cover
         return managed_dirs
 
     def delete_path(self, path: pathlib.Path) -> list:
@@ -549,9 +548,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             )
 
         # Delete the given path:
-        if path.is_dir():
-            shutil.rmtree(path, onerror=log_rmtree_error)  # pragma: no cover
-        elif path.exists():
+        if path.exists():
             path.unlink()
         else:
             # Under high download client load, the deletion from the client
@@ -559,7 +556,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             # the next `daemon` loop Prunerr will try to delete it from the client
             # again, which is correct, but then chokes on the missing files it
             # already deleted.
-            logger.warning(  # pragma: no cover
+            logger.warning(
                 "Path to be deleted doesn't exist: %s",
                 path,
             )
@@ -571,30 +568,9 @@ class PrunerrRunner(utils.PrunerrComponent):
             if parent.exists():
                 if next(parent.iterdir(), None) is not None:
                     # Not empty, stop removing parents:
-                    break  # pragma: no cover
+                    break
                 parent.rmdir()
                 removed_parents.append(parent)
+            else:
+                pass  # pragma: no cover
         return removed_parents
-
-
-# TODO: Not sure how to test this, but if there's a way, we should add coverage
-def log_rmtree_error(
-    function: collections.abc.Callable,
-    path: str,
-    excinfo: tuple,
-):
-    """
-    Inform the user on errors deleting item files but also proceed to delete the rest.
-
-    Error handler for `shutil.rmtree`.
-
-    :param function: See ``shutil.rmtree()`` in the Python standard library.
-    :param path: See ``shutil.rmtree()`` in the Python standard library.
-    :param excinfo: See ``shutil.rmtree()`` in the Python standard library.
-    """
-    logger.warning(  # pragma: no cover
-        "Error removing %r (%s)",
-        path,
-        ".".join((function.__module__, function.__name__)),
-        exc_info=excinfo,
-    )

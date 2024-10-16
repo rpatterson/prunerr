@@ -6,11 +6,9 @@ Prunerr's view of Servarr history for a root item, for example a series or movie
 """
 
 
-import typing
 import logging
 
 from .. import utils
-from ..utils import pathlib
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +17,6 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
     """
     Prunerr's view of Servarr history for a root item, for example a series or movie.
     """
-
-    IMPORT_EVENT_TYPE = "downloadFolderImported"
-    GRAB_EVENT_TYPE = "grabbed"
 
     imported_ids: dict
     download_ids: dict
@@ -86,10 +81,17 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
             f"history/{self.root_item.servarr.type_map['dir_type']}",
             **self.root_item.params,
         ):
-            if history_record["eventType"] == self.IMPORT_EVENT_TYPE:
+            if (
+                history_record["eventType"]
+                == self.root_item.servarr.EVENT_TYPE_IMPORTED
+            ):
+                self.root_item.servarr.deserialize_import_record(history_record)
                 self.update_import_record(history_record)
 
-            elif history_record["eventType"] == self.GRAB_EVENT_TYPE:
+            elif (
+                history_record["eventType"] == self.root_item.servarr.EVENT_TYPE_GRABBED
+            ):
+                self.root_item.servarr.deserialize_grab_record(history_record)
                 self.update_grab_record(history_record)
 
             else:
@@ -109,18 +111,11 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         # top-level series/movie:
         imported_collated = {}
 
-        # Determine which part of the paths are from the download item:
-        dropped_path = pathlib.Path(history_record["data"]["droppedPath"])
-        if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
-            logger.warning(
-                "No relative dropped path found: %s",
-                dropped_path,
-            )
-        else:
-            imported_collated["droppedRel"] = dropped_relative
-            imported_collated["location"] = dropped_path.parents[
-                len(dropped_relative.parts) - 1
-            ]
+        if history_record["data"].get("droppedRel"):
+            imported_collated["droppedRel"] = history_record["data"]["droppedRel"]
+            imported_collated["location"] = history_record["data"][
+                "droppedPath"
+            ].parents[len(history_record["data"]["droppedRel"].parts) - 1]
 
         if history_record.get("downloadId"):
             # The most common case, map an imported path to a download item hash ID:
@@ -133,7 +128,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
 
             # As a last resort, match the download item's root basename to a download
             # item ID/hash:
-            if dropped_relative:
+            if dropped_relative := history_record["data"].get("droppedRel"):
                 # Assume the older download item root basename is correct for the hash
                 # ID, overwrite any previous values:
                 if (
@@ -185,7 +180,10 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         # Only store collated history for the most recent import that's in the library:
         if imported_id in self.imported_items:  # pragma: no cover
             self.imported_ids.setdefault(imported_id, imported_collated)
-            dropped_collated = self.dropped_relatives.setdefault(dropped_relative, {})
+            dropped_collated = self.dropped_relatives.setdefault(
+                history_record["data"].get("droppedRel"),
+                {},
+            )
             dropped_collated.setdefault(
                 f"{type_map['item_type']}Id",
                 imported_id,
@@ -203,23 +201,6 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         :param history_record: The Servarr API JSON object for one grab history
             record.
         """
-        # Match this grab history to it's download client:
-        if (
-            history_record["data"]["downloadClientName"]
-            in self.root_item.servarr.download_client_names
-        ):
-            download_client = self.root_item.servarr.download_client_names[
-                history_record["data"]["downloadClientName"]
-            ]
-        else:  # pragma: no cover
-            logger.warning(
-                "Download client name not found, defaulting to first: %s",
-                history_record["data"]["downloadClientName"],
-            )
-            download_client = list(
-                self.root_item.servarr.download_client_names.values(),
-            )[0]
-
         # Map download item IDs/hashes to download URLs if download items need
         # to be re-added to the download client:
         self.download_ids.setdefault(history_record["downloadId"], {}).setdefault(
@@ -228,48 +209,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         ).setdefault(
             history_record["data"]["downloadUrl"],
             {
-                "downloadClient": download_client,
+                "downloadClient": history_record["data"]["downloadClient"],
                 "nzbInfoUrl": history_record["data"]["nzbInfoUrl"],
             },
         )
-
-    def find_dropped_relative(
-        self,
-        dropped_path: pathlib.Path,
-    ) -> typing.Optional[pathlib.Path]:
-        """
-        Determine the download item file's relative path from the dropped path.
-
-        :param dropped_path: The path the file was imported from.
-        :return: The relative path to the file within the download item if found.
-        """
-        dropped_relative = None
-        for servarr_download_client in self.root_item.servarr.download_clients.values():
-            # Is this dropped path in a parallel path to the Servarr download
-            # directory from the Servarr download client settings:
-            download_dir = servarr_download_client.download_client.download_dir
-            servarr_suffix = servarr_download_client.download_dir_suffix
-            dropped_relative_parent = dropped_path.relative_to(download_dir.parent)
-            if not (
-                download_dir.parent in dropped_path.parents
-                and dropped_relative_parent.parts[1 : len(servarr_suffix.parts) + 1]
-                == servarr_suffix.parts
-            ):
-                # No, not parallel to this Servarr download client's download directory,
-                # try the next Servarr download client:
-                continue
-            if dropped_relative is None:
-                dropped_relative = dropped_path.relative_to(
-                    pathlib.Path(
-                        download_dir.parent,
-                        dropped_relative_parent.parts[0],
-                        servarr_suffix,
-                    ),
-                )
-            else:
-                logger.warning(  # pragma: no cover
-                    "Dropped path is parallel to multiple Servarr"
-                    " download client directories: %s",
-                    dropped_path,
-                )
-        return dropped_relative

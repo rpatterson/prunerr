@@ -85,6 +85,12 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             "history",
             downloadId=self.download_item.hash_string.upper(),
         ):
+            if history_record["eventType"] == servarr.EVENT_TYPE_IMPORTED:
+                servarr.deserialize_import_record(history_record)
+            elif (
+                history_record["eventType"] == servarr.EVENT_TYPE_GRABBED
+            ):  # pragma: no cover
+                servarr.deserialize_grab_record(history_record)
             history.setdefault(history_record["eventType"], {}).setdefault(
                 history_record[f"{type_map['item_type']}Id"],
                 history_record,
@@ -168,6 +174,10 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                     imported_item_id,
                     queue_record["title"],
                     queue_record["downloadId"],
+                    extra={
+                        "runner": self.download_item.download_client.runner,
+                        "download_hash": self.download_item.hash_string,
+                    },
                 )
                 continue
 
@@ -176,6 +186,10 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 logger.warning(
                     "Imported file has no hard links: %s",
                     imported_item["id"],
+                    extra={
+                        "runner": self.download_item.download_client.runner,
+                        "download_hash": self.download_item.hash_string,
+                    },
                 )
                 continue
 
@@ -188,6 +202,10 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 logger.warning(
                     "No dropped path history for imported file: %s",
                     imported_item["id"],
+                    extra={
+                        "runner": self.download_item.download_client.runner,
+                        "download_hash": self.download_item.hash_string,
+                    },
                 )
                 continue
 
@@ -214,6 +232,10 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 logger.warning(
                     "No download item file for imported file: %s",
                     imported_item["id"],
+                    extra={
+                        "runner": self.download_item.download_client.runner,
+                        "download_hash": self.download_item.hash_string,
+                    },
                 )
                 continue
 

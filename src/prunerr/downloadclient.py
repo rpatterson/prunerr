@@ -290,6 +290,10 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                 logger.debug(
                     "No ``upgraded`` stage items for items not in Servarr queue: %r",
                     item,
+                    extra={
+                        "runner": self.runner,
+                        "download_hash": item.hash_string,
+                    },
                 )
                 continue
             for imported_release in item.release.filter_upgraded():

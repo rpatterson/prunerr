@@ -16,6 +16,7 @@ import arrapi
 import arrapi.raws.base
 
 from .. import utils
+from ..utils import pathlib
 from ..utils import cached_property
 from . import downloadclient
 from . import rootitem
@@ -101,6 +102,7 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
     }
     MAX_PAGE_SIZE = 250
     EVENT_TYPE_GRABBED = "grabbed"
+    EVENT_TYPE_IMPORTED = "downloadFolderImported"
     DOWNLOAD_CLIENT_IMPLEMENTATION_TRANSMISSION = "Transmission"
 
     def __init__(self, runner):
@@ -238,6 +240,97 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         :return: The instance of Pruner's representation.
         """
         return rootitem.PrunerrServarrRootItem(self, root_id)
+
+    def deserialize_grab_record(self, history_record: dict) -> dict:
+        """
+        Augment the Servarr API JSON with Python native types and derived values.
+
+        :param history_record:
+            The Servarr API JSON object for one import history record.
+        :return: The augmented Servarr API JSON.
+        """
+        # Match this grab history to it's download client:
+        if history_record["data"]["downloadClientName"] in self.download_client_names:
+            history_record["data"]["downloadClient"] = self.download_client_names[
+                history_record["data"]["downloadClientName"]
+            ]
+        else:  # pragma: no cover
+            logger.warning(
+                "Download client name not found, defaulting to first: %s",
+                history_record["data"]["downloadClientName"],
+            )
+            history_record["data"]["downloadClient"] = list(
+                self.download_client_names.values(),
+            )[0]
+        return history_record
+
+    def deserialize_import_record(self, history_record: dict) -> dict:
+        """
+        Augment the Servarr API JSON with Python native types and derived values.
+
+        :param history_record:
+            The Servarr API JSON object for one import history record.
+        :return: The augmented Servarr API JSON.
+        """
+        for data_key, data_value in history_record["data"].items():
+            if data_key.endswith("Path"):
+                history_record["data"][data_key] = pathlib.Path(data_value)
+
+        # Determine which part of the paths are from the download item:
+        dropped_path = history_record["data"]["droppedPath"]
+        if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
+            logger.warning(
+                "No relative dropped path found: %s",
+                dropped_path,
+            )
+        else:
+            history_record["data"]["droppedRel"] = dropped_relative
+            history_record["data"]["location"] = dropped_path.parents[
+                len(dropped_relative.parts) - 1
+            ]
+
+        return history_record
+
+    def find_dropped_relative(
+        self,
+        dropped_path: pathlib.Path,
+    ) -> typing.Optional[pathlib.Path]:
+        """
+        Determine the download item file's relative path from the dropped path.
+
+        :param dropped_path: The path the file was imported from.
+        :return: The relative path to the file within the download item if found.
+        """
+        dropped_relative = None
+        for servarr_download_client in self.download_clients.values():
+            # Is this dropped path in a parallel path to the Servarr download
+            # directory from the Servarr download client settings:
+            download_dir = servarr_download_client.download_client.download_dir
+            servarr_suffix = servarr_download_client.download_dir_suffix
+            dropped_relative_parent = dropped_path.relative_to(download_dir.parent)
+            if not (
+                download_dir.parent in dropped_path.parents
+                and dropped_relative_parent.parts[1 : len(servarr_suffix.parts) + 1]
+                == servarr_suffix.parts
+            ):
+                # No, not parallel to this Servarr download client's download directory,
+                # try the next Servarr download client:
+                continue
+            if dropped_relative is None:
+                dropped_relative = dropped_path.relative_to(
+                    pathlib.Path(
+                        download_dir.parent,
+                        dropped_relative_parent.parts[0],
+                        servarr_suffix,
+                    ),
+                )
+            else:
+                logger.warning(  # pragma: no cover
+                    "Dropped path is parallel to multiple Servarr"
+                    " download client directories: %s",
+                    dropped_path,
+                )
+        return dropped_relative
 
     def get_api_paged_records(
         self,

@@ -159,22 +159,22 @@ class PrunerrStage(utils.PrunerrComponent):
         Apply the operations for this stage to the appliers items.
         """
         stage_results: dict = {}
-        if self.config and not self.items:
+        operations = {
+            operation_name: operation_config
+            for operation_name, operation_config in self.config.items()
+            if operation_config
+        }
+        if not operations or not self.items:
             # Avoid misleading logging noise:
             return stage_results
 
         break_applier = False
         logger.debug("Applying %r", self)
-        for operation_name, operation_config in self.config.items():
-            if operation_config is None:
-                # The user disabled a default operation from the example configuration:
-                continue
-
+        for operation_name, operation_config in operations.items():
             operation = PrunerrOperation(self, operation_config)
             break_applier, operation_results = operation()
             if operation_results:
                 stage_results[operation_name] = operation_results
-
             if break_applier:
                 break
 

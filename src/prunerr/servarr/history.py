@@ -23,7 +23,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
     IMPORT_EVENT_TYPE = "downloadFolderImported"
     GRAB_EVENT_TYPE = "grabbed"
 
-    imported_relatives: dict
+    imported_ids: dict
     download_ids: dict
     imported_items: dict
 
@@ -69,14 +69,14 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         Try to automate these other edge cases as much as possible and as safely as
         possible.
         """
-        self.imported_relatives = {}
+        self.imported_ids = {}
         self.download_ids = {}
         self.dropped_relatives = {}
 
         # Re-map imported items for lookup by relative path instead of by episode/movie
         # DB ID:
         self.imported_items = {
-            imported_item["file"]["relative"]: imported_item
+            imported_item["id"]: imported_item
             for imported_item in self.root_item.imported_items.values()
         }
 
@@ -87,15 +87,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
             **self.root_item.params,
         ):
             if history_record["eventType"] == self.IMPORT_EVENT_TYPE:
-                # Use relative paths to tolerate items imported before Servarr renamed
-                # the top-level series/movie:
-                imported_path = pathlib.Path(history_record["data"]["importedPath"])
-                imported_relative = imported_path.relative_to(
-                    imported_path.parents[
-                        self.root_item.servarr.type_map["file_depth"] - 1
-                    ],
-                )
-                self.update_import_record(imported_relative, history_record)
+                self.update_import_record(history_record)
 
             elif history_record["eventType"] == self.GRAB_EVENT_TYPE:
                 self.update_grab_record(history_record)
@@ -104,19 +96,15 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                 # Not an import or grab record, skip it:
                 continue  # pragma: no cover
 
-    def update_import_record(
-        self,
-        imported_relative: pathlib.Path,
-        history_record: dict,
-    ):
+    def update_import_record(self, history_record: dict):
         """
         Map one import history record to it's download item by various means.
 
         :param history_record: The Servarr API JSON object for one import history
             record.
-        :param imported_relative: The relative path to the imported file within the
-            series/movie.
         """
+        type_map = self.root_item.servarr.type_map
+        imported_id = history_record[f"{type_map['item_type']}Id"]
         # Match on relative paths to tolerate items imported before Servarr renamed the
         # top-level series/movie:
         imported_collated = {}
@@ -167,12 +155,12 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                     # When collating the older import history with the correct download
                     # item hash ID, remove the wrong download item hash ID from the data
                     # collated previously from the newer import history:
-                    for old_imported_relative in download_id_collated.get(
-                        "importedRel",
+                    for old_imported_id in download_id_collated.get(
+                        f"{type_map['item_type']}Id",
                         [],
                     ):
-                        old_imported_collated = self.imported_relatives.get(
-                            old_imported_relative,
+                        old_imported_collated = self.imported_ids.get(
+                            old_imported_id,
                             {},
                         )
                         old_imported_collated.pop("downloadId", None)
@@ -182,7 +170,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
                             ].pop("downloadId", None)
                         else:
                             pass  # pragma: no cover
-                    download_id_collated.pop("importedRel", None)
+                    download_id_collated.pop(f"{type_map['item_type']}Id", None)
                 # Also map the download item hash ID to the root basename for comparison
                 # with older history later to identify incorrect download item hash IDs:
                 download_id_collated["droppedRootName"] = dropped_relative.parts[0]
@@ -190,15 +178,17 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
             # Earlier, when collating the newer import history with the incorrect
             # download item hash ID, store a reference so we can remove that hash ID
             # when collating the older, correct history later:
-            download_id_collated.setdefault("importedRel", []).append(imported_relative)
+            download_id_collated.setdefault(f"{type_map['item_type']}Id", []).append(
+                imported_id,
+            )
 
         # Only store collated history for the most recent import that's in the library:
-        if imported_relative in self.imported_items:  # pragma: no cover
-            self.imported_relatives.setdefault(imported_relative, imported_collated)
+        if imported_id in self.imported_items:  # pragma: no cover
+            self.imported_ids.setdefault(imported_id, imported_collated)
             dropped_collated = self.dropped_relatives.setdefault(dropped_relative, {})
             dropped_collated.setdefault(
-                "importedRel",
-                imported_relative,
+                f"{type_map['item_type']}Id",
+                imported_id,
             )
             if history_record.get("downloadId"):
                 dropped_collated.setdefault("downloadId", history_record["downloadId"])

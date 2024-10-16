@@ -141,10 +141,8 @@ class ExportServarrRootItem:
         # Now group the imported files under the download item IDs/hashes the come from
         # them:
         self.imported_download_ids = {}
-        for imported_relative in self.root_item.history.imported_items:
-            imported_collated = self.root_item.history.imported_relatives.get(
-                imported_relative, {}
-            )
+        for imported_id in self.root_item.history.imported_items:
+            imported_collated = self.root_item.history.imported_ids.get(imported_id, {})
             if not (
                 imported_collated.get("downloadId")
                 and imported_collated.get("droppedRel")
@@ -154,7 +152,7 @@ class ExportServarrRootItem:
             self.imported_download_ids.setdefault(
                 imported_collated["downloadId"],
                 {},
-            ).setdefault(imported_relative, imported_collated)
+            ).setdefault(imported_id, imported_collated)
 
     def __call__(self):
         """
@@ -195,15 +193,15 @@ class ExportServarrRootItem:
                     )
         for (
             download_id,
-            imported_relatives,
+            imported_ids,
         ) in self.lookup_download_ids().items():
             self.imported_download_ids.setdefault(download_id, {}).update(
-                imported_relatives,
+                imported_ids,
             )
 
         # Finally, hard link imported files into the download items:
         linked_files = []
-        for download_id, imported_relatives in self.imported_download_ids.items():
+        for download_id, imported_ids in self.imported_download_ids.items():
             for release in self.command_run.download_ids.get(
                 download_id,
                 [],
@@ -211,7 +209,7 @@ class ExportServarrRootItem:
                 linked_files.extend(
                     self.link_imported_files(
                         release,
-                        imported_relatives,
+                        imported_ids,
                         need_verify=download_id.lower() in added_items,
                     ),
                 )
@@ -226,11 +224,11 @@ class ExportServarrRootItem:
         download_ids: dict = {}
         release_hashes_by_root: set = set()
         for (
-            imported_relative,
+            imported_id,
             imported_item,
         ) in self.root_item.history.imported_items.items():
-            download_id = self.root_item.history.imported_relatives.get(
-                imported_relative,
+            download_id = self.root_item.history.imported_ids.get(
+                imported_id,
                 {},
             ).get("downloadId")
             if download_id:
@@ -239,17 +237,15 @@ class ExportServarrRootItem:
 
             download_id = self.lookup_download_id(
                 release_hashes_by_root,
-                imported_relative,
+                imported_id,
                 imported_item,
             )
             if download_id:
                 download_ids.setdefault(download_id, {}).setdefault(
-                    imported_relative,
-                    self.root_item.history.imported_relatives.get(
-                        imported_relative, {}
-                    ),
+                    imported_id,
+                    self.root_item.history.imported_ids.get(imported_id, {}),
                 )
-                self.root_item.history.imported_relatives[imported_relative].setdefault(
+                self.root_item.history.imported_ids[imported_id].setdefault(
                     "downloadId",
                     download_id,
                 )
@@ -259,7 +255,7 @@ class ExportServarrRootItem:
     def lookup_download_id(
         self,
         release_hashes_by_root: set,
-        imported_relative: pathlib.Path,
+        imported_id: pathlib.Path,
         imported_item: dict,
     ) -> typing.Optional[str]:
         """
@@ -267,15 +263,13 @@ class ExportServarrRootItem:
 
         :param release_hashes_by_root:
             The dropped path root basenames that have already been matched.
-        :param imported_relative: The relative path to the imported file within the
+        :param imported_id: The relative path to the imported file within the
             series/movie.
         :param imported_item: The Servarr API JSON object for the imported item
             annotated with the imported file object.
         :return: The download item hash ID if one matched by name or root basename.
         """
-        imported_collated = self.root_item.history.imported_relatives.get(
-            imported_relative, {}
-        )
+        imported_collated = self.root_item.history.imported_ids.get(imported_id, {})
         dropped_relative = imported_collated.get("droppedRel")
 
         if download_id := self.root_item.history.dropped_relatives.get(
@@ -306,14 +300,14 @@ class ExportServarrRootItem:
     def link_imported_files(
         self,
         release: prunerr.servarr.release.PrunerrServarrRelease,
-        imported_relatives: dict,
+        imported_ids: dict,
         need_verify: bool = False,
     ) -> list:
         """
         Hard link imported files back into download items.
 
         :param release: The download item whose files to link.
-        :param imported_relatives: Map the relative paths of imported files to the
+        :param imported_ids: Map the relative paths of imported files to the
             corresponding paths within the download item.
         :param need_verify: Optionally pass in whether the caller already knows this
             item needs to be verified after linking.
@@ -345,7 +339,7 @@ class ExportServarrRootItem:
             item_file.relative for item_file in release.download_item.files
         )
         linked_files = []
-        for imported_relative, dropped_data in imported_relatives.items():
+        for imported_id, dropped_data in imported_ids.items():
             if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
                 logger.error(
                     "Dropped path doesn't match download item file: %s",
@@ -364,8 +358,10 @@ class ExportServarrRootItem:
             download_file_path = (
                 release.download_item.download_dir / dropped_data["droppedRel"]
             )
-            imported_root = pathlib.Path(self.root_item.data["path"])
-            if maybe_link_file(download_file_path, imported_root / imported_relative):
+            if maybe_link_file(
+                download_file_path,
+                self.root_item.imported_items[imported_id]["file"]["path"],
+            ):
                 need_verify = True
                 linked_files.append(str(download_file_path))
 

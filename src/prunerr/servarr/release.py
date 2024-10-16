@@ -181,19 +181,19 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             if not imported_file_stat.st_nlink > 1:  # pragma: no cover
                 logger.warning(
                     "Imported file has no hard links: %s",
-                    imported_item["file"]["relative"],
+                    imported_item["id"],
                 )
                 continue
 
             if not (
-                dropped_relative := self.root_item.history.imported_relatives.get(
-                    imported_item["file"]["relative"],
+                dropped_relative := self.root_item.history.imported_ids.get(
+                    imported_item["id"],
                     {},
                 ).get("droppedRel")
             ):  # pragma: no cover
                 logger.warning(
                     "No dropped path history for imported file: %s",
-                    imported_item["file"]["relative"],
+                    imported_item["id"],
                 )
                 continue
 
@@ -219,7 +219,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             if not found_item_file:  # pragma: no cover
                 logger.warning(
                     "No download item file for imported file: %s",
-                    imported_item["file"]["relative"],
+                    imported_item["id"],
                 )
                 continue
 

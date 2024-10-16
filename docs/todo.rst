@@ -82,11 +82,6 @@ High priority
 
     Add a ``queued:`` operation to block-list BluRay/DVD full disc rips.
 
-#. :Upgraded:
-
-    Follow rename history for mapping imported files to their source releases. Also
-    relevant for ``export``.
-
 #. :Documentation:
 
     Link the top-level docs for each sub-command into their runner API docs.

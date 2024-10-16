@@ -102,13 +102,6 @@ class PrunerrServarrRootItem(utils.PrunerrComponent):
             imported_item["file"]["path"] = pathlib.Path(
                 imported_item["file"]["path"],
             )
-            imported_item["file"]["relative"] = imported_item["file"][
-                "path"
-            ].relative_to(
-                imported_item["file"]["path"].parents[
-                    self.servarr.type_map["file_depth"] - 1
-                ]
-            )
             imported_items[imported_item["id"]] = imported_item
         return imported_items
 

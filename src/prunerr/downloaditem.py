@@ -379,15 +379,14 @@ class PrunerrDownloadItem(
         self,
         operation: operations.PrunerrOperation,
         **context,  # pylint: disable=unused-argument
-    ) -> dict:
+    ) -> str:
         """
         Remove this download item according to the operation configuration.
 
         :param operation: The operation configuration from the configuration file YAML.
         :param context: Additional names and values available in templates.
-        :return: A mapping describing the details of removal.
+        :return: The filesystem path of the removed download item.
         """
-        remove_result: dict = {operations.ACTION_REMOVE: str(self.path)}
         logger.info(
             "Removing download item per %r operation: %r",
             operation.config["name"],
@@ -402,13 +401,11 @@ class PrunerrDownloadItem(
                 delete_params = {}
                 if blacklist:
                     delete_params[operations.ACTION_BLACKLIST] = "true"
-                    remove_result[operations.ACTION_BLACKLIST] = True
                 self.release.servarr_download_client.delete(
                     self.release,
                     **delete_params,
                 )
             elif blacklist and self.release.grabbed is not None:
-                remove_result[operations.ACTION_BLACKLIST] = True
                 self.release.fail()
             else:
                 logger.warning(
@@ -431,7 +428,7 @@ class PrunerrDownloadItem(
 
         self.download_client.delete_files(self)
         operation.stage.items.remove(self)
-        return remove_result
+        return str(self.path)
 
     def apply_change(  # noqa: V105
         self,
@@ -443,9 +440,8 @@ class PrunerrDownloadItem(
 
         :param operation: The operation configuration from the configuration file YAML.
         :param context: Additional names and values available in templates.
-        :return: A mapping describing the changes made.
+        :return: ``True`` since the changes are always applied.
         """
-        change_result = {}
         logger.info(
             "Changing download item per %r operation for %r: %s",
             operation.config["name"],
@@ -456,16 +452,15 @@ class PrunerrDownloadItem(
             [self.hash_string],
             **operation.config[operations.ACTION_CHANGE],
         )
-        change_result.update(operation.config[operations.ACTION_CHANGE])
         self.update()
-        return change_result
+        return operation.config[operations.ACTION_CHANGE]
 
     def apply_move(  # noqa: V105
         self,
         operation: operations.PrunerrOperation,
         move_timeout: int = 5 * 60,
         **context,
-    ) -> dict:
+    ) -> str:
         """
         Move this download item according to the operation configuration.
 
@@ -473,14 +468,13 @@ class PrunerrDownloadItem(
         :param context: Additional names and values available in templates.
         :param move_timeout: How long to wait for the release to be moved in the
             download client before continuing.
-        :return: A mapping describing the changes made.
+        :return: The download items new ``downloadDir``.
         :raises DownloadClientTimeout: Moving the download item took too long.
         """
         new_download_dir = operation.config[operations.ACTION_MOVE].render(
             item=self,
             **context,
         )
-        move_result = {operations.ACTION_MOVE: str(new_download_dir)}
         logger.info(
             "Moving download item %r: %r -> %r",
             self,
@@ -508,7 +502,7 @@ class PrunerrDownloadItem(
                     f"Timed out waiting for {self!r} to finish moving",
                 )
             time.sleep(1)
-        return move_result
+        return str(new_download_dir)
 
     def apply_verify(  # noqa: V105
         self,
@@ -520,17 +514,14 @@ class PrunerrDownloadItem(
 
         :param operation: The operation configuration from the configuration file YAML.
         :param context: Additional names and values available in templates.
-        :return: A mapping describing the verifys made.
+        :return: ``True`` since verification is always started.
         """
-        verify_result = {
-            operations.ACTION_VERIFY: operation.config[operations.ACTION_VERIFY]
-        }
         logger.info(
             "Verifying corrupt download item: %r",
             self,
         )
         self.download_client.client.verify_torrent([self.hash_string])
-        return verify_result
+        return operation.config[operations.ACTION_VERIFY]
 
     def apply_log(  # noqa: V105
         self,

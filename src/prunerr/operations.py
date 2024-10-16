@@ -377,7 +377,7 @@ class PrunerrOperation(utils.PrunerrComponent):
             )
             logger.debug("Applying %r action: %s", self, action)
             if action_results := action_apply(self, *action_args, item_idx=item_idx):
-                item_results.update(action_results)
+                item_results[action] = action_results
                 if OPERATION_BREAK in self.config and self.config[
                     OPERATION_BREAK
                 ].render(item_idx=item_idx, item=item):

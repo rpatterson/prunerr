@@ -716,9 +716,7 @@ class PrunerrDownloadItemFile(utils.PrunerrComponent):
 
         :return: Whether this file has more than one hard link.
         """
-        return (
-            self.path.exists() and self.stat.st_nlink > 1 and not self.is_servarr_extra
-        )
+        return self.path.exists() and self.stat.st_nlink > 1
 
     @cached_property
     def is_servarr_extra(self) -> bool:

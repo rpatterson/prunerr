@@ -448,7 +448,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         else:
             if imported_files:
-                logger.warning(
+                logger.warning(  # pragma: no cover
                     "Deleting %(item)r with imported files:\n %(imported_files)s",
                     {
                         "item": item,

@@ -160,14 +160,10 @@ stages:
       ## Match if the upgraded release isn't either fully imported or not imported at
       ## all, meaning if it's partially imported:
       include: |
-        {%-
-            set upgraded_imported_portion =
-            item.release.upgraded_release.download_item.imported_portion
+        {%- set remaining_files = item.release.upgraded_release.download_item.files
+            |selectattr("is_imported")|rejectattr("is_servarr_extra")|join("\n    ")
         -%}
-        {{-
-            upgraded_imported_portion > 0.0
-            and upgraded_imported_portion < item.imported_portion
-        -}}
+        {{- remaining_files -}}
       ## The log message here is first rendered as a Jinja template and then [`%`
       ## formatted by the Python logging
       ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).

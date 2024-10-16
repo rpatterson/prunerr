@@ -389,12 +389,12 @@ class PrunerrRunner(utils.PrunerrComponent):
                 item_files.update(
                     item_file.path
                     for item_file in download_item.files
-                    if item_file.selected and item_file.path.exists()
+                    if item_file.selected and item_file.exists
                     # Avoid deleting incomplete files for newly added torrents. Exclude
                     # files whose creation date is newer than when the download items
                     # were requested from the RPC API:
                     and datetime.datetime.fromtimestamp(
-                        item_file.path.stat().st_ctime,
+                        item_file.stat.st_ctime,
                         datetime.timezone.utc,
                     )
                     < download_client.items_requested

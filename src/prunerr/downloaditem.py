@@ -288,9 +288,7 @@ class PrunerrDownloadItem(
 
         :return: The size in bytes or B.
         """
-        return sum(
-            item_file.disk_usage for item_file in self.files if item_file.path.exists()
-        )
+        return sum(item_file.disk_usage for item_file in self.files if item_file.exists)
 
     @cached_property
     def size_selected(self) -> float:

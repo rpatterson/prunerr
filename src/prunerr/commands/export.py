@@ -575,7 +575,7 @@ def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) 
         download_file
         for download_file in download_item.files
         if (
-            not download_file.path.exists()
+            not download_file.exists
             or (
                 download_file.stat.st_nlink <= 1
                 and download_file.completed < download_file.size

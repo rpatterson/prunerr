@@ -80,6 +80,18 @@ class PrunerrDownloadFile(utils.PrunerrComponent):
         return path
 
     @cached_property
+    def exists(self) -> os.stat_result:
+        """
+        Check this download file's existence once and cache.
+
+        Done to minimize repeated external syscalls across stage filters and operation
+        templates.
+
+        :return: The file's metadata.
+        """
+        return self.path.exists()
+
+    @cached_property
     def stat(self) -> os.stat_result:
         """
         Lookup item file `stat` metadata only as needed and only once.
@@ -99,7 +111,7 @@ class PrunerrDownloadFile(utils.PrunerrComponent):
         """
         return (
             (self.stat.st_blocks * 512)
-            if (self.path.exists() and self.stat.st_nlink == 1)
+            if (self.exists and self.stat.st_nlink == 1)
             else 0
         )
 
@@ -110,7 +122,7 @@ class PrunerrDownloadFile(utils.PrunerrComponent):
 
         :return: Whether this file has more than one hard link.
         """
-        return self.path.exists() and self.stat.st_nlink > 1
+        return self.exists and self.stat.st_nlink > 1
 
     @cached_property
     def is_servarr_extra(self) -> bool:

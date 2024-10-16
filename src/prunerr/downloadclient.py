@@ -417,13 +417,13 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             item_file
             for item_file in item.files
             if not item_file.is_servarr_extra
-            and item_file.path.exists()
+            and item_file.exists
             and item_file.stat.st_nlink > 1
         ]
         un_imported_files = [
             item_file
             for item_file in item.files
-            if not item_file.path.exists() or item_file.stat.st_nlink == 1
+            if not item_file.exists or item_file.stat.st_nlink == 1
         ]
 
         if imported_files and un_imported_files:
@@ -477,7 +477,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
         for item_file in un_imported_files:
             # Don't try to delete files for which nothing has been downloaded and
             # thus the file was never created:
-            if item_file.completed or item_file.path.exists():
+            if item_file.completed or item_file.exists:
                 # Remove each item file whether in the `download-dir` or the
                 # `incomplete-dir`:
                 self.runner.delete_path(item_file.path)

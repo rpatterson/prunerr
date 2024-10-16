@@ -560,36 +560,3 @@ def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:
     )
     source.hardlink_to(target)
     return True
-
-
-def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) -> list:
-    """
-    For any un-imported and incomplete files, deselect them for download.
-
-    :param download_item: The download item whose files to link.
-    :return:
-        Map file indexes to ``prunerr.downloaditem.PrunerrDownloadItemFile()``
-        instances for any files that were deselected.
-    """
-    deselected_files = [
-        download_file
-        for download_file in download_item.files
-        if (
-            not download_file.exists
-            or (
-                download_file.stat.st_nlink <= 1
-                and download_file.completed < download_file.size
-            )
-        )
-    ]
-    if deselected_files:
-        logger.info(
-            "Deselecting un-imported, incomplete download files for %r:\n  %s",
-            download_item,
-            "\n  ".join(repr(deselected_file) for deselected_file in deselected_files),
-        )
-        download_item.download_client.client.change_torrent(
-            [download_item.hash_string],
-            files_unwanted=[deselected_file.id for deselected_file in deselected_files],
-        )
-    return deselected_files

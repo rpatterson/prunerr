@@ -97,6 +97,8 @@ class PrunerrDownloadItem(
         for item_file in self.files:
             item_file.clear()
 
+    # Properties summarizing this download item as a whole:
+
     @cached_property
     def download_dir(self) -> pathlib.Path:
         """
@@ -280,6 +282,53 @@ class PrunerrDownloadItem(
         return (self.size_selected - self.fields["leftUntilDone"]) / seconds_downloading
 
     @cached_property
+    def log_path(self) -> pathlib.Path:
+        """
+        Assemble the path for the log file dedicated to this individual download item.
+
+        :return: The log file path object.
+        """
+        return pathlib.Path(self.download_dir, f"{self.hash_string}-prunerr.log")
+
+    @cached_property
+    def release(
+        self,
+    ) -> typing.Optional["prunerr.servarr.release.PrunerrServarrRelease"]:
+        """
+        Lookup the Servarr release corresponding to this download item if any.
+
+        :return: The Servarr release.
+        """
+        for servarr_download_client in self.download_client.servarrs.values():
+            if servarr_download_client.is_release(self):
+                return servarr_download_client.RELEASE_FACTORY(
+                    servarr_download_client,
+                    self,
+                )
+        return None  # pragma: no cover
+
+    @cached_property
+    def indexer_config(self) -> dict:
+        """
+        Return the indexer name if the download item matches a configured tracker URL.
+
+        :return: The first indexer name from the Prunerr configuration that matched if
+            any.
+        """
+        for tracker in self.trackers:
+            for action in ("announce", "scrape"):
+                tracker_url = urllib.parse.urlsplit(getattr(tracker, action))
+                for indexer_config in self.download_client.runner.config[
+                    "indexers"
+                ].values():
+                    for indexer_hostname in indexer_config["hostnames"]:
+                        if tracker_url.hostname == indexer_hostname:
+                            return indexer_config["config"]
+        return {}
+
+    # Properties summarizing this download item's files:
+
+    @cached_property
     def disk_usage(self) -> int:
         """
         Calculate the real storage usage of all files.
@@ -325,51 +374,6 @@ class PrunerrDownloadItem(
         :return: The size in bytes or B.
         """
         return self.size_imported / self.size_selected if self.size_selected else 0.0
-
-    @cached_property
-    def log_path(self) -> pathlib.Path:
-        """
-        Assemble the path for the log file dedicated to this individual download item.
-
-        :return: The log file path object.
-        """
-        return pathlib.Path(self.download_dir, f"{self.hash_string}-prunerr.log")
-
-    @cached_property
-    def release(
-        self,
-    ) -> typing.Optional["prunerr.servarr.release.PrunerrServarrRelease"]:
-        """
-        Lookup the Servarr release corresponding to this download item if any.
-
-        :return: The Servarr release.
-        """
-        for servarr_download_client in self.download_client.servarrs.values():
-            if servarr_download_client.is_release(self):
-                return servarr_download_client.RELEASE_FACTORY(
-                    servarr_download_client,
-                    self,
-                )
-        return None  # pragma: no cover
-
-    @cached_property
-    def indexer_config(self) -> dict:
-        """
-        Return the indexer name if the download item matches a configured tracker URL.
-
-        :return: The first indexer name from the Prunerr configuration that matched if
-            any.
-        """
-        for tracker in self.trackers:
-            for action in ("announce", "scrape"):
-                tracker_url = urllib.parse.urlsplit(getattr(tracker, action))
-                for indexer_config in self.download_client.runner.config[
-                    "indexers"
-                ].values():
-                    for indexer_hostname in indexer_config["hostnames"]:
-                        if tracker_url.hostname == indexer_hostname:
-                            return indexer_config["config"]
-        return {}
 
     # Methods involved in life-cycle stage operations:
 
@@ -618,6 +622,117 @@ class PrunerrDownloadItem(
         return None  # pragma: no cover
 
     # Other methods:
+
+    def delete_unimported(
+        self,
+    ) -> list:
+        """
+        Delete files and directories for this download item.
+
+        Keep and files that are still imported. Deselect, or mark as unwanted, those
+        files that aren't imported and delete them. If no files are imported, just
+        remove this item from the download client.
+
+        :return: Any files of this download item that were deleted.
+        """
+        imported_files, un_imported_files = self.deselect_unimported()
+        if not un_imported_files:
+            if imported_files:
+                logger.warning(
+                    "Deleting %(self)r with imported files:\n %(imported_files)s",
+                    {
+                        "self": self,
+                        "imported_files": "\n  ".join(
+                            str(imported_file.path) for imported_file in imported_files
+                        ),
+                    },
+                )
+            un_imported_files = self.files
+            logger.debug("Deleting %(self)r", {"self": self})
+            self.download_client.client.remove_torrent(
+                [self.hash_string],
+                # When freeing disk space it's important not to get hung up waiting for
+                # a heavily loaded client. Be very defensive and proceed directly to
+                # deleting the data:
+                timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
+            )
+            self.download_client.items.remove(self)
+
+        # Delete the actual files ourselves to workaround Transmission hanging when
+        # deleting the data of large items: e.g. season packs:
+        for item_file in un_imported_files:
+            # Don't try to delete files for which nothing has been downloaded and
+            # thus the file was never created:
+            if item_file.completed or item_file.path.exists():
+                # Remove each self file whether in the `download-dir` or the
+                # `incomplete-dir`:
+                self.download_client.runner.delete_path(item_file.path)
+            else:
+                pass  # pragma: no cover
+        if not imported_files and self.log_path.exists():  # pragma: no cover
+            self.download_client.runner.delete_path(self.log_path)
+
+        # Refresh the sessions data including free space.
+        # TODO: Until we aggregate download client directories by `*.stat().st_dev`, we
+        # can't know which of their sessions to update when we delete a path.  Maybe
+        # implement?  Premature optimization?
+        for download_client in self.download_client.runner.download_clients.values():
+            download_client.client.get_session()
+
+        return un_imported_files
+
+    def deselect_unimported(self) -> list:
+        """
+        For any unimported and incomplete files, deselect them for download.
+
+        Only deselect files if at least one episode/movie is imported and at least one
+        is not. Do not deselect anything if everything that could be imported into the
+        Servarr library is imported or if none of those are imported.
+
+        :return:
+            List the files that have been deselected.
+        """
+        lib_imports = [
+            download_file for download_file in self.files if download_file.is_lib_import
+        ]
+        if not lib_imports:
+            logger.debug(
+                "No library files are imported: %(item)r",
+                {"item": self},
+            )
+            return []
+        un_imported_lib_files = [
+            download_file for download_file in self.files
+            if not download_file.is_imported
+            and download_file.is_lib_file
+        ]
+        if not un_imported_lib_files:
+            logger.debug(
+                "All files are imported: %(item)r",
+                {"item": self},
+            )
+            return []
+        logger.info(
+            "Deselecting un-imported files for %(download_item)r:"
+            "\n  %(un_imported_files)s",
+            {
+                "download_item": self,
+                "un_imported_files": "\n  ".join(
+                    repr(un_imported_file) for un_imported_file in un_imported_files
+                ),
+            },
+        )
+        self.download_client.client.change_torrent(
+            [self.hash_string],
+            files_unwanted=[
+                un_imported_file.id for un_imported_file in un_imported_files
+            ],
+            # When freeing disk space it's important not to get hung up waiting for
+            # a heavily loaded client. Be very defensive and proceed directly to
+            # deleting the data:
+            timeout=transmission_rpc.constants.DEFAULT_TIMEOUT,
+        )
+        return un_imported_files
 
     def re_add(self) -> "PrunerrDownloadItem":
         """

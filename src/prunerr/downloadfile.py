@@ -137,6 +137,21 @@ class PrunerrDownloadFile(utils.PrunerrComponent):
         return False  # pragma: no cover
 
     @cached_property
+    def is_lib_import(self) -> bool:
+        """
+        Is this a file imported to the Servarr library as an episode/movie.
+
+        :return: Whether this file is a Servarr library item import.
+        """
+        # This is just an approximation. Users may have manually imported, or some other
+        # app may have imported files with out an extension in `extraFileExtensions` but
+        # that aren't Servarr library files. For example, if a user manually imports
+        # `*/Featurettes/*.mkv` from a Radarr download item, those files will return
+        # `True` from this property. If Prunerr ever grows a way to distinguish library
+        # items with the same extension as non-library items, it should be used here:
+        return self.is_imported and not self.is_servarr_extra
+
+    @cached_property
     def queued_upgrades(self) -> dict:
         """
         Map the queued releases that will upgrade this file when imported.

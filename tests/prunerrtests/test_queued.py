@@ -125,7 +125,7 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
 
         # 1. Run the `apply` sub-command.  The private item's bandwidth priority is
         # increased and the stalled public item is both deleted from the download client
-        # and the release is blacklisted in Servarr.  Nothing else is changed.
+        # and the release is block-listed in Servarr.  Nothing else is changed.
         prunerr.apply_(self.runner, stages=["queued"])
         self.assert_request_mocks(downloading_request_mocks)
         (private_indexer_queued_torrent,) = downloading_request_mocks[
@@ -233,7 +233,7 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
         """
         Queued operations for a download item without a queue record logs a warning.
 
-        Also covers deleting download item without a blacklisting it, an operation
+        Also covers deleting download item without a block-listing it, an operation
         without any configured change in the request mock assertions, and nonsensical
         item timestamps.
         """

@@ -39,7 +39,7 @@ stages:
         {%- endif -%}
         {{ archive_portion > 0.50 }}
       remove: true
-      blacklist: true
+      blocklist: true
     stalled:
       include: |
         {{-
@@ -48,7 +48,7 @@ stages:
             and item.rate_total < 50
         -}}
       remove: true
-      blacklist: true
+      blocklist: true
   free-space:
     prune:
       include: |

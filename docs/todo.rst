@@ -80,7 +80,7 @@ High priority
 
 #. :Queued:
 
-    Add a ``queued:`` operation to blacklist BluRay/DVD full disc rips.
+    Add a ``queued:`` operation to block-list BluRay/DVD full disc rips.
 
 #. :Upgraded:
 

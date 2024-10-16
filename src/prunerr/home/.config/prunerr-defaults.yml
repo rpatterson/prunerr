@@ -103,9 +103,9 @@ stages:
       ## de-selects the un-imported files, marks them as unwanted, and deletes only
       ## those files. All operation configurations must include at least one action:
       remove: true # (required)
-      ## Blacklist the release in Servarr to start a search for a replacement. This
+      ## Block-list the release in Servarr to start a search for a replacement. This
       ## action can only apply with `remove: true`:
-      blacklist: true
+      blocklist: true
     ## To disable a default operation the user's configuration file should include
     ## *just* the operation's name with nothing indented under it, for example:
     # archives:
@@ -196,7 +196,7 @@ stages:
   ## Apply operations all download items in any stage. See the warning under ["How it
   ## Works"](https://gitlab.com/rpatterson/prunerr/-/blob/develop/README.rst#TODO):
   all:
-    ## Remove and blacklist download items that are no longer registered with their
+    ## Remove and block-list download items that are no longer registered with their
     ## indexer/tracker:
     un-regsitered:
       ## Note that the more simple and more efficient test is first to short circuit the
@@ -211,7 +211,7 @@ stages:
             and item.indexer_config
         -}}
       remove: true
-      blacklist: true
+      blocklist: true
 
     ## Verify download items in whose data the download client has detected corruption:
     verify:
@@ -245,7 +245,7 @@ stages:
             and item.rate_total < 50
         -}}
       remove: true
-      blacklist: true
+      blocklist: true
 
   ## Apply operations when available disk space drops below the margin configured by the
   ## `max-download-*:` keys under `download-clients:`. Usually used to define which

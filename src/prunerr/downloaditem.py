@@ -393,19 +393,19 @@ class PrunerrDownloadItem(
             self,
         )
         if self.release is not None:
-            blacklist = operation.config.get(operations.ACTION_BLACKLIST, False)
+            blocklist = operation.config.get(operations.ACTION_BLOCKLIST, False)
             if (
                 self.release.servarr_download_client.download_dir == self.download_dir
                 and self.release.queue
             ):
                 delete_params = {}
-                if blacklist:
-                    delete_params[operations.ACTION_BLACKLIST] = "true"
+                if blocklist:
+                    delete_params[operations.ACTION_BLOCKLIST] = "true"
                 self.release.servarr_download_client.delete(
                     self.release,
                     **delete_params,
                 )
-            elif blacklist and self.release.grabbed is not None:
+            elif blocklist and self.release.grabbed is not None:
                 self.release.fail()
             else:
                 logger.warning(

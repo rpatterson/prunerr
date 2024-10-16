@@ -95,7 +95,7 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
   , and `items containing archives such as *.rar
   releases
   <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L113-119>`_
-  and `blacklist them
+  and `blocklist them
   <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L139-140>`_,
   AKA mark them as failed, in Servarr.
 - And more...
@@ -127,9 +127,9 @@ Other configured operations may be applied as well. For example:
 - Verify and resume corrupt items
 - Increase bandwidth priority for items from private indexers
 - Decrease bandwidth priority for items from public indexers
-- Remove and blacklist download items containing archives (``*.rar``, ``*.zip``,
+- Remove and blocklist download items containing archives (``*.rar``, ``*.zip``,
   ``*.tar.gz``, etc.) which can't be perma-seeded
-- Remove and blacklist stalled download items
+- Remove and blocklist stalled download items
 - etc.
 
 The ``$ prunerr`` command is intended to serve as a companion to the `Servarr`_ suite of
@@ -281,8 +281,8 @@ to just one currently queued download item, delete or move aside that item's log
 For example, these operations can be used to:
 
 - Adjust bandwidth priorities.
-- Remove and blacklist archives.
-- Remove and blacklist stalled releases.
+- Remove and blocklist archives.
+- Remove and blocklist stalled releases.
 - etc.
 
 Upgraded Stage
@@ -486,7 +486,7 @@ Set up something that prevents Transmission instances from running when their
 Docker volumes in ./docker-compose.yml`_ to run this script regularly.
 
 Finally, Prunerr can change torrent fields, move torrents, delete torrents. In Servarr,
-it can delete releases from the queue, and blacklist releases both in the queue and
+it can delete releases from the queue, and block-list releases both in the queue and
 after importing. It will do so diligently as configured. Read `the example
 configuration`_ carefully, particularly the warning about ``{{ item.seconds_since_done
 }}`` under ``prune``. Be careful when customizing the configuration and test thoroughly

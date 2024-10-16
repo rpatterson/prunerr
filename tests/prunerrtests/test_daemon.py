@@ -100,7 +100,7 @@ class PrunerrDaemonTests(prunerrtests.PrunerrTestCase):
                         "01-torrent-get": {"json": mock_poll_delay_response},
                     },
                 },
-                "http://localhost:8989/api/v3/queue/1?apikey=&blacklist=true": {
+                "http://localhost:8989/api/v3/queue/1?apikey=&blocklist=true": {
                     "DELETE": {
                         "0-response": {"json": mock_network_retry_response},
                     },

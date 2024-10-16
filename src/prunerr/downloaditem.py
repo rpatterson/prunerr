@@ -441,7 +441,7 @@ class PrunerrDownloadItem(
             item=self,
             **context,
         )
-        if new_download_dir == self.download_dir:
+        if new_download_dir == self.download_dir:  # pragma: no cover
             logger.debug(
                 "Download item already moved: %r -> %r",
                 self,

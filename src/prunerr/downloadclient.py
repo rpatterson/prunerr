@@ -457,7 +457,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
                     {
                         "item": item,
                         "imported_files": "\n  ".join(
-                            str(imported_file.path) for imported_file in imported_files
+                            repr(imported_file) for imported_file in imported_files
                         ),
                     },
                 )

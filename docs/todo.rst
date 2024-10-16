@@ -53,6 +53,11 @@ Required
 High priority
 ****************************************************************************************
 
+#. :Fail:
+
+   Open Servarr issues about marking releases as failed broken search. See the comment
+   in the ``un-regsitered:`` operation configuration.
+
 #. :Move:
 
     Switch from letting Transmission move the download item data to pausing the item,
@@ -74,10 +79,14 @@ High priority
 
 #. :Free-space:
 
-    When removing download items from the client while running the ``$ prunerr
-    free-space`` sub-command, avoid a heavily loaded client blocking deleting items
-    by sending the ``remove_torrent()`` `request asynchronously
-    <https://www.python-httpx.org/async/>`_.
+    Avoid deleting large files blocking Prunerr. Delete file asynchronously but be
+    careful that files that are yet to be deleted don't affect subsequent actions and
+    daemon loops.
+
+#. :Transmission:
+
+    Avoid a heavily loaded download client blocking Prunerr by sending Transmission RPC
+    `requests asynchronously <https://www.python-httpx.org/async/>`_.
 
 #. :Operations:
 

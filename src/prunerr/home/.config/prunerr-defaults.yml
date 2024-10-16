@@ -236,8 +236,7 @@ stages:
       ## 3. The Servarr search for a replacement yields no releases or only stalled
       ##    releases.
       ##
-      ## 4. Eventually, Prunerr deletes the un-imported, un-registered release to free
-      ##    space.
+      ## 4. This operation deletes the un-registered release.
       ##
       ## At that point, that rare media is lost for good. So that's the risk of
       ## automating the replacement of un-registered releases. It's not much more of a
@@ -262,13 +261,10 @@ stages:
       ## for a download item that *is* a Servarr release means either way the release
       ## will be marked as failed.
       ##
-      ## Move the download item to the seeding directory to keep it around as long as
-      ## possible and send a notification in case the user wants to intervene before the
-      ## `prune:` operation gets around to deleting it:
-      move: |
-        {{- item.release.servarr_download_client.seeding_dir -}}
+      ## Finally, delete the download item from the client:
+      remove: true
       log: |
-        Un-registered download item: %(item)r
+        Removed un-registered download item: %(item)r
 
     ## Verify download items in whose data the download client has detected corruption:
     verify:

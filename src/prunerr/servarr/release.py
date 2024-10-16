@@ -437,7 +437,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             servarr.client.delete(
                 f"{servarr.type_map['item_type']}file/bulk",
                 {
-                    f"{servarr.type_map['item_type']}Ids": [
+                    f"{servarr.type_map['item_type']}FileIds": [
                         un_imported_item["file"]["id"]
                         for un_imported_item in un_imported_items.values()
                     ]

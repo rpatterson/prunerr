@@ -46,7 +46,9 @@ linkcheck_anchors_ignore = [
     "^user-content-"
 ]
 linkcheck_ignore = [
+    # Sites that are down too often, too many false failures:
     "https://liberapay.com/.*",
+    "https://(.+\.|)reuse.software/,*",
     # Blocked on GitHub Acgtions:
     #     403 Client Error: Blocked for url: ...
     "https://www.reddit.com/.*",

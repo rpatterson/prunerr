@@ -98,14 +98,17 @@ stages:
             -%}
         {%- endif -%}
         {{- archive_portion > 0.50 -}}
+      ## All operation configurations must include at least one action.  In this case,
+      ## remove this item from the Servarr queue. See the Servarr API documentation for
+      ## the keys that may be set in the `de-queue:` mapping:
+      de-queue:
+        ## Block-list the release in Servarr to start a search for a replacement:
+        blocklist: true
       ## Delete the download item and it's files from the download client. If some of
       ## the item's files are still imported, hard linked elsewhere, then this action
       ## de-selects the un-imported files, marks them as unwanted, and deletes only
-      ## those files. All operation configurations must include at least one action:
-      remove: true # (required)
-      ## Block-list the release in Servarr to start a search for a replacement. This
-      ## action can only apply with `remove: true`:
-      blocklist: true
+      ## those files:
+      remove: true
     ## To disable a default operation the user's configuration file should include
     ## *just* the operation's name with nothing indented under it, for example:
     # archives:
@@ -210,8 +213,62 @@ stages:
             )
             and item.indexer_config
         -}}
-      remove: true
-      blocklist: true
+      ## Delete the hard-linked file imported into the Servarr library. Useful when
+      ## block-listing a release to mark it as failed and search for a replacement.
+      ##
+      ## Unfortunately, Servarr's handling of failed releases after import is
+      ## broken. Servarr doesn't ignore the files imported from the release when
+      ## searching which all but guarantees no replacement will be grabbed. Only a
+      ## better quality or custom format score would be grabbed and that would have
+      ## already been grabbed before marking the unregistered release as failed. So we
+      ## have to delete the imported file to workaround this behavior and replace the
+      ## failed release if possible.
+      ##
+      ## WARNING: Given Servarr's broken behavior here, there's no feasible way to
+      ## automate both replacement of failed releases and pruning un-imported seeding
+      ## items to free space without the rare risk of loss of media from the library:
+      ##
+      ## 1. A rare library item is imported from a release:
+      ##
+      ## 2. The indexer/tracker un-registers the release failed because of a few bad
+      ##    pixels or a minor audio issue but no replacement is released.
+      ##
+      ## 3. The Servarr search for a replacement yields no releases or only stalled
+      ##    releases.
+      ##
+      ## 4. Eventually, Prunerr deletes the un-imported, un-registered release to free
+      ##    space.
+      ##
+      ## At that point, that rare media is lost for good. So that's the risk of
+      ## automating the replacement of un-registered releases. It's not much more of a
+      ## risk beyond letting Servarr upgrade rare media items and letting Prunerr prune
+      ## the old releases. If you don't want to accept that risk, override this
+      ## operation and keep only the `log:` action:
+      ##
+      ## Per the above, it's important that this action is placed above the `de-queue:`
+      ## and `fail:` actions. This action also checks every file in the download item
+      ## against every imported file in the release's series/movie and as such can be
+      ## slow for series with many episodes or releases with many files:
+      un-import: true
+      ## Remove form the Servarr queue if still downloading:
+      de-queue:
+        blocklist: true
+      ## If already imported, mark the release `grabbed` record as failed in the Servarr
+      ## history to start a search for a replacement:
+      fail: true
+      ## Note that both the `fail:` and `de-queue:` actions do nothing and log `DEBUG`
+      ## messages if the download item is not a release managed by Servarr or if it is a
+      ## Servarr release but is or isn't in the Servarr queue. Specifying both actions
+      ## for a download item that *is* a Servarr release means either way the release
+      ## will be marked as failed.
+      ##
+      ## Move the download item to the seeding directory to keep it around as long as
+      ## possible and send a notification in case the user wants to intervene before the
+      ## `prune:` operation gets around to deleting it:
+      move: |
+        {{- item.release.servarr_download_client.seeding_dir -}}
+      log: |
+        Un-registered download item: %(item)r
 
     ## Verify download items in whose data the download client has detected corruption:
     verify:
@@ -240,12 +297,17 @@ stages:
       include: |
         {{-
             item.status == "downloading"
+            and (
+                item.download_client.download_dir in item.download_dir.parents
+                or item.download_client.download_dir == item.download_dir
+            )
             and item.seconds_downloading > 604800
             and item.age > 604800
             and item.rate_total < 50
         -}}
+      de-queue:
+        blocklist: true
       remove: true
-      blocklist: true
 
   ## Apply operations when available disk space drops below the margin configured by the
   ## `max-download-*:` keys under `download-clients:`. Usually used to define which
@@ -279,9 +341,10 @@ stages:
       ##
       ## - Also exclude download items that haven't met their tracker's seeding, AKA Hit
       ##   & Run, requirements, usually this is some number of days and maybe shortcut
-      ##   if a ratio is reached first. Beware that `{{ item.seconds_since_done }}` is
-      ##   not necessarily the total sum of actively seeding time as seen by the
-      ##   tracker. For example:
+      ##   if a ratio is reached first.
+      ##
+      ##   WARNING: The `{{ item.seconds_since_done }}` is not necessarily the total sum
+      ##   of actively seeding time as seen by the tracker. For example:
       ##
       ##   1. private tracker torrent is downloaded and seeds all of day 1
       ##

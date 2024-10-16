@@ -420,29 +420,29 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
             and item_file.path.exists()
             and item_file.stat.st_nlink > 1
         ]
-        unimported_files = [
+        un_imported_files = [
             item_file
             for item_file in item.files
             if not item_file.path.exists() or item_file.stat.st_nlink == 1
         ]
 
-        if imported_files and unimported_files:
-            size = sum(item_file.disk_usage for item_file in unimported_files)
+        if imported_files and un_imported_files:
+            size = sum(item_file.disk_usage for item_file in un_imported_files)
             logger.debug(
                 "Deleting un-imported %(item)r files + %(size)s:"
-                "\n  %(unimported_files)s",
+                "\n  %(un_imported_files)s",
                 {
                     "item": item,
                     "size": utils.format_size(size),
-                    "unimported_files": "\n  ".join(
-                        repr(unimported_file) for unimported_file in unimported_files
+                    "un_imported_files": "\n  ".join(
+                        repr(un_imported_file) for un_imported_file in un_imported_files
                     ),
                 },
             )
             item.download_client.client.change_torrent(
                 [item.hash_string],
                 files_unwanted=[
-                    unimported_file.id for unimported_file in unimported_files
+                    un_imported_file.id for un_imported_file in un_imported_files
                 ],
                 # When freeing disk space it's important not to get hung up waiting for
                 # a heavily loaded client. Be very defensive and proceed directly to
@@ -474,7 +474,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         # Delete the actual files ourselves to workaround Transmission hanging when
         # deleting the data of large items: e.g. season packs:
-        for item_file in unimported_files:
+        for item_file in un_imported_files:
             # Don't try to delete files for which nothing has been downloaded and
             # thus the file was never created:
             if item_file.completed or item_file.path.exists():

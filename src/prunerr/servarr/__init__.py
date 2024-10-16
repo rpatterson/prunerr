@@ -228,7 +228,10 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
             record["servarr"] = self
             # `Pending` records have no download item hash ID yet and so are grouped
             # under `None`:
-            queue.setdefault(record.get("downloadId"), []).append(record)
+            queue.setdefault(record.get("downloadId"), {}).setdefault(
+                record[f"{self.type_map['item_type']}Id"],
+                record,
+            )
         return queue
 
     @functools.lru_cache(maxsize=None)  # pylint: disable=method-cache-max-size-none

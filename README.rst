@@ -488,9 +488,11 @@ Docker volumes in ./docker-compose.yml`_ to run this script regularly.
 Finally, Prunerr can change torrent fields, move torrents, delete torrents. In Servarr,
 it can delete releases from the queue, and block-list releases both in the queue and
 after importing. It will do so diligently as configured. Read `the example
-configuration`_ carefully, particularly the warning about ``{{ item.seconds_since_done
-}}`` under ``prune``. Be careful when customizing the configuration and test thoroughly
-before running ``$ prunerr daemon`` unattended.
+configuration`_ and `the default operations configuration`_ carefully, particularly the
+warning about ``{{ item.seconds_since_done }}`` under the ``prune:`` operation and the
+warning about the ``un-import:`` action under the ``un-regsitered:`` operation. Be
+careful when customizing the configuration and test thoroughly before running ``$
+prunerr daemon`` unattended.
 
 
 ****************************************************************************************
@@ -549,6 +551,8 @@ References
 
 .. _`the example configuration`:
    https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr.yml
+.. _`the default operations configuration`:
+   https://gitlab.com/rpatterson/prunerr/blob/main/src/prunerr/home/.config/prunerr-defaults.yml
 .. _`Jinja templates`: https://jinja.palletsprojects.com/en/latest/templates/
 
 .. _`the download item's 'downloadDir'`:

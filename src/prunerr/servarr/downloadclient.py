@@ -183,21 +183,6 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
                 else:
                     pass  # pragma: no cover
 
-    def delete(
-        self, release: "prunerr.servarr.release.PrunerrServarrRelease", **params
-    ):
-        """
-        Delete a release from the Servarr queue.
-
-        :param release: The Servarr release to delete.
-        :param params: Additional parameters to pass onto the Servarr API endpoint
-            request.
-        """
-        self.servarr.client.delete(
-            f"queue/{release.queue[0].get('id')}",
-            **params,
-        )
-
 
 def deserialize_servarr_download_client(download_client_config: dict) -> dict:
     """

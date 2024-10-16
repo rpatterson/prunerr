@@ -53,6 +53,12 @@ Required
 High priority
 ****************************************************************************************
 
+#. :Move:
+
+    Switch from letting Transmission move the download item data to pausing the item,
+    moving its data in Prunerr, then changing the item's location and resuming it. Or
+    maybe this is no longer needed now that ``orphans:`` is no longer a default stage.
+
 #. :Operations:
 
     Extract indexer priorities from Servarr.

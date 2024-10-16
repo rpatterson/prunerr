@@ -368,7 +368,7 @@ class ExportServarrRootItem:
         if need_verify:
             # Deselect for download any remaining incomplete files:
             release.download_item.clear()
-            deselected_files = deselect_unimported_files(release.download_item)
+            deselected_files = deselect_un_imported_files(release.download_item)
             if len(deselected_files) == len(release.download_item.files):
                 logger.error(  # pragma: no cover
                     "No files imported, not verifying or resuming: %r",
@@ -562,9 +562,9 @@ def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:
     return True
 
 
-def deselect_unimported_files(download_item: downloaditem.PrunerrDownloadItem) -> list:
+def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) -> list:
     """
-    For any unimported and incomplete files, deselect them for download.
+    For any un-imported and incomplete files, deselect them for download.
 
     :param download_item: The download item whose files to link.
     :return:

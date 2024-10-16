@@ -30,6 +30,51 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
     )
     DOWNLOAD_ITEM_INDEX = -1
 
+    def mock_responses_edge_cases(self) -> dict:
+        """
+        Insert a dynamic response mock to nonsensical dates.
+
+        :return: The requests and responses registered with the mocker.
+        """
+        return super().mock_responses(
+            self.RESPONSES_DIR.parent / "queued-edge-cases",
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        "01-torrent-get": {
+                            "json": functools.partial(
+                                prunerrtests.mock_get_torrent_response,
+                                [
+                                    {},
+                                    {},
+                                    {},
+                                    {
+                                        # Done date is before added date
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                            - datetime.timedelta(days=1)
+                                        ).timestamp(),
+                                        "doneDate": (
+                                            datetime.datetime.now()
+                                            - datetime.timedelta(days=2)
+                                        ).timestamp(),
+                                    },
+                                    {
+                                        # Added date is in the future
+                                        "addedDate": (
+                                            datetime.datetime.now()
+                                            + datetime.timedelta(days=1)
+                                        ).timestamp(),
+                                        "doneDate": 0,
+                                    },
+                                ],
+                            ),
+                        },
+                    },
+                },
+            },
+        )
+
     def test_queued_bandwidth_priority(self):
         """
         A queued configuration raises the bandwidth priority of private indexer items.
@@ -244,56 +289,9 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
             / ".config"
             / "prunerr.yml",
         )
-        self.mock_responses(
-            self.RESPONSES_DIR.parent / "queued-edge-cases",
-            # Insert a dynamic response mock to nonsensical dates
-            {
-                "http://transmission:secret@localhost:9091/transmission/rpc": {
-                    "POST": {
-                        "01-torrent-get": {
-                            "json": functools.partial(
-                                prunerrtests.mock_get_torrent_response,
-                                [
-                                    {},
-                                    {},
-                                    {},
-                                    {
-                                        # Done date is before added date
-                                        "addedDate": (
-                                            datetime.datetime.now()
-                                            - datetime.timedelta(days=1)
-                                        ).timestamp(),
-                                        "doneDate": (
-                                            datetime.datetime.now()
-                                            - datetime.timedelta(days=2)
-                                        ).timestamp(),
-                                    },
-                                    {
-                                        # Added date is in the future
-                                        "addedDate": (
-                                            datetime.datetime.now()
-                                            + datetime.timedelta(days=1)
-                                        ).timestamp(),
-                                        "doneDate": 0,
-                                    },
-                                ],
-                            ),
-                        },
-                    },
-                },
-            },
-        )
+        self.mock_responses_edge_cases()
         runner.update()
-        with self.assertLogs(
-            prunerr.downloaditem.logger,
-            level=logging.WARNING,
-        ) as logged_msgs:
-            runner.apply_(stages=["queued"])
-        self.assertIn(
-            "missing from Servarr queue",
-            logged_msgs.records[-1].message,
-            "Wrong logged record message",
-        )
+        runner.apply_(stages=["queued"])
 
     def test_queued_edge_cases_quiet(self):
         """
@@ -315,9 +313,7 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
 
         # On the first run, the per-item messages are logged and the item hash IDs
         # recorded:
-        self.mock_responses(
-            self.RESPONSES_DIR.parent / "queued-edge-cases",
-        )
+        self.mock_responses_edge_cases()
         runner.update()
         runner.apply_(stages=["queued"])
 
@@ -330,9 +326,7 @@ class PrunerrQueuedTests(prunerrtests.PrunerrTestCase):
                 "torrents"
             ][self.DOWNLOAD_ITEM_INDEX]["name"]
         )
-        self.mock_responses(
-            self.RESPONSES_DIR.parent / "queued-edge-cases",
-        )
+        self.mock_responses_edge_cases()
         # Simulate a change in the configuration so that the operations will be
         # repeated:
         runner.config_file.touch()

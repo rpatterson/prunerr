@@ -392,40 +392,6 @@ class PrunerrDownloadItem(
             operation.config["name"],
             self,
         )
-        if self.release is not None:
-            blocklist = operation.config.get(operations.ACTION_BLOCKLIST, False)
-            if (
-                self.release.servarr_download_client.download_dir == self.download_dir
-                and self.release.queue
-            ):
-                delete_params = {}
-                if blocklist:
-                    delete_params[operations.ACTION_BLOCKLIST] = "true"
-                self.release.servarr_download_client.delete(
-                    self.release,
-                    **delete_params,
-                )
-            elif blocklist and self.release.grabbed is not None:
-                self.release.fail()
-            else:
-                logger.warning(
-                    "Download item missing from Servarr queue and history: %r",
-                    self,
-                    extra={
-                        "runner": self.download_client.runner,
-                        "download_hash": self.hash_string,
-                    },
-                )
-        else:
-            logger.debug(  # pragma: no cover
-                "Download item in a Servarr directory: %r",
-                self,
-                extra={
-                    "runner": self.download_client.runner,
-                    "download_hash": self.hashString,
-                },
-            )
-
         self.download_client.delete_files(self)
         operation.stage.items.remove(self)
         return str(self.path)
@@ -460,7 +426,7 @@ class PrunerrDownloadItem(
         operation: operations.PrunerrOperation,
         move_timeout: int = 5 * 60,
         **context,
-    ) -> str:
+    ) -> typing.Optional[str]:
         """
         Move this download item according to the operation configuration.
 
@@ -475,6 +441,14 @@ class PrunerrDownloadItem(
             item=self,
             **context,
         )
+        if new_download_dir == self.download_dir:
+            logger.debug(
+                "Download item already moved: %r -> %r",
+                self,
+                str(new_download_dir),
+            )
+            return None
+
         logger.info(
             "Moving download item %r: %r -> %r",
             self,
@@ -554,6 +528,79 @@ class PrunerrDownloadItem(
             ),
         )
         return log_result
+
+    def apply_un_import(  # noqa: V105
+        self,
+        operation: operations.PrunerrOperation,
+        **context,  # pylint: disable=unused-argument
+    ) -> typing.Optional[list]:
+        """
+        Remove and hard links to this release's files in its Servarr library.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
+        :return: The paths of any imported files that were un-linked.
+        """
+        if self.release is not None and not self.release.queue:
+            return [
+                str(un_imported_item["file"]["path"])
+                for un_imported_item in self.release.un_import().values()
+            ]
+        logger.debug(  # pragma: no cover
+            "Cannot un-import, not an imported Servarr release: %r",
+            self,
+        )
+        return None  # pragma: no cover
+
+    def apply_de_queue(  # noqa: V105
+        self,
+        operation: operations.PrunerrOperation,
+        **context,  # pylint: disable=unused-argument
+    ) -> typing.Optional[int]:
+        """
+        Remove this release from the Servarr queue per the operation configuration.
+
+        Only applies this action if the download item is a Servarr release and is in its
+        Servarr queue.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
+        :return: The DB ID for the episode/movie removed from the queue.
+        """
+        if (
+            self.release is not None
+            and self.download_dir == self.release.servarr_download_client.download_dir
+            and self.release.queue
+        ):
+            servarr = self.release.servarr_download_client.servarr
+            type_map = servarr.type_map
+            return self.release.de_queue(
+                **operation.config[operations.ACTION_DE_QUEUE]
+            )[f"{type_map['item_type']}Id"]
+        logger.debug("Not in the Servarr queue: %r", self)
+        return None
+
+    def apply_fail(  # noqa: V105
+        self,
+        operation: operations.PrunerrOperation,
+        **context,  # pylint: disable=unused-argument
+    ) -> typing.Optional[int]:
+        """
+        Mark this release's Servarr `grabbed` history record as failed, start a search.
+
+        Only applies this action if the download item is a Servarr release and is not in
+        its Servarr queue.
+
+        :param operation: The operation configuration from the configuration file YAML.
+        :param context: Additional names and values available in templates.
+        :return:
+            The DB ID for the episode/movie whose ``grabbed`` record was marked as
+            failed.
+        """
+        if self.release is not None and self.release.grabbed is not None:
+            return self.release.fail()["sourceTitle"]
+        logger.debug("Not grabbed by Servarr: %r", self)  # pragma: no cover
+        return None  # pragma: no cover
 
     # Other methods:
 

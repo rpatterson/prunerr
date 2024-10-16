@@ -58,7 +58,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         self.download_item.clear()
 
     @cached_property
-    def queue(self) -> list:
+    def queue(self) -> dict:
         """
         Lookup this release's queue records from it's Servarr instance.
 
@@ -66,7 +66,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         """
         return self.servarr_download_client.servarr.queue.get(
             self.download_item.hash_string.upper(),
-            [],
+            {},
         )
 
     @cached_property
@@ -114,31 +114,50 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
     @cached_property
     def root_item(self) -> rootitem.PrunerrServarrRootItem:
         """
-        Lookup the Servarr series/movie corresponding to this release if any.
+        Lookup the series/movie for this release if any by the most efficient means.
 
         :return: The Prunerr root item instance.
         :raises ValueError:
           Something in the Servarr data prevents identifying the root item.
         """
-        root_id = None
-        servarr = self.servarr_download_client.servarr
-        for queue_record in self.queue:
-            if root_id is None:
-                root_id = queue_record[f"{servarr.type_map['dir_type']}Id"]
-            elif (
-                queue_record[f"{servarr.type_map['dir_type']}Id"]  # pragma: no cover
-                != root_id
-            ):
-                logger.warning(
-                    "Release queued for more than one Servarr root item: %r",
-                    self,
-                )
-                break
+        # Start with the queue which is just one request per Servarr instance:
+        root_id = self.find_root_id(self.queue)
+
+        # If not in a Servarr queue, try the Servarr history for this specific release,
+        # which is one request per release:
+        if root_id is None:
+            # BBB: Python 3.9 and 3.8 report this as a branch coverage hole:
+            for history_records in self.history.values():  # pragma: no cover
+                if (root_id := self.find_root_id(history_records)) is not None:
+                    break
+
         if root_id is None:
             raise ValueError(  # pragma: no cover
                 f"Cannot determine release's root item: {self!r}",
             )
-        return servarr.get_root_item(root_id)
+        return self.servarr_download_client.servarr.get_root_item(root_id)
+
+    def find_root_id(self, record_source: dict) -> typing.Optional[int]:
+        """
+        Look for the episode/movie DB ID in Servarr queue or history records.
+
+        :param record_source: The Servarr API queue or history record.
+        :return: The imported item DB ID if found.
+        """
+        type_map = self.servarr_download_client.servarr.type_map
+        root_id = None
+        for record in record_source.values():
+            if root_id is None:
+                root_id = record[f"{type_map['dir_type']}Id"]
+            elif record[f"{type_map['dir_type']}Id"] != root_id:  # pragma: no cover
+                logger.warning(
+                    "More than one Servarr root item for %r: %r -> %r",
+                    self,
+                    root_id,
+                    record[f"{type_map['dir_type']}Id"],
+                )
+                break
+        return root_id
 
     @cached_property
     def imported_release_files(self) -> dict:
@@ -151,9 +170,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         """
         imported_release_files: dict = {}
         servarr = self.servarr_download_client.servarr
-        for queue_record in self.queue:
-            imported_item_id = queue_record[f"{servarr.type_map['item_type']}Id"]
-
+        for imported_item_id, queue_record in self.queue.items():
             # Sonarr seems to include `episodeHasFile` for all records, but the test
             # fixture records do not indicating it may have been added recently. Radarr
             # doesn't have `movieHasFile` at all. So use it if available but if not,
@@ -339,18 +356,100 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
 
             yield imported_release.download_item
 
+    def de_queue(self, **params) -> dict:
+        """
+        Remove this release from the Servarr queue.
+
+        :param params: The parameters for the Servarr ``queue`` API endpoint.
+        :return: The Servarr API JSON for the queue record that was deleted.
+        :raises ValueError: Something went wrong sending the API request.
+        """
+        if not self.queue:
+            raise ValueError(f"No queue record for: {self!r}")  # pragma: no cover
+        queue_record = list(self.queue.values())[0]
+        if (queue_id := queue_record.get("id")) is None:
+            raise ValueError(  # pragma: no cover
+                f"Queue record missing DB ID: {queue_record!r}",
+            )
+        self.servarr_download_client.servarr.client.delete(
+            f"queue/{queue_id}",
+            **params,
+        )
+        return queue_record
+
     def fail(self) -> dict:
         """
         Mark this release as failed in Servarr and start a search for a replacement.
 
-        :return: The deserialized JSON response.
+        :return:
+            The Servarr API JSON for the ``grabbed`` history record that was marked as
+            failed.
         :raises ValueError: Something went wrong sending the API request.
         """
         if self.grabbed is None:
             raise ValueError(f"No grab history for: {self!r}")  # pragma: no cover
-        return self.servarr_download_client.servarr.client.post(
+        self.servarr_download_client.servarr.client.post(
             f"history/failed/{self.grabbed['id']}",
         )
+        return self.grabbed
+
+    def un_import(self) -> dict:
+        """
+        Remove and hard links to this release's files in its Servarr library.
+
+        :return: The Servarr API JSON for the imported items whose files were un-linked.
+        :raises ValueError: Something went wrong sending the API request.
+        """
+        servarr = self.servarr_download_client.servarr
+
+        # Check each file in this release against every imported file to identify the
+        # release files that are imported:
+        release_files_by_ident = {
+            (item_file.stat.st_dev, item_file.stat.st_ino): item_file
+            for item_file in self.download_item.files
+            if item_file.is_imported
+        }
+        un_imported_items: dict = {}
+        for imported_item_id, imported_item in self.root_item.imported_items.items():
+            if not imported_item["hasFile"]:
+                continue  # pragma: no cover
+            if not imported_item["file"]["path"].exists():
+                logger.warning(
+                    "Imported file missing: %s",
+                    imported_item["file"]["path"],
+                )
+                continue
+            imported_file_stat = imported_item["file"]["path"].stat()
+            imported_file_ident = (imported_file_stat.st_dev, imported_file_stat.st_ino)
+            if imported_file_ident not in release_files_by_ident:
+                continue  # pragma: no cover
+            un_imported_items[imported_item_id] = imported_item
+
+        if un_imported_items:
+            logger.info(
+                "Removing imported files from release %r:\n  %s",
+                self,
+                "\n  ".join(
+                    str(un_imported_item["file"]["path"])
+                    for un_imported_item in un_imported_items.values()
+                ),
+            )
+            servarr.client.delete(
+                f"{servarr.type_map['item_type']}file/bulk",
+                {
+                    f"{servarr.type_map['item_type']}Ids": [
+                        un_imported_item["file"]["id"]
+                        for un_imported_item in un_imported_items.values()
+                    ]
+                },
+            )
+            self.clear()
+        else:
+            logger.warning(  # pragma: no cover
+                "No files to un-import from release: %r",
+                self,
+            )
+        return un_imported_items
 
 
 class PatchedStatResult(utils.PrunerrComponent):

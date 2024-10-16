@@ -24,31 +24,38 @@ stages:
   queued:
     archives:
       include: |
-        {%- set wanted_sum = item.files|selectattr("selected")|sum("size") -%}
         {%- set archive_portion = 0 -%}
-        {%- if wanted_sum -%}
+        {%- if item.size_selected -%}
             {%-
                 set archive_portion = (
-                    wanted_files|selectattr(
+                    item.files|selectattr("selected")|selectattr(
                         "path.suffix",
                         "match",
-                        "rar|r[0-9]+|zip|zip\\.[0-9]+|gz|tgz|bz2",
-                    )|sum("size") / wanted_sum
+                        "\\.(rar|r[0-9]+|zipx?|zip\\.[0-9]+|gz|tgz|bz2)",
+                    )|sum("size") / item.size_selected
                 )
             -%}
         {%- endif -%}
-        {{ archive_portion > 0.50 }}
+        {{- archive_portion > 0.50 -}}
+      de-queue:
+        blocklist: true
       remove: true
-      blocklist: true
+  all:
     stalled:
       include: |
         {{-
             item.status == "downloading"
-            and item.seconds_downloading > 604800 and item.age > 604800
+            and (
+                item.download_client.download_dir in item.download_dir.parents
+                or item.download_client.download_dir == item.download_dir
+            )
+            and item.seconds_downloading > 604800
+            and item.age > 604800
             and item.rate_total < 50
         -}}
+      de-queue:
+        blocklist: true
       remove: true
-      blocklist: true
   free-space:
     prune:
       include: |

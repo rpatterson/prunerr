@@ -162,8 +162,9 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
                 # Skip items known by a Servarr instance in it's queue:
                 and download_item.hash_string.upper() not in self.servarr.queue
             ):
-                for history_record in download_item.release.history:
-                    if history_record["eventType"] != event_type_grabbed:
+                for event_type, records in download_item.release.history.items():
+                    if event_type != event_type_grabbed:
+                        history_record = list(records.values())[0]
                         break
                     pass  # pragma: no cover  # pylint: disable=unnecessary-pass
                 else:

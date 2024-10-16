@@ -13,7 +13,6 @@ import logging
 from .. import utils
 from ..utils import cached_property
 from . import rootitem
-from . import history
 
 logger = logging.getLogger(__name__)
 
@@ -71,34 +70,39 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         )
 
     @cached_property
-    def history(self) -> list:
+    def history(self) -> dict:
         """
         Lookup and collate this download item's Servarr history records.
 
-        :return: The Servarr API ``history`` endpoint JSON for this release.
+        :return:
+            Map Servarr event types to the Servarr movie/episode DB IDs to the most
+            recent Servarr API JSON history record.
         """
-        return list(
-            self.servarr_download_client.servarr.get_api_paged_records(
-                "history",
-                downloadId=self.download_item.hash_string.upper(),
-            ),
-        )
+        servarr = self.servarr_download_client.servarr
+        type_map = servarr.type_map
+        history: dict = {}
+        for history_record in servarr.get_api_paged_records(
+            "history",
+            downloadId=self.download_item.hash_string.upper(),
+        ):
+            history.setdefault(history_record["eventType"], {}).setdefault(
+                history_record[f"{type_map['item_type']}Id"],
+                history_record,
+            )
+        return history
 
     @cached_property
     def grabbed(self) -> typing.Optional[dict]:
         """
-        Collate the history records to identify the most recent grabbed record.
+        Find he most recent grabbed record for this release if any.
 
         :return: The Servarr API JSON record if found.
         """
-        for history_record in self.history:
-            if (  # pylint: disable=no-else-return
-                history_record["eventType"]
-                == history.PrunerrServarrHistory.GRAB_EVENT_TYPE
-            ):
-                return history_record
-            else:
-                pass  # pragma: no cover
+        servarr = self.servarr_download_client.servarr
+        if grabbed_records := list(
+            self.history.get(servarr.EVENT_TYPE_GRABBED, {}).values(),
+        ):
+            return grabbed_records[0]
         return None  # pragma: no cover
 
     @cached_property

@@ -13,16 +13,6 @@ Known bugs and wanted features.
 Required
 ****************************************************************************************
 
-#. :Documentation:
-
-    Once the ``log:`` action is implemented, add a note under 'Caution' about using the
-    ``log:`` action to test Prunerr configuration.
-
-#. :Orphans:
-
-    Once the ``log:`` action is implemented, add a note to the docs about how orphans
-    are already logged all at once and that using the ``log:`` action may be redundant.
-
 #. :Docker:
 
     Revert Docker compose project to the latest Transmission image when `the upstream
@@ -64,12 +54,6 @@ High priority
 
    Open Servarr issues about marking releases as failed broken search. See the comment
    in the ``un-regsitered:`` operation configuration.
-
-#. :Move:
-
-    Switch from letting Transmission move the download item data to pausing the item,
-    moving its data in Prunerr, then changing the item's location and resuming it. Or
-    maybe this is no longer needed now that ``orphans:`` is no longer a default stage.
 
 #. :Operations:
 
@@ -179,7 +163,9 @@ Nice to have
 
 #. :Operations:
 
-    Extend the existing operations support to write CSV report files.
+    Add a ``csv:`` action to write ``*.csv`` files with a row for each included download
+    item. The keys under the ``csv:`` key should be column labels and the values should
+    be templates to render cell values for each item.
 
 #. :Style:
 

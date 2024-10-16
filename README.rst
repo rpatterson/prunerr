@@ -230,10 +230,11 @@ See the comments in `the example configuration`_ for details and examples. What 
 apply operations to and optionally how to sort the items to determine the order to apply
 actions are determined by rendering `Jinja templates`_.
 
-Users may sometimes want to apply different actions than those in the default
-configuration file, for example to review what Prunerr will delete in the ``free-space``
-stage or the orphaned files in the ``orphans`` stage without actually deleting them
-yet. Copy the configuration file, remove all actions and replace them with appropriate
+Sometimes Users may want to apply different actions than those in `the default
+operations configuration`_. For example, a user could do the following to review what
+Prunerr will delete in the ``prune:`` operation in the ``free-space:`` or ``orphans:``
+stages without actually deleting anything yet. Copy the default operation configuration,
+paste it into your configuration file, remove all actions, replace them with appropriate
 ``log: "..."`` templates, and run Prunerr with that configuration file.
 
 

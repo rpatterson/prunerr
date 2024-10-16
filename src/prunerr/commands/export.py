@@ -13,6 +13,7 @@ import requests
 import transmission_rpc
 
 import prunerr.servarr.rootitem
+import prunerr.servarr.release
 from ..utils import pathlib
 from .. import utils
 from .. import downloaditem
@@ -207,20 +208,9 @@ class ExportServarrRootItem:
                 download_id,
                 [],
             ):
-                item_suffix_path = (
-                    release.servarr_download_client.download_dir_suffix
-                    / release.download_item.root_name
-                )
-                item_root_paths = list(
-                    release.download_item.download_client.download_dir.parent.glob(
-                        f"*/{utils.fnmatch_escape(str(item_suffix_path))}",
-                    ),
-                )
                 linked_files.extend(
-                    link_imported_files(
-                        release.download_item,
-                        item_root_paths,
-                        pathlib.Path(self.root_item.data["path"]),
+                    self.link_imported_files(
+                        release,
                         imported_relatives,
                         need_verify=download_id.lower() in added_items,
                     ),
@@ -313,83 +303,94 @@ class ExportServarrRootItem:
         )
         return None
 
+    def link_imported_files(
+        self,
+        release: prunerr.servarr.release.PrunerrServarrRelease,
+        imported_relatives: dict,
+        need_verify: bool = False,
+    ) -> list:
+        """
+        Hard link imported files back into download items.
 
-def link_imported_files(
-    download_item: downloaditem.PrunerrDownloadItem,
-    item_root_paths: list,
-    imported_root: pathlib.Path,
-    imported_relatives: dict,
-    need_verify: bool = False,
-) -> list:
-    """
-    Hard link imported files back into download items.
-
-    :param download_item: The download item whose files to link.
-    :param item_root_paths: Filesystem paths of existing download item data.
-    :param imported_root: The path to the series/movie directory containing the
-        relative imported file paths.
-    :param imported_relatives: Map the relative paths of imported files to the
-        corresponding paths within the download item.
-    :param need_verify: Optionally pass in whether the caller already knows this
-        item needs to be verified after linking.
-    :return: The download item file paths of any imported files that were linked
-        into the download item.
-    """
-    # Change the download item data path if a better one is found.  Collect
-    # additional possible data paths from the import history records:
-    if not (item_root_paths := list(item_root_paths)):
-        logger.debug(
-            "No existing download item location found for: %r",
-            download_item,
+        :param release: The download item whose files to link.
+        :param imported_relatives: Map the relative paths of imported files to the
+            corresponding paths within the download item.
+        :param need_verify: Optionally pass in whether the caller already knows this
+            item needs to be verified after linking.
+        :return: The download item file paths of any imported files that were linked
+            into the download item.
+        """
+        # Change the download item data path if a better one is found.  Collect
+        # additional possible data paths from the import history records:
+        item_suffix_path = (
+            release.servarr_download_client.download_dir_suffix
+            / release.download_item.root_name
         )
-    elif find_location(download_item, item_root_paths):
-        need_verify = True
-
-    # Hard link imported files into the download item's location:
-    file_relatives = set(item_file.relative for item_file in download_item.files)
-    linked_files = []
-    for imported_relative, dropped_data in imported_relatives.items():
-        if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
-            logger.error(
-                "Dropped path doesn't match download item file: %s",
-                dropped_data["droppedRel"],
+        if not (
+            item_root_paths := list(
+                release.download_item.download_client.download_dir.parent.glob(
+                    f"*/{utils.fnmatch_escape(str(item_suffix_path))}",
+                ),
             )
-            continue
-        if (
-            download_item.FIELD_DOWNLOAD_DIR not in download_item.fields
-        ):  # pragma: no cover
+        ):
             logger.debug(
-                "Missing download dir field, updating: %r",
-                download_item,
+                "No existing download item location found for: %r",
+                release.download_item,
             )
-            download_item.update()
-        download_file_path = download_item.download_dir / dropped_data["droppedRel"]
-        if maybe_link_file(download_file_path, imported_root / imported_relative):
+        elif find_location(release.download_item, item_root_paths):
             need_verify = True
-            linked_files.append(str(download_file_path))
 
-    if need_verify:
-        # Deselect for download any remaining incomplete files:
-        download_item.clear()
-        deselected_files = deselect_unimported_files(download_item)
-        if len(deselected_files) == len(download_item.files):
-            logger.error(  # pragma: no cover
-                "No files imported, not verifying or resuming: %r",
-                download_item,
+        # Hard link imported files into the download item's location:
+        file_relatives = set(
+            item_file.relative for item_file in release.download_item.files
+        )
+        linked_files = []
+        for imported_relative, dropped_data in imported_relatives.items():
+            if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
+                logger.error(
+                    "Dropped path doesn't match download item file: %s",
+                    dropped_data["droppedRel"],
+                )
+                continue
+            if (
+                release.download_item.FIELD_DOWNLOAD_DIR
+                not in release.download_item.fields
+            ):  # pragma: no cover
+                logger.debug(
+                    "Missing download dir field, updating: %r",
+                    release.download_item,
+                )
+                release.download_item.update()
+            download_file_path = (
+                release.download_item.download_dir / dropped_data["droppedRel"]
             )
-        else:
-            logger.info(
-                "Verifying and resuming download item: %r",
-                download_item,
-            )
-            download_item.download_client.client.verify_torrent(
-                download_item.hash_string,
-            )
-            download_item.download_client.client.start_torrent(
-                download_item.hash_string
-            )
+            imported_root = pathlib.Path(self.root_item.data["path"])
+            if maybe_link_file(download_file_path, imported_root / imported_relative):
+                need_verify = True
+                linked_files.append(str(download_file_path))
 
-    return linked_files
+        if need_verify:
+            # Deselect for download any remaining incomplete files:
+            release.download_item.clear()
+            deselected_files = deselect_unimported_files(release.download_item)
+            if len(deselected_files) == len(release.download_item.files):
+                logger.error(  # pragma: no cover
+                    "No files imported, not verifying or resuming: %r",
+                    release.download_item,
+                )
+            else:
+                logger.info(
+                    "Verifying and resuming download item: %r",
+                    release.download_item,
+                )
+                release.download_item.download_client.client.verify_torrent(
+                    release.download_item.hash_string,
+                )
+                release.download_item.download_client.client.start_torrent(
+                    release.download_item.hash_string
+                )
+
+        return linked_files
 
 
 def find_location(

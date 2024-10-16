@@ -426,7 +426,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             un_imported_items[imported_item_id] = imported_item
 
         if un_imported_items:
-            logger.info(
+            logger.debug(
                 "Removing imported files from release %r:\n  %s",
                 self,
                 "\n  ".join(

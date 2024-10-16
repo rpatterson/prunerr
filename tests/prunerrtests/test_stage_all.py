@@ -51,7 +51,7 @@ class PrunerrStageAllTests(prunerrtests.PrunerrTestCase):
             prunerr.apply_(self.runner, stages=["all"])
         self.assertIn(
             "Not in the Servarr queue",
-            logged_msgs.records[0].message,
+            logged_msgs.records[1].message,
             "Wrong logged record message",
         )
         self.assert_request_mocks(stage_all_request_mocks)

@@ -450,7 +450,8 @@ class PrunerrDownloadItem(
             return None
 
         logger.info(
-            "Moving download item %r: %r -> %r",
+            "Moving download item per %r operation for %r: %r -> %r",
+            operation.config["name"],
             self,
             str(self.download_dir),
             str(new_download_dir),
@@ -491,7 +492,8 @@ class PrunerrDownloadItem(
         :return: ``True`` since verification is always started.
         """
         logger.info(
-            "Verifying corrupt download item: %r",
+            "Verifying corrupt download item per %r operation: %r",
+            operation.config["name"],
             self,
         )
         self.download_client.client.verify_torrent([self.hash_string])
@@ -542,6 +544,11 @@ class PrunerrDownloadItem(
         :return: The paths of any imported files that were un-linked.
         """
         if self.release is not None and not self.release.queue:
+            logger.info(
+                "Removing imported files per %r operation from: %r",
+                operation.config["name"],
+                self,
+            )
             return [
                 str(un_imported_item["file"]["path"])
                 for un_imported_item in self.release.un_import().values()
@@ -574,6 +581,11 @@ class PrunerrDownloadItem(
         ):
             servarr = self.release.servarr_download_client.servarr
             type_map = servarr.type_map
+            logger.info(
+                "Removing release from queue per %r operation: %r",
+                operation.config["name"],
+                self,
+            )
             return self.release.de_queue(
                 **operation.config[operations.ACTION_DE_QUEUE]
             )[f"{type_map['item_type']}Id"]
@@ -598,6 +610,11 @@ class PrunerrDownloadItem(
             failed.
         """
         if self.release is not None and self.release.grabbed is not None:
+            logger.info(
+                "Marking release as failed per %r operation: %r",
+                operation.config["name"],
+                self,
+            )
             return self.release.fail()["sourceTitle"]
         logger.debug("Not grabbed by Servarr: %r", self)  # pragma: no cover
         return None  # pragma: no cover

@@ -174,9 +174,9 @@ class PrunerrFreeSpaceTests(prunerrtests.PrunerrTestCase):
             self.downloaded_item.exists(),
             "Item in downloading dir after 'upgraded insufficient' `free-space` run",
         )
-        self.assertTrue(
+        self.assertFalse(
             self.seeding_item.exists(),
-            "Partially imported deleted in 'upgraded insufficient' `free-space` run",
+            "Partial import not deleted in 'upgraded insufficient' `free-space` run",
         )
 
         # 4. There's still not enough free space but now enough download items can be

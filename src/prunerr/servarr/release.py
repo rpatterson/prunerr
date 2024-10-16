@@ -106,11 +106,13 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         return None  # pragma: no cover
 
     @cached_property
-    def root_item(self) -> typing.Optional[rootitem.PrunerrServarrRootItem]:
+    def root_item(self) -> rootitem.PrunerrServarrRootItem:
         """
         Lookup the Servarr series/movie corresponding to this release if any.
 
         :return: The Prunerr root item instance.
+        :raises ValueError:
+          Something in the Servarr data prevents identifying the root item.
         """
         root_id = None
         servarr = self.servarr_download_client.servarr
@@ -126,9 +128,11 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                     self,
                 )
                 break
-        if root_id is not None:
-            return servarr.get_root_item(root_id)
-        return None  # pragma: no cover
+        if root_id is None:
+            raise ValueError(  # pragma: no cover
+                f"Cannot determine release's root item: {self!r}",
+            )
+        return servarr.get_root_item(root_id)
 
     @cached_property
     def imported_release_files(self) -> dict:
@@ -136,21 +140,11 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         Collate the imported release files that this release will upgrade when imported.
 
         :return:
-
           Map imported release download item hash IDs to relative item file paths to the
           download item files.
-
-        :raises ValueError:
-
-          Something in the Servarr data prevents collating release files.
-
         """
         imported_release_files: dict = {}
         servarr = self.servarr_download_client.servarr
-        if self.root_item is None:
-            raise ValueError(  # pragma: no cover
-                f"No Servarr queue record for: {self!r}",
-            )
         for queue_record in self.queue:
             imported_item_id = queue_record[f"{servarr.type_map['item_type']}Id"]
 
@@ -263,14 +257,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         Identify the releases this release will upgrade when imported.
 
         :return: The ``prunerr.downloaditem.PrunerrDownloadItem()`` instances.
-        :raises ValueError: There's a problem identifying which items this item will
-            upgrade.
         """
-        if self.root_item is None:  # pragma: no cover
-            raise ValueError(
-                "Cannot review a release not connected to its root item: {self!r}",
-            )
-
         # This is sort of a many-to-many issue. A queued release may upgrade multiple
         # imported releases, such as a season pack queued release upgrading individual
         # episode imported releases. Conversely, a `WEB-DL` season pack imported release

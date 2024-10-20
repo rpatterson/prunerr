@@ -162,25 +162,6 @@ parser_export = subparsers.add_parser(
 parser_export.set_defaults(command=export)
 
 
-def re_add(  # pylint: disable=missing-function-docstring,missing-return-doc
-    runner,
-    *args,
-    **kwargs,
-) -> dict:
-    runner.update()
-    return runner.re_add(*args, **kwargs)
-
-
-re_add.__doc__ = strip_api_docstring(prunerr.runner.PrunerrRunner.re_add.__doc__)
-parser_re_add = subparsers.add_parser(
-    "re-add",
-    help=str(re_add.__doc__).strip(),
-    description=str(re_add.__doc__).strip(),
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-)
-parser_re_add.set_defaults(command=re_add)
-
-
 # Register shell tab completion
 argcomplete.autocomplete(parser)
 

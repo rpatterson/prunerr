@@ -286,31 +286,6 @@ class PrunerrRunner(utils.PrunerrComponent):
             return export_results
         return None
 
-    def re_add(self) -> typing.Optional[dict]:
-        """
-        Remove and re-add all download items with nothing downloaded.
-
-        This is useful to avoid re-verifying seeding items when Transmission loses track
-        of the items progress such as when it's ``/config/resume/*.resume`` files are
-        lost or recreated. Unfortunately, Transmission provides no explicit way to
-        apply `it's logic for recognizing whether an item is completed and seeding
-        without verifying
-        <https://github.com/transmission/transmission/blob/9f77ef9c7ae32c1dcb7be79fca338f3ea1fb62fe/libtransmission/torrent.cc#L831>`_
-        is only run when adding a torrent and so re-adding is the only way to apply it
-        for existing torrents.
-
-        :return: Map each download client to the items that were re-added.
-        """
-        re_add_results = {}
-
-        for download_client_url, download_client in self.download_clients.items():
-            if download_client_results := download_client.re_add():  # pragma: no cover
-                re_add_results[download_client_url] = download_client_results
-
-        if re_add_results:
-            return re_add_results
-        return None  # pragma: no cover
-
     def daemon(
         self,
         stages: collections.abc.Iterable = operations.STAGES_DEFAULT,

@@ -1,9 +1,0 @@
-{
-  "arguments": {
-    "bandwidthPriority": 0,
-    "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
-    "metainfo": "WyJFeGFtcGxlIHRvcnJlbnQgZm9yIHRlc3RpbmciXQ==",
-    "peer-limit": 0
-  },
-  "method": "torrent-add"
-}

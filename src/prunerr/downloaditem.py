@@ -38,7 +38,6 @@ class PrunerrDownloadItem(
     STATUS_DOWNLOADING = "downloading"
     STATUS_SEEDING = "seeding"
     STATUS_SEEDING_INT = 6
-    STATUS_CHECKING = "checking"
 
     def __init__(self, download_client, torrent):
         """
@@ -673,61 +672,3 @@ class PrunerrDownloadItem(
             download_client.client.get_session()
 
         return deleted_paths
-
-    def re_add(self) -> "PrunerrDownloadItem":
-        """
-        Remove and re-add this download item with the same item files location.
-
-        :return: The new item that results from re-adding this item.
-        """
-        logger.info(
-            "Re-adding download item to client: %r",
-            self,
-        )
-        with open(self.torrent_file, mode="r+b") as torrent_opened:
-            self.download_client.client.remove_torrent(ids=[self.hash_string])
-            re_added = type(self)(
-                self.download_client,
-                self.download_client.client.add_torrent(
-                    torrent=torrent_opened,
-                    # These are the only fields from the `add_torrent()` call signature
-                    # in the docs I could see corresponding fields for in the
-                    # representation of a torrent.
-                    bandwidthPriority=self.bandwidth_priority,
-                    download_dir=str(self.download_dir),
-                    peer_limit=self.peer_limit,
-                ),
-            )
-        self.download_client.items.append(re_added)
-        # Some fields seem not to be populated in the object returned from
-        # `client.add_torrent()`:
-        re_added.update()
-        return re_added
-
-    def re_add_check(self, seeding_dir: pathlib.Path) -> bool:
-        """
-        Decide and log whether to re-add this download item.
-
-        :param seeding_dir: Download items whose download directory is a descendant of
-            this directory should be re-added.
-        :return: True if this item should be added, False otherwise.
-        """
-        if self.status == self.STATUS_CHECKING:  # pragma: no cover
-            logger.debug(
-                "Not re-adding download item being verified: %r",
-                self,
-            )
-            return False
-        if seeding_dir not in self.path.parents:  # pragma: no cover
-            logger.debug(
-                "Not re-adding download item not in the seeding directory: %r",
-                self,
-            )
-            return False
-        if self.progress:  # pragma: no cover
-            logger.debug(
-                "Not re-adding download item with download progress: %r",
-                self,
-            )
-            return False
-        return True

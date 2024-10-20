@@ -112,7 +112,8 @@ services:
       # Preserve shell history inside containers, requires `$ touch
       # ./home/.bash_history`:
       - "./home/.bash_history:/home/prunerr/.bash_history"
-      # Access to Transmission's data for the `$ prunerr re-add` sub-command:
+      # Access to Transmission's data to modify read-only `/config/resume/*.resume`
+      # properties:
       - "./transmission/config/:/config/"
     restart: "unless-stopped"
 

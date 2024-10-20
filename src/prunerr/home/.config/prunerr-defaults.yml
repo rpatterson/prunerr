@@ -208,7 +208,12 @@ stages:
         {{-
             item.error == 2
             and item.error_string is search(
-                "((not |un-?)(registered|authorized)|deleted)",
+                "("
+                    "(not|un).?(registered|authorized)"
+                    "|deleted"
+                    "|not.?found"
+                    "|does.?no?t.?e[xs]ist"
+                ")",
                 ignorecase=True,
             )
             and item.indexer_config

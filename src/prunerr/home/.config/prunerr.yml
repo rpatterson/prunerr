@@ -88,9 +88,30 @@ indexers:
       priority: 20
       groups:
         - "private"
+      ## Remove all download items from this tracker. Requires un-commenting the example
+      ## `removed-indexers:` operation below:
+      # removed: true
       ## This tracker has no seeding requirements so no further configuration.
 ## Prunerr adds further defaults, including the operations to apply in the life-cycle
 ## stages, from the `./prunerr-defaults.yml` file next to this file. The configuration
 ## there is much more technical in nature and users should only customize it if they
 ## understand it well and have followed the precautions from the "Caution" section of
 ## the `../../../../README.rst`.
+
+# stages:
+#   all:
+#     ## Replace items from indexers/trackers that are no longer used, for example
+#     ## trackers that have died, banned the user, or that the user no longer wants to
+#     ## seed releases for. Not included in the default operations because while this is
+#     ## needed by many users from time to time, it's not a part of normal, day-to-day
+#     ## operation and isn't worth slowing down run-times the rest of the time:
+#     removed-indexers:
+#       include: |
+#         {{-
+#             item.indexer_config.get("removed", False)
+#         -}}
+#       un-import: true
+#       de-queue:
+#         blocklist: true
+#       fail: true
+#       remove: true

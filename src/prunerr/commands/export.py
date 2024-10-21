@@ -335,12 +335,12 @@ class ExportServarrRootItem:
             need_verify = True
 
         # Hard link imported files into the download item's location:
-        file_relatives = set(
-            item_file.relative for item_file in release.download_item.files
-        )
         linked_files = []
         for imported_id, dropped_data in imported_ids.items():
-            if dropped_data["droppedRel"] not in file_relatives:  # pragma: no cover
+            if (  # pragma: no cover
+                dropped_data["droppedRel"]
+                not in release.download_item.files_by_relative
+            ):
                 logger.error(
                     "Dropped path doesn't match download item file: %s",
                     dropped_data["droppedRel"],

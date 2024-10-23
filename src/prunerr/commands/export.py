@@ -145,7 +145,7 @@ class ExportServarrRootItem:
         # Now group the imported files under the download item IDs/hashes the come from
         # them:
         self.imported_download_ids = {}
-        for imported_id in self.root_item.history.imported_items:
+        for imported_id in self.root_item.imported_items:
             imported_collated = self.root_item.history.imported_ids.get(imported_id, {})
             if not (
                 imported_collated.get("downloadId")
@@ -328,7 +328,7 @@ class ExportServarrRootItem:
         for (
             imported_id,
             imported_item,
-        ) in self.root_item.history.imported_items.items():
+        ) in self.root_item.imported_items.items():
             download_id = self.root_item.history.imported_ids.get(
                 imported_id,
                 {},

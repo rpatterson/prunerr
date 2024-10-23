@@ -20,7 +20,6 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
 
     imported_ids: dict
     download_ids: dict
-    imported_items: dict
 
     def __init__(self, root_item):
         """
@@ -67,13 +66,6 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         self.imported_ids = {}
         self.download_ids = {}
         self.dropped_relatives = {}
-
-        # Re-map imported items for lookup by relative path instead of by episode/movie
-        # DB ID:
-        self.imported_items = {
-            imported_item["id"]: imported_item
-            for imported_item in self.root_item.imported_items.values()
-        }
 
         # The Servarr API history can be large. Take an initial pass through the history
         # gathering only what we need and discarding the rest:
@@ -178,7 +170,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
             )
 
         # Only store collated history for the most recent import that's in the library:
-        if imported_id in self.imported_items:  # pragma: no cover
+        if imported_id in self.root_item.imported_items:  # pragma: no cover
             self.imported_ids.setdefault(imported_id, imported_collated)
             dropped_collated = self.dropped_relatives.setdefault(
                 history_record["data"].get("droppedRel"),

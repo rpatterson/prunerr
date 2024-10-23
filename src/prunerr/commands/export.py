@@ -731,7 +731,12 @@ def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) 
             )
         )
     ]
-    if deselected_files:
+    deselected_ids = [deselected_file.id for deselected_file in deselected_files]
+    if deselected_files and deselected_ids != [
+        download_file.id
+        for download_file in download_item.files
+        if not download_file.selected
+    ]:
         logger.info(
             "Deselecting un-imported, incomplete download files for %r:\n  %s",
             download_item,
@@ -739,7 +744,7 @@ def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) 
         )
         download_item.download_client.client.change_torrent(
             [download_item.hash_string],
-            files_unwanted=[deselected_file.id for deselected_file in deselected_files],
+            files_unwanted=deselected_ids,
         )
     return deselected_files
 

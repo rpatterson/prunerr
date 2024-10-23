@@ -764,6 +764,7 @@ def patch_download_item(
     # properties, and re-serialize:
     torrent_path = pathlib.Path(download_item.torrent_file)
     resume_path = torrent_path.parents[1] / "resume" / f"{torrent_path.stem}.resume"
+    utils.wait(resume_path.exists)
     with open(resume_path, "rb") as resume_read:
         resume_bencoded = resume_read.read()
     resume_data = bencode.bdecode(resume_bencoded)

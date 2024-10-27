@@ -69,22 +69,16 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
 
         # The Servarr API history can be large. Take an initial pass through the history
         # gathering only what we need and discarding the rest:
-        for history_record in self.root_item.servarr.client.get(
+        for api_event in self.root_item.servarr.client.get(
             f"history/{self.root_item.servarr.type_map['dir_type']}",
             **self.root_item.params,
         ):
-            if (
-                history_record["eventType"]
-                == self.root_item.servarr.EVENT_TYPE_IMPORTED
-            ):
-                self.root_item.servarr.deserialize_import_record(history_record)
-                self.update_import_record(history_record)
+            event = self.root_item.servarr.deserialize_event(api_event)
+            if event["eventType"] == self.root_item.servarr.EVENT_TYPE_IMPORTED:
+                self.update_import_record(event)
 
-            elif (
-                history_record["eventType"] == self.root_item.servarr.EVENT_TYPE_GRABBED
-            ):
-                self.root_item.servarr.deserialize_grab_record(history_record)
-                self.update_grab_record(history_record)
+            elif event["eventType"] == self.root_item.servarr.EVENT_TYPE_GRABBED:
+                self.update_grab_record(event)
 
             else:
                 # Not an import or grab record, skip it:

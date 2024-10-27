@@ -81,19 +81,13 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
         servarr = self.servarr_download_client.servarr
         type_map = servarr.type_map
         history: dict = {}
-        for history_record in servarr.get_api_paged_records(
+        for event in servarr.get_api_paged_records(
             "history",
             downloadId=self.download_item.hash_string.upper(),
         ):
-            if history_record["eventType"] == servarr.EVENT_TYPE_IMPORTED:
-                servarr.deserialize_import_record(history_record)
-            elif (
-                history_record["eventType"] == servarr.EVENT_TYPE_GRABBED
-            ):  # pragma: no cover
-                servarr.deserialize_grab_record(history_record)
-            history.setdefault(history_record["eventType"], {}).setdefault(
-                history_record[f"{type_map['item_type']}Id"],
-                history_record,
+            history.setdefault(event["eventType"], {}).setdefault(
+                event[f"{type_map['item_type']}Id"],
+                servarr.deserialize_event(event),
             )
         return history
 

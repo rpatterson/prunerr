@@ -245,58 +245,50 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
         """
         return rootitem.PrunerrServarrRootItem(self, root_id)
 
-    def deserialize_grab_record(self, history_record: dict) -> dict:
+    def deserialize_event(self, event: dict) -> dict:
         """
-        Augment the Servarr API JSON with Python native types and derived values.
+        Augment the Servarr API history with Python native types and derived values.
 
-        :param history_record:
-            The Servarr API JSON object for one import history record.
+        :param event:
+            The Servarr API JSON object for one history record.
         :return: The augmented Servarr API JSON.
         """
-        # Match this grab history to it's download client:
-        if history_record["data"]["downloadClientName"] in self.download_client_names:
-            history_record["data"]["downloadClient"] = self.download_client_names[
-                history_record["data"]["downloadClientName"]
-            ]
-        else:  # pragma: no cover
-            logger.warning(
-                "Download client name not found, defaulting to first: %s",
-                history_record["data"]["downloadClientName"],
-            )
-            history_record["data"]["downloadClient"] = list(
-                self.download_client_names.values(),
-            )[0]
-
-        history_record["date"] = dateutil.parser.parse(history_record["date"])
-        return history_record
-
-    def deserialize_import_record(self, history_record: dict) -> dict:
-        """
-        Augment the Servarr API JSON with Python native types and derived values.
-
-        :param history_record:
-            The Servarr API JSON object for one import history record.
-        :return: The augmented Servarr API JSON.
-        """
-        for data_key, data_value in history_record["data"].items():
+        # Python native types shared between event types:
+        event["date"] = dateutil.parser.parse(event["date"])
+        for data_key, data_value in event["data"].items():
             if data_key.endswith("Path"):
-                history_record["data"][data_key] = pathlib.Path(data_value)
+                event["data"][data_key] = pathlib.Path(data_value)
 
-        # Determine which part of the paths are from the download item:
-        dropped_path = history_record["data"]["droppedPath"]
-        if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
-            logger.warning(
-                "No relative dropped path found: %s",
-                dropped_path,
-            )
-        else:
-            history_record["data"]["droppedRel"] = dropped_relative
-            history_record["data"]["location"] = dropped_path.parents[
-                len(dropped_relative.parts) - 1
-            ]
+        if event["eventType"] == self.EVENT_TYPE_IMPORTED:
+            # Determine which part of the paths are from the download item:
+            dropped_path = event["data"]["droppedPath"]
+            if (dropped_relative := self.find_dropped_relative(dropped_path)) is None:
+                logger.warning(
+                    "No relative dropped path found: %s",
+                    dropped_path,
+                )
+            else:
+                event["data"]["droppedRel"] = dropped_relative
+                event["data"]["location"] = dropped_path.parents[
+                    len(dropped_relative.parts) - 1
+                ]
 
-        history_record["date"] = dateutil.parser.parse(history_record["date"])
-        return history_record
+        elif event["eventType"] == self.EVENT_TYPE_GRABBED:  # pragma: no cover
+            # Match this grab history to it's download client:
+            if event["data"]["downloadClientName"] in self.download_client_names:
+                event["data"]["downloadClient"] = self.download_client_names[
+                    event["data"]["downloadClientName"]
+                ]
+            else:  # pragma: no cover
+                logger.warning(
+                    "Download client name not found, defaulting to first: %s",
+                    event["data"]["downloadClientName"],
+                )
+                event["data"]["downloadClient"] = list(
+                    self.download_client_names.values(),
+                )[0]
+
+        return event
 
     def find_dropped_relative(
         self,

@@ -325,11 +325,8 @@ class ExportServarrRootItem:
         :return: Map download item names and root basenames to download item hash IDs.
         """
         download_ids: dict = {}
-        release_hashes_by_root: set = set()
-        for (
-            imported_id,
-            imported_item,
-        ) in self.root_item.imported_items.items():
+        seen_download_roots: set = set()
+        for imported_id in self.root_item.imported_items:
             download_id = self.root_item.history.imported_ids.get(
                 imported_id,
                 {},
@@ -339,9 +336,8 @@ class ExportServarrRootItem:
                 continue
 
             download_id = self.lookup_download_id(
-                release_hashes_by_root,
+                seen_download_roots,
                 imported_id,
-                imported_item,
             )
             if download_id:
                 download_ids.setdefault(download_id, {}).setdefault(
@@ -357,19 +353,16 @@ class ExportServarrRootItem:
 
     def lookup_download_id(
         self,
-        release_hashes_by_root: set,
+        seen_download_roots: set,
         imported_id: pathlib.Path,
-        imported_item: dict,
     ) -> typing.Optional[str]:
         """
         Lookup the download IDs for imported files without them by download item name.
 
-        :param release_hashes_by_root:
+        :param seen_download_roots:
             The dropped path root basenames that have already been matched.
         :param imported_id: The relative path to the imported file within the
             series/movie.
-        :param imported_item: The Servarr API JSON object for the imported item
-            annotated with the imported file object.
         :return: The download item hash ID if one matched by name or root basename.
         """
         imported_collated = self.root_item.history.imported_ids.get(imported_id, {})
@@ -379,24 +372,28 @@ class ExportServarrRootItem:
             dropped_relative,
             {},
         ).get("downloadId"):
-            if dropped_relative.parts[0] in release_hashes_by_root:
-                logger.debug(  # pragma: no cover
-                    "Matched download item by dropped relative path: %s",
-                    dropped_relative,
-                )
-            else:
-                logger.info(
-                    "Matched download item by dropped relative path: %s",
-                    dropped_relative,
-                )
+            log_level = logger.debug
+            if (  # pragma: no cover
+                dropped_relative
+                and dropped_relative.parts[0] not in seen_download_roots
+            ):
+                log_level = logger.info
+            log_level(
+                "Matched download item by dropped relative path: %s",
+                dropped_relative,
+            )
+        if dropped_relative:  # pragma: no cover
+            seen_download_roots.add(dropped_relative.parts[0])
 
         if download_id:
-            release_hashes_by_root.add(dropped_relative.parts[0])
             return download_id
 
-        logger.error(
-            "Could not lookup download item by names: %s",
-            imported_item["file"]["path"],
+        log_level = logger.debug
+        if dropped_relative and dropped_relative.parts[0] not in seen_download_roots:
+            log_level = logger.error  # pragma: no cover
+        log_level(
+            "Could not lookup download item by dropped relative path: %s",
+            dropped_relative,
         )
         return None
 

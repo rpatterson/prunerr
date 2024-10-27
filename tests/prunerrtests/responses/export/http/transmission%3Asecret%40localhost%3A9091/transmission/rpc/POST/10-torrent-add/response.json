@@ -1,0 +1,10 @@
+{
+  "arguments": {
+    "torrent-added": {
+      "id": 2,
+      "name": "Foo.Series.1970.S01E02.Grault.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+      "hashString": "8b8060bf22c942b1b6cabb8e5b840e445b840e44"
+    }
+  },
+  "result": "success"
+}

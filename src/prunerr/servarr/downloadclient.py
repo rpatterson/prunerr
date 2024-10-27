@@ -10,8 +10,6 @@ import datetime
 import urllib.parse
 import logging
 
-import dateutil.parser
-
 import prunerr.downloadclient
 import prunerr.downloaditem
 import prunerr.servarr.release
@@ -149,7 +147,6 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
         download_dir = self.download_dir
         event_type_grabbed = self.servarr.EVENT_TYPE_GRABBED
         now = datetime.datetime.now(datetime.timezone.utc)
-        dateutil_parse = dateutil.parser.parse
         daemon_poll = datetime.timedelta(
             seconds=self.servarr.runner.config["daemon"]["poll"],
         )
@@ -177,7 +174,7 @@ class PrunerrServarrDownloadClient(utils.PrunerrComponent):
                     # under Servarr:
                     # TODO: Make timezone aware:
                     # TODO: Add a separate configuration key for the wait period:
-                    and (now - dateutil_parse(history_record["date"])) > daemon_poll
+                    and (now - history_record["date"]) > daemon_poll
                 ):
                     yield download_item
                 else:

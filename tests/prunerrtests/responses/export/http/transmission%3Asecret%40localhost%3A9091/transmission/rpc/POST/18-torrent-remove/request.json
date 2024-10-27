@@ -1,0 +1,7 @@
+{
+  "method": "torrent-remove",
+  "arguments": {
+    "delete-local-data": 0,
+    "ids": ["909c9b954b414a87b1dcf6e2fb09650fcc35de57"]
+  }
+}

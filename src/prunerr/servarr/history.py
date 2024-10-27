@@ -109,7 +109,7 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
         imported_id = history_record[f"{type_map['item_type']}Id"]
         # Match on relative paths to tolerate items imported before Servarr renamed the
         # top-level series/movie:
-        imported_collated = {}
+        imported_collated = {"doneDate": history_record["date"]}
 
         if history_record["data"].get("droppedRel"):
             imported_collated["droppedRel"] = history_record["data"]["droppedRel"]
@@ -211,5 +211,6 @@ class PrunerrServarrHistory(utils.PrunerrComponent):
             {
                 "downloadClient": history_record["data"]["downloadClient"],
                 "nzbInfoUrl": history_record["data"]["nzbInfoUrl"],
+                "addedDate": history_record["date"],
             },
         )

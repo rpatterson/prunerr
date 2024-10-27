@@ -24,10 +24,6 @@ from .utils import cached_property
 logger = logging.getLogger(__name__)
 
 
-class DownloadClientTimeout(Exception):
-    """A download client operation took too long."""
-
-
 class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
     utils.PrunerrComponent
 ):
@@ -38,7 +34,6 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
     TRANSMISSION_PATH = "/transmission/"
     # TODO: Make configurable?
     SEEDING_DIR_BASENAME = "seeding"
-    TIMEOUT_EXCEPTION = DownloadClientTimeout
 
     client: transmission_rpc.client.Client
     session: dict

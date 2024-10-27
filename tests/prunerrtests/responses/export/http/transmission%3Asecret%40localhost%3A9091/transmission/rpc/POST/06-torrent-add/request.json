@@ -1,0 +1,9 @@
+{
+  "arguments": {
+    "bandwidthPriority": 0,
+    "download-dir": "/media/Library/seeding/Sonarr/Videos/Series",
+    "metainfo": "ZGU=",
+    "peer-limit": 288
+  },
+  "method": "torrent-add"
+}

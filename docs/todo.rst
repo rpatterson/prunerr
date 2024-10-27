@@ -20,15 +20,6 @@ Required
     <https://github.com/linuxserver/docker-transmission/issues/284#issue-2451398884>`_
     has been fixed.
 
-#. :Export:
-
-    Add torrent date handling to the ``export`` sub-command. Take the ``grabbed``
-    history record dates for the ``added-date`` and the ``downloadFolderImported``
-    record dates for the ``done-date`` and `set them in the Transmission
-    '/config/resume/*.resume' files
-    <https://github.com/transmission/transmission/issues/4314#issuecomment-1336485761>`_
-    if those dates are older than the current.
-
 #. :Documentation:
 
     Verify the `CI docs build <https://readthedocs.org/projects/prunerr/>`_.

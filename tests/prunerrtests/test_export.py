@@ -6,9 +6,14 @@ Link imported files back into download items and verify, Servarr import inverse.
 """
 
 import os
+import pathlib
 import shutil
 
 from unittest import mock
+
+import bencode
+import requests
+import requests_mock
 
 import prunerrtests
 
@@ -23,9 +28,14 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
 
     RESPONSES_DIR = prunerrtests.PrunerrTestCase.RESPONSES_DIR.parent / "export"
 
-    def set_up_imported_files(self):
+    torrents_dir: pathlib.Path
+    resume_dir: pathlib.Path
+
+    def set_up_imported_files(self) -> dict:
         """
         Simulate previous imports from download items.
+
+        :return: The mock request fixtures.
         """
         # Normal Servarr import:
         self.imported_item_file.parent.mkdir(parents=True, exist_ok=True)
@@ -116,18 +126,85 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         movie_import.parent.mkdir(parents=True, exist_ok=True)
         movie_import.hardlink_to(movie_seeding_file)
 
+        self.torrents_dir = self.tmp_path / "config" / "torrents"
+        self.resume_dir = self.torrents_dir.parent / "resume"
+        download_hashes = [
+            downlod_item_mock["hashString"]
+            for downlod_item_mock in self.download_client_items_responses[
+                self.DOWNLOAD_CLIENT_URL
+            ]["arguments"]["torrents"]
+        ]
+        download_hashes.append("8b8060bf22c942b1b6cabb8e5b840e445b840e44")
+        for download_hash in download_hashes:
+            torrent_path = self.torrents_dir / f"{download_hash}.torrent"
+            torrent_path.parent.mkdir(parents=True, exist_ok=True)
+            torrent_path.write_bytes(bencode.bencode({}))
+            resume_path = self.resume_dir / f"{torrent_path.stem}.resume"
+            resume_path.parent.mkdir(parents=True, exist_ok=True)
+            resume_path.write_bytes(
+                bencode.bencode(
+                    {
+                        "added-date": 10,
+                        "done-date": 10,
+                    }
+                )
+            )
+
+        return self.mock_responses(
+            self.RESPONSES_DIR,
+            {
+                "http://transmission:secret@localhost:9091/transmission/rpc": {
+                    "POST": {
+                        # Also remove the mock Transmission `/config/resume/*.resume`
+                        # files:
+                        "05-torrent-remove": {
+                            "json": self.mock_remove_torrent_response,
+                        },
+                        "09-torrent-remove": {
+                            "json": self.mock_remove_torrent_response,
+                        },
+                        "14-torrent-remove": {
+                            "json": self.mock_remove_torrent_response,
+                        },
+                        "18-torrent-remove": {
+                            "json": self.mock_remove_torrent_response,
+                        },
+                    },
+                },
+            },
+        )
+
+    def mock_remove_torrent_response(
+        self,
+        request: requests.Request,  # pylint: disable=unused-argument
+        context: requests_mock.response._Context,
+        response_mock: dict,
+    ) -> dict:
+        """
+        Simulate the download client removing a download item.
+
+        :param request: The request to mock.
+        :param context: The mock response context.
+        :param response_mock: The fixture from the ``./responses/*/`` directory.
+        :return: The response JSON from the fixture.
+        """
+        download_hash = response_mock["from_mock_dir"]["request"]["json"]["arguments"][
+            "ids"
+        ][0]
+        (self.resume_dir / f"{download_hash}.resume").unlink()
+        context.headers.update(response_mock.get("headers", {}))
+        return response_mock["from_mock_dir"][prunerrtests.MIME_MINOR_JSON]
+
     def test_export_workflow(self):
         """
         Link imported files back into download items and verify, Servarr import inverse.
         """
-        # 1. Simulate previous imports from download items:
-        self.set_up_imported_files()
+        # 1. Simulate previous imports from download items and mock the requests:
+        export_request_mocks = self.set_up_imported_files()
 
         # 2. Run the `export` sub-command:
-        export_request_mocks = self.mock_responses()
-        runner = prunerr.runner.PrunerrRunner(self.CONFIG)
-        runner.update()
-        export_results = runner.export()
+        self.runner.update()
+        export_results = self.runner.export()
         self.assert_request_mocks(export_request_mocks)
         self.assertIn(
             self.servarr_urls[0],
@@ -188,8 +265,6 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         """
         # Simulate previous imports from download items:
         self.set_up_imported_files()
-
-        self.mock_responses()
         prunerr.export(self.runner)
 
     def test_export_empty(self):

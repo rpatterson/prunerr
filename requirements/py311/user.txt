@@ -25,6 +25,8 @@ colorama==0.4.6
     # via telegram-send
 emoji==2.12.1
     # via prunerr (pyproject.toml)
+fast-bencode==1.1.7
+    # via prunerr (pyproject.toml)
 h11==0.14.0
     # via httpcore
 httpcore==1.0.5

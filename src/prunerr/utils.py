@@ -10,6 +10,7 @@ Useful to avoid circular imports.
 
 import sys
 import os
+import collections.abc
 import re
 import copy
 import socket
@@ -20,6 +21,7 @@ import html
 import logging
 
 import yaml
+import tenacity
 import appdirs
 import transmission_rpc
 import arrapi
@@ -388,3 +390,22 @@ def fnmatch_escape(orig_str: str) -> str:
     :return: The string that will not match on pattern characters.
     """
     return FNMATCH_CHRS_RE.sub(r"[\1]", orig_str)
+
+
+@tenacity.retry(stop=tenacity.stop_after_delay(5 * 60), wait=tenacity.wait_fixed(0.1))
+def wait(condition: collections.abc.Callable, reverse: bool = False):
+    """
+    Wait for the condition to return ``True``.
+
+    :param condition: The callable whose return value to check.
+    :param reverse: Wait for ``condition`` to return ``False`` instead.
+    :raises ValueError: The condition did not return the required value.
+    """
+    if reverse:
+        if not condition():  # pylint: disable=no-else-return
+            return
+        else:
+            pass  # pragma: no cover
+    elif condition():  # pragma: no cover
+        return
+    raise ValueError(f"Condition {condition!r} not met")

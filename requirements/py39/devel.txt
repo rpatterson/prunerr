@@ -47,6 +47,8 @@ docutils==0.21.2
     # via pyroma
 dodgy==0.2.1
     # via prospector
+fast-bencode==1.1.7
+    # via prunerr (pyproject.toml)
 flake8==2.3.0
     # via
     #   flake8-polyfill

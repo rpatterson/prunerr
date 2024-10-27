@@ -429,7 +429,6 @@ class PrunerrDownloadItem(
     def apply_move(  # noqa: V105
         self,
         operation: operations.PrunerrOperation,
-        move_timeout: int = 5 * 60,
         **context,
     ) -> typing.Optional[str]:
         """
@@ -437,8 +436,6 @@ class PrunerrDownloadItem(
 
         :param operation: The operation configuration from the configuration file YAML.
         :param context: Additional names and values available in templates.
-        :param move_timeout: How long to wait for the release to be moved in the
-            download client before continuing.
         :return: The download items new ``downloadDir``.
         :raises DownloadClientTimeout: Moving the download item took too long.
         """
@@ -475,13 +472,7 @@ class PrunerrDownloadItem(
         if old_log_path.exists():
             old_log_path.rename(self.log_path)
         # Wait for a timeout for items to finish moving before proceeding.
-        start = time.time()
-        while old_path.exists():  # pylint: disable=while-used
-            if time.time() - start > move_timeout:
-                raise self.download_client.TIMEOUT_EXCEPTION(
-                    f"Timed out waiting for {self!r} to finish moving",
-                )
-            time.sleep(1)
+        utils.wait(old_path.exists, reverse=True)
         return str(new_download_dir)
 
     def apply_verify(  # noqa: V105

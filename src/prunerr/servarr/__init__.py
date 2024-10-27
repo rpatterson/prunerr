@@ -11,6 +11,7 @@ import functools
 import dataclasses
 import logging
 
+import dateutil.parser
 import requests
 import arrapi
 import arrapi.raws.base
@@ -265,6 +266,8 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
             history_record["data"]["downloadClient"] = list(
                 self.download_client_names.values(),
             )[0]
+
+        history_record["date"] = dateutil.parser.parse(history_record["date"])
         return history_record
 
     def deserialize_import_record(self, history_record: dict) -> dict:
@@ -292,6 +295,7 @@ class PrunerrServarrInstance(utils.PrunerrComponent):
                 len(dropped_relative.parts) - 1
             ]
 
+        history_record["date"] = dateutil.parser.parse(history_record["date"])
         return history_record
 
     def find_dropped_relative(

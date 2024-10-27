@@ -27,6 +27,8 @@ emoji==2.12.1
     # via prunerr (pyproject.toml)
 exceptiongroup==1.2.2
     # via anyio
+fast-bencode==1.1.7
+    # via prunerr (pyproject.toml)
 h11==0.14.0
     # via httpcore
 httpcore==1.0.5

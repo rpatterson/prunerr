@@ -450,6 +450,9 @@ client instance, or to repair or "back-fill" a damaged download client:
 
 #. Deselect for download any download item files that still don't exist.
 
+#. Patch read-only download item date fields from the Servarr history so that download
+   item properties such as ``{{ item.seconds_since_done }}`` are more accurate.
+
 #. Finally, verify the download item.
 
 warning::

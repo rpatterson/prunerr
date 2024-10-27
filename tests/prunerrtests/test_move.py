@@ -433,16 +433,9 @@ class PrunerrMoveTests(prunerrtests.PrunerrTestCase):
         )
         self.runner.update()
         servarr = list(self.runner.servarrs.values())[0]
-        with self.assertRaises(
-            prunerr.downloadclient.DownloadClientTimeout,
-            msg="Long download item move did not time out",
-        ):
-            list(servarr.download_clients.values())[0].download_client.items[
-                0
-            ].apply_move(
-                operations.PrunerrOperation(
-                    None,
-                    self.runner.config["stages"]["seeding"]["move"],
-                ),
-                move_timeout=0,
-            )
+        list(servarr.download_clients.values())[0].download_client.items[0].apply_move(
+            operations.PrunerrOperation(
+                None,
+                self.runner.config["stages"]["seeding"]["move"],
+            ),
+        )

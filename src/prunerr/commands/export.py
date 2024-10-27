@@ -11,6 +11,7 @@ import logging
 
 import requests
 import transmission_rpc
+import bencode
 
 import prunerr.servarr.rootitem
 import prunerr.servarr.release
@@ -105,6 +106,8 @@ class ExportServarrRootItem:
     """
     Represent the state and logic of exporting one Servarr series/movie/etc..
     """
+
+    ITEM_RESUME_FIELDS = {"addedDate": "added-date", "doneDate": "done-date"}
 
     imported_download_ids: dict
 
@@ -202,17 +205,113 @@ class ExportServarrRootItem:
         # Finally, hard link imported files into the download items:
         linked_files = []
         for download_id, imported_ids in self.imported_download_ids.items():
+            download_data = list(
+                self.root_item.history.download_ids.get(download_id, {})
+                .get(
+                    "downloadUrl",
+                    {},
+                )
+                .values()
+            )
             for release in self.command_run.download_ids.get(
                 download_id,
                 [],
             ):
                 linked_files.extend(
-                    self.link_imported_files(
+                    self.export_release(
                         release,
                         imported_ids,
-                        need_verify=download_id.lower() in added_items,
+                        download_data,
                     ),
                 )
+        return linked_files
+
+    def export_release(
+        self,
+        release: prunerr.servarr.release.PrunerrServarrRelease,
+        imported_ids: dict,
+        download_data: dict,
+    ) -> list:
+        """
+        Link imported files back into one release.
+
+        :param release: The Servarr release whose download item to export.
+        :param imported_ids: Map the relative paths of imported files to the
+            corresponding paths within the download item.
+        :param download_data: The collated data from the Servarr grabbed history.
+        :return: The download item file paths of any imported files that were linked
+            into the download item.
+        """
+        need_verify = False
+
+        # Change the download item data path if a better one is found.  Collect
+        # additional possible data paths from the import history records:
+        item_suffix_path = (
+            release.servarr_download_client.download_dir_suffix
+            / release.download_item.root_name
+        )
+        if not (
+            item_root_paths := list(
+                release.download_item.download_client.download_dir.parent.glob(
+                    f"*/{utils.fnmatch_escape(str(item_suffix_path))}",
+                ),
+            )
+        ):
+            logger.debug(
+                "No existing download item location found for: %r",
+                release.download_item,
+            )
+        elif find_location(release.download_item, item_root_paths):
+            need_verify = True
+
+        if linked_files := self.link_imported_files(release, imported_ids):
+            need_verify = True
+
+        dropped_data = list(imported_ids.values())[0]
+        export_properties = {
+            "doneDate": round(dropped_data["doneDate"].timestamp()),
+        }
+        if download_data:
+            export_properties["addedDate"] = round(
+                download_data[0]["addedDate"].timestamp(),
+            )
+        update_properties = {
+            self.ITEM_RESUME_FIELDS.get(export_property, export_property): export_value
+            for export_property, export_value in export_properties.items()
+            if release.download_item.fields[export_property] != export_value
+        }
+        if update_properties:
+            patch_download_item(release.download_item, update_properties)
+        else:
+            logger.debug(  # pragma: no cover
+                "Torrent %(item)r properties already updated: %(update_properties)r",
+                {
+                    "item": release.download_item,
+                    "update_properties": update_properties,
+                },
+            )
+
+        if need_verify:
+            # Deselect for download any remaining incomplete files:
+            release.download_item.clear()
+            deselected_files = deselect_un_imported_files(release.download_item)
+            if len(deselected_files) == len(release.download_item.files):
+                logger.error(  # pragma: no cover
+                    "No files imported, not verifying or resuming: %r",
+                    release.download_item,
+                )
+            else:
+                logger.info(
+                    "Verifying and resuming download item: %r",
+                    release.download_item,
+                )
+                release.download_item.download_client.client.verify_torrent(
+                    release.download_item.hash_string,
+                )
+                release.download_item.download_client.client.start_torrent(
+                    release.download_item.hash_string
+                )
+
         return linked_files
 
     def lookup_download_ids(self) -> dict:
@@ -301,7 +400,6 @@ class ExportServarrRootItem:
         self,
         release: prunerr.servarr.release.PrunerrServarrRelease,
         imported_ids: dict,
-        need_verify: bool = False,
     ) -> list:
         """
         Hard link imported files back into download items.
@@ -309,31 +407,9 @@ class ExportServarrRootItem:
         :param release: The download item whose files to link.
         :param imported_ids: Map the relative paths of imported files to the
             corresponding paths within the download item.
-        :param need_verify: Optionally pass in whether the caller already knows this
-            item needs to be verified after linking.
         :return: The download item file paths of any imported files that were linked
             into the download item.
         """
-        # Change the download item data path if a better one is found.  Collect
-        # additional possible data paths from the import history records:
-        item_suffix_path = (
-            release.servarr_download_client.download_dir_suffix
-            / release.download_item.root_name
-        )
-        if not (
-            item_root_paths := list(
-                release.download_item.download_client.download_dir.parent.glob(
-                    f"*/{utils.fnmatch_escape(str(item_suffix_path))}",
-                ),
-            )
-        ):
-            logger.debug(
-                "No existing download item location found for: %r",
-                release.download_item,
-            )
-        elif find_location(release.download_item, item_root_paths):
-            need_verify = True
-
         # Hard link imported files into the download item's location:
         linked_files = []
         for imported_id, dropped_data in imported_ids.items():
@@ -381,29 +457,7 @@ class ExportServarrRootItem:
                     )
                     and maybe_link_file(download_sibling, imported_sibling)
                 ):
-                    need_verify = True
                     linked_files.append(str(download_sibling))
-
-        if need_verify:
-            # Deselect for download any remaining incomplete files:
-            release.download_item.clear()
-            deselected_files = deselect_un_imported_files(release.download_item)
-            if len(deselected_files) == len(release.download_item.files):
-                logger.error(  # pragma: no cover
-                    "No files imported, not verifying or resuming: %r",
-                    release.download_item,
-                )
-            else:
-                logger.info(
-                    "Verifying and resuming download item: %r",
-                    release.download_item,
-                )
-                release.download_item.download_client.client.verify_torrent(
-                    release.download_item.hash_string,
-                )
-                release.download_item.download_client.client.start_torrent(
-                    release.download_item.hash_string
-                )
 
         return linked_files
 
@@ -612,3 +666,70 @@ def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) 
             files_unwanted=[deselected_file.id for deselected_file in deselected_files],
         )
     return deselected_files
+
+
+def patch_download_item(
+    download_item: downloaditem.PrunerrDownloadItem,
+    update_properties: dict,
+) -> dict:
+    """
+    Update read-only download item properties in the `/config/resume/*.resume` file.
+
+    :param download_item: The download item to update.
+    :param update_properties: The properties and values to update.
+    :return: The property values before updating.
+    """
+    # First, deserialize the  the `/config/resume/*.resume` file, update the
+    # properties, and re-serialize:
+    torrent_path = pathlib.Path(download_item.torrent_file)
+    resume_path = torrent_path.parents[1] / "resume" / f"{torrent_path.stem}.resume"
+    with open(resume_path, "rb") as resume_read:
+        resume_bencoded = resume_read.read()
+    resume_data = bencode.bdecode(resume_bencoded)
+    orig_data = {}
+    for resume_property, property_value in update_properties.items():
+        orig_data[resume_property] = resume_data[resume_property]
+        resume_data[resume_property] = property_value
+    resume_bencoded = bencode.bencode(resume_data)
+    logger.info(
+        "Updating Transmission resume data for %r: %r -> %r",
+        download_item,
+        orig_data,
+        update_properties,
+    )
+
+    # Hold open the torrent file, remove it from the client, write the updated the
+    # `/config/resume/*.resume` file, and re-add the torrent back to the client:
+    # https://github.com/transmission/transmission/issues/4314#issuecomment-1336483203
+    with open(torrent_path, mode="r+b") as torrent_opened:
+        download_item.download_client.client.remove_torrent(
+            ids=[download_item.hash_string],
+        )
+        try:
+            replace_file(resume_path, resume_bencoded)
+        finally:
+            download_item.update(
+                download_item.download_client.client.add_torrent(
+                    torrent=torrent_opened,
+                    bandwidthPriority=download_item.bandwidth_priority,
+                    download_dir=str(download_item.download_dir),
+                    peer_limit=download_item.peer_limit,
+                ),
+            )
+    download_item.download_client.items.remove(download_item)
+    download_item.download_client.items.append(download_item)
+
+    return orig_data
+
+
+def replace_file(path: pathlib.Path, content: bytes):
+    """
+    Wait for the file to be removed then replace it.
+
+    :param path: The path to the file to replace.
+    :param content: The content to write to the file.
+    """
+    # Wait for a timeout for the file to be removed:
+    utils.wait(path.exists, reverse=True)
+    with path.open("wb") as path_writable:
+        path_writable.write(content)

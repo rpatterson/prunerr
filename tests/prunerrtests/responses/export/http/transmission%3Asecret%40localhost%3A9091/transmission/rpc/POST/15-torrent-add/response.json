@@ -1,0 +1,10 @@
+{
+  "arguments": {
+    "torrent-added": {
+      "id": 2,
+      "name": "Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
+      "hashString": "2e594a052e594a05acbe431e81820b39c3671154"
+    }
+  },
+  "result": "success"
+}

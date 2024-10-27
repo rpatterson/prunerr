@@ -40,6 +40,7 @@
         "metadataPercentComplete": 1,
         "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
         "hashString": "1fafed76f4264b14934c13d7a306f94fea4b3184",
+        "peer-limit": 288,
         "peersConnected": 0,
         "peersGettingFromUs": 0,
         "peersSendingToUs": 0,
@@ -54,6 +55,7 @@
         "sizeWhenDone": 2147483648,
         "startDate": 0,
         "status": 6,
+        "torrentFile": "/config/torrents/1fafed76f4264b14934c13d7a306f94fea4b3184.torrent",
         "totalSize": 2147483648,
         "trackers": [
           {
@@ -97,6 +99,7 @@
         "metadataPercentComplete": 1,
         "name": "Foo.Series.1970.S01E04.Waldo.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
         "hashString": "2968a07994b84d3aa21ec131195fcc58195fcc58",
+        "peer-limit": 288,
         "peersConnected": 0,
         "peersGettingFromUs": 0,
         "peersSendingToUs": 0,
@@ -111,6 +114,7 @@
         "sizeWhenDone": 1073741824,
         "startDate": 0,
         "status": 6,
+        "torrentFile": "/config/torrents/2968a07994b84d3aa21ec131195fcc58195fcc58.torrent",
         "totalSize": 1073741824,
         "trackers": [
           {
@@ -154,6 +158,7 @@
         "metadataPercentComplete": 1,
         "name": "Foo.Series.1970.S01E01.Corge.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
         "hashString": "32f3818032f381809d944db3afd9441b72607780",
+        "peer-limit": 288,
         "peersConnected": 0,
         "peersGettingFromUs": 0,
         "peersSendingToUs": 0,
@@ -168,6 +173,7 @@
         "sizeWhenDone": 1073741824,
         "startDate": 0,
         "status": 6,
+        "torrentFile": "/config/torrents/32f3818032f381809d944db3afd9441b72607780.torrent",
         "totalSize": 1073741824,
         "trackers": [
           {
@@ -211,6 +217,7 @@
         "metadataPercentComplete": 1,
         "name": "Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER",
         "hashString": "2e594a052e594a05acbe431e81820b39c3671154",
+        "peer-limit": 288,
         "peersConnected": 0,
         "peersGettingFromUs": 0,
         "peersSendingToUs": 0,
@@ -225,6 +232,7 @@
         "sizeWhenDone": 1073741824,
         "startDate": 0,
         "status": 6,
+        "torrentFile": "/config/torrents/2e594a052e594a05acbe431e81820b39c3671154.torrent",
         "totalSize": 1073741824,
         "trackers": [
           {
@@ -320,7 +328,7 @@
         "startDate": 0,
         "startDate": 0,
         "status": 6,
-        "torrentFile": "/config/torrents/1FAFED76F4264B14934C13D7A306F94FEA4B3184.torrent",
+        "torrentFile": "/config/torrents/909c9b954b414a87b1dcf6e2fb09650fcc35de57.torrent",
         "totalSize": 1073741824,
         "trackerStats": [
           {

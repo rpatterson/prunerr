@@ -684,7 +684,7 @@ def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:
         return False
     if source.parent.stat().st_dev != target.parent.stat().st_dev:  # pragma: no cover
         logger.exception(
-            "Download item on different filesystem: %r -> %r",
+            "Paths are on different filesystems: %r -> %r",
             str(source),
             str(target),
         )

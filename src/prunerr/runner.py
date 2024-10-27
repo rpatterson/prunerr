@@ -270,18 +270,6 @@ class PrunerrRunner(utils.PrunerrComponent):
         """
         Link imported files back into download items and verify, Servarr import inverse.
 
-        Useful to populate a download client seeding the whole library. That could be to
-        create a new download client instance or to repair a damaged download client.
-
-        Note that this will delete existing download item files that aren't linked to
-        the import locations.
-
-        Note also that some releases may be partially imported, such as a season pack
-        where some but not all of the files have since been upgraded. This sub-command
-        may re-add such download items to the client that ``free-space`` previously
-        removed because they're only partially imported and ``free-space`` may then
-        remove them again depending on the configuration.
-
         :return: Map download client items to any files have been linked.
         """
         export_results = {}

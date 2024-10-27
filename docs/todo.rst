@@ -22,13 +22,6 @@ Required
 
 #. :Export:
 
-    Also export files with the same ``pathlib.Path.stem`` and different
-    ``pathlib.Path.suffix`` extensions when the same files exist both next to the
-    imported item and next to the download file in the download item. This should cover
-    servarr ``extraFileExtensions`` and then some.
-
-#. :Export:
-
     Add torrent date handling to the ``export`` sub-command. Take the ``grabbed``
     history record dates for the ``added-date`` and the ``downloadFolderImported``
     record dates for the ``done-date`` and `set them in the Transmission

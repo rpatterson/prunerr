@@ -434,9 +434,29 @@ frequently than ``$ prunerr daemon`` would.
 Export sub-command
 ****************************************************************************************
 
-The ``export`` sub-command is roughly the inverse of Servarr import events, hard link
-imported files back into download client items and verify. See the CLI ``$ prunerr
-export --help`` output for more details.
+The ``$ prunerr export`` sub-command is roughly the inverse of Servarr import events,
+hard link imported files back into download client items and verify. Useful to populate
+a download client seeding the whole library. That could be to create a new download
+client instance, or to repair or "back-fill" a damaged download client:
+
+#. Collate Servarr grab and import history to identify which download items files are
+   imported from.
+
+#. If the download item is not currently in the client, re-add it using the grab
+   history.
+
+#. Re-link imported files back to the download item files, including sibling files
+   Servarr might have imported as extras.
+
+#. Deselect for download any download item files that still don't exist.
+
+#. Finally, verify the download item.
+
+warning::
+
+   This will delete existing download item files that aren't currently linked to the
+   imported files. This can lead to data loss when the download item file is more
+   complete than the imported file.
 
 
 ****************************************************************************************

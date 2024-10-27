@@ -12,8 +12,6 @@ import shutil
 from unittest import mock
 
 import bencode
-import requests
-import requests_mock
 
 import prunerrtests
 
@@ -31,11 +29,9 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
     torrents_dir: pathlib.Path
     resume_dir: pathlib.Path
 
-    def set_up_imported_files(self) -> dict:  # pylint: disable=too-many-locals
+    def set_up_imported_files(self):  # pylint: disable=too-many-locals
         """
         Simulate previous imports from download items.
-
-        :return: The mock request fixtures.
         """
         # Normal Servarr import:
         self.imported_item_file.parent.mkdir(parents=True, exist_ok=True)
@@ -159,54 +155,13 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
                 )
             )
 
-        return self.mock_responses(
-            self.RESPONSES_DIR,
-            {
-                "http://transmission:secret@localhost:9091/transmission/rpc": {
-                    "POST": {
-                        # Also remove the mock Transmission `/config/resume/*.resume`
-                        # files:
-                        "05-torrent-remove": {
-                            "json": self.mock_remove_torrent_response,
-                        },
-                        "08-torrent-remove": {
-                            "json": self.mock_remove_torrent_response,
-                        },
-                        "11-torrent-remove": {
-                            "json": self.mock_remove_torrent_response,
-                        },
-                    },
-                },
-            },
-        )
-
-    def mock_remove_torrent_response(
-        self,
-        request: requests.Request,  # pylint: disable=unused-argument
-        context: requests_mock.response._Context,
-        response_mock: dict,
-    ) -> dict:
-        """
-        Simulate the download client removing a download item.
-
-        :param request: The request to mock.
-        :param context: The mock response context.
-        :param response_mock: The fixture from the ``./responses/*/`` directory.
-        :return: The response JSON from the fixture.
-        """
-        download_hash = response_mock["from_mock_dir"]["request"]["json"]["arguments"][
-            "ids"
-        ][0]
-        (self.resume_dir / f"{download_hash}.resume").unlink()
-        context.headers.update(response_mock.get("headers", {}))
-        return response_mock["from_mock_dir"][prunerrtests.MIME_MINOR_JSON]
-
     def test_export_workflow(self):
         """
         Link imported files back into download items and verify, Servarr import inverse.
         """
         # 1. Simulate previous imports from download items and mock the requests:
-        export_request_mocks = self.set_up_imported_files()
+        self.set_up_imported_files()
+        export_request_mocks = self.mock_responses()
 
         # 2. Run the `export` sub-command:
         self.runner.update()
@@ -271,6 +226,7 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         """
         # Simulate previous imports from download items:
         self.set_up_imported_files()
+        self.mock_responses()
         prunerr.export(self.runner)
 
     def test_export_empty(self):

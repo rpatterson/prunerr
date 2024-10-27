@@ -456,11 +456,19 @@ client instance, or to repair or "back-fill" a damaged download client:
 
 #. Deselect for download any download item files that still don't exist.
 
+#. Re-add the download item to the download client to trigger fast or full
+   verification per the download client configuration.
+
 #. Patch read-only download item date fields from the Servarr history so that download
    item properties such as ``{{ item.seconds_since_done }}`` are more accurate.
 
-#. Finally, re-add the download item to the download client to trigger fast or full
-   verification per the download client configuration.
+.. note::
+
+   Unfortunately, Transmission sets the ``doneDate`` to the ``addedDate`` when re-adding
+   a seeding item, overriding the value from the servarr import history. To workaround
+   this, this sub-command shuts down the download client and then patches the read-only
+   fields. Because there are many different ways to restart the download client
+   depending on the deployment, that's the user's responsibility when ready.
 
 warning::
 

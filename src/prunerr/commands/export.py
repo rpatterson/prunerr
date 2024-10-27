@@ -30,7 +30,7 @@ class ExportCommandRun:
 
     download_ids: dict
 
-    def __init__(self, servarr):
+    def __init__(self, servarr, patch_properties):
         """
         Capture a reference to the Servarr instance.
 
@@ -38,6 +38,7 @@ class ExportCommandRun:
             representing the specific Servarr instance.
         """
         self.servarr = servarr
+        self.patch_properties = patch_properties
 
     def update(self):
         """
@@ -101,6 +102,41 @@ class ExportCommandRun:
         if export_results:
             return export_results
         return None
+
+
+def patch_download_item(
+    download_item: downloaditem.PrunerrDownloadItem,
+    update_properties: dict,
+) -> dict:
+    """
+    Update read-only download item properties in the `/config/resume/*.resume` file.
+
+    :param download_item: The download item to patch
+    :param update_properties: The properties and values to update.
+    :return: The property values before updating.
+    """
+    # First, deserialize the  the `/config/resume/*.resume` file, update the
+    # properties, and re-serialize:
+    torrent_path = pathlib.Path(download_item.torrent_file)
+    resume_path = torrent_path.parents[1] / "resume" / f"{torrent_path.stem}.resume"
+    utils.wait(resume_path.exists)
+    with open(resume_path, "rb") as resume_readable:
+        resume_bencoded = resume_readable.read()
+    resume_data = bencode.bdecode(resume_bencoded)
+    orig_data = {}
+    for resume_property, property_value in update_properties.items():
+        orig_data[resume_property] = resume_data[resume_property]
+        resume_data[resume_property] = property_value
+    resume_bencoded = bencode.bencode(resume_data)
+    logger.info(
+        "Updating Transmission resume data for %r: %r -> %r",
+        download_item,
+        orig_data,
+        update_properties,
+    )
+    with open(resume_path, "wb") as resume_writable:
+        resume_writable.write(resume_bencoded)
+    return orig_data
 
 
 class ExportServarrRootItem:
@@ -283,7 +319,17 @@ class ExportServarrRootItem:
             if release.download_item.fields[export_property] != export_value
         }
         if update_properties:
-            need_verify = True
+            self.command_run.patch_properties.setdefault(
+                release.download_item.download_client.config["url"],
+                {},
+            ).setdefault(
+                release.download_item.hash_string,
+                (release.download_item, {}),
+            )[
+                1
+            ].update(
+                update_properties
+            )
         else:
             logger.debug(  # pragma: no cover
                 "Properties already updated: %(release)r",
@@ -306,7 +352,7 @@ class ExportServarrRootItem:
                     "Re-adding to fast verify: %(release)r",
                     {"release": release},
                 )
-                patch_download_item(release.download_item, update_properties)
+                readd_download_item(release.download_item)
                 if release.download_item.status == self.ITEM_STATUS_STOPPED:
                     logger.info(
                         "Resuming paused download item: %(release)r",
@@ -817,50 +863,34 @@ def deselect_un_imported_files(download_item: downloaditem.PrunerrDownloadItem) 
     return deselected_files
 
 
-def patch_download_item(
+def readd_download_item(
     download_item: downloaditem.PrunerrDownloadItem,
-    update_properties: dict,
-) -> dict:
+) -> downloaditem.PrunerrDownloadItem:
     """
-    Update read-only download item properties in the `/config/resume/*.resume` file.
+    Re-add the download item to the client to trigger fast verification.
 
     :param download_item: The download item to update.
-    :param update_properties: The properties and values to update.
-    :return: The property values before updating.
+    :return: The updated download item.
     """
-    # First, deserialize the  the `/config/resume/*.resume` file, update the
-    # properties, and re-serialize:
     torrent_path = pathlib.Path(download_item.torrent_file)
     resume_path = torrent_path.parents[1] / "resume" / f"{torrent_path.stem}.resume"
     utils.wait(resume_path.exists)
-    with open(resume_path, "rb") as resume_read:
-        resume_bencoded = resume_read.read()
-    resume_data = bencode.bdecode(resume_bencoded)
-    orig_data = {}
-    for resume_property, property_value in update_properties.items():
-        orig_data[resume_property] = resume_data[resume_property]
-        resume_data[resume_property] = property_value
-    resume_bencoded = bencode.bencode(resume_data)
-    logger.info(
-        "Updating Transmission resume data for %r: %r -> %r",
-        download_item,
-        orig_data,
-        update_properties,
-    )
-
     # Hold open the torrent file, remove it from the client, write the updated the
     # `/config/resume/*.resume` file, and re-add the torrent back to the client:
     # https://github.com/transmission/transmission/issues/4314#issuecomment-1336483203
-    with open(torrent_path, mode="r+b") as torrent_opened:
+    resume_bencoded = resume_path.read_bytes()
+    with open(torrent_path, mode="r+b") as torrent_readable, open(
+        resume_path, "wb"
+    ) as resume_writable:
         download_item.download_client.client.remove_torrent(
             ids=[download_item.hash_string],
         )
         try:
-            replace_file(resume_path, resume_bencoded)
+            resume_writable.write(resume_bencoded)
         finally:
             download_item.update(
                 download_item.download_client.client.add_torrent(
-                    torrent=torrent_opened,
+                    torrent=torrent_readable,
                     bandwidthPriority=download_item.bandwidth_priority,
                     download_dir=str(download_item.download_dir),
                     peer_limit=download_item.peer_limit,
@@ -869,17 +899,4 @@ def patch_download_item(
     download_item.download_client.items.remove(download_item)
     download_item.download_client.items.append(download_item)
 
-    return orig_data
-
-
-def replace_file(path: pathlib.Path, content: bytes):
-    """
-    Wait for the file to be removed then replace it.
-
-    :param path: The path to the file to replace.
-    :param content: The content to write to the file.
-    """
-    # Wait for a timeout for the file to be removed:
-    utils.wait(path.exists, reverse=True)
-    with path.open("wb") as path_writable:
-        path_writable.write(content)
+    return download_item

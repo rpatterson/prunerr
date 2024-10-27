@@ -273,13 +273,31 @@ class PrunerrRunner(utils.PrunerrComponent):
         :return: Map download client items to any files have been linked.
         """
         export_results = {}
+        patch_properties: dict = {}
 
         # The Servarr instances drive the export process:
         for servarr_url, servarr in self.servarrs.items():
-            command_run = export.ExportCommandRun(servarr)
+            command_run = export.ExportCommandRun(servarr, patch_properties)
             command_run.update()
             if servarr_export_results := command_run():
                 export_results[servarr_url] = servarr_export_results
+
+        for download_client_url, download_items in patch_properties.items():
+            download_client = self.download_clients[download_client_url]
+            logger.info(
+                "Shutting down download client: %(download_client)r",
+                {"download_client": download_client},
+            )
+            # This RPC method isn't provided by `transmission_rpc`:
+            download_client.client._request(  # pylint: disable=protected-access
+                "session-close",
+            )
+            for download_item, update_properties in download_items.values():
+                export.patch_download_item(download_item, update_properties)
+            logger.warning(
+                "Finished patching, restart download client : %(download_client)r",
+                {"download_client": download_client},
+            )
 
         # Report results if any:
         if export_results:

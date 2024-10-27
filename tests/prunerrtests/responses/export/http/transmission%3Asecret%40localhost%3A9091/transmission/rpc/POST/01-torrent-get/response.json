@@ -256,7 +256,7 @@
         "creator": "",
         "dateCreated": 0,
         "desiredAvailable": 0,
-        "doneDate": 0,
+        "doneDate": 1619049600,
         "downloadDir": "/media/Library/seeding/Radarr/Videos/Movies/",
         "downloadLimit": 0,
         "downloadLimited": false,

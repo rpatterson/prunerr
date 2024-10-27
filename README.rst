@@ -453,7 +453,8 @@ client instance, or to repair or "back-fill" a damaged download client:
 #. Patch read-only download item date fields from the Servarr history so that download
    item properties such as ``{{ item.seconds_since_done }}`` are more accurate.
 
-#. Finally, verify the download item.
+#. Finally, re-add the download item to the download client to trigger fast or full
+   verification per the download client configuration.
 
 warning::
 

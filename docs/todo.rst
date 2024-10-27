@@ -139,10 +139,6 @@ Nice to have
 
 #. :Export:
 
-    Maybe detect when we can skip verifying items?
-
-#. :Export:
-
     Support selecting only one series or movie for the ``export`` sub-command.
 
 #. :Operations:

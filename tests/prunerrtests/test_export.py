@@ -160,13 +160,10 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
                         "05-torrent-remove": {
                             "json": self.mock_remove_torrent_response,
                         },
-                        "09-torrent-remove": {
+                        "08-torrent-remove": {
                             "json": self.mock_remove_torrent_response,
                         },
-                        "14-torrent-remove": {
-                            "json": self.mock_remove_torrent_response,
-                        },
-                        "18-torrent-remove": {
+                        "11-torrent-remove": {
                             "json": self.mock_remove_torrent_response,
                         },
                     },

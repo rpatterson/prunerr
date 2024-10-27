@@ -1,9 +1,0 @@
-{
-  "arguments": {
-    "bandwidthPriority": 0,
-    "download-dir": "/media/Library/seeding/Radarr/Videos/Movies",
-    "metainfo": "ZGU=",
-    "peer-limit": 288
-  },
-  "method": "torrent-add"
-}

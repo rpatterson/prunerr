@@ -107,6 +107,7 @@ class ExportServarrRootItem:
     Represent the state and logic of exporting one Servarr series/movie/etc..
     """
 
+    ITEM_STATUS_STOPPED = "stopped"
     ITEM_RESUME_FIELDS = {"addedDate": "added-date", "doneDate": "done-date"}
 
     imported_download_ids: dict
@@ -258,8 +259,8 @@ class ExportServarrRootItem:
             )
         ):
             logger.debug(
-                "No existing download item location found for: %r",
-                release.download_item,
+                "No existing download item location found for: %(release)r",
+                {"release": release},
             )
         elif find_location(release.download_item, item_root_paths):
             need_verify = True
@@ -281,13 +282,12 @@ class ExportServarrRootItem:
             if release.download_item.fields[export_property] != export_value
         }
         if update_properties:
-            patch_download_item(release.download_item, update_properties)
+            need_verify = True
         else:
             logger.debug(  # pragma: no cover
-                "Torrent %(item)r properties already updated: %(update_properties)r",
+                "Properties already updated: %(release)r",
                 {
-                    "item": release.download_item,
-                    "update_properties": update_properties,
+                    "release": release,
                 },
             )
 
@@ -297,20 +297,23 @@ class ExportServarrRootItem:
             deselected_files = deselect_un_imported_files(release.download_item)
             if len(deselected_files) == len(release.download_item.files):
                 logger.error(  # pragma: no cover
-                    "No files imported, not verifying or resuming: %r",
-                    release.download_item,
+                    "No files imported, not verifying or resuming: %(release)r",
+                    {"release": release},
                 )
             else:
                 logger.info(
-                    "Verifying and resuming download item: %r",
-                    release.download_item,
+                    "Re-adding to fast verify: %(release)r",
+                    {"release": release},
                 )
-                release.download_item.download_client.client.verify_torrent(
-                    release.download_item.hash_string,
-                )
-                release.download_item.download_client.client.start_torrent(
-                    release.download_item.hash_string
-                )
+                patch_download_item(release.download_item, update_properties)
+                if release.download_item.status == self.ITEM_STATUS_STOPPED:
+                    logger.info(
+                        "Resuming paused download item: %(release)r",
+                        {"release": release},
+                    )
+                    release.download_item.download_client.client.start_torrent(
+                        release.download_item.hash_string
+                    )
 
         return linked_files
 
@@ -427,8 +430,8 @@ class ExportServarrRootItem:
                 not in release.download_item.fields
             ):  # pragma: no cover
                 logger.debug(
-                    "Missing download dir field, updating: %r",
-                    release.download_item,
+                    "Missing download dir field, updating: %(release)r",
+                    {"release": release},
                 )
                 release.download_item.update()
 

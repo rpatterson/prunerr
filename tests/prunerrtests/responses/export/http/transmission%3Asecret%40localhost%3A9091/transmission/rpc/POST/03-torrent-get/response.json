@@ -54,7 +54,7 @@
         "seedRatioMode": 0,
         "sizeWhenDone": 1073741824,
         "startDate": 0,
-        "status": 6,
+        "status": 0,
         "torrentFile": "/config/torrents/8b8060bf22c942b1b6cabb8e5b840e445b840e44.torrent",
         "totalSize": 1073741824,
         "trackers": [

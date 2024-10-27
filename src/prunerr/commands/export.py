@@ -445,22 +445,13 @@ class ExportServarrRootItem:
             for imported_sibling in imported_path.parent.glob(
                 f"{utils.fnmatch_escape(imported_path.stem)}*",
             ):
-                download_sibling_relative = dropped_data["droppedRel"].with_name(
-                    f"{dropped_data['droppedRel'].stem}"
-                    f"{imported_sibling.name[len(imported_path.stem):]}",
-                )
-                download_sibling = (
-                    release.download_item.download_dir / download_sibling_relative
-                )
-                if (
-                    imported_sibling.exists()
-                    and (
-                        download_sibling_relative
-                        in release.download_item.files_by_relative
-                    )
-                    and maybe_link_file(download_sibling, imported_sibling)
+                if linked_file := link_imported_file(
+                    release,
+                    dropped_data,
+                    imported_path,
+                    imported_sibling,
                 ):
-                    linked_files.append(str(download_sibling))
+                    linked_files.append(str(linked_file))
 
         return linked_files
 
@@ -591,6 +582,88 @@ def maybe_add_download_item(
         return added_item
 
     return None  # pragma: no cover
+
+
+def link_imported_file(
+    release: prunerr.servarr.release.PrunerrServarrRelease,
+    dropped_data: dict,
+    imported_path: pathlib.Path,
+    imported_sibling: pathlib.Path,
+) -> typing.Optional[pathlib.Path]:
+    """
+    Hard link an imported file back into the download item.
+
+    :param release: The download item whose files to link.
+    :param dropped_data: The collated Servarr grab history.
+    :param imported_path: The Servarr imported file.
+    :param imported_sibling: The Servarr imported file or extra.
+    :return: The path of the new hard link if created.
+    """
+    download_sibling_relative = dropped_data["droppedRel"].with_name(
+        f"{dropped_data['droppedRel'].stem}"
+        f"{imported_sibling.name[len(imported_path.stem):]}",
+    )
+    download_item_file = release.download_item.files_by_relative.get(
+        download_sibling_relative,
+    )
+    if download_item_file is None:
+        logger.debug(
+            "No download file for imported file: %(imported_sibling)s",
+            {"imported_sibling": imported_sibling},
+        )
+        return None
+    download_sibling = release.download_item.download_dir / download_sibling_relative
+    download_file_complete = download_item_file.completed == download_item_file.size
+    if (
+        download_file_complete
+        and imported_sibling == imported_path
+        and download_sibling.exists()
+    ):
+        logger.debug(
+            "Replacing imported file with download file"
+            ": %(download_item_file)r -> %(imported_sibling)r",
+            {
+                "download_item_file": str(download_item_file),
+                "imported_sibling": str(imported_sibling),
+            },
+        )
+        if maybe_link_file(  # pylint: disable=no-else-return
+            imported_sibling, download_sibling
+        ):
+            return imported_sibling
+        else:  # pylint: disable=no-else-return
+            pass  # pragma: no cover
+    else:
+        if download_sibling.exists():
+            if download_file_complete:
+                logger.debug(
+                    "Not replacing complete download file with imported file"
+                    ": %(imported_sibling)r -> %(download_item_file)r",
+                    {
+                        "download_item_file": str(download_item_file),
+                        "imported_sibling": str(imported_sibling),
+                    },
+                )
+                return None
+            log_msg = (
+                "Replacing incomplete download file with imported file"
+                ": %(imported_sibling)r -> %(download_item_file)r"
+            )
+        else:
+            log_msg = (
+                "Linking missing download file to imported file"
+                ": %(imported_sibling)r -> %(download_item_file)r"
+            )
+        logger.debug(
+            log_msg,
+            {
+                "download_item_file": str(download_item_file),
+                "imported_sibling": str(imported_sibling),
+            },
+        )
+        if maybe_link_file(download_sibling, imported_sibling):
+            return download_sibling
+    return None
 
 
 def maybe_link_file(source: pathlib.Path, target: pathlib.Path) -> bool:

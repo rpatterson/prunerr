@@ -31,7 +31,7 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
     torrents_dir: pathlib.Path
     resume_dir: pathlib.Path
 
-    def set_up_imported_files(self) -> dict:
+    def set_up_imported_files(self) -> dict:  # pylint: disable=too-many-locals
         """
         Simulate previous imports from download items.
 
@@ -125,6 +125,15 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         )
         movie_import.parent.mkdir(parents=True, exist_ok=True)
         movie_import.hardlink_to(movie_seeding_file)
+        extra_seeding_file = movie_seeding_file.with_suffix(".nfo")
+        extra_import_file = movie_import.with_name(extra_seeding_file.name)
+        non_download_file = extra_import_file.with_suffix(".jpg")
+        with extra_seeding_file.open("w") as extra_seeding_opened:
+            extra_seeding_opened.write("<movie></movie>")
+        with extra_import_file.open("w") as extra_import_opened:
+            extra_import_opened.write("<movie></movie>")
+        with non_download_file.open("w") as non_download_opened:
+            non_download_opened.write("JPEG")
 
         self.torrents_dir = self.tmp_path / "config" / "torrents"
         self.resume_dir = self.torrents_dir.parent / "resume"

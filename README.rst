@@ -448,6 +448,12 @@ client instance, or to repair or "back-fill" a damaged download client:
 #. Re-link imported files back to the download item files, including sibling files
    Servarr might have imported as extras.
 
+#. When the download item file is missing or incomplete, make it a hard link to the
+   imported file.
+
+#. When the download item file exists and is completely downloaded, delete the imported
+   file and make it a hard link to the download item file.
+
 #. Deselect for download any download item files that still don't exist.
 
 #. Patch read-only download item date fields from the Servarr history so that download
@@ -458,9 +464,8 @@ client instance, or to repair or "back-fill" a damaged download client:
 
 warning::
 
-   This will delete existing download item files that aren't currently linked to the
-   imported files. This can lead to data loss when the download item file is more
-   complete than the imported file.
+   When the download item file already exists, this can lead to data loss if more of the
+   imported file's data is correct or complete than the download item file.
 
 
 ****************************************************************************************

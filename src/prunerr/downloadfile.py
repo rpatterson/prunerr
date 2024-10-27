@@ -47,12 +47,11 @@ class PrunerrDownloadFile(utils.PrunerrComponent):
 
         :return: Map descriptive names to useful values.
         """
-        details = {
+        return {
             "path": self.rpc_file.name,
             "disk_usage": utils.format_size(self.disk_usage),
             "imported": self.is_imported,
         }
-        return details
 
     @cached_property
     def relative(self) -> pathlib.Path:

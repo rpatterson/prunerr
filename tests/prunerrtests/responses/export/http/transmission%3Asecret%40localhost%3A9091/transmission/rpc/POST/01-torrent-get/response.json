@@ -198,14 +198,14 @@
         "eta": -1,
         "files": [
           {
-            "bytesCompleted": 0,
+            "bytesCompleted": 1073741824,
             "length": 1073741824,
             "name": "Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER/Foo.Series.1970.S01E08.Quux.Episode.Title.WEB-DL.x265.HEVC-RELEASER.mkv"
           }
         ],
         "fileStats": [
           {
-            "bytesCompleted": 0,
+            "bytesCompleted": 1073741824,
             "priority": 0,
             "wanted": true
           }
@@ -271,13 +271,23 @@
             "bytesCompleted": 1072693248,
             "priority": 0,
             "wanted": true
+          },
+          {
+            "bytesCompleted": 1024,
+            "priority": 0,
+            "wanted": true
           }
         ],
         "files": [
           {
             "bytesCompleted": 1072693248,
-            "length": 1073741824,
+            "length": 1073740800,
             "name": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.mkv"
+          },
+          {
+            "bytesCompleted": 1024,
+            "length": 1024,
+            "name": "Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER/Bar.Movie.1980.WEB-DL.x265.HEVC-RELEASER.nfo"
           }
         ],
         "hashString": "909c9b954b414a87b1dcf6e2fb09650fcc35de57",
@@ -313,7 +323,7 @@
         "pieceCount": 10000,
         "pieceSize": 107269,
         "pieces": "//////////////////////////////////////////////////////////////////",
-        "priorities": [0],
+        "priorities": [0, 0],
         "queuePosition": 1,
         "rateDownload": 0,
         "rateUpload": 0,
@@ -406,7 +416,7 @@
         "uploadLimited": false,
         "uploadRatio": 1.5,
         "uploadedEver": 1073741824,
-        "wanted": [1],
+        "wanted": [1, 1],
         "webseeds": [],
         "webseedsSendingToUs": 0
       }

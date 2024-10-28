@@ -21,6 +21,7 @@ import html
 import logging
 
 import yaml
+import requests
 import tenacity
 import appdirs
 import transmission_rpc
@@ -67,6 +68,7 @@ RETRY_EXC_TYPES = (
     # response:
     ValueError,
     json.JSONDecodeError,
+    requests.exceptions.ChunkedEncodingError,
     # Don't crash the `$ prunerr daemon` sub-command when the user is editing the
     # configuration file:
     yaml.parser.ParserError,

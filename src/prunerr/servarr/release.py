@@ -192,11 +192,24 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
                 )
                 continue
 
+            if not imported_item["file"]["path"].exists():  # pragma: no cover
+                # This happens when a fully downloaded, seeding download item is added
+                # to the Servarr queue directory and is being imported *while* applying
+                # the `upgraded` stage:
+                logger.warning(
+                    "Imported file missing: %s",
+                    imported_item["file"]["path"],
+                    extra={
+                        "runner": self.download_item.download_client.runner,
+                        "download_hash": self.download_item.hash_string,
+                    },
+                )
+                continue
             imported_file_stat = imported_item["file"]["path"].stat()
             if not imported_file_stat.st_nlink > 1:  # pragma: no cover
                 logger.warning(
                     "Imported file has no hard links: %s",
-                    imported_item["id"],
+                    imported_item["file"]["path"],
                     extra={
                         "runner": self.download_item.download_client.runner,
                         "download_hash": self.download_item.hash_string,
@@ -212,7 +225,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             ):  # pragma: no cover
                 logger.warning(
                     "No dropped path history for imported file: %s",
-                    imported_item["id"],
+                    imported_item["file"]["path"],
                     extra={
                         "runner": self.download_item.download_client.runner,
                         "download_hash": self.download_item.hash_string,
@@ -242,7 +255,7 @@ class PrunerrServarrRelease(utils.PrunerrComponent):
             if not found_item_file:  # pragma: no cover
                 logger.warning(
                     "No download item file for imported file: %s",
-                    imported_item["id"],
+                    imported_item["file"]["path"],
                     extra={
                         "runner": self.download_item.download_client.runner,
                         "download_hash": self.download_item.hash_string,

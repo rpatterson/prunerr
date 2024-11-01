@@ -18,6 +18,7 @@ import prunerr.servarr.release
 from ..utils import pathlib
 from .. import utils
 from .. import downloaditem
+from .. import downloadfile
 
 logger = logging.getLogger(__name__)
 
@@ -614,55 +615,125 @@ def link_imported_file(
         return None
     download_sibling = release.download_item.download_dir / download_sibling_relative
     download_file_complete = download_item_file.completed == download_item_file.size
+
     if (
         download_file_complete
         and imported_sibling == imported_path
         and download_sibling.exists()
     ):
-        logger.debug(
-            "Replacing imported file with download file"
-            ": %(download_item_file)r -> %(imported_sibling)r",
-            {
-                "download_item_file": str(download_item_file),
-                "imported_sibling": str(imported_sibling),
-            },
+        return link_downloaded_item(
+            imported_sibling,
+            download_item_file,
+            download_sibling,
         )
-        if maybe_link_file(  # pylint: disable=no-else-return
-            imported_sibling, download_sibling
-        ):
-            return imported_sibling
-        else:  # pylint: disable=no-else-return
-            pass  # pragma: no cover
-    else:
-        if download_sibling.exists():
-            if download_file_complete:
-                logger.debug(
-                    "Not replacing complete download file with imported file"
-                    ": %(imported_sibling)r -> %(download_item_file)r",
-                    {
-                        "download_item_file": str(download_item_file),
-                        "imported_sibling": str(imported_sibling),
-                    },
-                )
-                return None
-            log_msg = (
-                "Replacing incomplete download file with imported file"
-                ": %(imported_sibling)r -> %(download_item_file)r"
-            )
+    return link_other_file(
+        imported_sibling,
+        download_item_file,
+        download_sibling,
+        download_file_complete,
+    )
+
+
+def link_downloaded_item(
+    imported_sibling: pathlib.Path,
+    download_item_file: downloadfile.PrunerrDownloadFile,
+    download_sibling: pathlib.Path,
+) -> typing.Optional[pathlib.Path]:
+    """
+    Hard link the downloaded file back into the library item.
+
+    :param imported_sibling: The Servarr imported file or extra.
+    :param download_item_file: The file in the download item to link.
+    :param download_sibling: The path to the download file.
+    :return: The path of the new hard link if created.
+    """
+    # If both the download file and imported file exist but aren't already linked
+    # somewhere, then prefer the download file assuming it's data is more complete, such
+    # as when it's been verified and corrupt pieces re-downloaded:
+    log_msg = None
+    log_level = logger.error
+    if download_item_file.is_imported:  # pragma: no cover
+        if imported_sibling.stat().st_nlink > 1:
+            if download_sibling.samefile(imported_sibling):
+                log_level = logger.debug
+                log_msg = "Imported file and download file already linked"
+            else:
+                log_msg = "Imported file and download file linked elsewhere"
         else:
-            log_msg = (
-                "Linking missing download file to imported file"
-                ": %(imported_sibling)r -> %(download_item_file)r"
-            )
-        logger.debug(
-            log_msg,
+            log_msg = "Download file linked elsewhere"
+    elif imported_sibling.stat().st_nlink > 1:
+        log_msg = "Imported file linked elsewhere"  # pragma: no cover
+    if log_msg is not None:  # pragma: no cover
+        log_level(
+            "%(log_msg)s: %(download_item_file)r -> %(imported_sibling)r",
             {
+                "log_msg": log_msg,
                 "download_item_file": str(download_item_file),
                 "imported_sibling": str(imported_sibling),
             },
         )
-        if maybe_link_file(download_sibling, imported_sibling):
-            return download_sibling
+        return None
+    logger.debug(
+        "Replacing imported file with download file"
+        ": %(download_item_file)r -> %(imported_sibling)r",
+        {
+            "download_item_file": str(download_item_file),
+            "imported_sibling": str(imported_sibling),
+        },
+    )
+    if maybe_link_file(  # pylint: disable=no-else-return
+        imported_sibling, download_sibling
+    ):
+        return imported_sibling
+    else:  # pylint: disable=no-else-return
+        pass  # pragma: no cover
+    return None  # pragma: no cover
+
+
+def link_other_file(
+    imported_sibling: pathlib.Path,
+    download_item_file: downloadfile.PrunerrDownloadFile,
+    download_sibling: pathlib.Path,
+    download_file_complete: bool,
+) -> typing.Optional[pathlib.Path]:
+    """
+    Hard link an imported file back into the download item.
+
+    :param imported_sibling: The Servarr imported file or extra.
+    :param download_item_file: The file in the download item to link.
+    :param download_sibling: The path to the download file.
+    :param download_file_complete: Has the download file finished downloading.
+    :return: The path of the new hard link if created.
+    """
+    if download_sibling.exists():
+        if download_file_complete:
+            logger.debug(
+                "Not replacing complete download file with imported file"
+                ": %(imported_sibling)r -> %(download_item_file)r",
+                {
+                    "download_item_file": str(download_item_file),
+                    "imported_sibling": str(imported_sibling),
+                },
+            )
+            return None
+        log_msg = (
+            "Replacing incomplete download file with imported file"
+            ": %(imported_sibling)r -> %(download_item_file)r"
+        )
+    else:
+        log_msg = (
+            "Linking missing download file to imported file"
+            ": %(imported_sibling)r -> %(download_item_file)r"
+        )
+    logger.debug(
+        log_msg,
+        {
+            "download_item_file": str(download_item_file),
+            "imported_sibling": str(imported_sibling),
+        },
+    )
+    if maybe_link_file(download_sibling, imported_sibling):
+        return download_sibling
     return None
 
 

@@ -104,11 +104,6 @@ stages:
       de-queue:
         ## Block-list the release in Servarr to start a search for a replacement:
         blocklist: true
-      ## Delete the download item and it's files from the download client. If some of
-      ## the item's files are still imported, hard linked elsewhere, then this action
-      ## de-selects the un-imported files, marks them as unwanted, and deletes only
-      ## those files:
-      remove: true
     ## To disable a default operation the user's configuration file should include
     ## *just* the operation's name with nothing indented under it, for example:
     # archives:
@@ -267,9 +262,11 @@ stages:
       ## will be marked as failed.
       ##
       ## Finally, delete the download item from the client:
+      ## Delete the download item and it's files from the download client. If some of
+      ## the item's files are still imported, hard linked elsewhere, then this action
+      ## de-selects the un-imported files, marks them as unwanted, and deletes only
+      ## those files:
       remove: true
-      log: |
-        Removed un-registered download item: %(item)r
 
     ## Verify download items in whose data the download client has detected corruption:
     verify:

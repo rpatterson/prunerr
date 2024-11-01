@@ -355,15 +355,34 @@ class ExportServarrRootItem:
                     release.download_item,
                 )
                 release.download_item.update()
-            download_file_path = (
-                release.download_item.download_dir / dropped_data["droppedRel"]
-            )
-            if maybe_link_file(
-                download_file_path,
-                self.root_item.imported_items[imported_id]["file"]["path"],
+
+            # Also export any Servarr extra sibling files that may have been imported:
+            # TODO: Servarr and media library apps may modify some download file types
+            # such as `*.nfo* and `*.jpg` so an argument could be made these should
+            # *not* be linked back into the download items. OTOH, some configurations
+            # may import and preserve such download item files so it's not clear what
+            # the best approach here is:
+            imported_path = self.root_item.imported_items[imported_id]["file"]["path"]
+            for imported_sibling in imported_path.parent.glob(
+                f"{utils.fnmatch_escape(imported_path.stem)}*",
             ):
-                need_verify = True
-                linked_files.append(str(download_file_path))
+                download_sibling_relative = dropped_data["droppedRel"].with_name(
+                    f"{dropped_data['droppedRel'].stem}"
+                    f"{imported_sibling.name[len(imported_path.stem):]}",
+                )
+                download_sibling = (
+                    release.download_item.download_dir / download_sibling_relative
+                )
+                if (
+                    imported_sibling.exists()
+                    and (
+                        download_sibling_relative
+                        in release.download_item.files_by_relative
+                    )
+                    and maybe_link_file(download_sibling, imported_sibling)
+                ):
+                    need_verify = True
+                    linked_files.append(str(download_sibling))
 
         if need_verify:
             # Deselect for download any remaining incomplete files:

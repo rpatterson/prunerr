@@ -98,6 +98,11 @@ class ExportCommandRun:
             if linked_files := export_root_item():
                 export_results[servarr_root_item["title"]] = linked_files
 
+            # Free any memory that won't help make anything faster for other Servarr
+            # root items:
+            export_root_item.root_item.clear()
+            export_root_item.root_item.servarr.get_root_item.cache_clear()
+
         # Report results if any:
         if export_results:
             return export_results

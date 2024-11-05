@@ -420,7 +420,7 @@ class PrunerrReviewUpgradedTests(prunerrtests.PrunerrTestCase):
 
         # Verify that the review acted as expected:
         self.assertIn(
-            "partially imported",
+            "partial upgrade",
             logged_msgs.records[0].message.lower(),
             "Logged record message missing partially imported error",
         )

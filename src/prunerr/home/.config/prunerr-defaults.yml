@@ -63,6 +63,32 @@ stages:
   ## Apply operations once Servarr has acted on a queued download item, usually by
   ## importing files from it:
   seeding:
+    ## Notify the user when Servarr only imported some of the files:
+    partial-import:
+      ## Match items that are less imported than the threshold for removal in the
+      ## `prune:` operation:
+      include: |
+        {{- item.imported_portion < 0.80 -}}
+      ## The log message here is first rendered as a Jinja template and then [`%`
+      ## formatted by the Python logging
+      ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
+      arg: |
+        {%- set unimported_files = item.files
+            |rejectattr("is_imported")|rejectattr("is_servarr_extra")|join("\n    ")
+        -%}
+        {{-
+            {
+                "item": item,
+                "unimported_files": unimported_files,
+            }
+        -}}
+      log: |
+        Partial import:
+          Imported item:
+            %(item)r
+          Un-imported files:
+            %(unimported_files)s
+
     ## Move items to the parallel `{{ item.release.servarr_download_client.seeding_dir
     ## }}`, for example `/media/Library/seeding/**/`. For most users, this will be the
     ## only operation under `seeding:`. When deleting download items to free space,
@@ -154,7 +180,7 @@ stages:
   ##   Servarr releases that will upgrade that download item file.
   ##
   upgraded:
-    partially-imported:
+    partial-upgrade:
       ## Match if the upgraded release isn't either fully imported or not imported at
       ## all, meaning if it's partially imported:
       include: |
@@ -162,9 +188,7 @@ stages:
             |selectattr("is_imported")|rejectattr("is_servarr_extra")|join("\n    ")
         -%}
         {{- remaining_files -}}
-      ## The log message here is first rendered as a Jinja template and then [`%`
-      ## formatted by the Python logging
-      ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).
+      ## Notify the user:
       arg: |
         {%- set remaining_files = item.release.upgraded_release.download_item.files
             |selectattr("is_imported")|rejectattr("is_servarr_extra")|join("\n    ")
@@ -178,7 +202,7 @@ stages:
             }
         -}}
       log: |
-        Partially imported:
+        Partial upgrade:
           Queued upgrades:
             %(queued_upgrades)s
           Will upgrade:

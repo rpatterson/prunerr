@@ -224,6 +224,15 @@ Nice to have
     etc.. It should include generalized support for configuring how to scrape data from
     HTML, probably using XPaths.
 
+ #. :Export:
+
+    Servarr metadata plugins may write ``**/*.nfo`` files but some configurations may
+    import and preserve download item files. Map Servarr metadata plugin implementation
+    types to the file extensions they manage, request the metadata plugins from the
+    Servarr API, and only exclude files with those extensions in
+    ``prunerr.commands.export.ExportServarrRootItem.link_imported_files()`` if the
+    corresponding metadata plugin is enabled.
+
 #. :Tests:
 
     Add test cases for the ignored test coverage holes::

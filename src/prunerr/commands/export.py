@@ -152,6 +152,8 @@ class ExportServarrRootItem:
     ITEM_STATUS_STOPPED = "stopped"
     ITEM_RESUME_FIELDS = {"addedDate": "added-date", "doneDate": "done-date"}
 
+    SERVARR_NFO_EXT = ".nfo"
+
     imported_download_ids: dict
 
     def __init__(
@@ -485,15 +487,16 @@ class ExportServarrRootItem:
                 release.download_item.update()
 
             # Also export any Servarr extra sibling files that may have been imported:
-            # TODO: Servarr and media library apps may modify some download file types
-            # such as `*.nfo* and `*.jpg` so an argument could be made these should
-            # *not* be linked back into the download items. OTOH, some configurations
-            # may import and preserve such download item files so it's not clear what
-            # the best approach here is:
             imported_path = self.root_item.imported_items[imported_id]["file"]["path"]
             for imported_sibling in imported_path.parent.glob(
                 f"{utils.fnmatch_escape(imported_path.stem)}*",
             ):
+                if imported_sibling.suffix.lower() == self.SERVARR_NFO_EXT:
+                    # Servarr and media library apps may modify some download file types
+                    # such as `*.nfo* and `*.jpg` so these should *not* be linked back
+                    # into the download items:
+                    continue
+
                 if linked_file := link_imported_file(
                     release,
                     dropped_data,

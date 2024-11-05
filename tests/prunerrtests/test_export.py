@@ -29,7 +29,9 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
     torrents_dir: pathlib.Path
     resume_dir: pathlib.Path
 
-    def set_up_imported_files(self):  # pylint: disable=too-many-locals
+    def set_up_imported_files(  # pylint: disable=too-many-locals,too-many-statements
+        self,
+    ):
         """
         Simulate previous imports from download items.
         """
@@ -121,15 +123,21 @@ class PrunerrExportTests(prunerrtests.PrunerrTestCase):
         )
         movie_import.parent.mkdir(parents=True, exist_ok=True)
         movie_import.hardlink_to(movie_seeding_file)
-        extra_seeding_file = movie_seeding_file.with_suffix(".nfo")
-        extra_import_file = movie_import.with_name(extra_seeding_file.name)
-        non_download_file = extra_import_file.with_suffix(".jpg")
-        with extra_seeding_file.open("w") as extra_seeding_opened:
-            extra_seeding_opened.write("<movie></movie>")
-        with extra_import_file.open("w") as extra_import_opened:
-            extra_import_opened.write("<movie></movie>")
+        nfo_seeding_file = movie_seeding_file.with_suffix(".nfo")
+        nfo_import_file = movie_import.with_name(nfo_seeding_file.name)
+        non_download_file = nfo_import_file.with_suffix(".jpg")
+        complete_seeding_file = nfo_seeding_file.with_suffix(".gif")
+        complete_imported_file = movie_import.with_name(complete_seeding_file.name)
+        with nfo_seeding_file.open("w") as nfo_seeding_opened:
+            nfo_seeding_opened.write("<movie></movie>")
+        with nfo_import_file.open("w") as nfo_import_opened:
+            nfo_import_opened.write("<movie></movie>")
         with non_download_file.open("w") as non_download_opened:
             non_download_opened.write("JPEG")
+        with complete_seeding_file.open("w") as complete_seeding_file:
+            complete_seeding_file.write("GIF")
+        with complete_imported_file.open("w") as complete_imported_file:
+            complete_imported_file.write("GIF")
 
         self.torrents_dir = self.tmp_path / "config" / "torrents"
         self.resume_dir = self.torrents_dir.parent / "resume"

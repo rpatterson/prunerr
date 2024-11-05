@@ -292,7 +292,7 @@ class PrunerrRunner(utils.PrunerrComponent):
             download_client.client._request(  # pylint: disable=protected-access
                 "session-close",
             )
-            time.sleep(10)
+            time.sleep(export.DOWNLOAD_CLIENT_CLOSE_WAIT)
             for download_item, update_properties in download_items.values():
                 export.patch_download_item(download_item, update_properties)
             logger.warning(

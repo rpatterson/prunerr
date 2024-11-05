@@ -34,7 +34,7 @@ def mock_poll_delay_response(  # pylint: disable=missing-param-doc,missing-retur
     """
     Sleep for more than the daemon loop poll time before sending response.
     """
-    time.sleep(1)
+    time.sleep(0.2)
     return response_mock["from_mock_dir"]["json"]
 
 

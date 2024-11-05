@@ -10,4 +10,4 @@ stages:
   all: {}
   orphans: {}
 daemon:
-  poll: 1
+  poll: 0.1

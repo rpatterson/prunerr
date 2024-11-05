@@ -19,6 +19,7 @@ import prunerr
 
 
 @mock.patch.dict(os.environ, prunerrtests.PrunerrTestCase.ENV)
+@mock.patch("prunerr.commands.export.DOWNLOAD_CLIENT_CLOSE_WAIT", 0.1)
 class PrunerrExportTests(prunerrtests.PrunerrTestCase):
     """
     Link imported files back into download items and verify, Servarr import inverse.

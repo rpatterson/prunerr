@@ -20,6 +20,8 @@ from .. import utils
 from .. import downloaditem
 from .. import downloadfile
 
+DOWNLOAD_CLIENT_CLOSE_WAIT = 10
+
 logger = logging.getLogger(__name__)
 
 

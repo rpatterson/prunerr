@@ -98,6 +98,18 @@ TL;DR: Perma-seeding of whole Servarr libraries optimized for per-tracker ratio.
   and `blocklist them
   <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L139-140>`_,
   AKA mark them as failed, in Servarr.
+- Set grabbed release `bandwidth priority based on the indexer/tracker
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L139-157>`_.
+- Delete releases that `the tracker deleted
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L221-293>`_
+  and mark them as failed.
+- Send notifications when `Servarr imported only some of a release's files
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L66-90>`_.
+- Send notifications when `a Servarr upgrade release will leave the previous release
+  partially imported
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L183-216>`_.
+- `Verify corrupt download items
+  <https://gitlab.com/rpatterson/prunerr/-/blob/main/src/prunerr/home/.config/prunerr.yml#L295-302>`_.
 - And more...
 
 .. include-end-before

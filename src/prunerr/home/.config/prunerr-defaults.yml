@@ -68,7 +68,7 @@ stages:
       ## Match items that are less imported than the threshold for removal in the
       ## `prune:` operation:
       include: |
-        {{- item.imported_portion < 0.80 -}}
+        {{- 0.0 < item.imported_portion < 0.80 -}}
       ## The log message here is first rendered as a Jinja template and then [`%`
       ## formatted by the Python logging
       ## library](https://docs.python.org/3/library/logging.html#logging.Formatter).

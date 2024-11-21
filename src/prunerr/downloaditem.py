@@ -173,7 +173,9 @@ class PrunerrDownloadItem(
         return time.time() - self.fields["addedDate"]
 
     @cached_property
-    def seconds_since_done(self) -> typing.Optional[int]:
+    def seconds_since_done(  # pylint: disable=compare-to-zero
+        self,
+    ) -> typing.Optional[int]:
         """
         Determine the number of seconds since the item was completely downloaded.
 
@@ -181,7 +183,7 @@ class PrunerrDownloadItem(
 
         :return: The duration in seconds.
         """
-        if self.fields["leftUntilDone"] or self.fields["percentDone"] < 1:
+        if self.fields["leftUntilDone"] or self.fields["percentDone"] < 1.0:
             logger.warning(
                 "Can't determine seconds since done, not complete: %r",
                 self,
@@ -191,7 +193,7 @@ class PrunerrDownloadItem(
                 },
             )
             return 0
-        if not (done_date := self.fields["doneDate"]) and self.fields["addedDate"]:
+        if (done_date := self.fields["doneDate"]) == 0 and self.fields["addedDate"]:
             # I've seen cases where almost half of torrents that I confirmed were
             # complete and seeding have no `doneDate`. Maybe this happens when adding a
             # torrent when the local data is already complete, AKA adding a seed?
@@ -206,7 +208,7 @@ class PrunerrDownloadItem(
                 },
             )
             done_date = self.fields["addedDate"]
-        if done_date and done_date > 0:
+        if done_date != 0:
             return time.time() - done_date
 
         logger.warning(
@@ -220,7 +222,9 @@ class PrunerrDownloadItem(
         return None
 
     @cached_property
-    def seconds_downloading(self) -> int:
+    def seconds_downloading(  # pylint: disable=compare-to-zero
+        self,
+    ) -> int:
         """
         Determine the number of seconds spent downloading the item.
 
@@ -229,15 +233,42 @@ class PrunerrDownloadItem(
         :return: The duration in seconds.
         """
         done_date = self.fields["doneDate"]
-        if done_date == self.fields["addedDate"]:
-            logger.warning(
-                "Done date is the same as added date: %r",
-                self,
-                extra={
-                    "runner": self.download_client.runner,
-                    "download_hash": self.hash_string,
-                },
-            )
+
+        # Unfortunately, transmission uses the UNIX epoch `0` to represent un-set dates,
+        # instead of some sort of `NULL` or `None` value:
+        if done_date == 0:
+
+            if self.status == self.STATUS_SEEDING:
+                logger.warning(
+                    "Done date is 0 for seeding item: %r",
+                    self,
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hash_string,
+                    },
+                )
+            elif self.fields["leftUntilDone"] == 0 or self.fields["percentDone"] == 1.0:
+                logger.warning(  # pragma: no cover
+                    "Done date is 0 for fully downloaded item: %r",
+                    self,
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hash_string,
+                    },
+                )
+
+            if (done_date := time.time()) < self.fields["addedDate"]:
+                logger.warning(
+                    "Added date is in the future: %r",
+                    self,
+                    extra={
+                        "runner": self.download_client.runner,
+                        "download_hash": self.hash_string,
+                    },
+                )
+            else:
+                pass  # pragma: no cover
+
         elif done_date < self.fields["addedDate"]:
             logger.warning(
                 "Done date is before added date: %r",
@@ -247,26 +278,17 @@ class PrunerrDownloadItem(
                     "download_hash": self.hash_string,
                 },
             )
-        if not done_date:
-            done_date = time.time()
-            if done_date == self.fields["addedDate"]:
-                logger.warning(  # pragma: no cover
-                    "Added date is now: %r",
-                    self,
-                    extra={
-                        "runner": self.download_client.runner,
-                        "download_hash": self.hash_string,
-                    },
-                )
-            elif done_date < self.fields["addedDate"]:
-                logger.warning(
-                    "Added date is in the future: %r",
-                    self,
-                    extra={
-                        "runner": self.download_client.runner,
-                        "download_hash": self.hash_string,
-                    },
-                )
+
+        if done_date == self.fields["addedDate"]:
+            logger.warning(  # pragma: no cover
+                "Done date is the same as added date: %r",
+                self,
+                extra={
+                    "runner": self.download_client.runner,
+                    "download_hash": self.hash_string,
+                },
+            )
+
         return done_date - self.fields["addedDate"]
 
     @cached_property

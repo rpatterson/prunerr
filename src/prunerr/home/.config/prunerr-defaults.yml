@@ -230,8 +230,7 @@ stages:
                 "("
                     "(not|un).?(registered|authorized)"
                     "|deleted"
-                    "|not.?found"
-                    "|does.?no?t.?e[xs]ist"
+                    "|(not|n'?t).?(found|e[xs]ists?)"
                 ")",
                 ignorecase=True,
             )

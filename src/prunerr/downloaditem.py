@@ -405,7 +405,7 @@ class PrunerrDownloadItem(
         self,
         operation: operations.PrunerrOperation,
         **context,  # pylint: disable=unused-argument
-    ) -> dict:
+    ) -> typing.Optional[dict]:
         """
         Change this download item's fields according to the operation configuration.
 
@@ -413,18 +413,34 @@ class PrunerrDownloadItem(
         :param context: Additional names and values available in templates.
         :return: ``True`` since the changes are always applied.
         """
-        logger.info(
-            "Changing download item per %r operation for %r: %s",
+        changed_fields = {
+            field_name: field_value
+            for field_name, field_value in operation.config[
+                operations.ACTION_CHANGE
+            ].items()
+            if field_value != self.fields[field_name]
+        }
+        if changed_fields:
+            logger.info(
+                "Changing download item per %r operation for %r: %s",
+                operation.config["name"],
+                self,
+                repr(changed_fields),
+            )
+            self.download_client.client.change_torrent(
+                [self.hash_string],
+                **changed_fields,
+            )
+            self.update()
+            return changed_fields
+
+        logger.debug(
+            "Download item fields already set per %r operation for %r: %s",
             operation.config["name"],
             self,
             repr(operation.config[operations.ACTION_CHANGE]),
         )
-        self.download_client.client.change_torrent(
-            [self.hash_string],
-            **operation.config[operations.ACTION_CHANGE],
-        )
-        self.update()
-        return operation.config[operations.ACTION_CHANGE]
+        return None
 
     def apply_move(  # noqa: V105
         self,

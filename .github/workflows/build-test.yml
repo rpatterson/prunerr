@@ -64,6 +64,8 @@ jobs:
       # Shared or common set up:
       - name: "Checkout source from VCS"
         uses: "actions/checkout@master"
+        with:
+          submodules: "recursive"
       # TODO: Debug stale venv issues and restore cache after fixing.
 
       # Delegate steps agnostic of the CI/CD platform to the `./Makefile`:

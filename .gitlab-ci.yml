@@ -13,6 +13,8 @@ variables:
   # TEMPLATE: Cleanup once fixed entrypoint has been merged from the project template:
   # fix(docker): Entrypoint user should not change
   PROJECT_NAME: "prunerr"
+  # GitLab CI/CD options:
+  GIT_SUBMODULE_STRATEGY: "recursive"
   # Uncomment to get more debugging output:
   # DEBUG: "true"
 

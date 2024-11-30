@@ -703,9 +703,12 @@ test-lint-prose: $(HOST_TARGET_DOCKER) $(HOME)/.local/bin/tox \
 	git ls-files -co --exclude-standard -z | grep -Ez '^[^.]+$$' |
 	    while read -d $$'\0'
 	    do
-	        cat "$${REPLY}" |
-	            docker compose run --rm -T vale --config="./styles/code.ini" \
-	                --ext=".pl"
+	        if test -f "$${REPLY}"
+	        then
+	            cat "$${REPLY}" |
+	                docker compose run --rm -T vale --config="./styles/code.ini" \
+	                    --ext=".pl"
+	        fi
 	    done || true
 # Run linters implemented in Python:
 	tox -e build -x 'testenv:build.commands=bin/test-lint-prose.sh'

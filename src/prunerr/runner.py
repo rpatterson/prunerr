@@ -344,7 +344,10 @@ class PrunerrRunner(utils.PrunerrComponent):
             # no event we can subscribe to that reliably determines disk space margin
             # *as* the download clients are downloading:
             if (time_left := poll - (time.time() - start)) > 0:
-                time.sleep(time_left)
+                # Intermittent coverage hole here when the machine running the tests is
+                # slow or overloaded enough that the inner daemon loop takes more time
+                # to run than the poll value used in the tests:
+                time.sleep(time_left)  # pragma: no cover
             logger.debug("Sub-command `daemon` looping after %ss", time.time() - start)
 
     # Methods to list the download items in each life-cycle stage:

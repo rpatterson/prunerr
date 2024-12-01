@@ -497,7 +497,9 @@ build-pkgs: $(HOST_TARGET_DOCKER) \
 # pre-requisite and it runs one time:
 	rm -vf ./dist/*
 # Build Python packages/distributions from the development Docker container for
-# consistency/reproducibility.
+# consistency/reproducibility. [The output includes a false
+# error](https://github.com/pypa/packaging-problems/issues/742#issuecomment-2495045687)
+# that can't be worked around without reducing isolation and reproducibility:
 	docker compose run $(DOCKER_COMPOSE_RUN_ARGS) $(PROJECT_NAME)-devel \
 	    tox run -e "$(PYTHON_ENV)" --override "testenv.package=external" --pkg-only
 # Copy to a location available in the Docker build context:

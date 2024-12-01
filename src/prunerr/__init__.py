@@ -201,7 +201,8 @@ def config_cli_logging(
     logging.getLogger("arrapi.api").setLevel(logging.INFO)
 
     # Also allow debugging Jinja templates:
-    if log_level_int <= logging.DEBUG:
+    # Test coverage hole when `$ export DEBUG=true`:
+    if log_level_int <= logging.DEBUG:  # pragma: no cover
         prunerr.operations.jinja_env.add_extension("jinja2.ext.debug")
 
 

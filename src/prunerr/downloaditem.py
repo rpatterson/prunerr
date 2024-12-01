@@ -183,22 +183,10 @@ class PrunerrDownloadItem(
 
         :return: The duration in seconds.
         """
-        if self.fields["leftUntilDone"] or self.fields["percentDone"] < 1.0:
-            logger.warning(
-                "Can't determine seconds since done, not complete: %r",
-                self,
-                extra={
-                    "runner": self.download_client.runner,
-                    "download_hash": self.hash_string,
-                },
-            )
-            return 0
         if (done_date := self.fields["doneDate"]) == 0 and self.fields["addedDate"]:
             # I've seen cases where almost half of torrents that I confirmed were
             # complete and seeding have no `doneDate`. Maybe this happens when adding a
-            # torrent when the local data is already complete, AKA adding a seed?
-            # Regardless of why it happens, it happens so often it's too noisy to log
-            # even at the `DEBUG` level:
+            # torrent when the local data is already complete, AKA adding a seed?:
             logger.warning(
                 "Missing done date for seconds since done, using added date: %r",
                 self,

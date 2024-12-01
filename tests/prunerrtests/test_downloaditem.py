@@ -85,7 +85,7 @@ class PrunerrDownloadItemTests(prunerrtests.PrunerrTestCase):
         )
         self.assertEqual(
             download_items[1].seconds_since_done,
-            0,
+            None,
             "Downloading item has time duration since finished downloading",
         )
         self.assertGreater(

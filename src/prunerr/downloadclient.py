@@ -342,7 +342,7 @@ class PrunerrDownloadClient(  # pylint: disable=too-many-instance-attributes
 
         # The filtering inherent to this life-cycle stage:
         for item in self.items:
-            if item.status == item.STATUS_SEEDING and (
+            if (
                 seeding_dir in item.download_dir.parents
                 or seeding_dir == item.download_dir
             ):

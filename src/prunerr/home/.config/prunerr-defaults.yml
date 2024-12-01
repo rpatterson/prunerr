@@ -19,8 +19,12 @@ indexers-config:
   seeding-seconds: |
     {{- indexer_config.get("seeding-days", 0) * 24 * 60 * 60 -}}
   seeding-margin-seconds: |
-    {%- set seeding_margin_days = 2 -%}
-    {{- indexer_config["seeding-seconds"] + (seeding_margin_days * 24 * 60 * 60) -}}
+    {%- if "seeding-days" in indexer_config -%}
+        {%- set seeding_margin_days = 2 -%}
+        {{- indexer_config["seeding-seconds"] + (seeding_margin_days * 24 * 60 * 60) -}}
+    {%- else -%}
+        0
+    {%- endif -%}
   bonus-minimum-bytes: |
     {{- indexer_config.get("bonus-minimum-gb", 0) * 1024 * 1024 * 1024 -}}
   bonus-maximum-bytes: |

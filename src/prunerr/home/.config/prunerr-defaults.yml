@@ -122,7 +122,7 @@ stages:
                     item.files|selectattr("selected")|selectattr(
                         "path.suffix",
                         "match",
-                        "\\.(rar|r[0-9]+|zipx?|zip\\.[0-9]+|gz|tgz|bz2)",
+                        "\\.(rar|[a-z]+[0-9]{2}|zipx?|zip\\.[0-9]+|gz|tgz|bz2)",
                     )|sum("size") / item.size_selected
                 )
             -%}

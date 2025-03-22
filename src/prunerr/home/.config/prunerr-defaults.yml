@@ -394,10 +394,12 @@ stages:
         {{-
             item.imported_portion < 0.80
             and (
-                item.ratio >= item.indexer_config.get("seeding-ratio", 0.0)
-                and (
+                (
+                    "seeding-ratio" in item.indexer_config
+                    and item.ratio >= item.indexer_config["seeding-ratio"]
+                ) or (
                     item.seconds_since_done
-                    > item.indexer_config.get("seeding-margin-seconds", 0.0)
+                    >= item.indexer_config.get("seeding-margin-seconds", 0.0)
                 )
             )
         -}}

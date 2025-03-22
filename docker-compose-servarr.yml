@@ -23,9 +23,11 @@ services:
     restart: "unless-stopped"
     healthcheck:
       test: >-
-        curl -Lv
-        "http://localhost:8989/api/v3/system/status?apikey=${SONARR_API_KEY:-}" |
-        grep '"appData": *"/config"'
+        (
+          curl -Lv \
+          "http://localhost:8989/api/v3/system/status?apikey=${SONARR_API_KEY:-}" |
+          grep '"appData": *"/config"'
+        ) || kill 1
 
   radarr:
     image: "ghcr.io/hotio/radarr"
@@ -41,9 +43,11 @@ services:
     restart: "unless-stopped"
     healthcheck:
       test: >-
-        curl -Lv
-        "http://localhost:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
-        grep '"appData": *"/config"'
+        (
+          curl -Lv \
+          "http://localhost:7878/api/v3/system/status?apikey=${RADARR_API_KEY:-}" |
+          grep '"appData": *"/config"'
+        ) || kill 1
 
   prunerr-daemon:
     depends_on:

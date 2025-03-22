@@ -50,9 +50,12 @@ services:
       # `./.env` so that the `HEALTHCHECK` fails and the container is restart when that
       # happens.
       test: >-
-        curl -LIs -X GET -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}"
-        "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
-        grep '^X-Transmission-Session-Id: '
+        (
+          curl -LIs -X GET \
+          -u "${TRANSMISSION_USER:-transmission}:${TRANSMISSION_PASS}" \
+          "http://${LAN_IP:-localhost}:9091/transmission/rpc/" |
+          grep '^X-Transmission-Session-Id: '
+        ) || kill 1
     labels:
       traefik.enable: true
       # Un comment and set `TRANSMISSION_HOST` to proxy via Traefik

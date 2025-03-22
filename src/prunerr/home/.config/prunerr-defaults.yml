@@ -302,7 +302,8 @@ stages:
     verify:
       include: |
         {{-
-            item.error == 3
+            item.status not in ("check pending", "checking")
+            and item.error == 3
             and item.error_string is search(".*(corrput|verif).*", ignorecase=True)
         -}}
       verify: true

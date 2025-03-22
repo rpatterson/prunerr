@@ -71,7 +71,9 @@ services:
     # domainname: "example.com"
     # hostname: "prunerr.example.com"
     depends_on:
-      - "transmission"
+      transmission:
+        condition: "service_healthy"
+        restart: true
     environment:
       TZ: "${TZ:-Etc/UTC}"
       # Make the runtime user configurable in `./.env` to match permissions inside and

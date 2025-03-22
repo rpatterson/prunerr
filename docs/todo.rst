@@ -259,6 +259,11 @@ Nice to have
 
     Rename ``dir_*`` to ``lib_*`` throughout the code base.
 
+#. :Notify:
+
+    Maybe also send a notification when enough space is freed after previously notifying
+    that there wasn't enough?
+
 #. :Free-space:
 
     Add ``bonus-by-age:`` and ``bonus-by-seeders:`` to the ``sort:`` for the ``prune:``

@@ -353,15 +353,27 @@ Always run for all download items under the ``download-dir`` or it's parallel
    important. Be careful with the ``include`` template to be both efficient per-item and
    to limit the operation to as few download items as possible.
 
-Usually only used to remove download items that are no longer registered with their
-indexer/tracker and to verify corrupt items, both of which can happen to any item at any
-time.
+This stage excludes download items that have finished downloading and are complete but
+are still in `the download client's 'download-dir'`_ to avoid clashes while Servarr
+instances may be importing download item files. Usually only used to remove download
+items that are no longer registered with their indexer/tracker and to verify corrupt
+items, both of which can happen to any item at any time.
 
-.. note::
+.. warning::
 
-   This stage excludes download items that have finished downloading and are complete
-   but are still in `the download client's 'download-dir'`_ to avoid clashes while
-   Servarr instances may be importing download item files.
+   In rare cases this can result in items getting "stuck" in the Servarr queue because
+   they are completed but Servarr won't allow importing items with error messages,
+   neither automatic nor manual import. For example:
+
+   - Prunerr finishes one ``$ prunerr daemon`` loop and waits for the next
+   - The item finishes downloading
+   - The tracker reports that the item has been removed and is no longer registered
+   - Servarr won't act on the item because of the error message
+   - Prunerr runs the next loop but won't remove it because Servarr hasn't acted on it
+
+   Users must remove the item from the Servarr queue. If they want to import files from
+   the item, they must first use Servarr's manual import UI to do so and then remove the
+   item from the queue.
 
 Free-space Stage
 ========================================================================================

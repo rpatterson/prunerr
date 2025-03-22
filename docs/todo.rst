@@ -258,3 +258,9 @@ Nice to have
 #. :Style:
 
     Rename ``dir_*`` to ``lib_*`` throughout the code base.
+
+#. :Free-space:
+
+    Add ``bonus-by-age:`` and ``bonus-by-seeders:`` to the ``sort:`` for the ``prune:``
+    operation. Some trackers give more bonus points for older torrents and dying
+    torrents with few seeders.

@@ -352,7 +352,7 @@ class PrunerrRunner(utils.PrunerrComponent):
 
     # Methods to list the download items in each life-cycle stage:
 
-    def filter_orphans(self) -> collections.abc.Generator:  # noqa: V105
+    def filter_orphans(self) -> set:  # noqa: V105
         """
         Find paths in download client directories that don't correspond to an item.
 
@@ -365,31 +365,12 @@ class PrunerrRunner(utils.PrunerrComponent):
 
         :return: The orphaned filesystem paths.
         """
-        item_files: set = set()
+        # Aggregate all the download item directories across all download clients.  Some
+        # download item directories may be shared across download clients and some may
+        # be on different filesystems so we need to aggregate them all across download
+        # clients:
         download_item_dirs: dict = {}
         for download_client in self.download_clients.values():
-
-            # Collect all the download item files that actually exist currently
-            for download_item in download_client.items:
-                item_files.update(
-                    item_file.path
-                    for item_file in download_item.files
-                    if item_file.selected and item_file.exists
-                    # Avoid deleting incomplete files for newly added torrents. Exclude
-                    # files whose creation date is newer than when the download items
-                    # were requested from the RPC API:
-                    and datetime.datetime.fromtimestamp(
-                        item_file.stat.st_ctime,
-                        datetime.timezone.utc,
-                    )
-                    < download_client.items_requested
-                )
-                item_files.add(download_item.log_path)
-
-            # Aggregate all the download item directories across all download clients.
-            # Some download item directories may be shared across download clients and
-            # some may be on different filesystems so we need to aggregate them all
-            # across download clients:
             download_item_dirs.setdefault(download_client.download_dir, None)
             download_item_dirs.setdefault(download_client.seeding_dir, None)
             if download_client.session["incomplete-dir-enabled"]:  # pragma: no cover
@@ -398,16 +379,30 @@ class PrunerrRunner(utils.PrunerrComponent):
                     None,
                 )
 
-        # Collect any files in any download item directories that aren't download item
-        # files.  Also yield the download clients that the file's download item
-        # directory use.  Also yield the `stat` syscall results for that file to reduce
-        # such syscalls downstream.
+        # Collect all files in any download item directories:
+        orphan_paths: set = set()
         for download_item_dir in download_item_dirs:
             for dirpath, _, filenames in os.walk(download_item_dir):
-                for filename in filenames:
-                    file_path = download_item_dir / dirpath / filename
-                    if file_path not in item_files:
-                        yield file_path
+                orphan_paths.update(
+                    download_item_dir / dirpath / filename for filename in filenames
+                )
+
+        # Remove all files that belong to a download item:
+        for download_client in self.download_clients.values():
+            # Avoid deleting incomplete files for newly added torrents, populate the
+            # list of download items *after* walking the download item directories:
+            vars(download_client).pop("items", None)
+            for download_item in download_client.items:
+                orphan_paths.difference_update(
+                    item_file.path
+                    for item_file in download_item.files
+                    if item_file.selected
+                )
+            orphan_paths.difference_update(
+                download_item.log_path for download_item in download_client.items
+            )
+
+        return orphan_paths
 
     def apply_remove(  # noqa: V105
         self,

@@ -8,17 +8,6 @@ services:
   transmission:
     image: "linuxserver/transmission:4.0.5"
     container_name: "transmission"
-    # command:
-    #   # From `# pgrep -fla transmission`:
-    #   # `/usr/bin/transmission-daemon -g /config -c /watch -f`
-    #   - "transmission-daemon"
-    #   - "-g"
-    #   - "/config"
-    #   - "-c"
-    #   - "/watch"
-    #   - "-f"
-    #   # Enable debug logging
-    #   - "--log-debug"
     environment:
       TZ: "${TZ:-America/Los_Angeles}"
       PUID: "${PUID:-1000}"
@@ -38,7 +27,9 @@ services:
       # Shut down the container when `/config/` is running out of disk space:
       # - "./transmission/usr/local/bin/transmission-config-space-shutdown:\
       #   /usr/local/bin/transmission-config-space-shutdown"
-      # Intended for use in the image
+      # Intended for use in the image. To debug, stop the container, increase
+      # `message-level` in `./transmission/config/settings.json`, and finally restart
+      # the container.
       - "./transmission/config/:/config/"
       # The volume on which Transmission's `download-dir` is stored:
       - type: "volume"

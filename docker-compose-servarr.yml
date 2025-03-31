@@ -10,11 +10,12 @@ services:
   sonarr:
     image: "ghcr.io/hotio/sonarr"
     container_name: "sonarr"
+    env_file:
+      - "./.env"
     environment:
-      # Can't use Docker's `--user` option for images based on `s6-overlay`
+      TZ: "${TZ:-Etc/UTC}"
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-100}"
-      TZ: "America/Los_Angeles"
+      PGID: "${PGID:-${PUID:-1000}}"
     volumes:
       - "./sonarr/config/:/config/"
     # Add this uncommented to your deployment's `./docker-compose.override.yml`
@@ -32,10 +33,12 @@ services:
   radarr:
     image: "ghcr.io/hotio/radarr"
     container_name: "radarr"
+    env_file:
+      - "./.env"
     environment:
+      TZ: "${TZ:-Etc/UTC}"
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-100}"
-      TZ: "America/Los_Angeles"
+      PGID: "${PGID:-${PUID:-1000}}"
     volumes:
       - "./radarr/config/:/config/"
     # ports:

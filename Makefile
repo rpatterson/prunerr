@@ -102,6 +102,7 @@ export CHECKOUT_DIR=$(PWD)
 # Managed user-specific directory out of the checkout:
 # https://specifications.freedesktop.org/basedir-spec/0.8/ar01s03.html
 STATE_DIR=$(HOME)/.local/state/$(PROJECT_NAME)
+LANG=en_US.UTF-8
 TZ=Etc/UTC
 ifneq ("$(wildcard /usr/share/zoneinfo/)","")
 TZ:=$(shell \

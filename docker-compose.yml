@@ -8,10 +8,16 @@ services:
   transmission:
     image: "linuxserver/transmission:4.0.5"
     container_name: "transmission"
+    env_file:
+      - "./.env"
     environment:
-      TZ: "${TZ:-America/Los_Angeles}"
+      # The preferred place to customize shared environment variables is in the
+      # project's `./.env` file:
+      TZ: "${TZ:-Etc/UTC}"
+      # Can't use Docker's `--user` option for images based on `s6-overlay`
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-100}"
+      PGID: "${PGID:-${PUID:-1000}}"
+      # Authentication credentials for the download client:
       USER: "${TRANSMISSION_USER:-transmission}"
       PASS: "${TRANSMISSION_PASS}"
     volumes:
@@ -77,16 +83,12 @@ services:
       transmission:
         condition: "service_healthy"
         restart: true
+    env_file:
+      - "./.env"
     environment:
       TZ: "${TZ:-Etc/UTC}"
-      # Make the runtime user configurable in `./.env` to match permissions inside and
-      # outside the container.  Default to the common/standard main/first user and group
-      # IDs
       PUID: "${PUID:-1000}"
-      PGID: "${PGID:-100}"
-      # Pass in from the environment or set to `true` here to get more verbose `DEBUG`
-      # logging:
-      DEBUG: "${DEBUG:-}"
+      PGID: "${PGID:-${PUID:-1000}}"
     volumes:
       # Preserve user configuration, data, and caches between containers and variants:
       - type: "volume"

@@ -61,16 +61,11 @@ services:
         PYTHON_MINOR: "${PYTHON_MINOR:-3.11}"
         PYTHON_ENV: "${PYTHON_ENV:-py311}"
         VERSION: "${VERSION:-}"
+    env_file:
+      - "./.env"
     environment:
-      TZ: "${TZ:-Etc/UTC}"
-      # Make the runtime user configurable in `./.env`:
-      PUID: "${PUID:-1000}"
-      PGID: "${PGID:-${PUID:-1000}}"
       # Variables from the environment to pass through into the container:
       CI: "${CI:-false}"
-      # Pass in from the environment or set to `true` here to get more verbose `DEBUG`
-      # logging:
-      DEBUG: "${DEBUG:-}"
       # FIXME: Cleanup once fixed Prunerr entrypoint has been released:
       # fix(docker): Entrypoint user should not change
       PROJECT_NAME: "prunerr"
@@ -111,8 +106,8 @@ services:
     image: "ghcr.io/hadolint/hadolint"
     profiles:
       - "test"
-    environment:
-      TZ: "${TZ:-Etc/UTC}"
+    env_file:
+      - "./.env"
     volumes:
       - type: "volume"
         source: "prunerr_checkout"
@@ -126,8 +121,8 @@ services:
     profiles:
       - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
-    environment:
-      TZ: "${TZ:-Etc/UTC}"
+    env_file:
+      - "./.env"
     volumes:
       - type: "volume"
         source: "prunerr_checkout"
@@ -140,8 +135,8 @@ services:
     profiles:
       - "lint"
     user: "${PUID:-1000}:${PGID:-${PUID:-1000}}"
-    environment:
-      TZ: "${TZ:-Etc/UTC}"
+    env_file:
+      - "./.env"
     volumes:
       - type: "volume"
         source: "prunerr_checkout"
@@ -176,8 +171,9 @@ services:
         condition: "service_completed_successfully"
     profiles:
       - "release"
+    env_file:
+      - "./.env"
     environment:
-      TZ: "${TZ:-Etc/UTC}"
       DOCKER_USER: "${DOCKER_USER:-}"
       DOCKER_PASS: "${DOCKER_PASS:-}"
     volumes:
@@ -221,14 +217,8 @@ services:
       - "${CHECKOUT_DIR:-.}/build-host/bin/entrypoint.sh:/usr/local/bin/entrypoint.sh"
       # Share local SSH authentication to repository remotes
       - "~/.ssh/:/home/runner/.ssh/"
-    env_file: "./.env"
-    environment:
-      TZ: "${TZ:-Etc/UTC}"
-      PUID: "${PUID:-1000}"
-      PGID: "${DOCKER_GID:-${PGID:-${PUID:-1000}}}"
-      # Pass in from the environment or set to `true` here to get more verbose `DEBUG`
-      # logging:
-      DEBUG: "${DEBUG:-}"
+    env_file:
+      - "./.env"
     working_dir: "${CHECKOUT_DIR:-.}"
     command: >-
       make -e test-lint build-docker test-docker release
